@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "ConsoleApp1": {
+      "commandName": "Project",
+      "commandLineArgs": "AllowedHosts=\"F3\"\r\npc=\"FFF123\"",
+      "environmentVariables": {
+        "AllowedHosts": "Fuckyou",
+        "Default": "MyDef",
+        "ConnectionStrings:PrimaryDatabaseConnection": "pdc"
+      }
+    }
+  }
+}
