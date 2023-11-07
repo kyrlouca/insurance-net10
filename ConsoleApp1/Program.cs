@@ -13,22 +13,24 @@ var mappings = new Dictionary<string, string> {
 	{"--pc", "ConnectionStrings:PrimaryDatabaseConnection" }
 };
 
-IHost hostConfig = CreateHostFromConfig(args, mappings);
-
-var yy = hostConfig.Services.GetService<IConfiguration>();
+//IHost hostConfig = CreateHostFromConfig(args, mappings);
+//var yy = hostConfig.Services.GetService<IConfiguration>();
 ////////////////////
 
 
 
 var hostFluent = CreateHostFluent(mappings, args);
 NumberWorker worker = ActivatorUtilities.CreateInstance<NumberWorker>(hostFluent.Services, "abc");
+
 var x3 = hostFluent.Services.GetService<IConfiguration>();
 var x31 = x3["TestDev"];
 var x311 = x3.GetValue<string>("TestDev");
 var x32 = x3.GetSection("LoggerFiles");
+Console.WriteLine($"testDev:{x31}, testDev:{x311}");
+
+//var dir =Directory.GetCurrentDirectory();
 
 
-Console.WriteLine($"testDev:{x31}, testDev:{x311}" );
 worker.PrintNumber();
 
 
@@ -64,10 +66,9 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 		services.AddScoped<INumberService, NumberService>();
 		var vr = context.Configuration["version"]??"";
 		services.Configure<VersionData>(context.Configuration.GetSection(vr));
-		services.Configure<LoggerFiles>(context.Configuration.GetSection ("LogerFiles"));		
+		services.Configure<LoggerFiles>(context.Configuration.GetSection ("LoggerFiles"));		
 	})
 	.Build();
-
 	
 	
 	
@@ -97,13 +98,6 @@ static IHost CreateHostFromConfig(string[] args, Dictionary<string, string> mapp
 		.AddCommandLine(args, mappings)
 		.Build()
 		;
-
-	var var1 = conf["AllowedHosts"];
-	var var2 = conf["ConnectionStrings:PrimaryDatabaseConnection"];
-	var var3 = conf["TestDev"];
-	var var4 = conf.Get<LoggerFiles>();
-
-
 	var hostF = new HostBuilder()
 		.ConfigureServices((hostContext, services) =>
 		{
