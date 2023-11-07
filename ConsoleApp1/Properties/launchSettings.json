@@ -2,11 +2,12 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "AllowedHosts=\"F3\"\r\npc=\"FFF123\"",
+      "commandLineArgs": "AllowedHosts=\"F3\"\r\npc=\"FFF123\"\r\nversion=\"IU260\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
         "Default": "MyDef",
-        "ConnectionStrings:PrimaryDatabaseConnection": "pdc"
+        "ConnectionStrings:PrimaryDatabaseConnection": "pdc",
+        "DOTNET_ENVIRONMENT": "Development"
       }
     }
   }
