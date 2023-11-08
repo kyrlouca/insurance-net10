@@ -8,30 +8,20 @@ using System;
 using System.ComponentModel.DataAnnotations;
 
 
-////////////////////
+
 var mappings = new Dictionary<string, string> {
 	{"--pc", "ConnectionStrings:PrimaryDatabaseConnection" }
 };
 
-//IHost hostConfig = CreateHostFromConfig(args, mappings);
-//var yy = hostConfig.Services.GetService<IConfiguration>();
-////////////////////
-
+ 
 var hostFluent = CreateHostFluent(mappings, args);
-var service = hostFluent.Services.GetService<IGetParams>();
+var service = hostFluent.Services.GetService<IGetParameters>();
 var xx = service?.BuildData();
-
-
-var x3 = hostFluent.Services.GetService<IConfiguration>();
-var x31 = x3["TestDev"];
-var x311 = x3.GetValue<string>("TestDev");
-
-Console.WriteLine($"testDev:{x31}, testDev:{x311}");
 
 var dir =Directory.GetCurrentDirectory();
 
 
-var x323 = 32;
+
 
 return;
 static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] args)
@@ -48,13 +38,11 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 		config.AddCommandLine(args, mappings);
 	})
  	.ConfigureServices((context, services) =>
-	{		
-		services.AddScoped<INumberRepository, NumberRepository>();
-		services.AddScoped<INumberService, NumberService>();		
+	{				
 		var vr = context.Configuration["eiopa-version"] ??"";
 		services.Configure<VersionData>(context.Configuration.GetSection(vr));
 		services.Configure<LoggerFiles>(context.Configuration.GetSection ("LoggerFiles"));
-		services.AddScoped<IGetParams,GetParams>();
+		services.AddScoped<IGetParameters,GetParameters>();
 		services.AddScoped<ITest,Test>();
 	})
 	.Build();
@@ -63,118 +51,6 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 
 }
 
-static IHost CreateHostFromConfig(string[] args, Dictionary<string, string> mappings)
-{
-	var abc = $"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json";
-	IConfigurationRoot conf = new ConfigurationBuilder()
-		.AddJsonFile("appsettings.json")
-		.AddJsonFile($"{abc}", optional: true, reloadOnChange: true)
-		.AddEnvironmentVariables()
-		.AddCommandLine(args, mappings)
-		.Build()
-		;
-	var hostF = new HostBuilder()
-		.ConfigureServices((hostContext, services) =>
-		{
-			// Add your services here
-			services.AddScoped<INumberRepository, NumberRepository>();
-		})
-		.ConfigureAppConfiguration((hostContext, configBuilder) =>
-		{
-			configBuilder.AddConfiguration(conf); // Use the prebuilt IConfigurationRoot
-			configBuilder.AddEnvironmentVariables();
-		})
-		.Build();
-	return hostF;
-}
-
-public class NumberWorker
-{
-	private readonly INumberService _service;
-	private readonly string _eiopaVersion;
-
-	public NumberWorker(INumberService service, string eiopaVersion)
-	{
-		_service = service;
-		_eiopaVersion = eiopaVersion;
-	}
-
-	public void PrintNumber()
-	{
-		var number = _service.GetPositiveNumber();
-		Console.WriteLine($"My wonderful number is {number}");
-
-		var str = _service.GetDecoratedString();
-		Console.WriteLine($"dec: {_eiopaVersion}-{str}");
-	}
-}
-
-public interface INumberRepository
-{
-	int GetNumber();
-	string GetString();
-}
-
-public class NumberRepository : INumberRepository
-{
-	public int GetNumber()
-	{
-		return -42;
-	}
-	public string GetString()
-	{
-		return "abc";
-	}
-}
-
-
-public interface INumberService
-{
-	int GetPositiveNumber();
-	string GetDecoratedString();
-}
-
-public class NumberService : INumberService
-{
-	private readonly INumberRepository _repo;
-	private readonly IConfiguration _configuration;
-	private readonly IOptions<VersionData> _options;
-
-	public NumberService(INumberRepository repo, IConfiguration configuration, IOptions<VersionData> options)
-	{
-		_repo = repo;
-		_configuration = configuration;
-		_options = options;
-	}
-
-	public int GetPositiveNumber()
-	{
-		int number = _repo.GetNumber();
-		return Math.Abs(number);
-	}
-
-	public string GetDecoratedString()
-	{
-		var settingWithOptions = _options.Value.EiopaConnectionString;
-
-		string dec = $"{settingWithOptions}-{_repo.GetString()}";
-		var settingWithNested = _configuration.GetSection("Logging:LogLevel:Default").Value;
-
-		//varj xx = (IConfigurationRoot) _configuration.pro
-
-		return dec;
-	}
-}
-
-
-public class ConnectionStringsXOld
-{
-	public string DefaultConnection { get; set; }
-	public string DatabaseConnection { get; set; }
-	public string UserDatabaseConnection { get; set; }
-	public string PrimaryDatabaseConnection { get; set; }
-	public string SecondaryDatabaseConnection { get; set; }
-}
 
 public class VersionData
 {
@@ -188,8 +64,16 @@ public class ParameterData
 	public string SystemConnectionString { get; set; }
 	public string EiopaConnectionString { get; set; }
 	public string ExcelTemplateFile { get; set; }
-	public string EiopaVersion { get; set; }
 	public string LoggerFile { get; set; }
+	public string EiopaVersion { get; set; }
+	public int UserId { get; set; }
+	public int FundId { get; set; }
+	public int CurrencyBatchId { get; set; }
+	public int ApplicationYear { get; set; }
+	public int ApplicationQuarter { get; set; }
+	public string ModuleCode { get; set; }
+	public string FileName { get; set; }
+	
 }
 
 public class LoggerFiles
@@ -206,31 +90,30 @@ public class LoggerFiles
 
 public class Test : ITest
 {
-	IConfiguration _configuration;
+	IGetParameters _getParameters;
 	
-	public int id = 12;
-	public string mak = "abc";
-	public Test(IConfiguration configuration, GetParams getParams)
+	public int id = 12;	
+	public Test( IGetParameters getParameters)
 	{
-		_configuration = configuration;
+		_getParameters = getParameters;
 		
 	}
 	public string Run()
 	{
-
-		return "SS";
+		var xx = _getParameters.BuildData();
+		return xx.EiopaVersion;
 	}
 }
 
 
-public class GetParams : IGetParams
+public class GetParameters : IGetParameters
 {
 	IConfiguration _configuration;
 	IOptions<VersionData> _optionsVersionData;
 	IOptions<LoggerFiles> _optionsLoggerFiles;
 
 
-	public GetParams(IConfiguration config, IOptions<VersionData> optionVersionData, IOptions<LoggerFiles>optionsLoggerFiles)
+	public GetParameters(IConfiguration config, IOptions<VersionData> optionVersionData, IOptions<LoggerFiles>optionsLoggerFiles)
 	{
 		_configuration = config;
 		_optionsVersionData = optionVersionData;
@@ -241,14 +124,25 @@ public class GetParams : IGetParams
 		//var x32 = x3.GetSection("LoggerFiles").Get<LoggerFiles>();
 		var xx = _configuration["TestDev"] ?? "N/F";
 		var y = _configuration.GetSection("LoggerFiles").Get<LoggerFiles>();
-		var paramData = new ParameterData()
+		var parameterData = new ParameterData()
 		{
+			UserId = int.TryParse(_configuration["userid"], out int userid) ? userid : 0,
+			FundId = int.TryParse(_configuration["fundid"], out int fundId) ? fundId : 0,
+			CurrencyBatchId = int.TryParse(_configuration["currency-batch-id"], out int currencyBatchId) ? currencyBatchId : 0,			
+			EiopaVersion = _configuration["eiopa-version"] ?? "NF",
+			ModuleCode = _configuration["module-code"] ?? "NF",
+			ApplicationYear = int.TryParse(_configuration["year"], out int year) ? year : 0,
+			ApplicationQuarter = int.TryParse(_configuration["quarter"], out int quarter) ? quarter : 0,			
 			SystemConnectionString = _optionsVersionData.Value.SystemConnectionString,
 			EiopaConnectionString = _optionsVersionData.Value.EiopaConnectionString,
 			ExcelTemplateFile = _optionsVersionData.Value.ExcelTemplateFile,
 			LoggerFile = _optionsLoggerFiles.Value.LoggerExcelReaderFile,
-			EiopaVersion = _configuration["eiopa-version"] ?? "NF",
+			FileName= _configuration["module-code"] ?? "NF",
+
+
+
+
 		};
-		return paramData;
+		return parameterData;
 	}
 }
