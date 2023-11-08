@@ -17,39 +17,26 @@ var mappings = new Dictionary<string, string> {
 //var yy = hostConfig.Services.GetService<IConfiguration>();
 ////////////////////
 
-
-
 var hostFluent = CreateHostFluent(mappings, args);
-NumberWorker worker = ActivatorUtilities.CreateInstance<NumberWorker>(hostFluent.Services, "abc");
+var service = hostFluent.Services.GetService<IGetParams>();
+var xx = service?.BuildData();
+
 
 var x3 = hostFluent.Services.GetService<IConfiguration>();
 var x31 = x3["TestDev"];
 var x311 = x3.GetValue<string>("TestDev");
-var x32 = x3.GetSection("LoggerFiles");
+
 Console.WriteLine($"testDev:{x31}, testDev:{x311}");
 
-//var dir =Directory.GetCurrentDirectory();
+var dir =Directory.GetCurrentDirectory();
 
 
-worker.PrintNumber();
+var x323 = 32;
 
-
-
+return;
 static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] args)
 {
-	//Create default builder will read automatically from json, env, command
-
-	var apps = Host.CreateDefaultBuilder().Build();
-	var s1 = apps.Services.GetService<IConfiguration>();	
-	var sl1b = s1.GetSection("LoggerFiles").Get<LoggerFiles>();
 	
-	
-	
-	var sl1 = s1.GetSection("LoggerFiles");	
-	var sl2 = sl1.GetValue<string>("LoggerXbrlFile");
-	var sl3 = s1["TestDev"];
-	var sl33 = s1.GetValue<string>("TestDev");
-
 	
 	var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");	
 	var app = Host.CreateDefaultBuilder()
@@ -60,30 +47,18 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 		config.AddEnvironmentVariables();
 		config.AddCommandLine(args, mappings);
 	})
-	.ConfigureServices((context, services) =>
+ 	.ConfigureServices((context, services) =>
 	{		
 		services.AddScoped<INumberRepository, NumberRepository>();
-		services.AddScoped<INumberService, NumberService>();
-		var vr = context.Configuration["version"]??"";
+		services.AddScoped<INumberService, NumberService>();		
+		var vr = context.Configuration["eiopa-version"] ??"";
 		services.Configure<VersionData>(context.Configuration.GetSection(vr));
-		services.Configure<LoggerFiles>(context.Configuration.GetSection ("LoggerFiles"));		
+		services.Configure<LoggerFiles>(context.Configuration.GetSection ("LoggerFiles"));
+		services.AddScoped<IGetParams,GetParams>();
+		services.AddScoped<ITest,Test>();
 	})
 	.Build();
-	
-	
-	
-	var x2 = app.Services.GetService<LoggerFiles>();
-	var xx = app.Services.GetService<IConfiguration>();
-	
-
-	//this works but is not binded to class
-	var log2 = xx.GetSection("LoggerFiles").Get<LoggerFiles>();
-	var logSectin = xx.GetSection("LoggerFiles");
-	var l1 = logSectin.GetValue<string>("LoggerXbrlFile");
-
-	Console.WriteLine($"tt:{xx["TestDev"]} loggerXbrl:{l1}");
-
-
+		
 	return app;
 
 }
@@ -116,12 +91,12 @@ static IHost CreateHostFromConfig(string[] args, Dictionary<string, string> mapp
 public class NumberWorker
 {
 	private readonly INumberService _service;
-	private readonly string _version;
+	private readonly string _eiopaVersion;
 
-	public NumberWorker(INumberService service, string version)
+	public NumberWorker(INumberService service, string eiopaVersion)
 	{
 		_service = service;
-		_version = version;
+		_eiopaVersion = eiopaVersion;
 	}
 
 	public void PrintNumber()
@@ -130,7 +105,7 @@ public class NumberWorker
 		Console.WriteLine($"My wonderful number is {number}");
 
 		var str = _service.GetDecoratedString();
-		Console.WriteLine($"dec: {_version}-{str}");
+		Console.WriteLine($"dec: {_eiopaVersion}-{str}");
 	}
 }
 
@@ -205,9 +180,17 @@ public class VersionData
 {
 	public string SystemConnectionString { get; set; }
 	public string EiopaConnectionString { get; set; }
-	public string ExcelTemplateFile { get; set; }
+	public string ExcelTemplateFile { get; set; }	
 }
 
+public class ParameterData
+{
+	public string SystemConnectionString { get; set; }
+	public string EiopaConnectionString { get; set; }
+	public string ExcelTemplateFile { get; set; }
+	public string EiopaVersion { get; set; }
+	public string LoggerFile { get; set; }
+}
 
 public class LoggerFiles
 {
@@ -217,4 +200,55 @@ public class LoggerFiles
 	public string LoggerExcelReaderFile { get; set; }
 	public string LoggerExcelWriterFile { get; set; }
 	public string LoggerAggregatorFile { get; set; }
+}
+
+
+
+public class Test : ITest
+{
+	IConfiguration _configuration;
+	
+	public int id = 12;
+	public string mak = "abc";
+	public Test(IConfiguration configuration, GetParams getParams)
+	{
+		_configuration = configuration;
+		
+	}
+	public string Run()
+	{
+
+		return "SS";
+	}
+}
+
+
+public class GetParams : IGetParams
+{
+	IConfiguration _configuration;
+	IOptions<VersionData> _optionsVersionData;
+	IOptions<LoggerFiles> _optionsLoggerFiles;
+
+
+	public GetParams(IConfiguration config, IOptions<VersionData> optionVersionData, IOptions<LoggerFiles>optionsLoggerFiles)
+	{
+		_configuration = config;
+		_optionsVersionData = optionVersionData;
+		_optionsLoggerFiles = optionsLoggerFiles;
+	}
+	public ParameterData BuildData()
+	{
+		//var x32 = x3.GetSection("LoggerFiles").Get<LoggerFiles>();
+		var xx = _configuration["TestDev"] ?? "N/F";
+		var y = _configuration.GetSection("LoggerFiles").Get<LoggerFiles>();
+		var paramData = new ParameterData()
+		{
+			SystemConnectionString = _optionsVersionData.Value.SystemConnectionString,
+			EiopaConnectionString = _optionsVersionData.Value.EiopaConnectionString,
+			ExcelTemplateFile = _optionsVersionData.Value.ExcelTemplateFile,
+			LoggerFile = _optionsLoggerFiles.Value.LoggerExcelReaderFile,
+			EiopaVersion = _configuration["eiopa-version"] ?? "NF",
+		};
+		return paramData;
+	}
 }
