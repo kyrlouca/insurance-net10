@@ -8,9 +8,6 @@ using Shared.HostRoutines;
 using Shared.SharedHost;
 
 
-
-
-
 public class MyMainApp : IMyMainApp
 {
 	//do not pass serilog, pass a class with serilog
@@ -27,11 +24,8 @@ public class MyMainApp : IMyMainApp
 	public string Run()
 	{
 		_parameterData = _parameterHandler.GetParameterData();
-		_logger.Information("helloffv");
-		_logger.Warning("warffnvv");
-		_logger.Error("Erroffrvv");
-		var yy = _parameterHandler.GetParameterData();
-		var xy = yy.EiopaConnectionString;
+		_logger.Information("helloffv");		
+		_logger.Error("Erroffrvv");		
 		var doc = GetDocument(9762);
 		return _parameterData.EiopaVersion;
 	}
