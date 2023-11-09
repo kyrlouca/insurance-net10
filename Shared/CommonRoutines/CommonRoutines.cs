@@ -1,18 +1,21 @@
-﻿namespace ConsoleApp1;
+﻿namespace Shared.CommonRoutines;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Shared.DataModels;
 using Shared.HostRoutines;
+using Shared.SharedHost;
 
-internal class Updater : IUpdater
+public class CommonRoutines : ICommonRoutines
 {
-	ParameterData _parameterData;
-	public Updater(ParameterData parameterData)
+	readonly ParameterData _parameterData;
+	readonly IParameterHandler? _parameterHandler;
+	public CommonRoutines(IParameterHandler parameterHandler)
 	{
-		_parameterData = parameterData;
+		_parameterHandler = parameterHandler;
+		_parameterData = _parameterHandler?.GetParameterData() ?? new();
 	}
 
-	public DocInstance GetDocument(int documentId)
+	public DocInstance GetDocInstance(int documentId)
 	{
 		var sqlGetDocument = @"
                     SELECT

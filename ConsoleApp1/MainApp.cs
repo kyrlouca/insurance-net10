@@ -3,6 +3,7 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.SqlClient;
 using Serilog;
+using Shared.CommonRoutines;
 using Shared.DataModels;
 using Shared.HostRoutines;
 using Shared.SharedHost;
@@ -12,14 +13,16 @@ public class MyMainApp : IMyMainApp
 {
 	//do not pass serilog, pass a class with serilog
 	IParameterHandler _parameterHandler;
-	ParameterData _parameterData;
+	ParameterData _parameterData =new();
 	ILogger _logger;
+	ICommonRoutines _commonRoutines;
 
 	public int id = 12;
-	public MyMainApp(IParameterHandler getParameters, ILogger logger)
+	public MyMainApp(IParameterHandler getParameters, ILogger logger , ICommonRoutines commonRoutines)
 	{
 		_parameterHandler = getParameters;		
 		_logger = logger;
+		_commonRoutines = commonRoutines;
 	}
 	public string Run()
 	{
@@ -27,6 +30,7 @@ public class MyMainApp : IMyMainApp
 		_logger.Information("helloffv");		
 		_logger.Error("Erroffrvv");		
 		var doc = GetDocument(9762);
+		var xx = _commonRoutines.GetDocInstance(9762);
 		return _parameterData.EiopaVersion;
 	}
 
