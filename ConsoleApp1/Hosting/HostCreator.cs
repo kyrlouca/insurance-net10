@@ -1,11 +1,8 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Shared.DataModels;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-
-
-
+using Shared.HostRoutines;
 
 namespace Shared.SharedHost;
 public class HostCreator
@@ -36,7 +33,7 @@ public class HostCreator
 			 var vr = context.Configuration["eiopa-version"] ?? "";
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));
 			 //services.Configure<LoggerFiles>(context.Configuration.GetSection("LoggerFiles"));
-			 services.AddScoped<ISharedParameterHandler, SharedParameterHandler>();
+			 services.AddScoped<IParameterHandler, ParameterHandler>();
 			 services.AddScoped<IMyMainApp, MyMainApp>();
 		 })
 		.UseSerilog((hostingContext, loggerConfiguration) =>

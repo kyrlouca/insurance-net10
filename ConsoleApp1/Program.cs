@@ -1,17 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using Microsoft.Extensions.Configuration;
-using Serilog.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Hosting.Internal;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Serilog;
-using Serilog.Events;
-using Serilog.Formatting.Json;
-using System;
-using System.ComponentModel.DataAnnotations;
-using Shared.DataModels;
 using Shared.SharedHost;
 
 var mappings = new Dictionary<string, string> {

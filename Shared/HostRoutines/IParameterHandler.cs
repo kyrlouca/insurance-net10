@@ -1,8 +1,8 @@
-﻿using Shared.DataModels;
+﻿using Shared.HostRoutines;
 
 namespace Shared.SharedHost
 {
-	public interface ISharedParameterHandler
+    public interface IParameterHandler
 	{
 		ParameterData GetParameterData();
 	}

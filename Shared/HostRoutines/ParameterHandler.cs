@@ -1,5 +1,4 @@
-﻿using Shared.DataModels;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -9,11 +8,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Shared.HostRoutines;
 
 namespace Shared.SharedHost;
 
 
-public class SharedParameterHandler : ISharedParameterHandler
+public class ParameterHandler : IParameterHandler
 {
 	IConfiguration _configuration;
 	IOptions<VersionData> _optionsVersionData;
@@ -21,7 +21,7 @@ public class SharedParameterHandler : ISharedParameterHandler
 	ParameterData _parameterData;
 
 
-	public SharedParameterHandler(IConfiguration config, IOptions<VersionData> optionVersionData)
+	public ParameterHandler(IConfiguration config, IOptions<VersionData> optionVersionData)
 	{
 		_configuration = config;
 		_optionsVersionData = optionVersionData;
