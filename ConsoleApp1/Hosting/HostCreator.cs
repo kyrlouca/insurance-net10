@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Shared.HostRoutines;
+using ConsoleApp1;
 
 namespace Shared.SharedHost;
 public class HostCreator
@@ -34,7 +35,8 @@ public class HostCreator
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));
 			 //services.Configure<LoggerFiles>(context.Configuration.GetSection("LoggerFiles"));
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
-			 services.AddScoped<IMyMainApp, MyMainApp>();
+			 services.AddScoped<IMyMainApp, MyMainApp>();			 
+			 
 		 })
 		.UseSerilog((hostingContext, loggerConfiguration) =>
 		{

@@ -1,4 +1,4 @@
-﻿namespace Shared.SharedHost
+﻿namespace ConsoleApp1
 {
 	public interface IMyMainApp
 	{

@@ -1,0 +1,60 @@
+﻿namespace ConsoleApp1;
+using Dapper;
+using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
+using Serilog;
+using Shared.DataModels;
+using Shared.HostRoutines;
+using Shared.SharedHost;
+
+
+
+
+
+public class MyMainApp : IMyMainApp
+{
+	//do not pass serilog, pass a class with serilog
+	IParameterHandler _parameterHandler;
+	ParameterData _parameterData;
+	ILogger _logger;
+
+	public int id = 12;
+	public MyMainApp(IParameterHandler getParameters, ILogger logger)
+	{
+		_parameterHandler = getParameters;		
+		_logger = logger;
+	}
+	public string Run()
+	{
+		_parameterData = _parameterHandler.GetParameterData();
+		_logger.Information("helloffv");
+		_logger.Warning("warffnvv");
+		_logger.Error("Erroffrvv");
+		var yy = _parameterHandler.GetParameterData();
+		var xy = yy.EiopaConnectionString;
+		var doc = GetDocument(9762);
+		return _parameterData.EiopaVersion;
+	}
+
+	private DocInstance GetDocument(int documentId)
+	{
+		var sqlGetDocument = @"
+                    SELECT
+                      doc.InstanceId
+                     ,doc.PensionFundId
+                     ,doc.ModuleId
+                     ,doc.Status
+                     ,doc.ModuleCode
+                     ,doc.ApplicableYear
+                     ,doc.ApplicableQuarter
+                     ,doc.EntityCurrency
+                     ,doc.UserId
+                    FROM dbo.DocInstance doc
+                    WHERE doc.InstanceId = @documentId
+                    ";
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+		var doc = connectionInsurance.QuerySingleOrDefault<DocInstance>(sqlGetDocument, new { documentId });
+		return doc;
+	}
+
+}
