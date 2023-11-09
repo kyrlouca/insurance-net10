@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace Shared.DataModels; 
+using System;
 
-namespace Shared.DataModels;
 
 public class DocInstance
 {

@@ -31,6 +31,7 @@ public class MyMainApp : IMyMainApp
 		_logger.Error("Erroffrvv");		
 		var doc = GetDocument(9762);
 		var xx = _commonRoutines.GetDocInstance(9762);
+		var yy = _commonRoutines.GetModuleByCodeNew("qrs");
 		return _parameterData.EiopaVersion;
 	}
 
