@@ -9,6 +9,13 @@
         "ConnectionStrings:PrimaryDatabaseConnection": "pdc",
         "DOTNET_ENVIRONMENT": "Production"
       }
+    },
+    "SupposeProduction": {
+      "commandName": "Executable",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Production"
+      },
+      "authenticationMode": "Windows"
     }
   }
 }

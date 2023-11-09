@@ -3,7 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
+using Serilog.Events;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -14,9 +17,22 @@ var mappings = new Dictionary<string, string> {
 };
 
  
-var hostFluent = CreateHostFluent(mappings, args);
-var service = hostFluent.Services.GetService<IGetParameters>();
-var xx = service?.BuildData();
+//using will dispose when not needed
+using var hostFluent = CreateHostFluent(mappings, args);
+//var service = hostFluent.Services.GetService<IGetParameters>();
+
+using var scope = hostFluent.Services.CreateScope();
+var services = scope.ServiceProvider;
+
+try
+{
+	hostFluent.Services.GetService<IMyMainApp>()?.Run();
+}
+catch (Exception ex)
+{
+	Console.WriteLine(ex.ToString());	
+}
+
 
 var dir =Directory.GetCurrentDirectory();
 
@@ -26,12 +42,16 @@ var dir =Directory.GetCurrentDirectory();
 return;
 static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] args)
 {
-	
-	
+
+
+	//CreateDefaultBuilder intiliazes and returns an instance of host builder (hover over) with  appsettings.environment.json, env varialbles, sercrets,logger
 	var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");	
 	var app = Host.CreateDefaultBuilder()
 	.ConfigureAppConfiguration((context, config) =>
-	{		
+	{
+		if (context.HostingEnvironment.IsProduction()) {
+			//depends on the value of DOTNET_ENVIRONMENT
+		}
 		config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
 		config.AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: false);
 		config.AddEnvironmentVariables();
@@ -39,14 +59,25 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 	})
  	.ConfigureServices((context, services) =>
 	{				
+		//**!! GetSection will get the values corrsoponding to eiopa-versions (IU270, IU280, etc)
 		var vr = context.Configuration["eiopa-version"] ??"";
 		services.Configure<VersionData>(context.Configuration.GetSection(vr));
 		services.Configure<LoggerFiles>(context.Configuration.GetSection ("LoggerFiles"));
 		services.AddScoped<IGetParameters,GetParameters>();
-		services.AddScoped<ITest,Test>();
+		services.AddScoped<IMyMainApp,MyMainApp>();
+
+
 	})
+	  .UseSerilog((context, services, configuration) => configuration	  
+	  .ReadFrom.Services(services)
+	  .Enrich.FromLogContext()
+	  .WriteTo.Console()
+	  //.WriteTo.File($"report-{DateTimeOffset.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss")}.txt", restrictedToMinimumLevel: LogEventLevel.Warning)
+	  .WriteTo.File(services.GetService<IGetParameters>().GetParameterData().LoggerFile, restrictedToMinimumLevel: LogEventLevel.Warning)
+	  )
 	.Build();
 		
+	
 	return app;
 
 }
@@ -61,6 +92,7 @@ public class VersionData
 
 public class ParameterData
 {
+	public string environment  {  get; set; }
 	public string SystemConnectionString { get; set; }
 	public string EiopaConnectionString { get; set; }
 	public string ExcelTemplateFile { get; set; }
@@ -88,19 +120,27 @@ public class LoggerFiles
 
 
 
-public class Test : ITest
+public class MyMainApp : IMyMainApp
 {
+	//do not pass serilog, pass a class with serilog
 	IGetParameters _getParameters;
+    Serilog.ILogger _logger;
 	
 	public int id = 12;	
-	public Test( IGetParameters getParameters)
+	public MyMainApp( IGetParameters getParameters,Serilog.ILogger logger)
 	{
 		_getParameters = getParameters;
+		_logger = logger;
+
 		
 	}
 	public string Run()
 	{
-		var xx = _getParameters.BuildData();
+		var xx = _getParameters.GetParameterData();
+		_logger.Information("hello");
+
+		var yy= _getParameters.GetParameterData();
+		var xy = yy.EiopaConnectionString;
 		return xx.EiopaVersion;
 	}
 }
@@ -111,6 +151,7 @@ public class GetParameters : IGetParameters
 	IConfiguration _configuration;
 	IOptions<VersionData> _optionsVersionData;
 	IOptions<LoggerFiles> _optionsLoggerFiles;
+	ParameterData _parameterData;
 
 
 	public GetParameters(IConfiguration config, IOptions<VersionData> optionVersionData, IOptions<LoggerFiles>optionsLoggerFiles)
@@ -118,12 +159,17 @@ public class GetParameters : IGetParameters
 		_configuration = config;
 		_optionsVersionData = optionVersionData;
 		_optionsLoggerFiles = optionsLoggerFiles;
+				
 	}
-	public ParameterData BuildData()
+	public ParameterData GetParameterData()
 	{
-		//var x32 = x3.GetSection("LoggerFiles").Get<LoggerFiles>();
+		//get params from env, appsettings, commandline and build a parameterDataObject 
+		if( _parameterData is not null)
+		{
+			return _parameterData;
+		}
 		var xx = _configuration["TestDev"] ?? "N/F";
-		var y = _configuration.GetSection("LoggerFiles").Get<LoggerFiles>();
+		var y = _configuration.GetSection("LoggerFiles").Get<LoggerFiles>();		
 		var parameterData = new ParameterData()
 		{
 			UserId = int.TryParse(_configuration["userid"], out int userid) ? userid : 0,
@@ -132,7 +178,8 @@ public class GetParameters : IGetParameters
 			EiopaVersion = _configuration["eiopa-version"] ?? "NF",
 			ModuleCode = _configuration["module-code"] ?? "NF",
 			ApplicationYear = int.TryParse(_configuration["year"], out int year) ? year : 0,
-			ApplicationQuarter = int.TryParse(_configuration["quarter"], out int quarter) ? quarter : 0,			
+			ApplicationQuarter = int.TryParse(_configuration["quarter"], out int quarter) ? quarter : 0,
+			//_optionsVersionData contains values for correspoinding EIOPA version. It was implemented in configureServices
 			SystemConnectionString = _optionsVersionData.Value.SystemConnectionString,
 			EiopaConnectionString = _optionsVersionData.Value.EiopaConnectionString,
 			ExcelTemplateFile = _optionsVersionData.Value.ExcelTemplateFile,
@@ -140,9 +187,8 @@ public class GetParameters : IGetParameters
 			FileName= _configuration["module-code"] ?? "NF",
 
 
-
-
 		};
+		_parameterData= parameterData;
 		return parameterData;
 	}
 }
