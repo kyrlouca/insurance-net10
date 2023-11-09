@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
+using Serilog.Formatting.Json;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -16,7 +17,7 @@ var mappings = new Dictionary<string, string> {
 	{"--pc", "ConnectionStrings:PrimaryDatabaseConnection" }
 };
 
- 
+
 //using will dispose when not needed
 using var hostFluent = CreateHostFluent(mappings, args);
 //var service = hostFluent.Services.GetService<IGetParameters>();
@@ -30,11 +31,11 @@ try
 }
 catch (Exception ex)
 {
-	Console.WriteLine(ex.ToString());	
+	Console.WriteLine(ex.ToString());
 }
 
 
-var dir =Directory.GetCurrentDirectory();
+var dir = Directory.GetCurrentDirectory();
 
 
 
@@ -45,11 +46,12 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 
 
 	//CreateDefaultBuilder intiliazes and returns an instance of host builder (hover over) with  appsettings.environment.json, env varialbles, sercrets,logger
-	var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");	
+	var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 	var app = Host.CreateDefaultBuilder()
 	.ConfigureAppConfiguration((context, config) =>
 	{
-		if (context.HostingEnvironment.IsProduction()) {
+		if (context.HostingEnvironment.IsProduction())
+		{
 			//depends on the value of DOTNET_ENVIRONMENT
 		}
 		config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
@@ -58,26 +60,23 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 		config.AddCommandLine(args, mappings);
 	})
  	.ConfigureServices((context, services) =>
-	{				
+	{
 		//**!! GetSection will get the values corrsoponding to eiopa-versions (IU270, IU280, etc)
-		var vr = context.Configuration["eiopa-version"] ??"";
+		var vr = context.Configuration["eiopa-version"] ?? "";
 		services.Configure<VersionData>(context.Configuration.GetSection(vr));
-		services.Configure<LoggerFiles>(context.Configuration.GetSection ("LoggerFiles"));
-		services.AddScoped<IGetParameters,GetParameters>();
-		services.AddScoped<IMyMainApp,MyMainApp>();
-
-
+		services.Configure<LoggerFiles>(context.Configuration.GetSection("LoggerFiles"));
+		services.AddScoped<IGetParameters, GetParameters>();
+		services.AddScoped<IMyMainApp, MyMainApp>();
 	})
-	  .UseSerilog((context, services, configuration) => configuration	  
-	  .ReadFrom.Services(services)
-	  .Enrich.FromLogContext()
-	  .WriteTo.Console()
-	  //.WriteTo.File($"report-{DateTimeOffset.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss")}.txt", restrictedToMinimumLevel: LogEventLevel.Warning)
-	  .WriteTo.File(services.GetService<IGetParameters>().GetParameterData().LoggerFile, restrictedToMinimumLevel: LogEventLevel.Warning)
-	  )
+	.UseSerilog((context, services, configuration) => configuration	
+	.ReadFrom.Services(services)
+	.Enrich.FromLogContext()
+	.WriteTo.Console()
+	.WriteTo.File($"report-{DateTimeOffset.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss")}.txt", restrictedToMinimumLevel: LogEventLevel.Warning)
+	)
 	.Build();
-		
-	
+
+
 	return app;
 
 }
@@ -87,12 +86,12 @@ public class VersionData
 {
 	public string SystemConnectionString { get; set; }
 	public string EiopaConnectionString { get; set; }
-	public string ExcelTemplateFile { get; set; }	
+	public string ExcelTemplateFile { get; set; }
 }
 
 public class ParameterData
 {
-	public string environment  {  get; set; }
+	public string environment { get; set; }
 	public string SystemConnectionString { get; set; }
 	public string EiopaConnectionString { get; set; }
 	public string ExcelTemplateFile { get; set; }
@@ -105,7 +104,7 @@ public class ParameterData
 	public int ApplicationQuarter { get; set; }
 	public string ModuleCode { get; set; }
 	public string FileName { get; set; }
-	
+
 }
 
 public class LoggerFiles
@@ -124,22 +123,24 @@ public class MyMainApp : IMyMainApp
 {
 	//do not pass serilog, pass a class with serilog
 	IGetParameters _getParameters;
-    Serilog.ILogger _logger;
-	
-	public int id = 12;	
-	public MyMainApp( IGetParameters getParameters,Serilog.ILogger logger)
+
+	Serilog.ILogger _logger;
+
+	public int id = 12;
+	public MyMainApp(IGetParameters getParameters, Serilog.ILogger logger)
 	{
 		_getParameters = getParameters;
 		_logger = logger;
 
-		
+
 	}
 	public string Run()
 	{
 		var xx = _getParameters.GetParameterData();
 		_logger.Information("hello");
-
-		var yy= _getParameters.GetParameterData();
+		_logger.Warning("warn");
+		_logger.Error("Error");
+		var yy = _getParameters.GetParameterData();
 		var xy = yy.EiopaConnectionString;
 		return xx.EiopaVersion;
 	}
@@ -154,27 +155,27 @@ public class GetParameters : IGetParameters
 	ParameterData _parameterData;
 
 
-	public GetParameters(IConfiguration config, IOptions<VersionData> optionVersionData, IOptions<LoggerFiles>optionsLoggerFiles)
+	public GetParameters(IConfiguration config, IOptions<VersionData> optionVersionData, IOptions<LoggerFiles> optionsLoggerFiles)
 	{
 		_configuration = config;
 		_optionsVersionData = optionVersionData;
 		_optionsLoggerFiles = optionsLoggerFiles;
-				
+
 	}
 	public ParameterData GetParameterData()
 	{
 		//get params from env, appsettings, commandline and build a parameterDataObject 
-		if( _parameterData is not null)
+		if (_parameterData is not null)
 		{
 			return _parameterData;
 		}
 		var xx = _configuration["TestDev"] ?? "N/F";
-		var y = _configuration.GetSection("LoggerFiles").Get<LoggerFiles>();		
+		var y = _configuration.GetSection("LoggerFiles").Get<LoggerFiles>();
 		var parameterData = new ParameterData()
 		{
 			UserId = int.TryParse(_configuration["userid"], out int userid) ? userid : 0,
 			FundId = int.TryParse(_configuration["fundid"], out int fundId) ? fundId : 0,
-			CurrencyBatchId = int.TryParse(_configuration["currency-batch-id"], out int currencyBatchId) ? currencyBatchId : 0,			
+			CurrencyBatchId = int.TryParse(_configuration["currency-batch-id"], out int currencyBatchId) ? currencyBatchId : 0,
 			EiopaVersion = _configuration["eiopa-version"] ?? "NF",
 			ModuleCode = _configuration["module-code"] ?? "NF",
 			ApplicationYear = int.TryParse(_configuration["year"], out int year) ? year : 0,
@@ -184,11 +185,11 @@ public class GetParameters : IGetParameters
 			EiopaConnectionString = _optionsVersionData.Value.EiopaConnectionString,
 			ExcelTemplateFile = _optionsVersionData.Value.ExcelTemplateFile,
 			LoggerFile = _optionsLoggerFiles.Value.LoggerExcelReaderFile,
-			FileName= _configuration["module-code"] ?? "NF",
+			FileName = _configuration["module-code"] ?? "NF",
 
 
 		};
-		_parameterData= parameterData;
+		_parameterData = parameterData;
 		return parameterData;
 	}
 }
