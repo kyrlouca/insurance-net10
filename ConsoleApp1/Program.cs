@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Microsoft.Extensions.Configuration;
+using Serilog.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
@@ -68,12 +69,11 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 		services.AddScoped<IGetParameters, GetParameters>();
 		services.AddScoped<IMyMainApp, MyMainApp>();
 	})
-	.UseSerilog((context, services, configuration) => configuration	
-	.ReadFrom.Services(services)
-	.Enrich.FromLogContext()
-	.WriteTo.Console()
-	.WriteTo.File($"report-{DateTimeOffset.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss")}.txt", restrictedToMinimumLevel: LogEventLevel.Warning)
-	)
+				.UseSerilog((hostingContext, loggerConfiguration) =>
+				{
+					loggerConfiguration
+						.ReadFrom.Configuration(hostingContext.Configuration);
+				})
 	.Build();
 
 
@@ -137,9 +137,9 @@ public class MyMainApp : IMyMainApp
 	public string Run()
 	{
 		var xx = _getParameters.GetParameterData();
-		_logger.Information("hello");
-		_logger.Warning("warn");
-		_logger.Error("Error");
+		_logger.Information("helloffv");
+		_logger.Warning("warffnvv");
+		_logger.Error("Erroffrvv");
 		var yy = _getParameters.GetParameterData();
 		var xy = yy.EiopaConnectionString;
 		return xx.EiopaVersion;

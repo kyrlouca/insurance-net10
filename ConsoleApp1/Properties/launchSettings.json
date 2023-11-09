@@ -7,7 +7,7 @@
         "AllowedHosts": "Fuckyou",
         "Default": "MyDef",
         "ConnectionStrings:PrimaryDatabaseConnection": "pdc",
-        "DOTNET_ENVIRONMENT": "Production"
+        "DOTNET_ENVIRONMENT": "Development"
       }
     },
     "SupposeProduction": {
