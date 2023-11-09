@@ -11,8 +11,8 @@ using Serilog.Events;
 using Serilog.Formatting.Json;
 using System;
 using System.ComponentModel.DataAnnotations;
-
-
+using Shared.DataModels;
+using Shared.SharedHost;
 
 var mappings = new Dictionary<string, string> {
 	//to map nested or long command line parameters with simpler names
@@ -61,7 +61,7 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 		var vr = context.Configuration["eiopa-version"] ?? "";
 		services.Configure<VersionData>(context.Configuration.GetSection(vr));
 		//services.Configure<LoggerFiles>(context.Configuration.GetSection("LoggerFiles"));
-		services.AddScoped<IGetParameters, GetParameters>();
+		services.AddScoped<ISharedParameterHandler, SharedParameterHandler>();
 		services.AddScoped<IMyMainApp, MyMainApp>();
 	})
 	.UseSerilog((hostingContext, loggerConfiguration) =>
@@ -77,14 +77,14 @@ static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] arg
 }
 
 
-public class VersionData
+public class VersionDataxxx
 {
 	public string SystemConnectionString { get; set; }
 	public string EiopaConnectionString { get; set; }
 	public string ExcelTemplateFile { get; set; }
 }
 
-public class ParameterData
+public class ParameterDataxxx
 {
 	public string environment { get; set; }
 	public string SystemConnectionString { get; set; }
@@ -102,87 +102,29 @@ public class ParameterData
 
 }
 
-public class LoggerFilesOld
-{
-	public string LoggerXbrlFile { get; set; }
-	public string LoggerXbrlReaderFile { get; set; }
-	public string LoggerValidatorFile { get; set; }
-	public string LoggerExcelReaderFile { get; set; }
-	public string LoggerExcelWriterFile { get; set; }
-	public string LoggerAggregatorFile { get; set; }
-}
-
-
 
 public class MyMainApp : IMyMainApp
 {
 	//do not pass serilog, pass a class with serilog
-	IGetParameters _getParameters;
+	ISharedParameterHandler _parameterHandler;
 
 	Serilog.ILogger _logger;
 
 	public int id = 12;
-	public MyMainApp(IGetParameters getParameters, Serilog.ILogger logger)
+	public MyMainApp(ISharedParameterHandler getParameters, Serilog.ILogger logger)
 	{
-		_getParameters = getParameters;
+		_parameterHandler = getParameters;
 		_logger = logger;
 	}
 	public string Run()
 	{
-		var xx = _getParameters.GetParameterData();
+		var xx = _parameterHandler.GetParameterData();
 		_logger.Information("helloffv");
 		_logger.Warning("warffnvv");
 		_logger.Error("Erroffrvv");
-		var yy = _getParameters.GetParameterData();
+		var yy = _parameterHandler.GetParameterData();
 		var xy = yy.EiopaConnectionString;
 		return xx.EiopaVersion;
 	}
 }
 
-
-public class GetParameters : IGetParameters
-{
-	IConfiguration _configuration;
-	IOptions<VersionData> _optionsVersionData;
-	//IOptions<LoggerFiles> _optionsLoggerFiles;
-	ParameterData _parameterData;
-
-
-	public GetParameters(IConfiguration config, IOptions<VersionData> optionVersionData)
-	{
-		_configuration = config;
-		_optionsVersionData = optionVersionData;
-		//_optionsLoggerFiles = optionsLoggerFiles;
-
-	}
-	public ParameterData GetParameterData()
-	{
-		//get params from env, appsettings, commandline and build a parameterDataObject 
-		if (_parameterData is not null)
-		{
-			return _parameterData;
-		}
-		var xx = _configuration["TestDev"] ?? "N/F";
-		
-		var parameterData = new ParameterData()
-		{
-			UserId = int.TryParse(_configuration["user-id"], out int userid) ? userid : 0,
-			FundId = int.TryParse(_configuration["fund-id"], out int fundId) ? fundId : 0,
-			CurrencyBatchId = int.TryParse(_configuration["currency-batch-id"], out int currencyBatchId) ? currencyBatchId : 0,
-			EiopaVersion = _configuration["eiopa-version"] ?? "NF",
-			ModuleCode = _configuration["module-code"] ?? "NF",
-			ApplicationYear = int.TryParse(_configuration["year"], out int year) ? year : 0,
-			ApplicationQuarter = int.TryParse(_configuration["quarter"], out int quarter) ? quarter : 0,
-			//_optionsVersionData contains values for correspoinding EIOPA version. It was implemented in configureServices
-			SystemConnectionString = _optionsVersionData.Value.SystemConnectionString,
-			EiopaConnectionString = _optionsVersionData.Value.EiopaConnectionString,
-			ExcelTemplateFile = _optionsVersionData.Value.ExcelTemplateFile,
-			//LoggerFile = _optionsLoggerFiles.Value.LoggerExcelReaderFile,
-			FileName = _configuration["module-code"] ?? "NF",
-
-
-		};
-		_parameterData = parameterData;
-		return parameterData;
-	}
-}
