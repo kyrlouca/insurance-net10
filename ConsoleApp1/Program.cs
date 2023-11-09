@@ -15,9 +15,9 @@ using System.ComponentModel.DataAnnotations;
 
 
 var mappings = new Dictionary<string, string> {
+	//to map nested or long command line parameters with simpler names
 	{"--pc", "ConnectionStrings:PrimaryDatabaseConnection" }
 };
-
 
 //using will dispose when not needed
 using var hostFluent = CreateHostFluent(mappings, args);
@@ -34,18 +34,11 @@ catch (Exception ex)
 {
 	Console.WriteLine(ex.ToString());
 }
-
-
 var dir = Directory.GetCurrentDirectory();
-
-
-
 
 return;
 static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] args)
 {
-
-
 	//CreateDefaultBuilder intiliazes and returns an instance of host builder (hover over) with  appsettings.environment.json, env varialbles, sercrets,logger
 	var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 	var app = Host.CreateDefaultBuilder()
