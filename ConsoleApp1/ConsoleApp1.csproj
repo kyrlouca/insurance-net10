@@ -43,7 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="appsettings.Development.json">
+    <None Update="appsettings.Develop.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="appsettings.Productionxx.json">

@@ -2,12 +2,12 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "userid=1\r\nfundid=101\r\ncurrency-batch-id=9\r\neiopa-version=\"IU260\"\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=4\r\nfile-name=\"abc\"",
+      "commandLineArgs": "user-id=1\r\nfund-id=101\r\ncurrency-batch-id=9\r\neiopa-version=\"IU260\"\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=4\r\nfile-name=\"abc\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
         "Default": "MyDef",
         "ConnectionStrings:PrimaryDatabaseConnection": "pdc",
-        "DOTNET_ENVIRONMENT": "Development"
+        "DOTNET_ENVIRONMENT": "Develop"
       }
     },
     "SupposeProduction": {
