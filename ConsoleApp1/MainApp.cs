@@ -32,6 +32,7 @@ public class MyMainApp : IMyMainApp
 		var doc = GetDocument(9762);
 		var xx = _commonRoutines.GetDocInstance(9762);
 		var yy = _commonRoutines.GetModuleByCodeNew("qrs");
+		_commonRoutines.CreateTransactionLog(34, MessageType.COMPLETE, "first Message");
 		return _parameterData.EiopaVersion;
 	}
 

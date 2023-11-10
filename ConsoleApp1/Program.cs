@@ -14,6 +14,8 @@ using var hostFluent = HostCreator.CreateHostFluent(mappings, args);
 using var scope = hostFluent.Services.CreateScope();
 var services = scope.ServiceProvider;
 
+///////////////////////////////////////
+///Execute the Mainapp
 try
 {
 	hostFluent.Services.GetService<IMyMainApp>()?.Run();

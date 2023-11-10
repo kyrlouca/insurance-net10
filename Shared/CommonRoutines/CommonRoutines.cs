@@ -53,4 +53,30 @@ public class CommonRoutines : ICommonRoutines
 
 	}
 
+
+	public void CreateTransactionLog(int docInstanceId,MessageType messageType, string message)
+	{		
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+		var tl = new LogTransactionModel ()
+		{
+			ExternalId = -1,
+			PensionFundId = _parameterData.FundId,
+			ModuleCode = _parameterData.ModuleCode,
+			ApplicableYear = _parameterData.ApplicationYear,
+			ApplicableQuarter = _parameterData.ApplicationQuarter,
+			Message = message,
+			UserId = _parameterData.UserId,
+			ProgramCode = "EX",
+			ProgramAction = ProgramAction.INS.ToString(),
+			InstanceId = docInstanceId,
+			MessageType = messageType.ToString()
+			
+		};
+		var sqlInsert = @"
+                INSERT INTO TransactionLog(ExternalId,PensionFundId, ModuleCode, ApplicableYear, ApplicableQuarter, Message, UserId, ProgramCode, ProgramAction,InstanceId,MessageType,FileName)
+                VALUES(@externalId,@PensionFundId, @ModuleCode, @ApplicableYear, @ApplicableQuarter, @Message,  @UserId, @ProgramCode, @ProgramAction,@InstanceId,@MessageType,@FileName);
+            ";
+		var x = connectionInsurance.Execute(sqlInsert,tl );
+	}
+
 }

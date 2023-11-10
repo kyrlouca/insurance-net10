@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Shared.DataModels;
 
-internal class LogTransaction { 
+internal class LogTransactionModel { 
+		public int ExternalId { get; set; }	
 		public int TransactionId { get; set; }
 		public int PensionFundId { get; set; }
 		public string ModuleCode { get; set; }

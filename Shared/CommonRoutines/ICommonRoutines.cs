@@ -1,10 +1,13 @@
 ﻿using Shared.DataModels;
 
-namespace Shared.CommonRoutines
+namespace Shared.CommonRoutines;
+public enum ProgramCode { AG, DO, XB, VA, CX, RX }
+public enum ProgramAction { DEL, INS, UPD }
+public enum MessageType { ERROR, INFO, COMPLETE }
+
+public interface ICommonRoutines
 {
-	public interface ICommonRoutines
-	{
-		DocInstance GetDocInstance(int documentId);
-		MModule GetModuleByCodeNew(string moduleCode);
-	}
+	DocInstance GetDocInstance(int documentId);
+	MModule GetModuleByCodeNew(string moduleCode);
+	public void CreateTransactionLog(int docInstanceId, MessageType messageType, string message);
 }
