@@ -1,0 +1,67 @@
+﻿namespace Shared.SpecialRoutines;
+using Shared.GeneralUtils;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+
+
+public class SpecialRoutines
+{
+
+	public class DimDom
+	{
+
+
+		public string Dim { get; internal set; } = "";//OC
+		public string Dom { get; internal set; } = "";//CU
+		public string DomAndVal { get; internal set; } = "";//CU:GBP
+		public string DomValue { get; internal set; } = "";//USD
+		public string DomAndValRaw { get; internal set; } = "";// s2c_CU:USD
+		public string Signature { get; internal set; } //"s2c_dim:OC(s2c_CU:GBP)"
+		public bool IsWild { get; internal set; } = false;
+		public bool IsOptional { get; internal set; } = false;
+		private DimDom() { }
+		private void GetTheParts()
+		{
+			//Signature = @"s2c_dim:OC(s2c_CU:USD)";
+			//Signature = @"s2c_dim:OC(ID:USD)";
+			//Signature = @"s2c_dim:OC(*[xxxx])";            
+
+
+			var res = GeneralUtils.GetRegexSingleMatchManyGroups(@"s2c_dim:(\w\w)\((.*?)\)", Signature);
+			if (res.Count != 3)
+			{
+				return;
+			}
+
+			Dim = res[1];
+			DomAndValRaw = res[2];
+			var domParts = DomAndValRaw.Split(":");
+			if (domParts.Length == 2)
+			{
+				DomAndVal = res[2].Replace("s2c_", "");
+				Dom = domParts[0].Replace("s2c_", "");
+
+				DomValue = domParts[1];
+			}
+
+			IsWild = Signature.Contains('*');
+			IsOptional = Signature.Contains('?');
+		}
+		private DimDom(string signature)
+		{
+			Signature = signature;
+		}
+		public static DimDom GetParts(string signature)
+		{
+			var dimDom = new DimDom(signature);
+			dimDom.GetTheParts();
+			return dimDom;
+		}
+
+
+	}
+
+}
