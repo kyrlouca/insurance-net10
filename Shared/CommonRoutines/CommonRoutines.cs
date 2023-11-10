@@ -5,15 +5,19 @@ using Shared.DataModels;
 using Shared.HostRoutines;
 using Shared.SharedHost;
 using System.Reflection;
+using Serilog;
+
 
 public class CommonRoutines : ICommonRoutines
 {
 	readonly ParameterData _parameterData;
 	readonly IParameterHandler? _parameterHandler;
-	public CommonRoutines(IParameterHandler parameterHandler)
+	readonly ILogger _logger;
+	public CommonRoutines(IParameterHandler parameterHandler, ILogger logger)
 	{
 		_parameterHandler = parameterHandler;
 		_parameterData = _parameterHandler?.GetParameterData() ?? new();
+		_logger = logger;
 	}
 
 	public DocInstance GetDocInstance(int documentId)

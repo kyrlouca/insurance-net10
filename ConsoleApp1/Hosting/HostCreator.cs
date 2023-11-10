@@ -12,7 +12,7 @@ public class HostCreator
 {
 
 
-	public static IHost CreateHostFluent(Dictionary<string, string>? mappings, string[] args)
+	public static IHost CreateHostFluent( string[] args)
 	{
 		//CreateDefaultBuilder intiliazes and returns an instance of host builder (hover over) with  appsettings.environment.json, env varialbles, sercrets,logger
 		var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
@@ -28,7 +28,7 @@ public class HostCreator
 			config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
 			config.AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: false);
 			config.AddEnvironmentVariables();
-			config.AddCommandLine(args, mappings);
+			config.AddCommandLine(args);
 		})
 		 .ConfigureServices((context, services) =>
 		 {

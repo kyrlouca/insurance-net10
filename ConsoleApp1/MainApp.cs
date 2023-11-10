@@ -1,7 +1,6 @@
 ﻿namespace ConsoleApp1;
 using Dapper;
 using Microsoft.Data.SqlClient;
-using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.CommonRoutines;
 using Shared.DataModels;
