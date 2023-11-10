@@ -1,7 +1,5 @@
 ﻿namespace Shared.DataModels;
 
-
-
 public class MModule
 {
 	public int ModuleID { get; set; }

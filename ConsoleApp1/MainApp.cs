@@ -136,4 +136,30 @@ public class MyMainApp : IMyMainApp
 	}
 
 
+	private SubmissionReferenceDateModel? GetSubmissionReferenceDate( int category, int referenceYear, int quarter)
+	{
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+		var sqlSubDate = @"
+                SELECT
+                  srd.SubmissionReferenceDateId
+                 ,srd.Category
+                 ,srd.ReferenceYear
+                 ,srd.ReferenceDate
+                 ,srd.SubmissionDate
+                 ,srd.Quarter
+                FROM dbo.SubmissionReferenceDate srd
+                WHERE srd.Category = @category
+                AND srd.ReferenceYear = @referenceYear
+                AND srd.Quarter = @quarter
+
+                ";
+		var sRecord = connectionInsurance.QueryFirstOrDefault<SubmissionReferenceDateModel>(sqlSubDate, new { referenceYear, category, quarter });
+
+		return sRecord;
+
+
+	}
+
+
 }
