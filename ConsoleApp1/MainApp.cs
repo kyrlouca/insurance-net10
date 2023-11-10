@@ -85,7 +85,7 @@ public class MyMainApp : IMyMainApp
 		var documentId = CreateDocInstanceInDb();
 		if (documentId == 0)
 		{
-			message = $"Cannot Create DocInstance for: {_parameterData.FundId} year:{_parameterData.ApplicationYear} quarter:{_parameterData.ApplicationQuarter} ";
+			message = $"Cannot Create DocInstance for: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
 			Console.WriteLine(message);
 			Log.Error(message);
 			return 1;
@@ -205,10 +205,10 @@ public class MyMainApp : IMyMainApp
 
 	private (bool isValid, string message) IsValidReferenceDate()
 	{
-		var dbReferenceDate = GetSubmissionReferenceDate(_parameterData.CurrencyBatchId, _parameterData.ApplicationYear, _parameterData.ApplicationQuarter);
+		var dbReferenceDate = GetSubmissionReferenceDate(_parameterData.CurrencyBatchId, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
 		if(dbReferenceDate == null)
 		{
-			var message = $"Reference Date not defined in Database for:{_parameterData.ApplicationYear},{_parameterData.ApplicationQuarter},{_parameterData.CurrencyBatchId}";
+			var message = $"Reference Date not defined in Database for:{_parameterData.ApplicableYear},{_parameterData.ApplicableQuarter},{_parameterData.CurrencyBatchId}";
 			return (false, message);
 		}
 
@@ -244,7 +244,7 @@ public class MyMainApp : IMyMainApp
                     and ApplicableYear = @ApplicableYear and ApplicableQuarter = @ApplicableQuarter"
 				;
 
-		var docParams = new { _parameterData.FundId, ModuleId = _mModule.ModuleID, _parameterData.ApplicationYear, _parameterData.ApplicationQuarter };
+		var docParams = new { _parameterData.FundId, ModuleId = _mModule.ModuleID, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter };
 		var docs = connectionInsurance.Query<DocInstance>(sqlExists, docParams).ToList();
 		return docs;
 	}
@@ -331,13 +331,13 @@ public class MyMainApp : IMyMainApp
 			PensionFundId = _parameterData.FundId,
 			UserId=_parameterData.UserId,
 			ModuleCode=_parameterData.ModuleCode,
-			ApplicableYear=_parameterData.ApplicationYear,
-			ApplicableQuarter=_parameterData.ApplicationQuarter,
-			moduleId = 1,
-			fileName=_parameterData.FileName,
-			currencyBatchId=_parameterData.CurrencyBatchId,
+			ApplicableYear=_parameterData.ApplicableYear,
+			ApplicableQuarter=_parameterData.ApplicableQuarter,
+			ModuleId = _mModule.ModuleID,
+			FileName=_parameterData.FileName,
+			CurrencyBatchId=_parameterData.CurrencyBatchId,
 			Status = "P",
-			n = _parameterData.EiopaVersion ,
+			EiopaVersion= _parameterData.EiopaVersion ,
 		};
 
 

@@ -18,8 +18,8 @@ public class ParameterData
     public int UserId { get; set; }
     public int FundId { get; set; }
     public int CurrencyBatchId { get; set; }
-    public int ApplicationYear { get; set; }
-    public int ApplicationQuarter { get; set; }
+    public int ApplicableYear { get; set; }
+    public int ApplicableQuarter { get; set; }
     public string ModuleCode { get; set; }
     public string FileName { get; set; }
 

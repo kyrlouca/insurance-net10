@@ -44,8 +44,8 @@ public class ParameterHandler : IParameterHandler
 			CurrencyBatchId = int.TryParse(_configuration["currency-batch-id"], out int currencyBatchId) ? currencyBatchId : 0,
 			EiopaVersion = _configuration["eiopa-version"] ?? "NF",
 			ModuleCode = _configuration["module-code"] ?? "NF",
-			ApplicationYear = int.TryParse(_configuration["year"], out int year) ? year : 0,
-			ApplicationQuarter = int.TryParse(_configuration["quarter"], out int quarter) ? quarter : 0,
+			ApplicableYear = int.TryParse(_configuration["year"], out int year) ? year : 0,
+			ApplicableQuarter = int.TryParse(_configuration["quarter"], out int quarter) ? quarter : 0,
 			//_optionsVersionData contains values for correspoinding EIOPA version. It was implemented in configureServices
 			SystemConnectionString = _optionsVersionData.Value.SystemConnectionString,
 			EiopaConnectionString = _optionsVersionData.Value.EiopaConnectionString,
