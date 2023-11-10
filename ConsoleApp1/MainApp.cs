@@ -111,7 +111,7 @@ public class MyMainApp : IMyMainApp
 
 		CreateLooseFacts();
 
-
+		UpdateDocumentStatus("L");
 		message = $"Xbrl Document Loaded Successfully:DocumentId= jxx";
 		_logger.Information(message);
 		_commonRoutines.CreateTransactionLog(0, MessageType.COMPLETE, message);
@@ -363,6 +363,12 @@ public class MyMainApp : IMyMainApp
 		return result;
 	}
 
+	private void UpdateDocumentStatus(string status)
+	{
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+		var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @documentId;";
+		var doc = connectionInsurance.Execute(sqlUpdate, new { _documentId, status });
+	}
 
 	private int CreateFactDimsDb( int factId, string signature)
 	{
