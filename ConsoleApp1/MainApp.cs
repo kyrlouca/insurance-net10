@@ -703,7 +703,7 @@ VALUES (
 
 				List<string> GetContextLinesNew(string contextId)
 				{
-					//using var connectionInsurance = new SqlConnection(configObject.LocalDatabaseConnectionString);                
+					//using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);                
 					var sqlContext = @"select Signature from Context where ContextXbrlId= @contextId and InstanceId =@DocumentId";
 					var signature = connectionInsurance.QuerySingleOrDefault<string>(sqlContext, new { contextId, _documentId });
 					return signature.Split("|", StringSplitOptions.RemoveEmptyEntries).ToList();
