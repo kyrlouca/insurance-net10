@@ -78,8 +78,20 @@ public class MyMainApp : IMyMainApp
 			return 1;
 		}
 
+		///////////////////////////
+		//*************************************************
+		//create the document anyway so we can attach log errors
+		//*************************************************
+		var documentId = CreateDocInstanceInDb();
+		if (documentId == 0)
+		{
+			message = $"Cannot Create DocInstance for: {_parameterData.FundId} year:{_parameterData.ApplicationYear} quarter:{_parameterData.ApplicationQuarter} ";
+			Console.WriteLine(message);
+			Log.Error(message);
+			return 1;
 
-		
+		}
+
 
 
 		message = $"Xbrl Document Loaded Successfully:DocumentId= jxx";
@@ -273,6 +285,64 @@ public class MyMainApp : IMyMainApp
 			.ForEach(doc => DeleteDocument(doc.InstanceId));
 
 		return (true, "");
+	}
+
+
+	private int CreateDocInstanceInDb()
+	{
+		using var connection = new SqlConnection(_parameterData.SystemConnectionString);
+		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+	
+		var sqlInsertDoc = @"
+               INSERT INTO DocInstance
+                   (                                            
+                    [PensionFundId]                   
+                   ,[UserId]                   
+                   ,[ModuleCode]           
+                   ,[ApplicableYear]
+                   ,[ApplicableQuarter]                   
+                   ,[ModuleId]      
+                   ,[FileName]
+                   ,[CurrencyBatchId]
+                   ,[Status]
+                   ,[EiopaVersion]
+                    )
+                VALUES
+                   (                                
+                    @PensionFundId
+                   ,@UserId
+                   ,@ModuleCode                   
+                   ,@ApplicableYear
+                   ,@ApplicableQuarter                   
+                   ,@ModuleId
+                   ,@FileName
+                   ,@CurrencyBatchId
+                   ,@Status
+                   ,@EiopaVersion
+                    ); 
+                SELECT CAST(SCOPE_IDENTITY() as int);
+                ";
+
+
+
+
+		var doc = new DocInstance()
+		{
+			PensionFundId = _parameterData.FundId,
+			UserId=_parameterData.UserId,
+			ModuleCode=_parameterData.ModuleCode,
+			ApplicableYear=_parameterData.ApplicationYear,
+			ApplicableQuarter=_parameterData.ApplicationQuarter,
+			moduleId = 1,
+			fileName=_parameterData.FileName,
+			currencyBatchId=_parameterData.CurrencyBatchId,
+			Status = "P",
+			n = _parameterData.EiopaVersion ,
+		};
+
+
+		var result = connection.QuerySingleOrDefault<int>(sqlInsertDoc, doc);
+		return result;
 	}
 
 
