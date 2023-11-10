@@ -51,7 +51,7 @@ public class ParameterHandler : IParameterHandler
 			EiopaConnectionString = _optionsVersionData.Value.EiopaConnectionString,
 			ExcelTemplateFile = _optionsVersionData.Value.ExcelTemplateFile,
 			//LoggerFile = _optionsLoggerFiles.Value.LoggerExcelReaderFile,
-			FileName = _configuration["module-code"] ?? "NF",
+			FileName = _configuration["file-name"] ?? "NF",
 
 
 		};

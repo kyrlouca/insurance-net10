@@ -2,6 +2,6 @@
 {
 	public interface IMyMainApp
 	{
-		string Run();
+		int Run();
 	}
 }

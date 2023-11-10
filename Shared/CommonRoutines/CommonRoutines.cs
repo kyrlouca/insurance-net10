@@ -41,18 +41,14 @@ public class CommonRoutines : ICommonRoutines
 		return doc;
 	}
 
-	public  MModule GetModuleByCodeNew( string moduleCode)
+	public  MModule? GetModuleByCodeNew( string moduleCode)
 	{
 		using var connectionPension = new SqlConnection(_parameterData.SystemConnectionString);
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
 		//module code : {ari, qri, ara, ...}
 		var sqlModule = "select ModuleCode, ModuleId, ModuleLabel from mModule mm where mm.ModuleCode = @ModuleCode";
-		var module = connectionEiopa.QuerySingleOrDefault<MModule>(sqlModule, new { moduleCode = moduleCode.ToLower().Trim() });
-		if (module is null)
-		{
-			return new MModule();
-		}
+		var module = connectionEiopa.QuerySingleOrDefault<MModule>(sqlModule, new { moduleCode = moduleCode.ToLower().Trim() });		
 		return module;
 
 	}

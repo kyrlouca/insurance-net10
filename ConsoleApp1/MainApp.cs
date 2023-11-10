@@ -6,54 +6,80 @@ using Shared.CommonRoutines;
 using Shared.DataModels;
 using Shared.HostRoutines;
 using Shared.SharedHost;
-
+using System.Xml.Linq;
 
 public class MyMainApp : IMyMainApp
 {
 	//do not pass serilog, pass a class with serilog
-	IParameterHandler _parameterHandler;
-	ParameterData _parameterData =new();
-	ILogger _logger;
-	ICommonRoutines _commonRoutines;
+	private readonly IParameterHandler _parameterHandler;
+	ParameterData _parameterData = new();
+	private readonly ILogger _logger;
+	private readonly ICommonRoutines _commonRoutines;
+	MModule _mModule = new();
+	XDocument? _xmlDoc;
 
 	public int id = 12;
-	public MyMainApp(IParameterHandler getParameters, ILogger logger , ICommonRoutines commonRoutines)
+	public MyMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines)
 	{
-		_parameterHandler = getParameters;		
+		_parameterHandler = getParameters;
 		_logger = logger;
 		_commonRoutines = commonRoutines;
 	}
-	public string Run()
+	public int Run()
 	{
 		_parameterData = _parameterHandler.GetParameterData();
-		_logger.Information("helloffv");		
-		_logger.Error("Erroffrvv");		
-		var doc = GetDocument(9762);
-		var xx = _commonRoutines.GetDocInstance(9762);
-		var yy = _commonRoutines.GetModuleByCodeNew("qrs");
-		_commonRoutines.CreateTransactionLog(34, MessageType.COMPLETE, "first Message");
-		return _parameterData.EiopaVersion;
+
+
+		var (isValid, message) = IsValidDocument();
+		if (!isValid)
+		{
+			_logger.Error(message);
+			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
+			return 1;
+		}
+
+		_xmlDoc = ParseXmlFile();
+		if(_xmlDoc == null)
+		{			
+			return 1;
+		}
+		return 0;
 	}
 
-	private DocInstance GetDocument(int documentId)
+	private (bool isValid, string message) IsValidDocument()
 	{
-		var sqlGetDocument = @"
-                    SELECT
-                      doc.InstanceId
-                     ,doc.PensionFundId
-                     ,doc.ModuleId
-                     ,doc.Status
-                     ,doc.ModuleCode
-                     ,doc.ApplicableYear
-                     ,doc.ApplicableQuarter
-                     ,doc.EntityCurrency
-                     ,doc.UserId
-                    FROM dbo.DocInstance doc
-                    WHERE doc.InstanceId = @documentId
-                    ";
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		var doc = connectionInsurance.QuerySingleOrDefault<DocInstance>(sqlGetDocument, new { documentId });
-		return doc;
+		_mModule = _commonRoutines.GetModuleByCodeNew(_parameterData.ModuleCode);
+		if (_mModule == null)
+		{
+			var message = $"Invalid Module code : {_parameterData.ModuleCode}";
+			return (false, message);
+		}
+		if (!File.Exists(_parameterData.FileName))
+		{
+			var message = $"File not FOUND : {_parameterData.FileName}";
+			return (false, message);
+		}
+
+		return (true, "");
 	}
 
+	private XDocument? ParseXmlFile()
+	{
+		XDocument xmlDoc;
+
+		using (TextReader sr = File.OpenText(_parameterData.FileName))  //utf-8 stream
+
+			try
+			{
+				xmlDoc = XDocument.Load(sr);
+			}
+			catch (Exception e)
+			{
+				var message = $"XBRL file not valid : {_parameterData.FileName}";				
+				Log.Error(e.Message);
+				_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);												
+				return null;
+			}
+		return xmlDoc;
+	}
 }
