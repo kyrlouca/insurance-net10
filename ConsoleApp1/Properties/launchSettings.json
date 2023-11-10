@@ -2,7 +2,7 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "user-id=1\r\nfund-id=181\r\ncurrency-batch-id=9\r\neiopa-version=\"IU260\"\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\STEAMSHIP MUTUAL UNDERWRITING ASSOCIATION (EUROPE) LIMITED.xbrl\"",
+      "commandLineArgs": "user-id=1\r\nfund-id=181\r\ncurrency-batch-id=2\r\neiopa-version=\"IU260\"\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\STEAMSHIP MUTUAL UNDERWRITING ASSOCIATION (EUROPE) LIMITED.xbrl\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
         "Default": "MyDef",
