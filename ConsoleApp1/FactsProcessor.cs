@@ -22,41 +22,20 @@ using static Shared.SpecialRoutines.SpecialRoutines;
 public class FactsProcessor : IFactsProcessor
 {
 	//public int TestingTableId { get; set; } = 54;
-	public int TestingTableId { get; set; } = 0;
-	//65 S.05.02.01.02 ars error fin grawo
-	//60 S.05.01.02.01  qrs simple zet
-	//39 - S.02.02.01.01 ars  simple zet          
-	//1-"S.01.02.01.01"
-	//150=S.21.01.01.01
-	// 124= S.19.01.01.01  ars complex z
-	// 125= S.19.01.01.02  xx
-	//30 - S.02.01.02.01 simple shaded cells
-	//71 -S.06.02.01.01
-	//40  - S.02.02.01.02   multiple currencys altius yearly
-
-	//public int TestingTableId { get; set; } = 125,489;105;
+	private int _testingTableId = 0;
 
 	private readonly IParameterHandler _parameterHandler;
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
-	private int DocumentId = 0;	
+	private int DocumentId = 0;
 	private List<string> _filings = new();
 	private DocInstance _document = new();
 
-	public DateTime StartTime { get; } = DateTime.Now;
-
-	public int PensionFundIdxx { get; private set; }
-	public int ApplicableYearxx { get; private set; }
-	public int ApplicableQuarterxx { get; private set; }
-	public int UserIdxx { get; private set; }
-	public int FileNamexx { get; private set; }
-
-
 
 	public string DefaultCurrency { get; set; } = "EUR";
-	public int _ModuleId { get; private set; }
-	public string _ModuleCode { get; private set; } = "";
+	public int _moduleId = 0;
+	public string _moduleCode = "";
 	public List<MTable> ModuleTablesFiled { get; private set; } = new List<MTable>();
 
 
@@ -72,19 +51,19 @@ public class FactsProcessor : IFactsProcessor
 	}
 
 
-	public int ProcessFactsAndAssignToSheets( int documentId, List<string> filings)
+	public int DecorateFactsAndAssignToSheets(int documentId, List<string> filings)
 	{
 		DocumentId = documentId;
-		_filings = filings;		
+		_filings = filings;
 		_parameterData = _parameterHandler.GetParameterData();
 
 		_document = _commonRoutines.GetDocInstance(documentId);
-		_ModuleCode = _document.ModuleCode.Trim();
-		_ModuleId = _document.ModuleId;
-
-		ModuleTablesFiled = GetFiledModuleTables();
+		_moduleCode = _document.ModuleCode.Trim();
+		_moduleId = _document.ModuleId;
 
 		Console.WriteLine($"\n Facts processing Started");
+
+		ModuleTablesFiled = GetFiledModuleTables();
 
 		//***Process the facts in all module tables
 		var countFacts = AssignFactsToTables();
@@ -92,11 +71,11 @@ public class FactsProcessor : IFactsProcessor
 		//****Update the foreign Keys of the cells in open tables
 		UpdateCellsForeignRow(DocumentId);
 
-			
+
 		Console.WriteLine($"\ndocId: {DocumentId} -- sheets: facts:{countFacts}");
 		return 0;
-		
-	} 
+
+	}
 	public void TestingCode()
 	{
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -116,9 +95,9 @@ public class FactsProcessor : IFactsProcessor
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-		if (TestingTableId > 0)
+		if (_testingTableId > 0)
 		{
-			ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == TestingTableId).ToList();
+			ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
 		}
 
 		//ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 29 || table.TableID == 39).ToList();
@@ -641,7 +620,7 @@ public class FactsProcessor : IFactsProcessor
 
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		
+
 		var sqlTables = @"
               SELECT 	  
                     tab.TableID,
@@ -658,7 +637,7 @@ public class FactsProcessor : IFactsProcessor
                   left outer join mTaxonomyTable taxo on taxo.AnnotatedTableID=anno.TemplateOrTableID
                   left outer join mTable tab on tab.TableID = taxo.TableID
                   where mbt.ModuleID = @_moduleId";
-		var moduleTables = connectionEiopa.Query<MTable>(sqlTables, new {  _ModuleId }).ToList();
+		var moduleTables = connectionEiopa.Query<MTable>(sqlTables, new { _moduleId }).ToList();
 
 		var validModuleTables = moduleTables.Where(mtable => _filings.Any(filing => mtable.TableCode.Contains(filing))).ToList();
 

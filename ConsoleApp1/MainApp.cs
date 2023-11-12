@@ -35,7 +35,7 @@ public class MyMainApp : IMyMainApp
 		{
 			return 1;
 		}
-		var res= _factsProcessor.ProcessFactsAndAssignToSheets(_documentId,filingsSubmitted);
+		var res= _factsProcessor.DecorateFactsAndAssignToSheets(_documentId,filingsSubmitted);
 		if(res != 0)
 		{
 			return res;
