@@ -15,9 +15,9 @@ using System.Reflection.Metadata;
 using System.Reflection;
 using System.Xml.Linq;
 using XbrlReader;
+using System.Text;
 
-
-public class FactsCreator
+public class FactsCreator : IFactsCreator
 {
 
 	private readonly IParameterHandler _parameterHandler;
@@ -47,10 +47,16 @@ public class FactsCreator
 	{
 		_parameterHandler = getParameters;
 		_logger = logger;
-		_commonRoutines = commonRoutines;		
+		_commonRoutines = commonRoutines;
 	}
-	public int CreateFacts()
+
+
+	public int CreateLooseFacts()
 	{
+
+		//Parse an xbrl file and create on object of the class which has the contexts, facts, etc
+		//However, with the new design design, contexts and facts are saved in memory tables and NOT in data structures            
+
 		var message = "";
 		var (parseValid, parseMessage, parsexmlDoc) = ParseXmlFile();
 		_xmlDoc = parsexmlDoc;
@@ -58,7 +64,22 @@ public class FactsCreator
 		{
 			_logger.Error(parseMessage);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, parseMessage);
-			return 1;
+			return 0;
+		}
+
+		var RootNode = _xmlDoc.Root;
+		Dictionary<string, string> Units = new Dictionary<string, string>();
+
+		var reference = RootNode.Element(link + "schemaRef").Attribute(xlink + "href").Value;
+		var moduleCodeXbrl = GeneralUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);
+		Console.WriteLine($"Opened Xblrl=>  Module: {moduleCodeXbrl} ");
+		if (moduleCodeXbrl != _mModule.ModuleCode)
+		{
+			var moduleMessage = @$"The Module Code in the Xbrl file is ""{moduleCodeXbrl}"" instead of ""{_mModule.ModuleCode}""";
+			Log.Error(moduleMessage);
+			Console.WriteLine(moduleMessage);
+
+			return 0;
 		}
 
 		var (isValidReferenceDate, referenceMessage) = IsValidReferenceDate();
@@ -66,7 +87,7 @@ public class FactsCreator
 		{
 			_logger.Error(referenceMessage);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, referenceMessage);
-			return 1;
+			return 0;
 		}
 
 		var fundLei = GetXmlElementFromXbrl(_xmlDoc, "si1899");
@@ -76,314 +97,22 @@ public class FactsCreator
 			message = $"The license number is incorrect:{fundLei}";
 			_logger.Error(message);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
-			return 1;
+			return 0;
 		}
 
 		///////////////////////////
-		//*************************************************
-		//create the document anyway so we can attach log errors
-		//*************************************************
+		//*************************
+		//Create the document to attache the facts
+		//Then Start creating facts
+		//*************************
 		_documentId = CreateDocInstanceInDb();
 		if (_documentId == 0)
 		{
 			message = $"Cannot Create DocInstance for: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
 			Console.WriteLine(message);
 			Log.Error(message);
-			return 1;
+			return 0;
 		}
-
-		CreateLooseFacts();
-		
-		return 0;
-	}
-
-	private (bool isParsed, string parseMessage, XDocument?) ParseXmlFile()
-	{
-		XDocument xmlDoc;
-
-		using (TextReader sr = File.OpenText(_parameterData.FileName))  //utf-8 stream
-
-			try
-			{
-				xmlDoc = XDocument.Load(sr);
-
-			}
-			catch (Exception e)
-			{
-				Log.Error(e.Message);
-				var message = $"XBRL file not valid : {_parameterData.FileName}";
-				return (false, message, null);
-			}
-		return (true, "", xmlDoc);
-	}
-
-	static string GetXmlElementFromXbrl(XDocument xDoc, string xbrlCode)
-	{
-		//XNamespace ns = "http://CalculatorService/";
-		//var html = xml.Descendants(ns + "html").ToList();
-
-		//<s2md_met:si1899 contextRef="c0">LEI/2138006PEHZTJLNAPC69</s2md_met:si1899>  
-		XNamespace metFactNs = "http://eiopa.europa.eu/xbrl/s2md/dict/met";
-		var leiVal = xDoc.Root.Descendants(metFactNs + xbrlCode).FirstOrDefault()?.Value ?? "";
-		return leiVal;
-	}
-
-	private FundModel? GetDbFundByLei(string lei)
-	{
-		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-
-		if (lei == null)
-			return null;
-
-		lei = lei.Replace(@"LEI/", "");//lei = "LEI/2138003JRMGVH8CGUR42"            
-		var sqlFund = "select  fnd.FundId, fnd.FundName, fnd.IsActive, fnd.Lei , fnd.Wave from Fund fnd where fnd.Lei=@Lei";
-		var fund = connectionLocal.QuerySingleOrDefault<FundModel>(sqlFund, new { lei });
-		return fund;
-	}
-
-
-	private FundModel? GetDbFundById(int fundId)
-	{
-		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-
-		var sqlFund = "Select * from fund fnd where fnd.FundId= @FundId";
-		var fund = connectionLocal.QuerySingleOrDefault<FundModel>(sqlFund, new { fundId });
-		return fund;
-	}
-
-
-	private SubmissionReferenceDateModel? GetSubmissionReferenceDate(int category, int referenceYear, int quarter)
-	{
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
-		var sqlSubDate = @"
-                SELECT
-                  srd.SubmissionReferenceDateId
-                 ,srd.Category
-                 ,srd.ReferenceYear
-                 ,srd.ReferenceDate
-                 ,srd.SubmissionDate
-                 ,srd.Quarter
-                FROM dbo.SubmissionReferenceDate srd
-                WHERE srd.Category = @category
-                AND srd.ReferenceYear = @referenceYear
-                AND srd.Quarter = @quarter
-
-                ";
-		var sRecord = connectionInsurance.QueryFirstOrDefault<SubmissionReferenceDateModel>(sqlSubDate, new { referenceYear, category, quarter });
-
-		return sRecord;
-
-
-	}
-
-	private (bool isValid, string message) IsValidReferenceDate()
-	{
-		var dbReferenceDate = GetSubmissionReferenceDate(_parameterData.CurrencyBatchId, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
-		if (dbReferenceDate == null)
-		{
-			var message = $"Reference Date not defined in Database for:{_parameterData.ApplicableYear},{_parameterData.ApplicableQuarter},{_parameterData.CurrencyBatchId}";
-			return (false, message);
-		}
-
-		var xbrlReferenceDateStr = GetXmlElementFromXbrl(_xmlDoc, "di1043");
-		var isValidReferenceDate = DateTime.TryParseExact(xbrlReferenceDateStr, "yyyy-MM-dd", null, DateTimeStyles.None, out var xbrlReferenceDate);
-		if (!isValidReferenceDate)
-		{
-			var message = $"Submission Date not valid:{xbrlReferenceDate}";
-			return (false, message);
-		}
-		if (xbrlReferenceDate != dbReferenceDate?.ReferenceDate)
-		{
-			var message = $"Xbr Reference Date :{xbrlReferenceDate} different than Expected Reference Date : {dbReferenceDate?.ReferenceDate} ";
-			return (false, message);
-		}
-
-		if (DateTime.Today > dbReferenceDate.SubmissionDate)
-		{
-			//commented out to allow submission of documents
-			//var message = $"Document was submitted after deadline:{dbReferenceDate.SubmissionDate} ";
-			//return (false, message);
-		}
-
-		return (true, "");
-	}
-
-	private List<DocInstance> GetExistingDocuments()
-	{
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		var sqlExists = @"
-                    select doc.InstanceId, doc.Status, doc.IsSubmitted, EiopaVersion from DocInstance doc  where  
-                    PensionFundId= @FundId and ModuleId=@moduleId
-                    and ApplicableYear = @ApplicableYear and ApplicableQuarter = @ApplicableQuarter"
-				;
-
-		var docParams = new { _parameterData.FundId, ModuleId = _mModule.ModuleID, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter };
-		var docs = connectionInsurance.Query<DocInstance>(sqlExists, docParams).ToList();
-		return docs;
-	}
-
-
-	private int DeleteDocument(int documentId)
-	{
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		var sqlDeleteDoc = @"delete from DocInstance where InstanceId= @documentId";
-		var rows = connectionInsurance.Execute(sqlDeleteDoc, new { documentId });
-
-		var sqlErrorDocDelete = @"delete from DocInstance where InstanceId= @documentId";
-		connectionInsurance.Execute(sqlErrorDocDelete, new { documentId });
-
-		return rows;
-	}
-
-	private (bool success, string message) HandleExistingDocuments()
-	{
-
-		var existingDocs = GetExistingDocuments();
-		var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "P");
-		if (lockedDocument is not null)
-		{
-			var message = $"Cannot create Document. Another Document is currently being processed :{lockedDocument.InstanceId} ";
-			return (false, message);
-		}
-		var sbmittedDocument = existingDocs.FirstOrDefault(doc => doc.IsSubmitted);
-		if (sbmittedDocument is not null)
-		{
-			var message = $"Cannot create Document. It was already been submitted {sbmittedDocument.InstanceId} ";
-			return (false, message);
-		};
-
-		//delete older versions (except from locked or submitted)
-		existingDocs.Where(doc => doc.Status.Trim() != "P" && !doc.IsSubmitted)
-			.ToList()
-			.ForEach(doc => DeleteDocument(doc.InstanceId));
-
-		return (true, "");
-	}
-
-
-	private int CreateDocInstanceInDb()
-	{
-		using var connection = new SqlConnection(_parameterData.SystemConnectionString);
-		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-
-		var sqlInsertDoc = @"
-               INSERT INTO DocInstance
-                   (                                            
-                    [PensionFundId]                   
-                   ,[UserId]                   
-                   ,[ModuleCode]           
-                   ,[ApplicableYear]
-                   ,[ApplicableQuarter]                   
-                   ,[ModuleId]      
-                   ,[FileName]
-                   ,[CurrencyBatchId]
-                   ,[Status]
-                   ,[EiopaVersion]
-                    )
-                VALUES
-                   (                                
-                    @PensionFundId
-                   ,@UserId
-                   ,@ModuleCode                   
-                   ,@ApplicableYear
-                   ,@ApplicableQuarter                   
-                   ,@ModuleId
-                   ,@FileName
-                   ,@CurrencyBatchId
-                   ,@Status
-                   ,@EiopaVersion
-                    ); 
-                SELECT CAST(SCOPE_IDENTITY() as int);
-                ";
-
-
-
-
-		var doc = new DocInstance()
-		{
-			PensionFundId = _parameterData.FundId,
-			UserId = _parameterData.UserId,
-			ModuleCode = _parameterData.ModuleCode,
-			ApplicableYear = _parameterData.ApplicableYear,
-			ApplicableQuarter = _parameterData.ApplicableQuarter,
-			ModuleId = _mModule.ModuleID,
-			FileName = _parameterData.FileName,
-			CurrencyBatchId = _parameterData.CurrencyBatchId,
-			Status = "P",
-			EiopaVersion = _parameterData.EiopaVersion,
-		};
-
-
-		var result = connection.QuerySingleOrDefault<int>(sqlInsertDoc, doc);
-		return result;
-	}
-
-	private void UpdateDocumentStatus(string status)
-	{
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @_documentId;";
-		var doc = connectionInsurance.Execute(sqlUpdate, new { _documentId, status });
-	}
-
-	private int CreateFactDimsDb(int factId, string signature)
-	{
-
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
-		var dims = signature.Split("|").ToList();
-		if (dims.Count > 0)
-		{
-			dims.RemoveAt(0);
-		}
-
-		var count = 0;
-		foreach (var dim in dims)
-		{
-			count++;
-			var dimDom = SpecialRoutines.DimDom.GetParts(dim);
-			var factDim = new TemplateSheetFactDim()
-			{
-				FactId = factId,
-				Dim = dimDom.Dim,
-				Dom = dimDom.Dom,
-				DomValue = dimDom.DomValue,
-				Signature = dimDom.Signature,
-				IsExplicit = true
-			};
-			var sqlInsDim = @"
-                    INSERT INTO dbo.TemplateSheetFactDim (FactId, Dim, Dom, DomValue, Signature, IsExplicit)
-                    VALUES(@FactId, @Dim, @Dom, @DomValue, @Signature, @IsExplicit)";
-
-			connectionInsurance.Execute(sqlInsDim, factDim);
-		}
-
-		return count;
-	}
-
-
-	private (bool, string) CreateLooseFacts()
-	{
-		//Parse an xbrl file and create on object of the class which has the contexts, facts, etc
-		//However, with the new design design, contexts and facts are saved in memory tables and NOT in data structures            
-
-
-		var RootNode = _xmlDoc.Root;
-
-		Dictionary<string, string> Units = new Dictionary<string, string>();
-
-		var reference = RootNode.Element(link + "schemaRef").Attribute(xlink + "href").Value;
-		var moduleCodeXbrl = GeneralUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);
-		if (moduleCodeXbrl != _mModule.ModuleCode)
-		{
-			var message = @$"The Module Code in the Xbrl file is ""{moduleCodeXbrl}"" instead of ""{_mModule.ModuleCode}""";
-			Log.Error(message);
-			Console.WriteLine(message);
-
-			return (false, message);
-		}
-
-		Console.WriteLine($"Opened Xblrl=>  Module: {moduleCodeXbrl} ");
 
 
 		AddValidFilingIndicators();
@@ -399,7 +128,7 @@ public class FactsCreator
 		AddFacts();
 
 		DeleteContexts();
-		return (true, "");
+		return _documentId;
 
 
 		void AddValidFilingIndicators()
@@ -694,5 +423,264 @@ VALUES (
 
 
 	}
+
+
+	private (bool isParsed, string parseMessage, XDocument?) ParseXmlFile()
+	{
+		XDocument xmlDoc;
+
+		using (TextReader sr = File.OpenText(_parameterData.FileName))  //utf-8 stream
+
+			try
+			{
+				xmlDoc = XDocument.Load(sr);
+
+			}
+			catch (Exception e)
+			{
+				Log.Error(e.Message);
+				var message = $"XBRL file not valid : {_parameterData.FileName}";
+				return (false, message, null);
+			}
+		return (true, "", xmlDoc);
+	}
+
+	static string GetXmlElementFromXbrl(XDocument xDoc, string xbrlCode)
+	{
+		//XNamespace ns = "http://CalculatorService/";
+		//var html = xml.Descendants(ns + "html").ToList();
+
+		//<s2md_met:si1899 contextRef="c0">LEI/2138006PEHZTJLNAPC69</s2md_met:si1899>  
+		XNamespace metFactNs = "http://eiopa.europa.eu/xbrl/s2md/dict/met";
+		var leiVal = xDoc.Root.Descendants(metFactNs + xbrlCode).FirstOrDefault()?.Value ?? "";
+		return leiVal;
+	}
+
+	private FundModel? GetDbFundByLei(string lei)
+	{
+		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+		if (lei == null)
+			return null;
+
+		lei = lei.Replace(@"LEI/", "");//lei = "LEI/2138003JRMGVH8CGUR42"            
+		var sqlFund = "select  fnd.FundId, fnd.FundName, fnd.IsActive, fnd.Lei , fnd.Wave from Fund fnd where fnd.Lei=@Lei";
+		var fund = connectionLocal.QuerySingleOrDefault<FundModel>(sqlFund, new { lei });
+		return fund;
+	}
+
+
+	private FundModel? GetDbFundById(int fundId)
+	{
+		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+		var sqlFund = "Select * from fund fnd where fnd.FundId= @FundId";
+		var fund = connectionLocal.QuerySingleOrDefault<FundModel>(sqlFund, new { fundId });
+		return fund;
+	}
+
+
+	private SubmissionReferenceDateModel? GetSubmissionReferenceDate(int category, int referenceYear, int quarter)
+	{
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+		var sqlSubDate = @"
+                SELECT
+                  srd.SubmissionReferenceDateId
+                 ,srd.Category
+                 ,srd.ReferenceYear
+                 ,srd.ReferenceDate
+                 ,srd.SubmissionDate
+                 ,srd.Quarter
+                FROM dbo.SubmissionReferenceDate srd
+                WHERE srd.Category = @category
+                AND srd.ReferenceYear = @referenceYear
+                AND srd.Quarter = @quarter
+
+                ";
+		var sRecord = connectionInsurance.QueryFirstOrDefault<SubmissionReferenceDateModel>(sqlSubDate, new { referenceYear, category, quarter });
+
+		return sRecord;
+
+
+	}
+
+	private (bool isValid, string message) IsValidReferenceDate()
+	{
+		var dbReferenceDate = GetSubmissionReferenceDate(_parameterData.CurrencyBatchId, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
+		if (dbReferenceDate == null)
+		{
+			var message = $"Reference Date not defined in Database for:{_parameterData.ApplicableYear},{_parameterData.ApplicableQuarter},{_parameterData.CurrencyBatchId}";
+			return (false, message);
+		}
+
+		var xbrlReferenceDateStr = GetXmlElementFromXbrl(_xmlDoc, "di1043");
+		var isValidReferenceDate = DateTime.TryParseExact(xbrlReferenceDateStr, "yyyy-MM-dd", null, DateTimeStyles.None, out var xbrlReferenceDate);
+		if (!isValidReferenceDate)
+		{
+			var message = $"Submission Date not valid:{xbrlReferenceDate}";
+			return (false, message);
+		}
+		if (xbrlReferenceDate != dbReferenceDate?.ReferenceDate)
+		{
+			var message = $"Xbr Reference Date :{xbrlReferenceDate} different than Expected Reference Date : {dbReferenceDate?.ReferenceDate} ";
+			return (false, message);
+		}
+
+		if (DateTime.Today > dbReferenceDate.SubmissionDate)
+		{
+			//commented out to allow submission of documents
+			//var message = $"Document was submitted after deadline:{dbReferenceDate.SubmissionDate} ";
+			//return (false, message);
+		}
+
+		return (true, "");
+	}
+
+	private List<DocInstance> GetExistingDocuments()
+	{
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+		var sqlExists = @"
+                    select doc.InstanceId, doc.Status, doc.IsSubmitted, EiopaVersion from DocInstance doc  where  
+                    PensionFundId= @FundId and ModuleId=@moduleId
+                    and ApplicableYear = @ApplicableYear and ApplicableQuarter = @ApplicableQuarter"
+				;
+
+		var docParams = new { _parameterData.FundId, ModuleId = _mModule.ModuleID, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter };
+		var docs = connectionInsurance.Query<DocInstance>(sqlExists, docParams).ToList();
+		return docs;
+	}
+
+
+	private int DeleteDocument(int documentId)
+	{
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+		var sqlDeleteDoc = @"delete from DocInstance where InstanceId= @documentId";
+		var rows = connectionInsurance.Execute(sqlDeleteDoc, new { documentId });
+
+		var sqlErrorDocDelete = @"delete from DocInstance where InstanceId= @documentId";
+		connectionInsurance.Execute(sqlErrorDocDelete, new { documentId });
+
+		return rows;
+	}
+
+	private (bool success, string message) HandleExistingDocuments()
+	{
+
+		var existingDocs = GetExistingDocuments();
+		var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "P");
+		if (lockedDocument is not null)
+		{
+			var message = $"Cannot create Document. Another Document is currently being processed :{lockedDocument.InstanceId} ";
+			return (false, message);
+		}
+		var sbmittedDocument = existingDocs.FirstOrDefault(doc => doc.IsSubmitted);
+		if (sbmittedDocument is not null)
+		{
+			var message = $"Cannot create Document. It was already been submitted {sbmittedDocument.InstanceId} ";
+			return (false, message);
+		};
+
+		//delete older versions (except from locked or submitted)
+		existingDocs.Where(doc => doc.Status.Trim() != "P" && !doc.IsSubmitted)
+			.ToList()
+			.ForEach(doc => DeleteDocument(doc.InstanceId));
+
+		return (true, "");
+	}
+
+
+	private int CreateDocInstanceInDb()
+	{
+		using var connection = new SqlConnection(_parameterData.SystemConnectionString);
+		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+
+		var sqlInsertDoc = @"
+               INSERT INTO DocInstance
+                   (                                            
+                    [PensionFundId]                   
+                   ,[UserId]                   
+                   ,[ModuleCode]           
+                   ,[ApplicableYear]
+                   ,[ApplicableQuarter]                   
+                   ,[ModuleId]      
+                   ,[FileName]
+                   ,[CurrencyBatchId]
+                   ,[Status]
+                   ,[EiopaVersion]
+                    )
+                VALUES
+                   (                                
+                    @PensionFundId
+                   ,@UserId
+                   ,@ModuleCode                   
+                   ,@ApplicableYear
+                   ,@ApplicableQuarter                   
+                   ,@ModuleId
+                   ,@FileName
+                   ,@CurrencyBatchId
+                   ,@Status
+                   ,@EiopaVersion
+                    ); 
+                SELECT CAST(SCOPE_IDENTITY() as int);
+                ";
+
+
+
+
+		var doc = new DocInstance()
+		{
+			PensionFundId = _parameterData.FundId,
+			UserId = _parameterData.UserId,
+			ModuleCode = _parameterData.ModuleCode,
+			ApplicableYear = _parameterData.ApplicableYear,
+			ApplicableQuarter = _parameterData.ApplicableQuarter,
+			ModuleId = _mModule.ModuleID,
+			FileName = _parameterData.FileName,
+			CurrencyBatchId = _parameterData.CurrencyBatchId,
+			Status = "P",
+			EiopaVersion = _parameterData.EiopaVersion,
+		};
+
+
+		var result = connection.QuerySingleOrDefault<int>(sqlInsertDoc, doc);
+		return result;
+	}
+
+	private int CreateFactDimsDb(int factId, string signature)
+	{
+
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+		var dims = signature.Split("|").ToList();
+		if (dims.Count > 0)
+		{
+			dims.RemoveAt(0);
+		}
+
+		var count = 0;
+		foreach (var dim in dims)
+		{
+			count++;
+			var dimDom = SpecialRoutines.DimDom.GetParts(dim);
+			var factDim = new TemplateSheetFactDim()
+			{
+				FactId = factId,
+				Dim = dimDom.Dim,
+				Dom = dimDom.Dom,
+				DomValue = dimDom.DomValue,
+				Signature = dimDom.Signature,
+				IsExplicit = true
+			};
+			var sqlInsDim = @"
+                    INSERT INTO dbo.TemplateSheetFactDim (FactId, Dim, Dom, DomValue, Signature, IsExplicit)
+                    VALUES(@FactId, @Dim, @Dom, @DomValue, @Signature, @IsExplicit)";
+
+			connectionInsurance.Execute(sqlInsDim, factDim);
+		}
+
+		return count;
+	}
+
 
 }

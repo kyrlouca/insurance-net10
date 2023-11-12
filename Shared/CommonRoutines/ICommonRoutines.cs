@@ -10,4 +10,5 @@ public interface ICommonRoutines
 	DocInstance GetDocInstance(int documentId);
 	MModule GetModuleByCodeNew(string moduleCode);
 	public void CreateTransactionLog(int docInstanceId, MessageType messageType, string message);
+	public void UpdateDocumentStatus(int documentId, string status);
 }

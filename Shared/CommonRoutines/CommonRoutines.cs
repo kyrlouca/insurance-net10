@@ -79,4 +79,13 @@ public class CommonRoutines : ICommonRoutines
 		var x = connectionInsurance.Execute(sqlInsert,tl );
 	}
 
+
+	public void UpdateDocumentStatus(int documentId, string status)
+	{
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+		var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @documentId;";
+		var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
+	}
+
+
 }
