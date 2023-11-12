@@ -5,16 +5,16 @@ namespace XbrlReader
 	public interface IFactsProcessor
 	{
 		string _ModuleCode { get; }
-		int ApplicableQuarter { get; }
-		int ApplicableYear { get; }
+		int ApplicableQuarterxx { get; }
+		int ApplicableYearxx { get; }
 		string DefaultCurrency { get; set; }
-		int FileName { get; }
+		int FileNamexx { get; }
 		int ModuleId { get; }
 		List<MTable> ModuleTablesFiled { get; }
-		int PensionFundId { get; }
+		int PensionFundIdxx { get; }
 		DateTime StartTime { get; }
 		int TestingTableId { get; set; }
-		int UserId { get; }
+		int UserIdxx { get; }
 
 		List<TemplateSheetFact> FindFactsFromSignatureNewxx(int documentId, string cellSignature);
 		List<TemplateSheetFact> FindFactsFromSignatureWild(int documentId, string cellSignature);

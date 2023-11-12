@@ -16,14 +16,16 @@ using System.Reflection;
 using System.Xml.Linq;
 using XbrlReader;
 
-public class MyMainApp : IMyMainApp
+
+public class FactsCreator
 {
-	//do not pass serilog, pass a class with serilog
+
 	private readonly IParameterHandler _parameterHandler;
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
-	private readonly IFactsProcessor _factsProcessor;
+
+
 	MModule _mModule = new();
 	XDocument? _xmlDoc;
 	private readonly DocInstance? _docInstance;
@@ -39,37 +41,17 @@ public class MyMainApp : IMyMainApp
 
 	List<string> FilingsSubmitted = new();
 
-	public int id = 12;
-	public MyMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IFactsProcessor factsProcessor)
+
+
+	public FactsCreator(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines)
 	{
 		_parameterHandler = getParameters;
 		_logger = logger;
-		_commonRoutines = commonRoutines;
-		_factsProcessor = factsProcessor;
-		
+		_commonRoutines = commonRoutines;		
 	}
-	public int Run()
+	public int CreateFacts()
 	{
-		_parameterData = _parameterHandler.GetParameterData();
-
-
 		var message = "";
-		var (isValidMessage, paramsMessage) = IsValidParameters();
-		if (!isValidMessage)
-		{
-			_logger.Error(paramsMessage);
-			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, paramsMessage);
-			return 1;
-		}
-
-		var (isExistingValid, existingMessage) = HandleExistingDocuments();
-		if (!isExistingValid)
-		{
-			_logger.Error(existingMessage);
-			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, existingMessage);
-			return 1;
-		}
-
 		var (parseValid, parseMessage, parsexmlDoc) = ParseXmlFile();
 		_xmlDoc = parsexmlDoc;
 		if (!parseValid)
@@ -111,38 +93,8 @@ public class MyMainApp : IMyMainApp
 		}
 
 		CreateLooseFacts();
-
-		_factsProcessor.ProcessFactsAndAssignToSheets(FilingsSubmitted,_documentId);
-
-
-		UpdateDocumentStatus("L");
-		message = $"Xbrl Document Loaded Successfully:DocumentId= jxx";
-		_logger.Information(message);
-		_commonRoutines.CreateTransactionLog(0, MessageType.COMPLETE, message);
+		
 		return 0;
-	}
-
-	private (bool isValid, string message) IsValidParameters()
-	{
-		_mModule = _commonRoutines.GetModuleByCodeNew(_parameterData.ModuleCode);
-		if (_mModule == null)
-		{
-			var message = $"Invalid Module code : {_parameterData.ModuleCode}";
-			return (false, message);
-		}
-		if (!File.Exists(_parameterData.FileName))
-		{
-			var message = $"File not FOUND : {_parameterData.FileName}";
-			return (false, message);
-		}
-		var fund = GetDbFundById(_parameterData.FundId);
-		if (fund == null)
-		{
-			var message = $"Fund Id not Found : {_parameterData.FundId}";
-			return (false, message);
-		}
-
-		return (true, "");
 	}
 
 	private (bool isParsed, string parseMessage, XDocument?) ParseXmlFile()
@@ -374,7 +326,7 @@ public class MyMainApp : IMyMainApp
 		var doc = connectionInsurance.Execute(sqlUpdate, new { _documentId, status });
 	}
 
-	private int CreateFactDimsDb( int factId, string signature)
+	private int CreateFactDimsDb(int factId, string signature)
 	{
 
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -417,7 +369,7 @@ public class MyMainApp : IMyMainApp
 
 
 		var RootNode = _xmlDoc.Root;
-		
+
 		Dictionary<string, string> Units = new Dictionary<string, string>();
 
 		var reference = RootNode.Element(link + "schemaRef").Attribute(xlink + "href").Value;
@@ -688,7 +640,7 @@ VALUES (
 				try
 				{
 					newFact.FactId = connectionInsurance.QuerySingleOrDefault<int>(sqlInsFact, newFact);
-					CreateFactDimsDb( newFact.FactId, newFact.DataPointSignature);
+					CreateFactDimsDb(newFact.FactId, newFact.DataPointSignature);
 				}
 				catch (Exception e)
 				{
@@ -742,6 +694,5 @@ VALUES (
 
 
 	}
-
 
 }

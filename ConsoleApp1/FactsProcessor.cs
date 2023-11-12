@@ -39,18 +39,18 @@ public class FactsProcessor : IFactsProcessor
 	private readonly IParameterHandler _parameterHandler;
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
-	private ICommonRoutines _commonRoutines;
-	private int DocumentId = 0;
+	private readonly ICommonRoutines _commonRoutines;
+	private int DocumentId = 0;	
 	private List<string> _filings = new();
 	private DocInstance _document = new();
 
 	public DateTime StartTime { get; } = DateTime.Now;
 
-	public int PensionFundId { get; private set; }
-	public int ApplicableYear { get; private set; }
-	public int ApplicableQuarter { get; private set; }
-	public int UserId { get; private set; }
-	public int FileName { get; private set; }
+	public int PensionFundIdxx { get; private set; }
+	public int ApplicableYearxx { get; private set; }
+	public int ApplicableQuarterxx { get; private set; }
+	public int UserIdxx { get; private set; }
+	public int FileNamexx { get; private set; }
 
 
 
