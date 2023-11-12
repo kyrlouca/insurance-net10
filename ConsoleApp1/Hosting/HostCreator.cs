@@ -39,7 +39,7 @@ public class HostCreator
 			 services.AddScoped<ICommonRoutines, CommonRoutines>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
 			 services.AddScoped<IFactsProcessor, FactsProcessor>();
-			 
+			 services.AddScoped<IFactsCreator, FactsCreator>();
 			 services.AddScoped<IMyMainApp, MyMainApp>();
 			 
 			 

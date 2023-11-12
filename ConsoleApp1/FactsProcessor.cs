@@ -72,26 +72,15 @@ public class FactsProcessor : IFactsProcessor
 	}
 
 
-	public void ProcessFactsAndAssignToSheets(List<string> filings, int documentId)
+	public int ProcessFactsAndAssignToSheets(List<string> filings, int documentId)
 	{
 		_filings = filings;
 		DocumentId = documentId;
 		_parameterData = _parameterHandler.GetParameterData();
-
-		_document = GetDocument(DocumentId);
-		if (_document is null)
-		{
-			var message = $"Document id:{DocumentId} NOT Found";
-
-			_logger.Error(message);
-			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
-			Log.Error(message);
-			return;
-		}
+		
 
 		_ModuleCode = _document.ModuleCode.Trim();
 		ModuleTablesFiled = GetFiledModuleTables();
-
 
 		Console.WriteLine($"\n Facts processing Started");
 
@@ -101,9 +90,10 @@ public class FactsProcessor : IFactsProcessor
 		//****Update the foreign Keys of the cells in open tables
 		UpdateCellsForeignRow(DocumentId);
 
-
-		UpdateDocumentStatus("L");
+			
 		Console.WriteLine($"\ndocId: {DocumentId} -- sheets: facts:{countFacts}");
+		return 0;
+		
 	}
 
 
