@@ -1,4 +1,4 @@
-﻿namespace ConsoleApp1;
+﻿namespace XbrlReader;
 using Dapper;
 using EntityClasses;
 using Microsoft.Data.SqlClient;
@@ -15,8 +15,7 @@ using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection;
 using System.Xml.Linq;
-
-
+using XbrlReader;
 
 public class MyMainApp : IMyMainApp
 {
@@ -25,6 +24,7 @@ public class MyMainApp : IMyMainApp
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
+	private readonly IFactsProcessor _factsProcessor;
 	MModule _mModule = new();
 	XDocument? _xmlDoc;
 	private readonly DocInstance? _docInstance;
@@ -38,14 +38,16 @@ public class MyMainApp : IMyMainApp
 	//readonly XNamespace typedDimNs = "http://eiopa.europa.eu/xbrl/s2c/dict/typ";
 	readonly XNamespace findNs = "http://www.eurofiling.info/xbrl/ext/filing-indicators";
 
-
+	List<string> FilingsSubmitted = new();
 
 	public int id = 12;
-	public MyMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines)
+	public MyMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, FactsProcessor factsProcessor)
 	{
 		_parameterHandler = getParameters;
 		_logger = logger;
 		_commonRoutines = commonRoutines;
+		_factsProcessor = factsProcessor;
+		
 	}
 	public int Run()
 	{
@@ -110,6 +112,9 @@ public class MyMainApp : IMyMainApp
 		}
 
 		CreateLooseFacts();
+
+		_factsProcessor.ProcessFactsAndAssignToSheets(FilingsSubmitted);
+
 
 		UpdateDocumentStatus("L");
 		message = $"Xbrl Document Loaded Successfully:DocumentId= jxx";
@@ -413,7 +418,7 @@ public class MyMainApp : IMyMainApp
 
 
 		var RootNode = _xmlDoc.Root;
-		List<string> FilingsSubmitted = new();
+		
 		Dictionary<string, string> Units = new Dictionary<string, string>();
 
 		var reference = RootNode.Element(link + "schemaRef").Attribute(xlink + "href").Value;

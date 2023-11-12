@@ -1,7 +1,6 @@
-﻿namespace ConsoleApp1
+﻿namespace XbrlReader;
+
+public interface IMyMainApp
 {
-	public interface IMyMainApp
-	{
-		int Run();
-	}
+	int Run();
 }

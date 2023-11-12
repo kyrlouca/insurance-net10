@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Shared.HostRoutines;
 using Shared.CommonRoutines;
-using ConsoleApp1;
+using XbrlReader;
 
 
 public class HostCreator
@@ -36,9 +36,13 @@ public class HostCreator
 			 var vr = context.Configuration["eiopa-version"] ?? "";
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));
 			 //services.Configure<LoggerFiles>(context.Configuration.GetSection("LoggerFiles"));
+			 services.AddScoped<ICommonRoutines, CommonRoutines>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
+			 services.AddScoped<IFactsProcessor, FactsProcessor>();
+			 
 			 services.AddScoped<IMyMainApp, MyMainApp>();
-			 services.AddScoped<ICommonRoutines,CommonRoutines>();
+			 
+			 
 		 })
 		.UseSerilog((hostingContext, loggerConfiguration) =>
 		{
