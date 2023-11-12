@@ -31,7 +31,7 @@ public class FactsCreator : IFactsCreator
 	private readonly DocInstance? _docInstance;
 	private int _documentId = 0;
 
-	public XElement RootNode { get; private set; }
+	public XElement? RootNode { get; private set; }
 	readonly XNamespace xbrli = "http://www.xbrl.org/2003/instance";
 	readonly XNamespace xbrldi = "http://xbrl.org/2006/xbrldi";
 	readonly XNamespace xlink = "http://www.w3.org/1999/xlink";
@@ -43,20 +43,20 @@ public class FactsCreator : IFactsCreator
 
 
 
-	public FactsCreator(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines)
+	public FactsCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
 	{
-		_parameterHandler = getParameters;
+		_parameterHandler = parametersHandler;
 		_logger = logger;
 		_commonRoutines = commonRoutines;
 	}
 
 
-	public (int,List<string>) CreateLooseFacts()
+	public (int, List<string>) CreateLooseFacts()
 	{
 
 		//Parse an xbrl file and create on object of the class which has the contexts, facts, etc
 		//However, with the new design design, contexts and facts are saved in memory tables and NOT in data structures            
-
+		_parameterData = _parameterHandler.GetParameterData();
 		var message = "";
 		var (parseValid, parseMessage, parsexmlDoc) = ParseXmlFile();
 		_xmlDoc = parsexmlDoc;
@@ -64,14 +64,15 @@ public class FactsCreator : IFactsCreator
 		{
 			_logger.Error(parseMessage);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, parseMessage);
-			return (0,FilingsSubmitted);
+			return (0, FilingsSubmitted);
 		}
 
-		var RootNode = _xmlDoc.Root;
-		Dictionary<string, string> Units = new Dictionary<string, string>();
+		var RootNode = _xmlDoc?.Root;		
+		var reference = RootNode?.Element(link + "schemaRef")?.Attribute(xlink + "href")?.Value ?? "N?F";
 
-		var reference = RootNode.Element(link + "schemaRef").Attribute(xlink + "href").Value;
+
 		var moduleCodeXbrl = GeneralUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);
+		_mModule = _commonRoutines.GetModuleByCodeNew(_parameterData.ModuleCode);
 		Console.WriteLine($"Opened Xblrl=>  Module: {moduleCodeXbrl} ");
 		if (moduleCodeXbrl != _mModule.ModuleCode)
 		{
@@ -119,6 +120,7 @@ public class FactsCreator : IFactsCreator
 		Console.WriteLine("filing Indicators");
 
 		Console.WriteLine("\nCreate Units");
+		Dictionary<string, string> Units = new Dictionary<string, string>();
 		AddUnits();
 
 		Console.WriteLine("\nCreate Contexts");
@@ -128,7 +130,7 @@ public class FactsCreator : IFactsCreator
 		AddFacts();
 
 		DeleteContexts();
-		return (_documentId,FilingsSubmitted);
+		return (_documentId, FilingsSubmitted);
 
 
 		void AddValidFilingIndicators()

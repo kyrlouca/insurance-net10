@@ -9,7 +9,7 @@ namespace XbrlReader
 		int ApplicableYearxx { get; }
 		string DefaultCurrency { get; set; }
 		int FileNamexx { get; }
-		int ModuleId { get; }
+		int _ModuleId { get; }
 		List<MTable> ModuleTablesFiled { get; }
 		int PensionFundIdxx { get; }
 		DateTime StartTime { get; }

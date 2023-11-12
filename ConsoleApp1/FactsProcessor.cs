@@ -55,7 +55,7 @@ public class FactsProcessor : IFactsProcessor
 
 
 	public string DefaultCurrency { get; set; } = "EUR";
-	public int ModuleId { get; private set; }
+	public int _ModuleId { get; private set; }
 	public string _ModuleCode { get; private set; } = "";
 	public List<MTable> ModuleTablesFiled { get; private set; } = new List<MTable>();
 
@@ -77,9 +77,11 @@ public class FactsProcessor : IFactsProcessor
 		DocumentId = documentId;
 		_filings = filings;		
 		_parameterData = _parameterHandler.GetParameterData();
-		
 
+		_document = _commonRoutines.GetDocInstance(documentId);
 		_ModuleCode = _document.ModuleCode.Trim();
+		_ModuleId = _document.ModuleId;
+
 		ModuleTablesFiled = GetFiledModuleTables();
 
 		Console.WriteLine($"\n Facts processing Started");
@@ -94,41 +96,7 @@ public class FactsProcessor : IFactsProcessor
 		Console.WriteLine($"\ndocId: {DocumentId} -- sheets: facts:{countFacts}");
 		return 0;
 		
-	}
-
-
-
-
-
-	private void UpdateDocumentStatus(string status)
-	{
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @documentId;";
-		var doc = connectionInsurance.Execute(sqlUpdate, new { DocumentId, status });
-	}
-
-	private DocInstance GetDocument(int documentId)
-	{
-		var sqlGetDocument = @"
-                    SELECT
-                      doc.InstanceId
-                     ,doc.PensionFundId
-                     ,doc.ModuleId
-                     ,doc.Status
-                     ,doc.ModuleCode
-                     ,doc.ApplicableYear
-                     ,doc.ApplicableQuarter
-                     ,doc.EntityCurrency
-                     ,doc.UserId
-                    FROM dbo.DocInstance doc
-                    WHERE doc.InstanceId = @documentId
-                    ";
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		var doc = connectionInsurance.QuerySingleOrDefault<DocInstance>(sqlGetDocument, new { documentId });
-		return doc;
-	}
-
-
+	} 
 	public void TestingCode()
 	{
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -673,10 +641,7 @@ public class FactsProcessor : IFactsProcessor
 
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
-		var sqlModule = @"select mod.ModuleID from mModule mod where mod.ModuleCode = @_moduleCode";
-		ModuleId = connectionEiopa.QuerySingleOrDefault<int>(sqlModule, new { _ModuleCode });
-
+		
 		var sqlTables = @"
               SELECT 	  
                     tab.TableID,
@@ -692,9 +657,8 @@ public class FactsProcessor : IFactsProcessor
                   left outer join mTemplateOrTable anno on anno.ParentTemplateOrTableID = bu.TemplateOrTableID
                   left outer join mTaxonomyTable taxo on taxo.AnnotatedTableID=anno.TemplateOrTableID
                   left outer join mTable tab on tab.TableID = taxo.TableID
-                  where mbt.ModuleID = @moduleId";
-		var moduleTables = connectionEiopa.Query<MTable>(sqlTables, new { ModuleId }).ToList();
-
+                  where mbt.ModuleID = @_moduleId";
+		var moduleTables = connectionEiopa.Query<MTable>(sqlTables, new {  _ModuleId }).ToList();
 
 		var validModuleTables = moduleTables.Where(mtable => _filings.Any(filing => mtable.TableCode.Contains(filing))).ToList();
 
