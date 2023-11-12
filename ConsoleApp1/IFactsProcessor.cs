@@ -8,9 +8,7 @@ namespace XbrlReader
 		int ApplicableQuarter { get; }
 		int ApplicableYear { get; }
 		string DefaultCurrency { get; set; }
-		int DocumentId { get; }
 		int FileName { get; }
-		List<string> Filings { get; set; }
 		int ModuleId { get; }
 		List<MTable> ModuleTablesFiled { get; }
 		int PensionFundId { get; }
@@ -23,7 +21,7 @@ namespace XbrlReader
 		List<TemplateSheetFact> FindMatchingFactsRegexOld(int documentId, string cellSignature);
 		bool IsFactSignatureMatchingExpensive(string cellSignature, string factSignature);
 		bool IsNewSignatureMatch(string cellSignature, string factSignature);
-		void ProcessFactsAndAssignToSheets(List<string> filings);
+		void ProcessFactsAndAssignToSheets(List<string> filings, int documentId);
 		void TestingCode();
 		void UpdateCellsForeignRow(int documentId);
 	}

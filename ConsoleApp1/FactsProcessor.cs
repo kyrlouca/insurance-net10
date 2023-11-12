@@ -40,8 +40,9 @@ public class FactsProcessor : IFactsProcessor
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
 	private ICommonRoutines _commonRoutines;
-	private int _documentId = 0;
-	private DocInstance _Document = new();
+	private int DocumentId = 0;
+	private List<string> _filings = new();
+	private DocInstance _document = new();
 
 	public DateTime StartTime { get; } = DateTime.Now;
 
@@ -51,8 +52,8 @@ public class FactsProcessor : IFactsProcessor
 	public int UserId { get; private set; }
 	public int FileName { get; private set; }
 
-	public int DocumentId { get; private set; }
-	public List<string> Filings { get; set; } = new();
+
+
 	public string DefaultCurrency { get; set; } = "EUR";
 	public int ModuleId { get; private set; }
 	public string _ModuleCode { get; private set; } = "";
@@ -71,14 +72,16 @@ public class FactsProcessor : IFactsProcessor
 	}
 
 
-	public void ProcessFactsAndAssignToSheets(List<string> filings)
+	public void ProcessFactsAndAssignToSheets(List<string> filings, int documentId)
 	{
-		Filings = filings;
+		_filings = filings;
+		DocumentId = documentId;
+		_parameterData = _parameterHandler.GetParameterData();
 
-		_Document = GetDocument(_documentId);
-		if (_Document is null)
+		_document = GetDocument(DocumentId);
+		if (_document is null)
 		{
-			var message = $"Document id:{_documentId} NOT Found";
+			var message = $"Document id:{DocumentId} NOT Found";
 
 			_logger.Error(message);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
@@ -86,7 +89,7 @@ public class FactsProcessor : IFactsProcessor
 			return;
 		}
 
-		_ModuleCode = _Document.ModuleCode.Trim();
+		_ModuleCode = _document.ModuleCode.Trim();
 		ModuleTablesFiled = GetFiledModuleTables();
 
 
@@ -681,7 +684,7 @@ public class FactsProcessor : IFactsProcessor
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-		var sqlModule = @"select mod.ModuleID from mModule mod where mod.ModuleCode = @moduleCode";
+		var sqlModule = @"select mod.ModuleID from mModule mod where mod.ModuleCode = @_moduleCode";
 		ModuleId = connectionEiopa.QuerySingleOrDefault<int>(sqlModule, new { _ModuleCode });
 
 		var sqlTables = @"
@@ -703,7 +706,7 @@ public class FactsProcessor : IFactsProcessor
 		var moduleTables = connectionEiopa.Query<MTable>(sqlTables, new { ModuleId }).ToList();
 
 
-		var validModuleTables = moduleTables.Where(mtable => Filings.Any(filing => mtable.TableCode.Contains(filing))).ToList();
+		var validModuleTables = moduleTables.Where(mtable => _filings.Any(filing => mtable.TableCode.Contains(filing))).ToList();
 
 
 		return validModuleTables;

@@ -41,7 +41,7 @@ public class MyMainApp : IMyMainApp
 	List<string> FilingsSubmitted = new();
 
 	public int id = 12;
-	public MyMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, FactsProcessor factsProcessor)
+	public MyMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IFactsProcessor factsProcessor)
 	{
 		_parameterHandler = getParameters;
 		_logger = logger;
@@ -102,8 +102,8 @@ public class MyMainApp : IMyMainApp
 		//*************************************************
 		//create the document anyway so we can attach log errors
 		//*************************************************
-		var documentId = CreateDocInstanceInDb();
-		if (documentId == 0)
+		_documentId = CreateDocInstanceInDb();
+		if (_documentId == 0)
 		{
 			message = $"Cannot Create DocInstance for: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
 			Console.WriteLine(message);
@@ -113,7 +113,7 @@ public class MyMainApp : IMyMainApp
 
 		CreateLooseFacts();
 
-		_factsProcessor.ProcessFactsAndAssignToSheets(FilingsSubmitted);
+		_factsProcessor.ProcessFactsAndAssignToSheets(FilingsSubmitted,_documentId);
 
 
 		UpdateDocumentStatus("L");
@@ -371,7 +371,7 @@ public class MyMainApp : IMyMainApp
 	private void UpdateDocumentStatus(string status)
 	{
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @documentId;";
+		var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @_documentId;";
 		var doc = connectionInsurance.Execute(sqlUpdate, new { _documentId, status });
 	}
 
@@ -445,9 +445,9 @@ public class MyMainApp : IMyMainApp
 		AddContexts();
 
 		Console.WriteLine("\nCreate Facts");
-		//AddFacts();
+		AddFacts();
 
-		//DeleteContexts();
+		DeleteContexts();
 		return (true, "");
 
 
@@ -548,6 +548,11 @@ public class MyMainApp : IMyMainApp
 			}
 		}
 
+		void DeleteContexts()
+		{
+			using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+			connectionInsurance.Execute("Delete from Context where InstanceId= @_documentId", new { _documentId });
+		}
 
 		void AddFacts()
 		{
@@ -709,7 +714,7 @@ VALUES (
 				List<string> GetContextLinesNew(string contextId)
 				{
 					//using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);                
-					var sqlContext = @"select Signature from Context where ContextXbrlId= @contextId and InstanceId =@DocumentId";
+					var sqlContext = @"select Signature from Context where ContextXbrlId= @contextId and InstanceId =@_documentId";
 					var signature = connectionInsurance.QuerySingleOrDefault<string>(sqlContext, new { contextId, _documentId });
 					return signature.Split("|", StringSplitOptions.RemoveEmptyEntries).ToList();
 
