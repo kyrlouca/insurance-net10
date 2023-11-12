@@ -21,7 +21,7 @@ namespace XbrlReader
 		List<TemplateSheetFact> FindMatchingFactsRegexOld(int documentId, string cellSignature);
 		bool IsFactSignatureMatchingExpensive(string cellSignature, string factSignature);
 		bool IsNewSignatureMatch(string cellSignature, string factSignature);
-		int ProcessFactsAndAssignToSheets(List<string> filings, int documentId);
+		int ProcessFactsAndAssignToSheets( int documentId, List<string> filings);
 		void TestingCode();
 		void UpdateCellsForeignRow(int documentId);
 	}

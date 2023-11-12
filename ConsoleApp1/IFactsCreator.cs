@@ -6,6 +6,6 @@ namespace XbrlReader
 	{
 		XElement RootNode { get; }
 
-		int CreateLooseFacts();
+		(int,List<string>) CreateLooseFacts();
 	}
 }

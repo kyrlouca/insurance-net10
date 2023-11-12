@@ -25,10 +25,8 @@ public class MyMainApp : IMyMainApp
 	private readonly ICommonRoutines _commonRoutines;
 	private readonly IFactsProcessor _factsProcessor;
 	private readonly IFactsCreator _factsCreator;
-	int _documentId = 0;
-
+		
 	
-	List<string> FilingsSubmitted = new();
 
 	public int id = 12;
 	public MyMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IFactsCreator factsCreator, IFactsProcessor factsProcessor)
@@ -44,12 +42,12 @@ public class MyMainApp : IMyMainApp
 	{
 		_parameterData = _parameterHandler.GetParameterData();
 		
-		_documentId= _factsCreator.CreateLooseFacts();
+		var (_documentId,filingsSubmitted)= _factsCreator.CreateLooseFacts();
 		if(_documentId == 0)
 		{
 			return 1;
 		}
-		var res= _factsProcessor.ProcessFactsAndAssignToSheets(FilingsSubmitted,_documentId);
+		var res= _factsProcessor.ProcessFactsAndAssignToSheets(_documentId,filingsSubmitted);
 		if(res != 0)
 		{
 			return res;

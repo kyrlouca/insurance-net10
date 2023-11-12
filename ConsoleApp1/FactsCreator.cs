@@ -51,7 +51,7 @@ public class FactsCreator : IFactsCreator
 	}
 
 
-	public int CreateLooseFacts()
+	public (int,List<string>) CreateLooseFacts()
 	{
 
 		//Parse an xbrl file and create on object of the class which has the contexts, facts, etc
@@ -64,7 +64,7 @@ public class FactsCreator : IFactsCreator
 		{
 			_logger.Error(parseMessage);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, parseMessage);
-			return 0;
+			return (0,FilingsSubmitted);
 		}
 
 		var RootNode = _xmlDoc.Root;
@@ -79,7 +79,7 @@ public class FactsCreator : IFactsCreator
 			Log.Error(moduleMessage);
 			Console.WriteLine(moduleMessage);
 
-			return 0;
+			return (0, FilingsSubmitted);
 		}
 
 		var (isValidReferenceDate, referenceMessage) = IsValidReferenceDate();
@@ -87,7 +87,7 @@ public class FactsCreator : IFactsCreator
 		{
 			_logger.Error(referenceMessage);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, referenceMessage);
-			return 0;
+			return (0, FilingsSubmitted);
 		}
 
 		var fundLei = GetXmlElementFromXbrl(_xmlDoc, "si1899");
@@ -97,7 +97,7 @@ public class FactsCreator : IFactsCreator
 			message = $"The license number is incorrect:{fundLei}";
 			_logger.Error(message);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
-			return 0;
+			return (0, FilingsSubmitted);
 		}
 
 		///////////////////////////
@@ -111,7 +111,7 @@ public class FactsCreator : IFactsCreator
 			message = $"Cannot Create DocInstance for: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
 			Console.WriteLine(message);
 			Log.Error(message);
-			return 0;
+			return (0, FilingsSubmitted);
 		}
 
 
@@ -128,7 +128,7 @@ public class FactsCreator : IFactsCreator
 		AddFacts();
 
 		DeleteContexts();
-		return _documentId;
+		return (_documentId,FilingsSubmitted);
 
 
 		void AddValidFilingIndicators()

@@ -72,10 +72,10 @@ public class FactsProcessor : IFactsProcessor
 	}
 
 
-	public int ProcessFactsAndAssignToSheets(List<string> filings, int documentId)
+	public int ProcessFactsAndAssignToSheets( int documentId, List<string> filings)
 	{
-		_filings = filings;
 		DocumentId = documentId;
+		_filings = filings;		
 		_parameterData = _parameterHandler.GetParameterData();
 		
 
