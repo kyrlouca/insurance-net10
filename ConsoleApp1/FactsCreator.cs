@@ -1,6 +1,5 @@
 ﻿namespace XbrlReader;
 using Dapper;
-using EntityClasses;
 using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.CommonRoutines;

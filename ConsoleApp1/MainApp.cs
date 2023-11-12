@@ -1,20 +1,8 @@
 ﻿namespace XbrlReader;
-using Dapper;
-using EntityClasses;
-using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.CommonRoutines;
-using Shared.GeneralUtils;
-using Shared.SpecialRoutines;
-using Shared.DataModels;
 using Shared.HostRoutines;
 using Shared.SharedHost;
-using System;
-using System.Globalization;
-using System.Reflection.Metadata;
-using System.Reflection;
-using System.Xml.Linq;
-using XbrlReader;
 
 public class MyMainApp : IMyMainApp
 {
@@ -54,6 +42,7 @@ public class MyMainApp : IMyMainApp
 		}
 		
 		_commonRoutines.UpdateDocumentStatus(_documentId,"L");
+
 		var message = $"Xbrl Document Loaded Successfully:DocumentId= {_documentId}";
 		_logger.Information(message);
 		_commonRoutines.CreateTransactionLog(0, MessageType.COMPLETE, message);
