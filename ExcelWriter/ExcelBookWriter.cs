@@ -5,6 +5,10 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.SharedHost;
+using Shared.DataModels;
+using System.Reflection.Metadata;
+using Syncfusion.XlsIO.Implementation;
+using Syncfusion.XlsIO;
 
 public class ExcelBookWriter : IExcelBookWriter
 {
@@ -12,6 +16,9 @@ public class ExcelBookWriter : IExcelBookWriter
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
+	private IWorkbook? _workbook;
+	int _documentId = 0;
+	string debugTableCode = "";
 
 	public ExcelBookWriter(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
 	{
@@ -20,8 +27,67 @@ public class ExcelBookWriter : IExcelBookWriter
 		_commonRoutines = commonRoutines;
 	}
 
-	public void CreateExcelSheets()
+
+
+	public bool CreateExcelBook(int documentId)
 	{
+		_documentId = documentId;
+		_parameterData = _parameterHandler.GetParameterData();
+		using var excelEngine = new ExcelEngine();
+
+		Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cXmVCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RSRmReV0BxVkQ=");
+		_workbook = ExcelHelperSync.CreateExcelWorkbook(excelEngine);
+
+		//var isValid = true;
+		var errorMessage = "Cannot create excel stream file";
+		if (_workbook is null)
+		{
+			_logger.Error(errorMessage);
+			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, errorMessage);
+			return false;
+		}
+		//////////////////////////////////////////////////////////////////
+		//Code here
+		var sheets = SelectExcelSheets();
+		//IWorksheet? newWorksheet;
+		foreach (var sheet in sheets)
+		{
+			//var sqlCount = @"select COUNT(*) as cnt from TemplateSheetFact fact where fact.TemplateSheetId = @TemplateSheetId";
+			_workbook.Worksheets.Create(sheet.SheetTabName);			
+		}
+
+
+		//////////////////////////////////////////////////////////////////
+		var (isSaveValid, saveMessage) = ExcelHelperSync.SaveWorkbook(_workbook, _parameterData.FileName);
+		if (!isSaveValid)
+		{
+			_logger.Error(saveMessage);
+			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, saveMessage);
+			return false;
+		}
+
+
+		return true;
+
+	}
+	private List<TemplateSheetInstance> SelectExcelSheets()
+	{
+		using var connectionEiopa = new SqlConnection(_parameterData.SystemConnectionString);
+		var sqlSheets = @"
+			SELECT *
+			FROM TemplateSheetInstance
+			WHERE
+			  TemplateSheetInstance.InstanceId = @_documentID
+			ORDER BY TemplateSheetInstance.SheetTabName                
+			";
+		var sheets = connectionEiopa.Query<TemplateSheetInstance>(sqlSheets, new { _documentId });
+
+		if (!string.IsNullOrEmpty(debugTableCode))
+		{
+			sheets = sheets.Where(sheet => sheet.TableCode.Trim() == debugTableCode).ToList();
+			Console.WriteLine($"**** Debugging-- Create ONLY the sheet: {debugTableCode} ");
+		}
+		return sheets.ToList();
 
 	}
 }

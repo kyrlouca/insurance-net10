@@ -1,7 +1,7 @@
 ﻿namespace ExcelWriter
 {
 	public interface IExcelBookWriter
-	{
-		void CreateExcelSheets();
+	{		
+		bool CreateExcelBook(int documentId);
 	}
 }

@@ -42,7 +42,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 
 		if (doc.Status == "P")
 		{
-			var message = $"Cannot create Excel because of Invalid Document Status:{doc.Status}";
+			var message = $"Document currently being Processed by another User. Document Id:{doc.InstanceId}";
 			_logger.Error(message);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
 			return 1;
@@ -56,7 +56,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
-		
+		var xx = _excelBookWriter.CreateExcelBook(doc.InstanceId);
 		return 0;
 
 	}
