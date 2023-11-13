@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "ExcelWriter": {
+      "commandName": "Project",
+      "commandLineArgs": "eiopa-version=\"IU260\"\r\nfund-id=181\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx\"",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Develop"
+      }
+    }
+  }
+}

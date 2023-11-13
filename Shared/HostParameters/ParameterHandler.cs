@@ -1,4 +1,5 @@
-﻿using System;
+﻿namespace Shared.SharedHost;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Shared.HostRoutines;
 
-namespace Shared.SharedHost;
+
 
 
 public class ParameterHandler : IParameterHandler

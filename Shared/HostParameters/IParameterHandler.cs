@@ -1,9 +1,6 @@
-﻿using Shared.HostRoutines;
-
-namespace Shared.SharedHost
+﻿namespace Shared.SharedHost;
+using Shared.HostRoutines;
+public interface IParameterHandler
 {
-    public interface IParameterHandler
-	{
-		ParameterData GetParameterData();
-	}
+	ParameterData GetParameterData();
 }
