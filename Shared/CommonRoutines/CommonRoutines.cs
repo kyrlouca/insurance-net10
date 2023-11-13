@@ -20,7 +20,7 @@ public class CommonRoutines : ICommonRoutines
 		_logger = logger;
 	}
 
-	public DocInstance GetDocInstance(int documentId)
+	public DocInstance? GetDocInstance(int documentId)
 	{
 		var sqlGetDocument = @"
                     SELECT
@@ -41,7 +41,25 @@ public class CommonRoutines : ICommonRoutines
 		return doc;
 	}
 
-	public  MModule? GetModuleByCodeNew( string moduleCode)
+
+	public DocInstance? GetDocInstance(int fundId,string moduleCode, int ApplicableYear, int ApplicableQuarter)
+	{
+		var sqlGetDocument = @"
+            SELECT * 
+			FROM 
+				InsuranceDatabase.dbo.DocInstance doc
+			WHERE
+			  doc.PensionFundId =@fundId AND doc.ApplicableYear=@ApplicableYear AND doc.ApplicableQuarter=@ApplicableQuarter
+			ORDER BY doc.InstanceId DESC
+        ";
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+		var doc = connectionInsurance.QueryFirstOrDefault<DocInstance>(sqlGetDocument, new { fundId,moduleCode, ApplicableYear, ApplicableQuarter });
+		return doc;
+	}
+
+
+
+	public MModule? GetModuleByCodeNew( string moduleCode)
 	{
 		using var connectionPension = new SqlConnection(_parameterData.SystemConnectionString);
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
