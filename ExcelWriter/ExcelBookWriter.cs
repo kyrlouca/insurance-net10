@@ -33,9 +33,10 @@ public class ExcelBookWriter : IExcelBookWriter
 	{
 		_documentId = documentId;
 		_parameterData = _parameterHandler.GetParameterData();
+		Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
 		using var excelEngine = new ExcelEngine();
 
-		Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cXmVCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RSRmReV0BxVkQ=");
+		
 		_workbook = ExcelHelperSync.CreateExcelWorkbook(excelEngine);
 
 		//var isValid = true;
@@ -72,15 +73,16 @@ public class ExcelBookWriter : IExcelBookWriter
 	}
 	private List<TemplateSheetInstance> SelectExcelSheets()
 	{
+
 		using var connectionEiopa = new SqlConnection(_parameterData.SystemConnectionString);
 		var sqlSheets = @"
-			SELECT *
-			FROM TemplateSheetInstance
+			SELECT *, (SELECT COUNT(*) FROM TemplateSheetFact fact WHERE fact.TemplateSheetId= sheet.TemplateSheetId) AS FactsCounter
+			FROM TemplateSheetInstance sheet
 			WHERE
-			  TemplateSheetInstance.InstanceId = @_documentID
-			ORDER BY TemplateSheetInstance.SheetTabName                
-			";
-		var sheets = connectionEiopa.Query<TemplateSheetInstance>(sqlSheets, new { _documentId });
+			  sheet.InstanceId = @_documentID
+			ORDER BY sheet.SheetTabName   			";
+		var sheets = connectionEiopa.Query<TemplateSheetInstance>(sqlSheets, new { _documentId })
+			.Where(sheet=>sheet.FactsCounter>0);		
 
 		if (!string.IsNullOrEmpty(debugTableCode))
 		{

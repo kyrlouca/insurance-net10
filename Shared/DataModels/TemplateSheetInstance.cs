@@ -21,5 +21,6 @@ public class TemplateSheetInstance
     public string XbrlFilingIndicatorCode{get;set;}
     public bool IsOpenTable { get; set; }        
     public int OpenRowCounter { get; set; }
+    public int FactsCounter { get; set;}
     
 }
