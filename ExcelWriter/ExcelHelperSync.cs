@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Syncfusion.XlsIO;
-
+using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 
 internal class ExcelHelperSync
 {
@@ -117,4 +117,12 @@ internal class ExcelHelperSync
 		return new RangeCoordinates(startRow, startCol, endRow,endCol);
 	}
 
+	public static IRange ExtendRangeLowerCorner(IRange range, int rowInc, int colInc)
+	{		
+		var lastRow =  Math.Max(0, range.LastRow + rowInc);
+		var lastCol = Math.Max( 0, range.LastColumn + colInc);
+
+		var newRange= range.Application.Range[range.Row,range.Column, lastRow, lastCol];
+		return newRange;				
+	}
 }

@@ -11,7 +11,7 @@ using Syncfusion.XlsIO.Implementation;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System;
-
+using System.Drawing;
 
 public class ExcelBookWriter : IExcelBookWriter
 {
@@ -64,101 +64,91 @@ public class ExcelBookWriter : IExcelBookWriter
 		//////////////////////////////////////////////////////////////////
 		//Code here
 
-		var sheets = SelectExcelSheets().OrderBy(sh=>sh.TableCode);
-		
-		if (1 == 1)
+		var headerStyle = HeaderStyle();
+		var sheets = SelectExcelSheets().OrderBy(sh => sh.TableCode);
+
+
+		int START_ROW = 1;
+		int START_COL = 1;
+		foreach (var sheet in sheets)
 		{
-			
-			int START_ROW = 1;
-			int START_COL = 1;
-			foreach (var sheet in sheets)
+			Console.WriteLine("process" + sheet?.TableCode);
+
+			var template = GetTableOrTemplate(sheet.TableCode);
+			if (template is null)
+				continue;
+
+			//the template has only 4 parts (S.04.01.01 )
+			var filingSheetCode = string.Join(".", sheet.TableCode.Split(".").ToList().GetRange(0, 4));
+			var originSheet = _originWorkbook.Worksheets[filingSheetCode];
+			if (originSheet is null) continue;
+			var destSheet = _destinationWorkbook.Worksheets.Create(sheet.SheetTabName);
+
+			/////Table code
+			var tableCode = destSheet.Range["A1"];
+			tableCode.Text = sheet.TableCode;
+			tableCode.CellStyle = headerStyle;
+
+			///////////DESCRIPTION LABEL
+			var _TC = template.TC;
+			var descRange = CopyRangeToPosition(START_ROW + 2, START_COL, originSheet, destSheet, _TC);
+
+
+			//////////DATA RANGE 
+			//for open tables template.TD does not include the key columns, so the starting column should extend to the left
+			//get the left column of the description column 
+
+			var _TD = template.TD;
+			var originDataRange = originSheet.Range[_TD];
+			if (sheet.IsOpenTable)
 			{
-				Console.WriteLine("process" + sheet?.TableCode);
-
-				var template = GetTableOrTemplate(sheet.TableCode);
-				if (template is null)
-					continue;
-
-				//the template has only 4 parts (S.04.01.01 )
-				var filingSheetCode = string.Join(".", sheet.TableCode.Split(".").ToList().GetRange(0, 4));  
-				var originSheet = _originWorkbook.Worksheets[filingSheetCode];
-				if (originSheet is null) continue;
-				var destSheet = _destinationWorkbook.Worksheets.Create(sheet.SheetTabName);
-
-
-				///////////DESCRIPTION LABEL
-				var _TC = template.TC;
-				var descRange = CopyRangeToPosition(START_ROW, START_COL, originSheet, destSheet, _TC);
-				if(descRange == null)
-				{
-					Console.WriteLine(sheet.TableCode);
-				}
-
-
-				//////////DATA RANGE 
-				//for open tables template.TD does not include the key columns, so the starting column should extend to the left
-				//get the left column of the description column 
-
-				var _TD = template.TD;
-				var originDataRange = originSheet.Range[_TD];
-				if (originDataRange == null)
-				{
-					Console.WriteLine(sheet.TableCode);
-				}
-				if (sheet.IsOpenTable)
-				{
-					var originDataOriginalRange = originSheet.Range[_TD];
-					var dStartRow = originDataOriginalRange.Row;
-					var dStartCol = descRange?.Column ?? 0; //for open tables, the upper left col extends to the left 
-					var dEndRow = originDataOriginalRange.LastRow;
-					var dEndCol = originDataOriginalRange.LastColumn;
-					originDataRange = originSheet.Range[dStartRow, dStartCol, dEndRow, dEndCol];
-				}
-
-				//Row and Col position for Destination Data Range must be fixed for both open and closed table
-				//for open tables it will align with the description title
-				var dataRowPos = START_ROW + 15;
-				var dataColPos = sheet.IsOpenTable
-					? START_COL
-					: START_COL + 2;//make room for left label and row number
-				
-				var dataRange = CopyRangeToPosition(dataRowPos, dataColPos, originSheet, destSheet, _TD); //data
-				if (dataRange == null)
-				{
-					Console.WriteLine(sheet.TableCode);
-				}
-				if (dataRange != null) dataRange.ColumnWidth = 30;
-
-
-				/////////////LEFT Labels 
-				var _TL = template.TL;
-				if (!sheet.IsOpenTable)
-				{
-					var leftLabelRange = CopyRangeToPosition(dataRowPos, dataColPos - 2, originSheet, destSheet, _TL); //labels on the left							
-					if (leftLabelRange != null) leftLabelRange.ColumnWidth = 50;
-					if (leftLabelRange == null)
-					{
-						Console.WriteLine(sheet.TableCode);
-					}
-				}
-
-				////////////TOP LABELS
-				//Top labels must be above the destination data range
-				var _TT = template.TT;
-				if (_TT is null)
-					continue;
-				var originalTopLabelRng = originSheet.Range[_TT];
-				
-
-				var topLabelsRange = CopyRangeToPosition(dataRowPos - (originalTopLabelRng.LastRow - originalTopLabelRng.Row), dataColPos, originSheet, destSheet, _TT);
-				if (topLabelsRange == null)
-				{
-					Console.WriteLine(sheet.TableCode);
-				}
-
-
-
+				var originDataOriginalRange = originSheet.Range[_TD];
+				var dStartRow = originDataOriginalRange.Row;
+				var dStartCol = descRange?.Column ?? 0; //for open tables, the upper left col extends to the left 
+				var dEndRow = originDataOriginalRange.LastRow;
+				var dEndCol = originDataOriginalRange.LastColumn;
+				originDataRange = originSheet.Range[dStartRow, dStartCol, dEndRow, dEndCol];
 			}
+
+			//Row and Col position for Destination Data Range must be fixed for both open and closed table
+			//for open tables it will align with the description title
+			var dataRowPos = START_ROW + 15;
+			var dataColPos = sheet.IsOpenTable
+				? START_COL
+				: START_COL + 2;//make room for left label and row number
+
+			var dataRange = CopyRangeToPosition(dataRowPos, dataColPos, originSheet, destSheet, originDataRange.AddressLocal);
+			if (dataRange != null) dataRange.ColumnWidth = 30;
+
+			//////////// COLUMN Numbers
+			var offsetR = originDataRange.Offset(-1, 0);
+			var offset2 = offsetR.Rows[0];
+			if (offsetR.Address != "" || offset2.Address != "")
+			{
+				Console.WriteLine(offset2.Address.ToString());
+			}
+			CopyRangeToPosition(dataRowPos -1 , dataColPos, originSheet, destSheet, offset2.Address);
+
+
+			/////////////LEFT Labels 
+			var _TL = template.TL;
+			if (!sheet.IsOpenTable)
+			{
+				var leftLabelRange = CopyRangeToPosition(dataRowPos, dataColPos - 2, originSheet, destSheet, _TL);
+				if (leftLabelRange != null) leftLabelRange.ColumnWidth = 50;
+			}
+
+			////////////TOP LABELS
+			//Top labels must be above the destination data range
+			var _TT = template.TT;
+			if (_TT is null)
+			{
+				continue;
+			}
+			var originalTopLabelRng = originSheet.Range[_TT];
+			var newTopLabel= or
+			var upperRow = dataRowPos - (originalTopLabelRng.LastRow - originalTopLabelRng.Row);
+			var topLabelsRange = CopyRangeToPosition(upperRow, dataColPos, originSheet, destSheet, _TT);
 
 		}
 
@@ -175,7 +165,18 @@ public class ExcelBookWriter : IExcelBookWriter
 
 		return true;
 
-		static IRange? CopyRangeToPosition(int UpperLeftRow, int UpperLeftCol,  IWorksheet? originSheet, IWorksheet destSheet, string rangeStr)
+		IStyle? HeaderStyle()
+		{
+			if (_destinationWorkbook is null) { return null; }
+			IStyle style = _destinationWorkbook.Styles.Add("HeaderStyle");
+			style.Color = Syncfusion.Drawing.Color.Red;
+			//style.FillPattern = ExcelPattern.DarkUpwardDiagonal;
+			style.Font.Bold = true;
+			return style;
+		}
+
+
+		static IRange? CopyRangeToPosition(int UpperLeftRow, int UpperLeftCol, IWorksheet? originSheet, IWorksheet destSheet, string rangeStr)
 		{
 			try
 			{
