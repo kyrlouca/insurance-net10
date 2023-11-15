@@ -9,34 +9,39 @@ using Syncfusion.XlsIO;
 
 internal class ExcelHelperSync
 {
-	public static IWorkbook? OpenExistingExcelWorkbook(string fileName)
+	public static (IWorkbook? workbook,string errorMessage ) OpenExistingExcelWorkbook(string fileName)
 	{
+		var message = "";
 		Console.WriteLine($"getWorkbook fileName:{fileName}");
 		ExcelEngine excelEngine = new();
 		if (string.IsNullOrEmpty(fileName))
 		{
-			return null;
+			message=$"filename is empty";
+			return (null,message);
 		}
 		try
 		{
 			using var inputStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
 			IWorkbook workbook = excelEngine.Excel.Workbooks.Open(inputStream);
-			return workbook;
+			return (workbook,"");
 		}
 		catch (FileNotFoundException fnf)
 		{
-			Console.WriteLine($"The file xx:+{fileName}+ could not be found :{fnf.Message}");
-			return null;
+			message = $"The file xx:+{fileName}+ could not be found :{fnf.Message}";
+			Console.WriteLine(message);
+			return (null, message);
 		}
 		catch (IOException e)
 		{
-			Console.WriteLine($"The file xx: +{fileName}+ could not be opened: {e.Message}");
-			return null;
+			message= $"The file xx: +{fileName}+ could not be opened: {e.Message}";
+			Console.WriteLine(message);
+			return (null, message);
 		}
 		catch (Exception e)
 		{
-			Console.WriteLine($"The file xx: +{fileName}+ is NOT a valid EXCEL file: {e.Message}");
-			return null;
+			message = $"The file xx: +{fileName}+ is NOT a valid EXCEL file: {e.Message}";
+			Console.WriteLine(message);
+			return (null, message);
 		}
 
 	}
@@ -51,7 +56,7 @@ internal class ExcelHelperSync
 		{
 			IWorkbook workbook = application.Workbooks.Create(0);
 			//Creating a Sheet
-			IWorksheet sheet = workbook.Worksheets.Create();
+			//IWorksheet sheet = workbook.Worksheets.Create();
 			return workbook;
 		}
 		catch (Exception ex)
@@ -104,5 +109,12 @@ internal class ExcelHelperSync
 		return result;
 	}
 
+	public record RangeCoordinates(int StartRow,int StartCol,int EndRow, int EndCol);
+	public static RangeCoordinates OffsetRange(IRange range, int startRow, int startCol)
+	{ 		
+		var endRow = range.LastRow - (range.Row - startRow);
+		var endCol = range.LastColumn - (range.Column - startCol);
+		return new RangeCoordinates(startRow, startCol, endRow,endCol);
+	}
 
 }
