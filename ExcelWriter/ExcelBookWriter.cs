@@ -61,58 +61,87 @@ public class ExcelBookWriter : IExcelBookWriter
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, errorMessage);
 			return false;
 		}
+
+
+		
+		
 		//////////////////////////////////////////////////////////////////
 		//Code here
 
+		var tableCodeStyle = TableCodeStyle();
+		var bodyStyle = BodyStyle();
 		var headerStyle = HeaderStyle();
 		var sheets = SelectExcelSheets().OrderBy(sh => sh.TableCode);
 
 
 		int START_ROW = 1;
 		int START_COL = 1;
+		int DATA_ROW_POSITION = 13;
 		foreach (var sheet in sheets)
 		{
 			Console.WriteLine("process" + sheet?.TableCode);
 
-			var template = GetTableOrTemplate(sheet.TableCode);
+			var template = GetTableOrTemplate(sheet.TableCode,true);
 			if (template is null)
 				continue;
+
 
 			//the template has only 4 parts (S.04.01.01 )
 			var filingSheetCode = string.Join(".", sheet.TableCode.Split(".").ToList().GetRange(0, 4));
 			var originSheet = _originWorkbook.Worksheets[filingSheetCode];
 			if (originSheet is null) continue;
+			
+			//var xx = originSheet.Range["D8"];
+			//var xs = xx.CellStyle;
+			//if (xs.Borders[ExcelBordersIndex.DiagonalUp] is not null)
+			//{
+			//	xx.Text = "ab";
+			//}
+
+			//if (xs.Name== "DPM_EmptyCell")
+			//{
+			//	xx.Text = "Bb";
+			//}
+			
+
+
+
 			var destSheet = _destinationWorkbook.Worksheets.Create(sheet.SheetTabName);
+			destSheet.Zoom = 80;
+			//destSheet.UsedRange.CellStyleName = "BodyStyle";
+			//destSheet.UsedRange.CellStyle = bodyStyle;
+
 
 			/////Table code
 			var tableCode = destSheet.Range["A1"];
 			tableCode.Text = sheet.TableCode;
-			tableCode.CellStyle = headerStyle;
+			tableCode.CellStyle = tableCodeStyle;
+
+			//template code
+			var parentTemplate = GetTableOrTemplate(filingSheetCode,false);
+			var tblLabel = destSheet.Range["A2"];
+			tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
+			tblLabel.CellStyle = headerStyle;
+			
+
 
 			///////////DESCRIPTION LABEL
 			var _TC = template.TC;
 			var descRange = CopyRangeToFixedPosition(START_ROW + 2, START_COL, originSheet, destSheet, _TC);
 
 
-			//////////DATA RANGE 
-			//for open tables template.TD does not include the key columns, so the starting column should extend to the left
-			//get the left column of the description column 
-
+			//////////DATA RANGE 			
 			var _TD = template.TD;
-			var originDataRange = originSheet.Range[_TD];
+			var originDataRange = originSheet.Range[_TD];			
 			if (sheet.IsOpenTable)
 			{
+				//for open tables template.TD does not include the key columns, so the starting column should extend to the left.//set the left column position to the description 
 				var originDataOriginalRange = originSheet.Range[_TD];
-				var dStartRow = originDataOriginalRange.Row;
-				var dStartCol = descRange?.Column ?? 0; //for open tables, the upper left col extends to the left 
-				var dEndRow = originDataOriginalRange.LastRow;
-				var dEndCol = originDataOriginalRange.LastColumn;
-				originDataRange = originSheet.Range[dStartRow, dStartCol, dEndRow, dEndCol];
+				originDataRange = originSheet.Range[originDataOriginalRange.Row, descRange?.Column ?? 0, originDataOriginalRange.LastRow, originDataOriginalRange.LastColumn];
 			}
 
-			//Row and Col position for Destination Data Range must be fixed for both open and closed table
-			//for open tables it will align with the description title
-			var dataRowPos = START_ROW + 15;
+			//Row and Col position for Destination Data Range must be fixed for both open and closed table			
+			var dataRowPos =DATA_ROW_POSITION;
 			var dataColPos = sheet.IsOpenTable
 				? START_COL
 				: START_COL + 2;//make room for left label and row number
@@ -145,15 +174,15 @@ public class ExcelBookWriter : IExcelBookWriter
 			////////////TOP LABELS
 			//Top labels must be above the destination data range
 			var _TT = template.TT;
-			if (_TT is null)
+			if (_TT is not null)
 			{
-				continue;
-			}
-			var otr = originSheet.Range[_TT];
-			var expandedTopLabel = originSheet.Range[otr.Row, originDataRange.Column, otr.LastRow, otr.LastColumn];
+				var otr = originSheet.Range[_TT];
+				var expandedTopLabel = originSheet.Range[otr.Row, originDataRange.Column, otr.LastRow, otr.LastColumn];
 
-			var upperRowPosition = dataRowPos - (otr.LastRow - otr.Row) - 2;
-			var topLabelsRange = CopyRangeToFixedPosition(upperRowPosition, dataColPos, originSheet, destSheet, expandedTopLabel.Address);
+				var upperRowPosition = dataRowPos - (otr.LastRow - otr.Row) - 2;
+				var topLabelsRange = CopyRangeToFixedPosition(upperRowPosition, dataColPos, originSheet, destSheet, expandedTopLabel.Address);
+			}
+			
 
 			//////////// TOP COLUMN Numbers
 
@@ -178,15 +207,43 @@ public class ExcelBookWriter : IExcelBookWriter
 
 		return true;
 
-		IStyle? HeaderStyle()
+		IStyle? TableCodeStyle()
 		{
 			if (_destinationWorkbook is null) { return null; }
-			IStyle style = _destinationWorkbook.Styles.Add("HeaderStyle");
-			style.Color = Syncfusion.Drawing.Color.Red;
+			IStyle style = _destinationWorkbook.Styles.Add("TableCodeStyle");
+			//style.Color = Syncfusion.Drawing.Color.Red;
+			style.Font.Color = ExcelKnownColors.Red;
+			style.Font.Underline = ExcelUnderline.Single;
 			//style.FillPattern = ExcelPattern.DarkUpwardDiagonal;
 			style.Font.Bold = true;
 			return style;
 		}
+
+		IStyle? HeaderStyle()
+		{
+			if (_destinationWorkbook is null) { return null; }
+			IStyle style = _destinationWorkbook.Styles.Add("HeaderStyle");									
+			style.Font.Bold = true;
+			return style;
+		}
+
+
+		IStyle? BodyStyle()
+		{
+			if (_destinationWorkbook is null) { return null; }
+			//IStyle bodyStyle = _destinationWorkbook.Styles.Add("BodyStyle");
+			IStyle bodyStyle = _destinationWorkbook.Styles.Add("BodyStyle");
+
+			bodyStyle.BeginUpdate();
+			//bodyStyle.Color = Color.FromArgb(239, 243, 247);
+			bodyStyle.Font.FontName = "Calibri";
+			bodyStyle.Font.Size = 10;
+			//bodyStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+			//bodyStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+			bodyStyle.EndUpdate();
+			return bodyStyle;
+		}
+
 
 
 		static IRange? CopyRangeToFixedPosition(int UpperLeftRow, int UpperLeftCol, IWorksheet? originSheet, IWorksheet destSheet, string rangeStr)
@@ -229,17 +286,20 @@ public class ExcelBookWriter : IExcelBookWriter
 
 	}
 
-	private MTemplateOrTable? GetTableOrTemplate(string tableCode)
+	private MTemplateOrTable? GetTableOrTemplate(string tableCode, bool isAnnotaed )
 	{
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 		var sqlTemplate = @"
 				SELECT * 
 				FROM mTemplateOrTable tt
 				WHERE 
-				  1=1
-				  AND TemplateOrTableType ='AnnotatedTable' 
+				  1=1				  
 				  AND tt.TemplateOrTableCode = @tableCode
 				";
+		if (isAnnotaed)
+		{
+			sqlTemplate += @" AND TemplateOrTableType = 'AnnotatedTable' ";
+		}
 		var template = connectionEiopa.QueryFirstOrDefault<MTemplateOrTable>(sqlTemplate, new { tableCode });
 		return template;
 
