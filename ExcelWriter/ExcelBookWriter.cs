@@ -91,7 +91,7 @@ public class ExcelBookWriter : IExcelBookWriter
 
 			///////////DESCRIPTION LABEL
 			var _TC = template.TC;
-			var descRange = CopyRangeToPosition(START_ROW + 2, START_COL, originSheet, destSheet, _TC);
+			var descRange = CopyRangeToFixedPosition(START_ROW + 2, START_COL, originSheet, destSheet, _TC);
 
 
 			//////////DATA RANGE 
@@ -117,24 +117,25 @@ public class ExcelBookWriter : IExcelBookWriter
 				? START_COL
 				: START_COL + 2;//make room for left label and row number
 
-			var dataRange = CopyRangeToPosition(dataRowPos, dataColPos, originSheet, destSheet, originDataRange.AddressLocal);
-			if (dataRange != null) dataRange.ColumnWidth = 30;
+			var dataRange = CopyRangeToFixedPosition(dataRowPos, dataColPos, originSheet, destSheet, originDataRange.AddressLocal);
+			if (dataRange == null)
+			{
+				continue;
+			}
+			dataRange.ColumnWidth = 30;
 
 			//////////// COLUMN Numbers
-			var offsetR = originDataRange.Offset(-1, 0);
-			var offset2 = offsetR.Rows[0];
-			if (offsetR.Address != "" || offset2.Address != "")
-			{
-				Console.WriteLine(offset2.Address.ToString());
-			}
-			CopyRangeToPosition(dataRowPos -1 , dataColPos, originSheet, destSheet, offset2.Address);
+			var originColumnRange = originDataRange.Offset(-1, 0);
+			var offset2 = originColumnRange.Rows[0];
+
+			CopyRangeToFixedPosition(dataRowPos - 1, dataColPos, originSheet, destSheet, offset2.Address);
 
 
 			/////////////LEFT Labels 
 			var _TL = template.TL;
 			if (!sheet.IsOpenTable)
 			{
-				var leftLabelRange = CopyRangeToPosition(dataRowPos, dataColPos - 2, originSheet, destSheet, _TL);
+				var leftLabelRange = CopyRangeToFixedPosition(dataRowPos, dataColPos - 2, originSheet, destSheet, _TL);
 				if (leftLabelRange != null) leftLabelRange.ColumnWidth = 50;
 			}
 
@@ -145,11 +146,11 @@ public class ExcelBookWriter : IExcelBookWriter
 			{
 				continue;
 			}
-			var originalTopLabelRng = originSheet.Range[_TT];
-			var newTopLabel= or
-			var upperRow = dataRowPos - (originalTopLabelRng.LastRow - originalTopLabelRng.Row);
-			var topLabelsRange = CopyRangeToPosition(upperRow, dataColPos, originSheet, destSheet, _TT);
+			var otr = originSheet.Range[_TT];
+			var expandedTopLabel = originSheet.Range[otr.Row, originDataRange.Column, otr.LastRow, otr.LastColumn];
 
+			var upperRowPosition = dataRowPos - (otr.LastRow - otr.Row) -2;
+			var topLabelsRange = CopyRangeToFixedPosition(upperRowPosition, dataColPos, originSheet, destSheet, expandedTopLabel.Address);
 		}
 
 
@@ -176,7 +177,7 @@ public class ExcelBookWriter : IExcelBookWriter
 		}
 
 
-		static IRange? CopyRangeToPosition(int UpperLeftRow, int UpperLeftCol, IWorksheet? originSheet, IWorksheet destSheet, string rangeStr)
+		static IRange? CopyRangeToFixedPosition(int UpperLeftRow, int UpperLeftCol, IWorksheet? originSheet, IWorksheet destSheet, string rangeStr)
 		{
 			try
 			{
