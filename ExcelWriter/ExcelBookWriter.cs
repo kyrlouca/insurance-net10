@@ -33,7 +33,7 @@ public class ExcelBookWriter : IExcelBookWriter
 
 
 
-	public bool CreateExcelBook(int documentId)
+	public string CreateExcelBook(int documentId)
 	{
 		_documentId = documentId;
 		_parameterData = _parameterHandler.GetParameterData();
@@ -50,7 +50,7 @@ public class ExcelBookWriter : IExcelBookWriter
 		{
 			_logger.Error(originMessage);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, originMessage);
-			return false;
+			return "";
 		}
 
 		_destinationWorkbook = ExcelHelperSync.CreateExcelWorkbook(excelEngine);
@@ -59,7 +59,7 @@ public class ExcelBookWriter : IExcelBookWriter
 		{
 			_logger.Error(errorMessage);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, errorMessage);
-			return false;
+			return "";
 		}
 
 
@@ -141,10 +141,15 @@ public class ExcelBookWriter : IExcelBookWriter
 			{
 				continue;
 			}
+			var ndn = $"{destSheet.Name.Trim()}_data";
+			_destinationWorkbook.Names.Remove(ndn); 
+			var dataNamedRange=_destinationWorkbook.Names.Add(ndn);
+			dataNamedRange.RefersToRange = dataRange;
+
 			dataRange.ColumnWidth = 30;
 			var bor = dataRange.Borders;
 			dataRange.BorderAround(ExcelLineStyle.Thick);
-			
+
 			//bor[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thick;
 			//bor[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
 
@@ -157,7 +162,7 @@ public class ExcelBookWriter : IExcelBookWriter
 				var leftLabelRange = CopyRangeToFixedPosition(dataRowPos, dataColPos - 2, originSheet, destSheet, _TL);
 				if (leftLabelRange != null)
 				{
-					leftLabelRange.ColumnWidth = 50;					
+					leftLabelRange.ColumnWidth = 50;
 				}
 			}
 
@@ -166,12 +171,12 @@ public class ExcelBookWriter : IExcelBookWriter
 			{
 				var ocr = originDataRange.Offset(0, -1);
 				var orignColumnNames = ocr.Columns[0];
-				var leftRowNums=CopyRangeToFixedPosition(dataRowPos, dataColPos - 1, originSheet, destSheet, orignColumnNames.Address);
+				var leftRowNums = CopyRangeToFixedPosition(dataRowPos, dataColPos - 1, originSheet, destSheet, orignColumnNames.Address);
 				if (leftRowNums != null)
 				{
 					leftRowNums.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thick;
 				}
-				
+
 			}
 
 
@@ -192,7 +197,7 @@ public class ExcelBookWriter : IExcelBookWriter
 
 			var tcn = originDataRange.Offset(-1, 0);
 			var orignColumnNumbers = tcn.Rows[0];
-			var topColumns= CopyRangeToFixedPosition(dataRowPos - 1, dataColPos, originSheet, destSheet, orignColumnNumbers.Address);
+			var topColumns = CopyRangeToFixedPosition(dataRowPos - 1, dataColPos, originSheet, destSheet, orignColumnNumbers.Address);
 			//var btc = dataRange.Borders;
 			topColumns.BorderAround(ExcelLineStyle.Thick);
 
@@ -204,16 +209,16 @@ public class ExcelBookWriter : IExcelBookWriter
 
 		ChangeDiagonalStyle();
 
-		var (isSaveValid, saveMessage) = ExcelHelperSync.SaveWorkbook(_destinationWorkbook, _parameterData.FileName);
+		var savedFile = _parameterData.FileName;
+		var (isSaveValid, saveMessage) = ExcelHelperSync.SaveWorkbook(_destinationWorkbook, savedFile);
 		if (!isSaveValid)
 		{
 			_logger.Error(saveMessage);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, saveMessage);
-			return false;
+			return "";
 		}
 
-
-		return true;
+		return savedFile;
 
 		IStyle? TableCodeStyle()
 		{
@@ -278,13 +283,13 @@ public class ExcelBookWriter : IExcelBookWriter
 			{
 				return;
 			}
-			
+
 			//st.FillPattern = ExcelPattern.Percent25Gray;
 			st.Color = Syncfusion.Drawing.Color.LightGray;
 			//st.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
 			st.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
 			st.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-			st.IncludeBorder = true;			
+			st.IncludeBorder = true;
 			//st.ColorIndex = ExcelKnownColors.Grey_50_percent;
 
 
@@ -308,6 +313,29 @@ public class ExcelBookWriter : IExcelBookWriter
 			}
 		}
 	}
+
+	public bool PopulateExcelBool()
+	{
+		return false;
+	}
+
+	private bool UpdateClosedTableValues(IRange dataRange,IRange RowRange, IRange colRange, List<string> factZetList)
+	{
+		var dataRows=dataRange.Rows;
+		foreach(var row in dataRows)
+		{
+			foreach(var cell in row)
+			{
+				var xx = cell.Text;
+				Console.WriteLine(xx);
+			}
+		}
+
+		return true;
+	}
+
+
+
 	private List<TemplateSheetInstance> SelectExcelSheets()
 	{
 

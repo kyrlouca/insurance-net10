@@ -36,7 +36,8 @@ public class HostCreator
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
 			 services.AddScoped<ICommonRoutines, CommonRoutines>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
-			 services.AddScoped<IExcelBookWriter,ExcelBookWriter>();			 
+			 services.AddScoped<IExcelBookWriter,ExcelBookWriter>();
+			 services.AddScoped<IExcelBookDataFiller, ExcelBookDataFiller>();
 			 services.AddScoped<IExcelWriterMainApp, ExcelWriterMainApp>();
 			 
 			 

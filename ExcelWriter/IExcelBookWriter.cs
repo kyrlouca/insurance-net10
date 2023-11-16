@@ -2,6 +2,6 @@
 {
 	public interface IExcelBookWriter
 	{		
-		bool CreateExcelBook(int documentId);
+		string CreateExcelBook(int documentId);
 	}
 }

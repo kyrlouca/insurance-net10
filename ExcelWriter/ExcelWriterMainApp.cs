@@ -12,18 +12,19 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
 	private readonly IExcelBookWriter _excelBookWriter;
-
+	private readonly IExcelBookDataFiller _excelBookDataFiller;
 
 
 
 	public int id = 12;
-	public ExcelWriterMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IExcelBookWriter excelBookWriter)
+	public ExcelWriterMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IExcelBookWriter excelBookWriter,IExcelBookDataFiller excelBookDataFiller)
 	{
 		_parameterHandler = getParameters;
 		_parameterData = getParameters.GetParameterData();
 		_logger = logger;
 		_commonRoutines = commonRoutines;
 		_excelBookWriter = excelBookWriter;
+		_excelBookDataFiller = excelBookDataFiller;
 
 	}
 	public int Run()
@@ -56,7 +57,13 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
-		var xx = _excelBookWriter.CreateExcelBook(doc.InstanceId);
+		var filename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
+		if (string.IsNullOrEmpty(filename))
+		{
+			return 1;
+		}
+
+		var y =_excelBookDataFiller.PopulateExcelBook(doc.InstanceId, filename);
 		
 		return 0;
 
