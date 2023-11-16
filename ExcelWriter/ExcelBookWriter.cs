@@ -124,12 +124,6 @@ public class ExcelBookWriter : IExcelBookWriter
 			}
 			dataRange.ColumnWidth = 30;
 
-			//////////// COLUMN Numbers
-			var originColumnRange = originDataRange.Offset(-1, 0);
-			var offset2 = originColumnRange.Rows[0];
-
-			CopyRangeToFixedPosition(dataRowPos - 1, dataColPos, originSheet, destSheet, offset2.Address);
-
 
 			/////////////LEFT Labels 
 			var _TL = template.TL;
@@ -138,6 +132,15 @@ public class ExcelBookWriter : IExcelBookWriter
 				var leftLabelRange = CopyRangeToFixedPosition(dataRowPos, dataColPos - 2, originSheet, destSheet, _TL);
 				if (leftLabelRange != null) leftLabelRange.ColumnWidth = 50;
 			}
+
+			//////////// LEFT ROW Numbers
+			if (!sheet.IsOpenTable)
+			{
+				var ocr = originDataRange.Offset(0, -1);
+				var orignColumnNames = ocr.Columns[0];
+				CopyRangeToFixedPosition(dataRowPos, dataColPos - 1, originSheet, destSheet, orignColumnNames.Address);
+			}
+
 
 			////////////TOP LABELS
 			//Top labels must be above the destination data range
@@ -149,9 +152,18 @@ public class ExcelBookWriter : IExcelBookWriter
 			var otr = originSheet.Range[_TT];
 			var expandedTopLabel = originSheet.Range[otr.Row, originDataRange.Column, otr.LastRow, otr.LastColumn];
 
-			var upperRowPosition = dataRowPos - (otr.LastRow - otr.Row) -2;
+			var upperRowPosition = dataRowPos - (otr.LastRow - otr.Row) - 2;
 			var topLabelsRange = CopyRangeToFixedPosition(upperRowPosition, dataColPos, originSheet, destSheet, expandedTopLabel.Address);
+
+			//////////// TOP COLUMN Numbers
+
+			var tcn = originDataRange.Offset(-1, 0);
+			var orignColumnNumbers = tcn.Rows[0];
+			CopyRangeToFixedPosition(dataRowPos - 1, dataColPos, originSheet, destSheet, orignColumnNumbers.Address);
+
+
 		}
+
 
 
 		//////////////////////////////////////////////////////////////////
