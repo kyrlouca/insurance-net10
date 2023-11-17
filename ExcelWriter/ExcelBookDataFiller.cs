@@ -134,8 +134,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 	{
 
 		var DataTypeUse = fact.DataTypeUse;
+		cell.HorizontalAlignment = ExcelHAlign.HAlignLeft;
 		switch (DataTypeUse)
-		{
+		{		
 			case "D": //date
 				cell.DateTime = fact.DateTimeValue;				
 				break;
@@ -144,10 +145,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 				break;
 			case "N": //Numeric (Decimal) 
 			case "M": //monetary
-				cell.Number =(double)fact.NumericValue;				
+				cell.Number =(double)fact.NumericValue;
+				cell.HorizontalAlignment = ExcelHAlign.HAlignRight;
+				cell.NumberFormat = "#,###,##0.00";
 				break;
 			case "P": //Percent
-				cell.Number = (double)fact.NumericValue;				
+				cell.Number = (double)fact.NumericValue;
+				cell.HorizontalAlignment = ExcelHAlign.HAlignRight;
 				break;
 			case "S": //String
 				cell.Text = fact.TextValue.Trim();				
@@ -158,7 +162,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 				break;
 			case "I": //integer
 				cell.Number = (int)Math.Floor(fact.NumericValue);
-				
+				cell.HorizontalAlignment = ExcelHAlign.HAlignRight;
 				break;
 			case "NULL"://fact is null                            
 				break;

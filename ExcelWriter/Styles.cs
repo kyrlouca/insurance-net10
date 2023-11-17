@@ -14,6 +14,7 @@ public class Styles
 		if (workbook is null) { return null; }
 		IStyle style = workbook.Styles.Add("HeaderStyle");
 		style.Font.Bold = true;
+		
 		return style;
 	}
 
@@ -27,6 +28,7 @@ public class Styles
 		//bodyStyle.Color = Color.FromArgb(239, 243, 247);
 		bodyStyle.Font.FontName = "Calibri";
 		bodyStyle.Font.Size = 10;
+		bodyStyle.WrapText = false;
 		//bodyStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
 		//bodyStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
 		bodyStyle.EndUpdate();

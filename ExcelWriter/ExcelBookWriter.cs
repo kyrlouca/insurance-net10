@@ -163,6 +163,7 @@ public class ExcelBookWriter : IExcelBookWriter
 				if (leftLabelRange != null)
 				{
 					leftLabelRange.ColumnWidth = 50;
+					leftLabelRange.WrapText = false;
 				}
 			}
 
@@ -175,6 +176,7 @@ public class ExcelBookWriter : IExcelBookWriter
 				if (leftRowNumRange != null)
 				{
 					leftRowNumRange.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thick;
+					leftRowNumRange.WrapText = false;
 				}
 				var leftNamed = $"{destSheet.Name.Trim()}_left";
 				_destinationWorkbook.Names.Remove(leftNamed);
