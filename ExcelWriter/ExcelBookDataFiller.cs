@@ -24,7 +24,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
-	private IWorkbook? Workbook;
+	private IWorkbook? Workbook;	
 	//private IWorkbook? _originWorkbook; //template workbook
 	int _documentId = 0;
 	string debugTableCode = "";
@@ -40,6 +40,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 	{
 		_documentId = documentId;
 		_parameterData = _parameterHandler.GetParameterData();
+
+
+
+
+
 		Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
 
 		using var excelEngine = new ExcelEngine();
@@ -54,6 +59,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, originMessage);
 			return false;
 		}
+		
+		
 
 		var dbSheets = _commonRoutines.SelectTempateSheets(_documentId)
 			.Where(sheet => !sheet.IsOpenTable);
@@ -74,56 +81,92 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 			var drTopName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
 			var topRange = drTopName.RefersToRange;
-			var (topRangeRow, topRangeCol) = GetRowCol(topRange.AddressR1C1);
+			//var topRowCol = ExcelHelperSync.CreateRowColObject(topRange.AddressR1C1Local);
+			
 			
 
 			var drLeftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
 			var leftRange = drLeftName.RefersToRange;
-			var (leftRangeRow, leftRangeCol) = GetRowCol(leftRange.AddressR1C1);
+			//var leftRowCol= ExcelHelperSync.CreateRowColObject(leftRange.AddressR1C1Local);
+			
 
-			foreach (var dataRow in dataRange.Rows)
+			foreach (var dataRow in dataRange.Rows )
 			{
-				foreach (var cell in dataRow.Cells)
+				foreach (var cell in dataRow.Cells )
 				{
-					//application.RangeIndexerMode = ExcelRangeIndexerMode.Relative;
-
-					var (row, col) = GetRowCol(cell.AddressR1C1Local);
-					var rowLabel = leftRange[row, leftRangeCol].Value;
-					var colLabel = leftRange[topRangeRow, col].Value;
-
+					var dataCell = ExcelHelperSync.CreateRowColObject(cell.AddressR1C1Local);											
+					var rowLabel = leftRange[dataCell.Row, leftRange.Column].Value;
+					var colLabel = topRange[topRange.Row, dataCell.Col].Value;
 
 					if (string.IsNullOrEmpty(rowLabel) || string.IsNullOrEmpty(colLabel))
 					{
 						continue;
 					}
 					var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
-					if (facts.Count == 0)
+					if (facts.Count == 0 || facts.Count>1)
 					{
 						continue;
 					}
 
 					var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
-					cell.Text = fact.TextValue;
+
+					SaveCellValue(cell,fact);					
 
 				}
 			}
 
 		}
 
-		return true;
 
-		(int row, int col) GetRowCol(string addressR1C1)
+		var savedFile = @"C:\Users\kyrlo\soft\dotnet\insurance-project\TestingXbrl270\makaOUT1.xlsx";
+		(var isValidSave, var destSaveMessage) = ExcelHelperSync.SaveWorkbook(Workbook, savedFile);
+		if (!isValidSave)
 		{
-			var rg = new Regex("R(\\d*)C(\\d*)");
-			//var rg = new Regex("R(\\d*)C(\\d*)");
-			var match = rg.Match(addressR1C1);
-			if (!match.Success) return (0, 0);
-			return (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
+			_logger.Error(destSaveMessage);
+			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, destSaveMessage);
+			return false;
 		}
 
+		return true;		
 	}
 
+	private void SaveCellValue(IRange cell,TemplateSheetFact fact)
+	{
 
+		var DataTypeUse = fact.DataTypeUse;
+		switch (DataTypeUse)
+		{
+			case "D": //date
+				cell.DateTime = fact.DateTimeValue;				
+				break;
+			case "B": //boolean
+				cell.Boolean = fact.BooleanValue;				
+				break;
+			case "N": //Numeric (Decimal) 
+			case "M": //monetary
+				cell.Number =(double)fact.NumericValue;				
+				break;
+			case "P": //Percent
+				cell.Number = (double)fact.NumericValue;				
+				break;
+			case "S": //String
+				cell.Text = fact.TextValue.Trim();				
+				break;
+			case "E": // Enumeration/Code"					  
+				var memDescription = XbrlCodeToValue(fact.TextValue);
+				cell.Text = memDescription;				
+				break;
+			case "I": //integer
+				cell.Number = (int)Math.Floor(fact.NumericValue);
+				
+				break;
+			case "NULL"://fact is null                            
+				break;
+			default:
+				cell.Text = "ERROR VALUE";
+				break;
+		}
+	}
 	private List<TemplateSheetFact> FindFactsFromRowCol(TemplateSheetInstance sheet, string row, string col)
 	{
 		//more than one fact with the same row,col but with different currency
@@ -160,5 +203,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		return fact;
 	}
 
+	private string XbrlCodeToValue(string xbrlValue) {
+		using var connectionEiopaDb = new SqlConnection(_parameterData.EiopaConnectionString);
+
+		var sqlMember = "select mem.MemberLabel from mMember mem where mem.MemberXBRLCode = @xbrlCode";
+		var memDescription = connectionEiopaDb.QuerySingleOrDefault<string>(sqlMember, new { xbrlCode = xbrlValue})??"";
+		return memDescription;
+	}
 
 }

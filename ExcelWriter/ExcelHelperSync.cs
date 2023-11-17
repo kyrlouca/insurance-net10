@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
@@ -48,7 +49,7 @@ internal class ExcelHelperSync
 
 	}
 
-	public static IWorkbook? CreateExcelWorkbook(ExcelEngine excelEngine)
+	public static (IWorkbook?,string message ) CreateExcelWorkbook(ExcelEngine excelEngine)
 	{		
 
 		IApplication application = excelEngine.Excel;
@@ -59,12 +60,12 @@ internal class ExcelHelperSync
 			IWorkbook workbook = application.Workbooks.Create(0);
 			//Creating a Sheet
 			//IWorksheet sheet = workbook.Worksheets.Create();
-			return workbook;
+			return (workbook,"");
 		}
 		catch (Exception ex)
 		{
 			Console.WriteLine($"{ex.Message}");
-			return null;
+			return (null,ex.Message);
 		}
 
 
@@ -126,5 +127,14 @@ internal class ExcelHelperSync
 
 		var newRange= range.Application.Range[range.Row,range.Column, lastRow, lastCol];
 		return newRange;				
+	}
+
+	public record RowColObject(string addressR1C1, int Row, int Col);
+	public static RowColObject? CreateRowColObject(string addreessR1C1)
+	{
+		var rg = new Regex("R(\\d*)C(\\d*)");		
+		var match = rg.Match(addreessR1C1);
+		if (!match.Success) return null;
+		return new RowColObject(addreessR1C1, int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));		
 	}
 }

@@ -53,12 +53,12 @@ public class ExcelBookWriter : IExcelBookWriter
 			return "";
 		}
 
-		_destinationWorkbook = ExcelHelperSync.CreateExcelWorkbook(excelEngine);
-		var errorMessage = "Cannot create excel stream file";
+		(_destinationWorkbook,var xMessage )= ExcelHelperSync.CreateExcelWorkbook(excelEngine);
+		var errorMessage = "Cannot create excel Workbook syncfusion file";
 		if (_destinationWorkbook is null)
 		{
 			_logger.Error(errorMessage);
-			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, errorMessage);
+			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, errorMessage +"--"+ xMessage);
 			return "";
 		}
 
