@@ -56,53 +56,69 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		}
 
 		var dbSheets = _commonRoutines.SelectTempateSheets(_documentId)
-			.Where(sheet=>!sheet.IsOpenTable);
-		
-		//application.RangeIndexerMode = ExcelRangeIndexerMode.Relative;
+			.Where(sheet => !sheet.IsOpenTable);
+
+
 		foreach (var dbSheet in dbSheets)
 		{
+
+			string cellVal = "init";
 			if (dbSheet.SheetTabName is null)
 			{
 				continue;
 			}
 			var workSheet = Workbook.Worksheets[dbSheet.SheetTabName];
-						
+
 			var drDataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
 			var dataRange = drDataName.RefersToRange;
 
 			var drTopName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
-			var colsRange = drTopName.RefersToRange;
+			var topRange = drTopName.RefersToRange;
+			var (topRangeRow, topRangeCol) = GetRowCol(topRange.AddressR1C1);
+			
 
 			var drLeftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
-			var rowsRange = drLeftName.RefersToRange;
-
+			var leftRange = drLeftName.RefersToRange;
+			var (leftRangeRow, leftRangeCol) = GetRowCol(leftRange.AddressR1C1);
 
 			foreach (var dataRow in dataRange.Rows)
-			{				
+			{
 				foreach (var cell in dataRow.Cells)
-				{					
+				{
+					//application.RangeIndexerMode = ExcelRangeIndexerMode.Relative;
+
 					var (row, col) = GetRowCol(cell.AddressR1C1Local);
-					var rowLabel = rowsRange[row].Value;
-					var colLabel = colsRange[col].Value;
-					if(string.IsNullOrEmpty(rowLabel) || null && colLabel != null)
-					var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
-					if (facts.Count > 0)
+					var rowLabel = leftRange[row, leftRangeCol].Value;
+					var colLabel = leftRange[topRangeRow, col].Value;
+
+
+					if (string.IsNullOrEmpty(rowLabel) || string.IsNullOrEmpty(colLabel))
 					{
-						var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
-						cell.Text = fact.TextValue;
+						continue;
 					}
+					var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
+					if (facts.Count == 0)
+					{
+						continue;
+					}
+
+					var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
+					cell.Text = fact.TextValue;
+
 				}
 			}
 
 		}
 
 		return true;
-		
-		(string row, string col) GetRowCol(string addressR1C1)
+
+		(int row, int col) GetRowCol(string addressR1C1)
 		{
-			var rg = new Regex("(R\\d*)(C\\d*)");
+			var rg = new Regex("R(\\d*)C(\\d*)");
+			//var rg = new Regex("R(\\d*)C(\\d*)");
 			var match = rg.Match(addressR1C1);
-			return match.Success ? (match.Groups[1].Value, match.Groups[2].Value): ("", "") ;
+			if (!match.Success) return (0, 0);
+			return (int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));
 		}
 
 	}
@@ -139,7 +155,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			  AND fact.Col = @col
 			  AND fact.Zet = @zet                
      ";
-		using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);		
+		using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
 		var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlFact, new { sheetId = sheet.TemplateSheetId, row, col, zet });
 		return fact;
 	}
