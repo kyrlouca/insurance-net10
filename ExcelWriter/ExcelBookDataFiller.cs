@@ -51,10 +51,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 		foreach (var worksheet in Workbook.Worksheets.OrderBy(sheet=>sheet.Name))
 		{
+			var sheet = SelectTempateSheetInstance(sheet.SheetTabName);
+			if (sheet is null)
 			var drDataName = Workbook.Names[$"{worksheet.Name.Trim()}_data"];
 			var dataRange = drDataName.RefersToRange;
 			foreach (var dataRow in dataRange.Rows)
 			{
+				
 				if (dataRow.Text == "abc")
 				{
 					dataRow.Text = "cde";
@@ -65,4 +68,23 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 		return true;
 	}
+
+	private TemplateSheetInstance? SelectTempateSheetInstance(string sheetTabName)
+	{
+
+		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+		var sqlSheet = @"
+			SELECT * 
+			FROM TemplateSheetInstance sheet
+			WHERE
+			  sheet.InstanceId=@_documentId
+			  AND sheet.SheetTabName<> @SheetTabName
+			";
+		var sheet = connectionLocal.QueryFirstOrDefault<TemplateSheetInstance>(sqlSheet, new { _documentId, sheetTabName });
+
+		return sheet;
+		
+
+	}
+
 }
