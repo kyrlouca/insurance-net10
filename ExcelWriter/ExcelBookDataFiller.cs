@@ -14,6 +14,8 @@ using System;
 using System.Drawing;
 using Syncfusion.XlsIO.Parser.Biff_Records;
 using static System.Net.Mime.MediaTypeNames;
+using System.Text.RegularExpressions;
+using System.Linq.Expressions;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -53,7 +55,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			return false;
 		}
 
-		var dbSheets = _commonRoutines.SelectTempateSheets(_documentId);
+		var dbSheets = _commonRoutines.SelectTempateSheets(_documentId)
+			.Where(sheet=>!sheet.IsOpenTable);
 		
 		//application.RangeIndexerMode = ExcelRangeIndexerMode.Relative;
 		foreach (var dbSheet in dbSheets)
@@ -66,15 +69,27 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 						
 			var drDataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
 			var dataRange = drDataName.RefersToRange;
+
+			var drTopName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
+			var colsRange = drTopName.RefersToRange;
+
+			var drLeftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
+			var rowsRange = drLeftName.RefersToRange;
+
+
 			foreach (var dataRow in dataRange.Rows)
 			{				
 				foreach (var cell in dataRow.Cells)
-				{
-					var xx = cell.AddressR1C1Local;
-					var col= cell.AddressLocal.IndexOf(xx);
-					if(xx != "ss" && col!=34)
+				{					
+					var (row, col) = GetRowCol(cell.AddressR1C1Local);
+					var rowLabel = rowsRange[row].Value;
+					var colLabel = colsRange[col].Value;
+					if(string.IsNullOrEmpty(rowLabel) || null && colLabel != null)
+					var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
+					if (facts.Count > 0)
 					{
-						cell.Text = "ss";
+						var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
+						cell.Text = fact.TextValue;
 					}
 				}
 			}
@@ -82,24 +97,52 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		}
 
 		return true;
-	}
-
-	private TemplateSheetInstance? SelectTempateSheetInstance(string sheetTabName)
-	{
-
-		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-		var sqlSheet = @"
-			SELECT * 
-			FROM TemplateSheetInstance sheet
-			WHERE
-			  sheet.InstanceId=@_documentId
-			  AND sheet.SheetTabName<> @SheetTabName
-			";
-		var sheet = connectionLocal.QueryFirstOrDefault<TemplateSheetInstance>(sqlSheet, new { _documentId, sheetTabName });
-
-		return sheet;
 		
+		(string row, string col) GetRowCol(string addressR1C1)
+		{
+			var rg = new Regex("(R\\d*)(C\\d*)");
+			var match = rg.Match(addressR1C1);
+			return match.Success ? (match.Groups[1].Value, match.Groups[2].Value): ("", "") ;
+		}
 
 	}
+
+
+	private List<TemplateSheetFact> FindFactsFromRowCol(TemplateSheetInstance sheet, string row, string col)
+	{
+		//more than one fact with the same row,col but with different currency
+		var sqlFact =
+	  @"
+		SELECT *                  
+		FROM dbo.TemplateSheetFact fact
+		WHERE
+		  fact.TemplateSheetId = @sheetId
+		  AND fact.Row = @row
+		  AND fact.Col = @col                                    
+	";
+
+		using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
+		var facts = connectionLocalDb.Query<TemplateSheetFact>(sqlFact, new { sheetId = sheet.TemplateSheetId, row, col }).ToList();
+		return facts;
+	}
+
+	private TemplateSheetFact? FindFactFromRowColZet(TemplateSheetInstance sheet, string row, string col, string zet)
+	{
+		//more than one fact with the same row,col but with different currency
+		var sqlFact =
+	  @"
+            SELECT *    
+			FROM dbo.TemplateSheetFact fact
+			WHERE
+			  fact.TemplateSheetId = @sheetId
+			  AND fact.Row = @row
+			  AND fact.Col = @col
+			  AND fact.Zet = @zet                
+     ";
+		using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);		
+		var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlFact, new { sheetId = sheet.TemplateSheetId, row, col, zet });
+		return fact;
+	}
+
 
 }
