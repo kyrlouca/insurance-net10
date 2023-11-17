@@ -141,9 +141,9 @@ public class ExcelBookWriter : IExcelBookWriter
 			{
 				continue;
 			}
-			var ndn = $"{destSheet.Name.Trim()}_data";
-			_destinationWorkbook.Names.Remove(ndn); 
-			var dataNamedRange=_destinationWorkbook.Names.Add(ndn);
+			var dataNamed = $"{destSheet.Name.Trim()}_data";
+			_destinationWorkbook.Names.Remove(dataNamed); 
+			var dataNamedRange=_destinationWorkbook.Names.Add(dataNamed);
 			dataNamedRange.RefersToRange = dataRange;
 
 			dataRange.ColumnWidth = 30;
@@ -176,9 +176,9 @@ public class ExcelBookWriter : IExcelBookWriter
 				{
 					leftRowNumRange.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thick;
 				}
-				var lrn = $"{destSheet.Name.Trim()}_data";
-				_destinationWorkbook.Names.Remove(lrn);
-				var tlNamedLeftRow = _destinationWorkbook.Names.Add(ndn);
+				var leftNamed = $"{destSheet.Name.Trim()}_left";
+				_destinationWorkbook.Names.Remove(leftNamed);
+				var tlNamedLeftRow = _destinationWorkbook.Names.Add(leftNamed);
 				tlNamedLeftRow.RefersToRange = leftRowNumRange;
 
 			}
@@ -194,13 +194,7 @@ public class ExcelBookWriter : IExcelBookWriter
 
 				var upperRowPosition = dataRowPos - (otr.LastRow - otr.Row) - 2;
 				var topLabelsRange = CopyRangeToFixedPosition(upperRowPosition, dataColPos, originSheet, destSheet, expandedTopLabel.Address);
-
-				var ntl= $"{destSheet.Name.Trim()}_data";
-				_destinationWorkbook.Names.Remove(ntl);
-				var tlNamedRange = _destinationWorkbook.Names.Add(ndn);
-				tlNamedRange.RefersToRange = topLabelsRange;
-
-
+			
 			}
 
 
@@ -208,9 +202,17 @@ public class ExcelBookWriter : IExcelBookWriter
 
 			var tcn = originDataRange.Offset(-1, 0);
 			var orignColumnNumbers = tcn.Rows[0];
-			var topColumns = CopyRangeToFixedPosition(dataRowPos - 1, dataColPos, originSheet, destSheet, orignColumnNumbers.Address);
+			var topColumnsRange = CopyRangeToFixedPosition(dataRowPos - 1, dataColPos, originSheet, destSheet, orignColumnNumbers.Address);
 			//var btc = dataRange.Borders;
-			topColumns.BorderAround(ExcelLineStyle.Thick);
+			topColumnsRange.BorderAround(ExcelLineStyle.Thick);
+
+
+			var topNamed = $"{destSheet.Name.Trim()}_top";
+			_destinationWorkbook.Names.Remove(topNamed);
+			var tlNamedRange = _destinationWorkbook.Names.Add(topNamed);
+			tlNamedRange.RefersToRange = topColumnsRange;
+
+
 
 		}
 

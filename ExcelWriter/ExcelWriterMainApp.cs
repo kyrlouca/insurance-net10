@@ -31,7 +31,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 	{
 		Console.WriteLine("started Excle");
 		
-		var doc = _commonRoutines.GetDocInstance(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
+		var doc = _commonRoutines.SelectDocInstance(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
 
 		if (doc is null)
 		{

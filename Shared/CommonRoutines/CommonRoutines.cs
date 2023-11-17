@@ -20,7 +20,7 @@ public class CommonRoutines : ICommonRoutines
 		_logger = logger;
 	}
 
-	public DocInstance? GetDocInstance(int documentId)
+	public DocInstance? SelectDocInstance(int documentId)
 	{
 		var sqlGetDocument = @"
                     SELECT
@@ -42,7 +42,27 @@ public class CommonRoutines : ICommonRoutines
 	}
 
 
-	public DocInstance? GetDocInstance(int fundId,string moduleCode, int ApplicableYear, int ApplicableQuarter)
+
+	public List<TemplateSheetInstance> SelectTempateSheets(int documentId)
+	{
+
+		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+		var sqlSheets = @"
+			SELECT *, (SELECT COUNT(*) FROM TemplateSheetFact fact WHERE fact.TemplateSheetId= sheet.TemplateSheetId) AS FactsCounter
+			FROM TemplateSheetInstance sheet
+			WHERE
+			  sheet.InstanceId = @documentID
+			ORDER BY sheet.SheetTabName   			";
+		var sheets = connectionLocal.Query<TemplateSheetInstance>(sqlSheets, new { documentId });
+		//	.Where(sheet => sheet.FactsCounter > 0);
+		
+		return sheets.ToList();
+
+	}
+
+
+
+	public DocInstance? SelectDocInstance(int fundId,string moduleCode, int ApplicableYear, int ApplicableQuarter)
 	{
 		var sqlGetDocument = @"
             SELECT * 
@@ -59,7 +79,7 @@ public class CommonRoutines : ICommonRoutines
 
 
 
-	public MModule? GetModuleByCodeNew( string moduleCode)
+	public MModule? SelectModuleByCode( string moduleCode)
 	{
 		using var connectionPension = new SqlConnection(_parameterData.SystemConnectionString);
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);

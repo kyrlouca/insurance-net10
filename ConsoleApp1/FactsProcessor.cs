@@ -57,7 +57,7 @@ public class FactsProcessor : IFactsProcessor
 		_filings = filings;
 		_parameterData = _parameterHandler.GetParameterData();
 
-		_document = _commonRoutines.GetDocInstance(documentId);
+		_document = _commonRoutines.SelectDocInstance(documentId);
 		_moduleCode = _document.ModuleCode.Trim();
 		_moduleId = _document.ModuleId;
 

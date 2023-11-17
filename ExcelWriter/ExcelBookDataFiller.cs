@@ -12,7 +12,7 @@ using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System;
 using System.Drawing;
-
+using Syncfusion.XlsIO.Parser.Biff_Records;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -49,15 +49,20 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			return false;
 		}
 
-		foreach (var worksheet in Workbook.Worksheets.OrderBy(sheet=>sheet.Name))
+		var dbSheets = _commonRoutines.SelectTempateSheets(_documentId);
+
+		foreach (var dbSheet in dbSheets)
 		{
-			var sheet = SelectTempateSheetInstance(sheet.SheetTabName);
-			if (sheet is null)
-			var drDataName = Workbook.Names[$"{worksheet.Name.Trim()}_data"];
+			if (dbSheet.SheetTabName is null)
+			{
+				continue;
+			}
+			var workSheet = Workbook.Worksheets[dbSheet.SheetTabName];
+						
+			var drDataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
 			var dataRange = drDataName.RefersToRange;
 			foreach (var dataRow in dataRange.Rows)
-			{
-				
+			{				
 				if (dataRow.Text == "abc")
 				{
 					dataRow.Text = "cde";

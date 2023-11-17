@@ -71,7 +71,7 @@ public class FactsCreator : IFactsCreator
 
 
 		var moduleCodeXbrl = GeneralUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);
-		_mModule = _commonRoutines.GetModuleByCodeNew(_parameterData.ModuleCode);
+		_mModule = _commonRoutines.SelectModuleByCode(_parameterData.ModuleCode);
 		Console.WriteLine($"Opened Xblrl=>  Module: {moduleCodeXbrl} ");
 		if (moduleCodeXbrl != _mModule.ModuleCode)
 		{
