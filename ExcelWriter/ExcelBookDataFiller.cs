@@ -13,6 +13,7 @@ using Syncfusion.XlsIO.Implementation.Collections;
 using System;
 using System.Drawing;
 using Syncfusion.XlsIO.Parser.Biff_Records;
+using static System.Net.Mime.MediaTypeNames;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -40,8 +41,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
 
 		using var excelEngine = new ExcelEngine();
+		IApplication application = excelEngine.Excel;
+		application.DefaultVersion = ExcelVersion.Xlsx;
 
-		(Workbook, var originMessage) = ExcelHelperSync.OpenExistingExcelWorkbook(filename);
+
+		(Workbook, var originMessage) = ExcelHelperSync.OpenExistingExcelWorkbook(excelEngine, filename);
 		if (Workbook is null)
 		{
 			_logger.Error(originMessage);
@@ -50,7 +54,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		}
 
 		var dbSheets = _commonRoutines.SelectTempateSheets(_documentId);
-
+		
+		//application.RangeIndexerMode = ExcelRangeIndexerMode.Relative;
 		foreach (var dbSheet in dbSheets)
 		{
 			if (dbSheet.SheetTabName is null)
@@ -63,9 +68,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			var dataRange = drDataName.RefersToRange;
 			foreach (var dataRow in dataRange.Rows)
 			{				
-				if (dataRow.Text == "abc")
+				foreach (var cell in dataRow.Cells)
 				{
-					dataRow.Text = "cde";
+					var xx = cell.AddressR1C1Local;
+					var col= cell.AddressLocal.IndexOf(xx);
+					if(xx != "ss" && col!=34)
+					{
+						cell.Text = "ss";
+					}
 				}
 			}
 

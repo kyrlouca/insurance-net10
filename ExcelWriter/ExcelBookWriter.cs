@@ -45,7 +45,7 @@ public class ExcelBookWriter : IExcelBookWriter
 		using var excelEngine = new ExcelEngine();
 
 
-		(_originWorkbook, var originMessage) = ExcelHelperSync.OpenExistingExcelWorkbook(_parameterData.ExcelTemplateFile);
+		(_originWorkbook, var originMessage) = ExcelHelperSync.OpenExistingExcelWorkbook(excelEngine, _parameterData.ExcelTemplateFile);
 		if (_originWorkbook is null)
 		{
 			_logger.Error(originMessage);

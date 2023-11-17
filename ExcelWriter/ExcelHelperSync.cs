@@ -9,11 +9,13 @@ using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 
 internal class ExcelHelperSync
 {
-	public static (IWorkbook? workbook,string errorMessage ) OpenExistingExcelWorkbook(string fileName)
+	public static (IWorkbook? workbook,string errorMessage ) OpenExistingExcelWorkbook(ExcelEngine excelEngine, string fileName)
 	{
+		//**  excel engine will be disposed by caller
 		var message = "";
 		Console.WriteLine($"getWorkbook fileName:{fileName}");
-		ExcelEngine excelEngine = new();
+		//ExcelEngine excelEngine = new();
+		
 		if (string.IsNullOrEmpty(fileName))
 		{
 			message=$"filename is empty";

@@ -57,13 +57,15 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
-		var filename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
-		if (string.IsNullOrEmpty(filename))
-		{
-			return 1;
-		}
+		
+		//var filename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
+		//if (string.IsNullOrEmpty(filename))
+		//{
+		//	return 1;
+		//}
 
-		var y =_excelBookDataFiller.PopulateExcelBook(doc.InstanceId, filename);
+		var fileName1 = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
+		var y =_excelBookDataFiller.PopulateExcelBook(doc.InstanceId, fileName1);
 		
 		return 0;
 
