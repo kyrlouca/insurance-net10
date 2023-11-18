@@ -38,9 +38,9 @@ public class HostCreator
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
 			 services.AddScoped<IExcelBookWriter,ExcelBookCreator>();
 			 services.AddScoped<IExcelBookDataFiller, ExcelBookDataFiller>();
-			 services.AddScoped<IExcelWriterMainApp, ExcelWriterMainApp>();
-			 
-			 
+			 services.AddScoped<ITemplateMerger, TemplateMerger>();
+			 services.AddScoped<IExcelWriterMainApp, ExcelWriterMainApp>();			 			 
+
 		 })
 		.UseSerilog((hostingContext, loggerConfiguration) =>
 		{

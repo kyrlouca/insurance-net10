@@ -19,3 +19,5 @@ public readonly record struct TemplateBundle
 		TableCodes = tableCodes;
 	}
 }
+
+public readonly record struct TemplateBundleNew(string TemplateTableCode, string TemplateDescription, List<string> TableCodes);

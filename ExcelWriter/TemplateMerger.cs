@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Reflection;
 
-public class TemplateMerger
+public class TemplateMerger : ITemplateMerger
 {
 
 	private readonly IParameterHandler _parameterHandler;
@@ -64,9 +64,9 @@ public class TemplateMerger
 			.Where(sheet => !sheet.IsOpenTable);
 		foreach (var dbClosedSheet in dbClosedSheets)
 		{
-            Console.WriteLine($"Closed:{dbClosedSheet.SheetCode}");
-        
-		
+			Console.WriteLine($"Closed:{dbClosedSheet.SheetCode}");
+
+
 		}
 
 
@@ -74,7 +74,7 @@ public class TemplateMerger
 		//Merge sheets for each templeate Code (3 digit code) based on dimension .(line of business BL and currency OC)
 		//If there is a TemplateBundel, the Merged sheet can merge horizontally and vertically.
 		//A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
-		var templates = CreateTemplateTableBundlesForModule( _parameterData.ModuleCode);
+		var templates = CreateTemplateTableBundlesForModule(_parameterData.ModuleCode);
 		//templates = templates.Where(bundle => (bundle.TemplateCode == "S.05.02.01" || bundle.TemplateCode == "S.19.01.01")).ToList();
 
 		foreach (var template in templates)
@@ -233,7 +233,7 @@ public class TemplateMerger
 		{
 			//We can have more than one sheet for the same Business line, Currency , if the table has dimensions
 			//Need to merge also
-			dbSheets = tableCodes.Select(tableCode => getOrCreateDbSheet( _documentId, tableCode, zetBLValue)).ToList();
+			dbSheets = tableCodes.Select(tableCode => getOrCreateDbSheet(_documentId, tableCode, zetBLValue)).ToList();
 		}
 
 		var dbRealSheets = dbSheets.SelectMany(sheet => sheet).Where(sheet => sheet.TableID != -1).ToList();
@@ -284,7 +284,7 @@ public class TemplateMerger
 				//********************* fix
 				//var newSheet = DestExcelBook.CreateSheet(sheetTabName);
 				var newSheet = Workbook.Worksheets.AddCopy(1);
-				
+
 				//***************** fux
 				//newSheet.CreateRow(0).CreateCell(0).SetCellValue($"{dbSheet.TableCode} - Empty Table");
 				//newSheet.CreateRow(1).CreateCell(0).SetCellValue(templateBundle.TemplateDescription);
@@ -299,7 +299,7 @@ public class TemplateMerger
 			return sheet;
 		}
 
-		List<TemplateSheetInstance> getOrCreateDbSheet( int documentId, string? tableCode, string zetValue)
+		List<TemplateSheetInstance> getOrCreateDbSheet(int documentId, string? tableCode, string zetValue)
 		{
 			using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 			using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -373,7 +373,7 @@ public class TemplateMerger
 		{
 			//var cell = firstRow?.GetCell(i) ?? firstRow?.CreateCell(i);
 		}
-		
+
 		//**Fucking a
 		if (1 == 1)
 		{
@@ -389,9 +389,9 @@ public class TemplateMerger
 	}
 
 
-	private List<TemplateBundle> CreateTemplateTableBundlesForModule( string moduleCode)
+	private List<TemplateBundle> CreateTemplateTableBundlesForModule(string moduleCode)
 	{
-		using var connectionEiopa = new SqlConnection();
+		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
 		var templateTableBundles = new List<TemplateBundle>();
@@ -403,9 +403,8 @@ public class TemplateMerger
                 LEFT OUTER JOIN mModule mod ON mbt.ModuleID = mod.ModuleID
                 WHERE 1 = 1
                     and TemplateOrTableCode like 'S.%'
-                    AND mod.ModuleID = @moduleId
-                ORDER BY mod.ModuleID
-                ";
+                    and mod.ModuleCode= @moduleCode                    
+                ORDER BY mod.ModuleCode                       ";
 		//todo make it empty list if null
 		var templates = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleCode });
 
@@ -428,17 +427,13 @@ public class TemplateMerger
 			var tableCodes = connectionEiopa.Query<string>(sqlTableCodes, new { templateCode = template.TemplateOrTableCode })?.ToList() ?? new List<string>();
 			templateTableBundles.Add(new TemplateBundle(template.TemplateOrTableCode, template.TemplateOrTableLabel, tableCodes));
 
-			//var sheets= connectionInsurance.Query<TemplateSheetInstance>(sqlSheets, new { documentId,bCode }).ToList()?? new List<TemplateSheetInstance>();
-			//TemplateCodes.Add(new BusinessTableBundle(tableCode, sheets));                
-
-
 
 		}
 		return templateTableBundles;
 
 	}
 
-	private  IWorksheet AppendHorizontalSheets(List<IWorksheet> sheetsToMerge, IWorksheet  destSheet, int rowOffset, int colGap)
+	private IWorksheet AppendHorizontalSheets(List<IWorksheet> sheetsToMerge, IWorksheet destSheet, int rowOffset, int colGap)
 	{
 		//add each sheet in the list  HORIZONTALLY one after the other
 		//var colGap = 2;
@@ -449,7 +444,7 @@ public class TemplateMerger
 			{
 				continue;
 			}
-			
+
 			//*** fix
 			//ExcelHelperFunctions.CopyManyRowsSameBook(childSheet, destSheet, childSheet.FirstRowNum, childSheet.LastRowNum, true, rowOffset, totalColOffset);
 			//var childColOffset = ExcelHelperFunctions.GetMaxNumberOfColumns(childSheet, childSheet.FirstRowNum, childSheet.LastRowNum);
