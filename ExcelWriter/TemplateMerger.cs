@@ -19,6 +19,7 @@ using System.Text.RegularExpressions;
 using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.IO.Pipes;
+using System.Reflection;
 
 public class TemplateMerger
 {
@@ -68,13 +69,19 @@ public class TemplateMerger
 		
 		}
 
-		var dbOpenSheets = _commonRoutines.SelectTempateSheets(_documentId)
-			.Where(sheet => sheet.IsOpenTable);
-		foreach (var dbOpenSheet in dbOpenSheets)
+
+
+		//Merge sheets for each templeate Code (3 digit code) based on dimension .(line of business BL and currency OC)
+		//If there is a TemplateBundel, the Merged sheet can merge horizontally and vertically.
+		//A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
+		var templates = CreateTemplateTableBundlesForModule( _parameterData.ModuleCode);
+		//templates = templates.Where(bundle => (bundle.TemplateCode == "S.05.02.01" || bundle.TemplateCode == "S.19.01.01")).ToList();
+
+		foreach (var template in templates)
 		{
-			Console.WriteLine($"open:{dbOpenSheet.SheetCode}");
-		
+			MergeOneTemplate(template);
 		}
+
 
 		var savedFile = @"C:\Users\kyrlo\soft\dotnet\insurance-project\TestingXbrl270\makaMerger.xlsx";
 		(var isValidSave, var destSaveMessage) = ExcelWriterHelper.SaveWorkbook(Workbook, savedFile);
@@ -91,8 +98,53 @@ public class TemplateMerger
 
 
 
+	private void MergeOneTemplate(TemplateBundle templateTableBundle)
+	{
+		//One template may have many Zet dimensions(for business line or currency)
+		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+		//currency is can be CD,CR,OC but for s.19 is oc
 
-	
+		var sqlZet = @"
+                    SELECT zet.value
+                    FROM TemplateSheetInstance sheet
+                    JOIN SheetZetValue zet ON zet.TemplateSheetId = sheet.TemplateSheetId
+                    WHERE sheet.InstanceId = @documentId
+                        AND sheet.TableCode LIKE @templateCode
+                        AND zet.Dim IN ('BL','OC','CR')
+                    GROUP BY zet.Value
+            ";
+		var templateCode = $"{templateTableBundle.TemplateCode}%";
+		var zetBLList = connectionInsurance.Query<string>(sqlZet, new { _documentId, templateCode }).ToList();
+
+
+		if (!zetBLList.Any())
+		{
+			zetBLList.Add("");
+		}
+		foreach (var zetBlValue in zetBLList)
+		{
+			var mergedRecord = MergeOneZetTemplate(templateTableBundle, zetBlValue);
+			if (!mergedRecord.IsValid)
+			{
+				//null when there are no tables OR when there is just one
+				continue;
+			}
+
+			/// ****Fix
+			//MakeBlancCells(mergedRecord.TabSheet);
+
+			//***fix
+			//ExcelHelperFunctions.CreateHyperLink(mergedRecord.TabSheet, WorkbookStyles);
+			var sheetsToRemove = mergedRecord.ChildrenSheetInstances.Select(sheet => sheet.SheetTabName.Trim()).ToList();
+			//IndexSheetList.RemoveSheets(sheetsToRemove);
+			//IndexSheetList.AddSheetRecord(new IndexSheetListItem(mergedRecord.TabSheet.SheetName, mergedRecord.SheetDescription));
+
+		}
+	}
+
+
+
 	private List<TemplateSheetFact> FindFactsFromRowCol(TemplateSheetInstance sheet, string row, string col)
 	{
 		//more than one fact with the same row,col but with different currency
@@ -337,7 +389,7 @@ public class TemplateMerger
 	}
 
 
-	private List<TemplateBundle> CreateTemplateTableBundlesForModule( int moduleId)
+	private List<TemplateBundle> CreateTemplateTableBundlesForModule( string moduleCode)
 	{
 		using var connectionEiopa = new SqlConnection();
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -355,7 +407,7 @@ public class TemplateMerger
                 ORDER BY mod.ModuleID
                 ";
 		//todo make it empty list if null
-		var templates = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleId });
+		var templates = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleCode });
 
 
 
