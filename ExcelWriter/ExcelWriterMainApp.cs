@@ -65,10 +65,11 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
-		//Po;ddsssss
-		//var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, filename);
+        //Po;ddsssss
+        //var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, filename);
+        var destfilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaMerge.xlsx";
 
-		var x = _templateMerger.MergeTemplates(doc.InstanceId, filename);
+        var x = _templateMerger.MergeTemplates(doc.InstanceId, filename,destfilename);
 
 
 		return 0;

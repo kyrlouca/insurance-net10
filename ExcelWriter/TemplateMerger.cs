@@ -7,19 +7,9 @@ using Serilog;
 using Shared.SharedHost;
 using Shared.DataModels;
 using ExcelWriter.DataModels;
-using System.Reflection.Metadata;
-using Syncfusion.XlsIO.Implementation;
 using Syncfusion.XlsIO;
-using Syncfusion.XlsIO.Implementation.Collections;
 using System;
-using System.Drawing;
-using Syncfusion.XlsIO.Parser.Biff_Records;
-using static System.Net.Mime.MediaTypeNames;
-using System.Text.RegularExpressions;
-using System.Linq.Expressions;
 using System.Collections.Generic;
-using System.IO.Pipes;
-using System.Reflection;
 
 public class TemplateMerger : ITemplateMerger
 {
@@ -29,7 +19,8 @@ public class TemplateMerger : ITemplateMerger
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
 	private IWorkbook? Workbook;
-	int _documentId = 0;
+    private IWorkbook? DestWorkbook;
+    int _documentId = 0;
 	string debugTableCode = "";
 
 	public TemplateMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
@@ -39,7 +30,7 @@ public class TemplateMerger : ITemplateMerger
 		_commonRoutines = commonRoutines;
 	}
 
-	public bool MergeTemplates(int documentId, string filename)
+	public bool MergeTemplates(int documentId, string filename,string destFilename)
 	{
 		_documentId = documentId;
 		_parameterData = _parameterHandler.GetParameterData();
@@ -59,12 +50,21 @@ public class TemplateMerger : ITemplateMerger
 			return false;
 		}
 
-	
 
-		//Merge sheets for each templeate Code (3 digit code) based on dimension .(line of business BL and currency OC)
-		//If there is a TemplateBundel, the Merged sheet can merge horizontally and vertically.
-		//A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
-		var templates = CreateTemplateTableBundlesForModule(_parameterData.ModuleCode);
+		(DestWorkbook, var destMessage) = ExcelWriterHelper.CreateExcelWorkbook(excelEngine);
+        if (DestWorkbook is null)
+        {
+            _logger.Error(destMessage);
+            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, destMessage);
+            return false;
+        }
+
+
+
+        //Merge sheets for each templeate Code (3 digit code) based on dimension .(line of business BL and currency OC)
+        //If there is a TemplateBundel, the Merged sheet can merge horizontally and vertically.
+        //A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
+        var templates = CreateTemplateTableBundlesForModule(_parameterData.ModuleCode);
 		//templates = templates.Where(bundle => (bundle.TemplateCode == "S.05.02.01" || bundle.TemplateCode == "S.19.01.01")).ToList();
 
 		foreach (var template in templates)
@@ -74,8 +74,8 @@ public class TemplateMerger : ITemplateMerger
 		}
 
 
-		var savedFile = @"C:\Users\kyrlo\soft\dotnet\insurance-project\TestingXbrl270\makaMerger.xlsx";
-		(var isValidSave, var destSaveMessage) = ExcelWriterHelper.SaveWorkbook(Workbook, savedFile);
+		
+		(var isValidSave, var destSaveMessage) = ExcelWriterHelper.SaveWorkbook(DestWorkbook, destFilename);
 		if (!isValidSave)
 		{
 			_logger.Error(destSaveMessage);
@@ -132,18 +132,6 @@ public class TemplateMerger : ITemplateMerger
 			//IndexSheetList.AddSheetRecord(new IndexSheetListItem(mergedRecord.TabSheet.SheetName, mergedRecord.SheetDescription));
 
 		}
-	}
-
-
-
-
-	private string XbrlCodeToValue(string xbrlValue)
-	{
-		using var connectionEiopaDb = new SqlConnection(_parameterData.EiopaConnectionString);
-
-		var sqlMember = "select mem.MemberLabel from mMember mem where mem.MemberXBRLCode = @xbrlCode";
-		var memDescription = connectionEiopaDb.QuerySingleOrDefault<string>(sqlMember, new { xbrlCode = xbrlValue }) ?? "";
-		return memDescription;
 	}
 
 
@@ -207,8 +195,9 @@ public class TemplateMerger : ITemplateMerger
 			{
                 Console.WriteLine("xxx");
             }
-			//************************			
-			IWorksheet newSheet = Workbook.Worksheets.Create(mergedTabName);
+			
+			
+            var newSheet=DestWorkbook.Worksheets.AddCopy(realSheet);
             //var newSheet = realSheet.CopySheet(mergedTabName);
             var allSheets = dbSheets.SelectMany(dbSheet => dbSheet).ToList();
             Console.WriteLine($"Createing Just one:{realSheet.Name}");
@@ -335,17 +324,7 @@ public class TemplateMerger : ITemplateMerger
 			//var cell = firstRow?.GetCell(i) ?? firstRow?.CreateCell(i);
 		}
 
-		//**Fucking a
-		if (1 == 1)
-		{
-			destSheet.SetColumnWidth(0, 12000);
-			destSheet.SetColumnWidth(1, 2000);
-			//for (var j = 2; j < firstRow?.Cells.Count; j++)
-			//{
-			//	destSheet.SetColumnWidth(j, 5000);
-			//}
-		}
-		//*************
+		
 		return destSheet;
 	}
 
