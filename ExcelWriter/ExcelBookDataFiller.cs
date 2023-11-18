@@ -24,7 +24,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
-	private IWorkbook? Workbook;	
+	private IWorkbook? Workbook;
 	//private IWorkbook? _originWorkbook; //template workbook
 	int _documentId = 0;
 	string debugTableCode = "";
@@ -42,15 +42,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		_parameterData = _parameterHandler.GetParameterData();
 
 
-
-
-
 		Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
 
 		using var excelEngine = new ExcelEngine();
 		IApplication application = excelEngine.Excel;
 		application.DefaultVersion = ExcelVersion.Xlsx;
-
 
 		(Workbook, var originMessage) = ExcelHelperSync.OpenExistingExcelWorkbook(excelEngine, filename);
 		if (Workbook is null)
@@ -59,42 +55,31 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, originMessage);
 			return false;
 		}
-		
-		
 
 		var dbSheets = _commonRoutines.SelectTempateSheets(_documentId)
 			.Where(sheet => !sheet.IsOpenTable);
-
-
 		foreach (var dbSheet in dbSheets)
-		{
-
-			string cellVal = "init";
+		{			
 			if (dbSheet.SheetTabName is null)
 			{
 				continue;
 			}
 			var workSheet = Workbook.Worksheets[dbSheet.SheetTabName];
 
-			var drDataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
-			var dataRange = drDataName.RefersToRange;
+			var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
+			var dataRange = dataName.RefersToRange;
 
-			var drTopName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
-			var topRange = drTopName.RefersToRange;
-			//var topRowCol = ExcelHelperSync.CreateRowColObject(topRange.AddressR1C1Local);
-			
-			
+			var topName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
+			var topRange = topName.RefersToRange;
 
-			var drLeftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
-			var leftRange = drLeftName.RefersToRange;
-			//var leftRowCol= ExcelHelperSync.CreateRowColObject(leftRange.AddressR1C1Local);
-			
+			var leftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
+			var leftRange = leftName.RefersToRange;
 
-			foreach (var dataRow in dataRange.Rows )
+			foreach (var dataRow in dataRange.Rows)
 			{
-				foreach (var cell in dataRow.Cells )
+				foreach (var cell in dataRow.Cells)
 				{
-					var dataCell = ExcelHelperSync.CreateRowColObject(cell.AddressR1C1Local);											
+					var dataCell = ExcelHelperSync.CreateRowColObject(cell.AddressR1C1Local);
 					var rowLabel = leftRange[dataCell.Row, leftRange.Column].Value;
 					var colLabel = topRange[topRange.Row, dataCell.Col].Value;
 
@@ -103,20 +88,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 						continue;
 					}
 					var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
-					if (facts.Count == 0 || facts.Count>1)
+					if (facts.Count == 0 || facts.Count > 1)
 					{
 						continue;
 					}
 
 					var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
-
-					SaveCellValue(cell,fact);					
-
+					SaveCellValue(cell, fact);
 				}
 			}
-
 		}
-
 
 		var savedFile = @"C:\Users\kyrlo\soft\dotnet\insurance-project\TestingXbrl270\makaOUT1.xlsx";
 		(var isValidSave, var destSaveMessage) = ExcelHelperSync.SaveWorkbook(Workbook, savedFile);
@@ -127,25 +108,25 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			return false;
 		}
 
-		return true;		
+		return true;
 	}
 
-	private void SaveCellValue(IRange cell,TemplateSheetFact fact)
+	private void SaveCellValue(IRange cell, TemplateSheetFact fact)
 	{
 
 		var DataTypeUse = fact.DataTypeUse;
 		cell.HorizontalAlignment = ExcelHAlign.HAlignLeft;
 		switch (DataTypeUse)
-		{		
+		{
 			case "D": //date
-				cell.DateTime = fact.DateTimeValue;				
+				cell.DateTime = fact.DateTimeValue;
 				break;
 			case "B": //boolean
-				cell.Boolean = fact.BooleanValue;				
+				cell.Boolean = fact.BooleanValue;
 				break;
 			case "N": //Numeric (Decimal) 
 			case "M": //monetary
-				cell.Number =(double)fact.NumericValue;
+				cell.Number = (double)fact.NumericValue;
 				cell.HorizontalAlignment = ExcelHAlign.HAlignRight;
 				cell.NumberFormat = "#,###,##0.00";
 				break;
@@ -154,11 +135,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 				cell.HorizontalAlignment = ExcelHAlign.HAlignRight;
 				break;
 			case "S": //String
-				cell.Text = fact.TextValue.Trim();				
+				cell.Text = fact.TextValue.Trim();
 				break;
 			case "E": // Enumeration/Code"					  
 				var memDescription = XbrlCodeToValue(fact.TextValue);
-				cell.Text = memDescription;				
+				cell.Text = memDescription;
 				break;
 			case "I": //integer
 				cell.Number = (int)Math.Floor(fact.NumericValue);
@@ -171,6 +152,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 				break;
 		}
 	}
+	
 	private List<TemplateSheetFact> FindFactsFromRowCol(TemplateSheetInstance sheet, string row, string col)
 	{
 		//more than one fact with the same row,col but with different currency
@@ -207,12 +189,25 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		return fact;
 	}
 
-	private string XbrlCodeToValue(string xbrlValue) {
+	private string XbrlCodeToValue(string xbrlValue)
+	{
 		using var connectionEiopaDb = new SqlConnection(_parameterData.EiopaConnectionString);
 
 		var sqlMember = "select mem.MemberLabel from mMember mem where mem.MemberXBRLCode = @xbrlCode";
-		var memDescription = connectionEiopaDb.QuerySingleOrDefault<string>(sqlMember, new { xbrlCode = xbrlValue})??"";
+		var memDescription = connectionEiopaDb.QuerySingleOrDefault<string>(sqlMember, new { xbrlCode = xbrlValue }) ?? "";
 		return memDescription;
 	}
+
+
+	private List<string> FindFactsFromRowCol(int templateSheetId)
+	{
+		using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
+		var sqlRows = @"select  distinct fact.Row from TemplateSheetFact fact  where  fact.TemplateSheetId= @sheetId order by fact.Row";
+		var rowLabels = connectionLocalDb.Query<string>(sqlRows, new { sheetId = templateSheetId }).ToList();		
+		return rowLabels;
+	}
+
+
+
 
 }

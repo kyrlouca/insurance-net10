@@ -51,7 +51,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 
 		if (doc.EiopaVersion.Trim()!= _parameterData.EiopaVersion)
 		{
-			var message = $"Eipa Version Submitted :{_parameterData.EiopaVersion} different than Document eiopa version: {_parameterData.EiopaVersion} ";
+			var message = $"Eiopa Version Submitted :{_parameterData.EiopaVersion} different than Document eiopa version: {_parameterData.EiopaVersion} ";
 			_logger.Error(message);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
 			return 1;
