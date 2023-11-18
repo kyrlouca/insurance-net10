@@ -45,7 +45,7 @@ public class ExcelBookCreator : IExcelBookWriter
 		using var excelEngine = new ExcelEngine();
 
 
-		(_originWorkbook, var originMessage) = ExcelHelperSync.OpenExistingExcelWorkbook(excelEngine, _parameterData.ExcelTemplateFile);
+		(_originWorkbook, var originMessage) = ExcelWriterHelper.OpenExistingExcelWorkbook(excelEngine, _parameterData.ExcelTemplateFile);
 		if (_originWorkbook is null)
 		{
 			_logger.Error(originMessage);
@@ -53,7 +53,7 @@ public class ExcelBookCreator : IExcelBookWriter
 			return "";
 		}
 
-		(_destinationWorkbook,var xMessage )= ExcelHelperSync.CreateExcelWorkbook(excelEngine);
+		(_destinationWorkbook,var xMessage )= ExcelWriterHelper.CreateExcelWorkbook(excelEngine);
 		var errorMessage = "Cannot create excel Workbook syncfusion file";
 		if (_destinationWorkbook is null)
 		{
@@ -227,7 +227,7 @@ public class ExcelBookCreator : IExcelBookWriter
 		Styles.ChangeDiagonalStyle(_destinationWorkbook);
 
 		var savedFile = _parameterData.FileName;
-		var (isSaveValid, saveMessage) = ExcelHelperSync.SaveWorkbook(_destinationWorkbook, savedFile);
+		var (isSaveValid, saveMessage) = ExcelWriterHelper.SaveWorkbook(_destinationWorkbook, savedFile);
 		if (!isSaveValid)
 		{
 			_logger.Error(saveMessage);
@@ -244,7 +244,7 @@ public class ExcelBookCreator : IExcelBookWriter
 			{
 
 				var cOriginRange = originSheet.Range[rangeStr];
-				var cOffset = ExcelHelperSync.OffsetRange(cOriginRange, UpperLeftRow, UpperLeftCol);
+				var cOffset = ExcelWriterHelper.OffsetRange(cOriginRange, UpperLeftRow, UpperLeftCol);
 				IRange destRange = destSheet.Range[cOffset.StartRow, cOffset.StartCol, cOffset.EndRow, cOffset.EndCol];
 				cOriginRange.CopyTo(destRange, ExcelCopyRangeOptions.All);
 				return destRange;

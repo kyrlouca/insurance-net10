@@ -48,7 +48,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		IApplication application = excelEngine.Excel;
 		application.DefaultVersion = ExcelVersion.Xlsx;
 
-		(Workbook, var originMessage) = ExcelHelperSync.OpenExistingExcelWorkbook(excelEngine, filename);
+		(Workbook, var originMessage) = ExcelWriterHelper.OpenExistingExcelWorkbook(excelEngine, filename);
 		if (Workbook is null)
 		{
 			_logger.Error(originMessage);
@@ -74,7 +74,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		}
 
 		var savedFile = @"C:\Users\kyrlo\soft\dotnet\insurance-project\TestingXbrl270\makaOUT1.xlsx";
-		(var isValidSave, var destSaveMessage) = ExcelHelperSync.SaveWorkbook(Workbook, savedFile);
+		(var isValidSave, var destSaveMessage) = ExcelWriterHelper.SaveWorkbook(Workbook, savedFile);
 		if (!isValidSave)
 		{
 			_logger.Error(destSaveMessage);
@@ -101,7 +101,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		{
 			foreach (var cell in dataRow.Cells)
 			{
-				var dataCell = ExcelHelperSync.CreateRowColObject(cell.AddressR1C1Local);
+				var dataCell = ExcelWriterHelper.CreateRowColObject(cell.AddressR1C1Local);
 				var rowLabel = leftRange[dataCell.Row, leftRange.Column].Value;
 				var colLabel = topRange[topRange.Row, dataCell.Col].Value;
 
@@ -140,7 +140,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		{ 
 			foreach(var colCell in topRange)
 			{
-				var colObject = ExcelHelperSync.CreateRowColObject(colCell.AddressR1C1Local);
+				var colObject = ExcelWriterHelper.CreateRowColObject(colCell.AddressR1C1Local);
 				var colIndex = colObject.Col;								
 				var cell = workSheet[rowIndex,colIndex];
 

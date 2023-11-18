@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 
-internal class ExcelHelperSync
+internal class ExcelWriterHelper
 {
 	public static (IWorkbook? workbook,string errorMessage ) OpenExistingExcelWorkbook(ExcelEngine excelEngine, string fileName)
 	{
