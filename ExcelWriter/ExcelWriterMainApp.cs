@@ -17,7 +17,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 
 
 	public int id = 12;
-	public ExcelWriterMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IExcelBookWriter excelBookWriter,IExcelBookDataFiller excelBookDataFiller)
+	public ExcelWriterMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IExcelBookWriter excelBookWriter, IExcelBookDataFiller excelBookDataFiller)
 	{
 		_parameterHandler = getParameters;
 		_parameterData = getParameters.GetParameterData();
@@ -30,7 +30,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 	public int Run()
 	{
 		Console.WriteLine("started Excle");
-		
+
 		var doc = _commonRoutines.SelectDocInstance(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
 
 		if (doc is null)
@@ -38,7 +38,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			var message = $"Cannot Find DocInstance for fund:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
 			_logger.Error(message);
 			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
-			return 1;					
+			return 1;
 		}
 
 		if (doc.Status == "P")
@@ -49,7 +49,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
-		if (doc.EiopaVersion.Trim()!= _parameterData.EiopaVersion)
+		if (doc.EiopaVersion.Trim() != _parameterData.EiopaVersion)
 		{
 			var message = $"Eiopa Version Submitted :{_parameterData.EiopaVersion} different than Document eiopa version: {_parameterData.EiopaVersion} ";
 			_logger.Error(message);
@@ -57,17 +57,17 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
+		//Create the empty excel file
+		var filename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
+		//filename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
+		//if (string.IsNullOrEmpty(filename))
+		//{
+		//	return 1;
+		//}
 
-		//var filename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
-		var filename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
-		if (string.IsNullOrEmpty(filename))
-		{
-			return 1;
-		}
+		//Popoluate the file with values
+		var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, filename);
 
-		
-		var y =_excelBookDataFiller.PopulateExcelBook(doc.InstanceId, filename);
-		
 		return 0;
 
 	}

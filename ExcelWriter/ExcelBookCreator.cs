@@ -13,7 +13,7 @@ using Syncfusion.XlsIO.Implementation.Collections;
 using System;
 using System.Drawing;
 
-public class ExcelBookWriter : IExcelBookWriter
+public class ExcelBookCreator : IExcelBookWriter
 {
 	private readonly IParameterHandler _parameterHandler;
 	ParameterData _parameterData = new();
@@ -24,7 +24,7 @@ public class ExcelBookWriter : IExcelBookWriter
 	int _documentId = 0;
 	string debugTableCode = "";
 
-	public ExcelBookWriter(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
+	public ExcelBookCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
 	{
 		_parameterHandler = parametersHandler;
 		_logger = logger;
