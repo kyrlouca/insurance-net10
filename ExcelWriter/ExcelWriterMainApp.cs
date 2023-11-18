@@ -13,11 +13,11 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 	private readonly ICommonRoutines _commonRoutines;
 	private readonly IExcelBookWriter _excelBookWriter;
 	private readonly IExcelBookDataFiller _excelBookDataFiller;
-
+	private readonly ITemplateMerger _templateMerger;
 
 
 	public int id = 12;
-	public ExcelWriterMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IExcelBookWriter excelBookWriter, IExcelBookDataFiller excelBookDataFiller)
+	public ExcelWriterMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IExcelBookWriter excelBookWriter, IExcelBookDataFiller excelBookDataFiller, ITemplateMerger templateMerger)
 	{
 		_parameterHandler = getParameters;
 		_parameterData = getParameters.GetParameterData();
@@ -25,7 +25,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 		_commonRoutines = commonRoutines;
 		_excelBookWriter = excelBookWriter;
 		_excelBookDataFiller = excelBookDataFiller;
-
+		_templateMerger = templateMerger;
 	}
 	public int Run()
 	{
@@ -59,14 +59,17 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 
 		//Create the empty excel file
 		var filename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
-		//filename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
-		//if (string.IsNullOrEmpty(filename))
-		//{
-		//	return 1;
-		//}
+		filename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
+		if (string.IsNullOrEmpty(filename))
+		{
+			return 1;
+		}
 
 		//Po;ddsssss
-		var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, filename);
+		//var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, filename);
+
+		var x = _templateMerger.MergeTemplates(doc.InstanceId, filename);
+
 
 		return 0;
 

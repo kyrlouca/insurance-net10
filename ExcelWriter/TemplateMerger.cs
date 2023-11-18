@@ -29,7 +29,6 @@ public class TemplateMerger : ITemplateMerger
 	private readonly ILogger _logger;
 	private readonly ICommonRoutines _commonRoutines;
 	private IWorkbook? Workbook;
-	//private IWorkbook? _originWorkbook; //template workbook
 	int _documentId = 0;
 	string debugTableCode = "";
 
@@ -60,16 +59,7 @@ public class TemplateMerger : ITemplateMerger
 			return false;
 		}
 
-		var dbClosedSheets = _commonRoutines.SelectTempateSheets(_documentId)
-			.Where(sheet => !sheet.IsOpenTable);
-		foreach (var dbClosedSheet in dbClosedSheets)
-		{
-			Console.WriteLine($"Closed:{dbClosedSheet.SheetCode}");
-
-
-		}
-
-
+	
 
 		//Merge sheets for each templeate Code (3 digit code) based on dimension .(line of business BL and currency OC)
 		//If there is a TemplateBundel, the Merged sheet can merge horizontally and vertically.
@@ -79,7 +69,8 @@ public class TemplateMerger : ITemplateMerger
 
 		foreach (var template in templates)
 		{
-			MergeOneTemplate(template);
+            Console.WriteLine($"template:{template.TemplateCode}");
+            MergeOneTemplate(template);
 		}
 
 
@@ -109,13 +100,13 @@ public class TemplateMerger : ITemplateMerger
                     SELECT zet.value
                     FROM TemplateSheetInstance sheet
                     JOIN SheetZetValue zet ON zet.TemplateSheetId = sheet.TemplateSheetId
-                    WHERE sheet.InstanceId = @documentId
+                    WHERE sheet.InstanceId = @_documentId
                         AND sheet.TableCode LIKE @templateCode
                         AND zet.Dim IN ('BL','OC','CR')
                     GROUP BY zet.Value
             ";
 		var templateCode = $"{templateTableBundle.TemplateCode}%";
-		var zetBLList = connectionInsurance.Query<string>(sqlZet, new { _documentId, templateCode }).ToList();
+		var zetBLList = connectionInsurance.Query<string>(sqlZet, new {  _documentId, templateCode }).ToList();
 
 
 		if (!zetBLList.Any())
@@ -145,41 +136,6 @@ public class TemplateMerger : ITemplateMerger
 
 
 
-	private List<TemplateSheetFact> FindFactsFromRowCol(TemplateSheetInstance sheet, string row, string col)
-	{
-		//more than one fact with the same row,col but with different currency
-		var sqlFact =
-	  @"
-		SELECT *                  
-		FROM dbo.TemplateSheetFact fact
-		WHERE
-		  fact.TemplateSheetId = @sheetId
-		  AND fact.Row = @row
-		  AND fact.Col = @col                                    
-	";
-
-		using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
-		var facts = connectionLocalDb.Query<TemplateSheetFact>(sqlFact, new { sheetId = sheet.TemplateSheetId, row, col }).ToList();
-		return facts;
-	}
-
-	private TemplateSheetFact? FindFactFromRowColZet(TemplateSheetInstance sheet, string row, string col, string zet)
-	{
-		//more than one fact with the same row,col but with different currency
-		var sqlFact =
-	  @"
-            SELECT *    
-			FROM dbo.TemplateSheetFact fact
-			WHERE
-			  fact.TemplateSheetId = @sheetId
-			  AND fact.Row = @row
-			  AND fact.Col = @col
-			  AND fact.Zet = @zet                
-     ";
-		using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
-		var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlFact, new { sheetId = sheet.TemplateSheetId, row, col, zet });
-		return fact;
-	}
 
 	private string XbrlCodeToValue(string xbrlValue)
 	{
@@ -247,11 +203,16 @@ public class TemplateMerger : ITemplateMerger
 		{
 			//If just one sheet,  do not merge but copy the same sheet as merged
 			var realSheet = GetSheetFromBook(dbRealSheets[0]);
-
+			if(realSheet is null)
+			{
+                Console.WriteLine("xxx");
+            }
 			//************************			
 			IWorksheet newSheet = Workbook.Worksheets.Create(mergedTabName);
-			var allSheets = dbSheets.SelectMany(dbSheet => dbSheet).ToList();
-			return new MergedSheetRecord(newSheet, templateDesciption, allSheets, true);
+            //var newSheet = realSheet.CopySheet(mergedTabName);
+            var allSheets = dbSheets.SelectMany(dbSheet => dbSheet).ToList();
+            Console.WriteLine($"Createing Just one:{realSheet.Name}");
+            return new MergedSheetRecord(newSheet, templateDesciption, allSheets, true);
 		}
 
 		//iSheets is a list of lists. Each inner list has the sheets which lay horizontally
@@ -283,7 +244,7 @@ public class TemplateMerger : ITemplateMerger
 
 				//********************* fix
 				//var newSheet = DestExcelBook.CreateSheet(sheetTabName);
-				var newSheet = Workbook.Worksheets.AddCopy(1);
+				var newSheet = Workbook.Worksheets.Create(sheetTabName);
 
 				//***************** fux
 				//newSheet.CreateRow(0).CreateCell(0).SetCellValue($"{dbSheet.TableCode} - Empty Table");

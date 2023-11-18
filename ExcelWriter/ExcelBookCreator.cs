@@ -96,7 +96,7 @@ public class ExcelBookCreator : IExcelBookWriter
 			if (originSheet is null) continue;
 
 
-			var destSheet = _destinationWorkbook.Worksheets.Create(sheet.SheetTabName);
+			var destSheet = _destinationWorkbook.Worksheets.Create(sheet.SheetTabName.Trim());
 			destSheet.Zoom = 80;
 
 			//destSheet.UsedRange.CellStyle = bodyStyle;
