@@ -66,7 +66,7 @@ public class ExcelBookWriter : IExcelBookWriter
 
 
 		//////////////////////////////////////////////////////////////////
-		//Code here
+		//Start processing
 
 		var tableCodeStyle = Styles.TableCodeStyle(_destinationWorkbook);
 		var bodyStyle = Styles.BodyStyle(_destinationWorkbook);
@@ -147,12 +147,14 @@ public class ExcelBookWriter : IExcelBookWriter
 			dataNamedRange.RefersToRange = dataRange;
 
 			dataRange.ColumnWidth = 30;
-			var bor = dataRange.Borders;
-			dataRange.BorderAround(ExcelLineStyle.Thick);
-
+			dataRange.WrapText = false;
+			if(!sheet.IsOpenTable)
+			{
+				var bor = dataRange.Borders;
+				dataRange.BorderAround(ExcelLineStyle.Thick);
+			}			
 			//bor[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thick;
 			//bor[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
-
 
 
 			/////////////LEFT Labels 

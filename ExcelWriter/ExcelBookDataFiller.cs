@@ -56,47 +56,21 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			return false;
 		}
 
-		var dbSheets = _commonRoutines.SelectTempateSheets(_documentId)
+		var dbClosedSheets = _commonRoutines.SelectTempateSheets(_documentId)
 			.Where(sheet => !sheet.IsOpenTable);
-		foreach (var dbSheet in dbSheets)
-		{			
-			if (dbSheet.SheetTabName is null)
-			{
-				continue;
-			}
-			var workSheet = Workbook.Worksheets[dbSheet.SheetTabName];
+		foreach (var dbClosedSheet in dbClosedSheets)
+		{
+            Console.WriteLine($"Closed:{dbClosedSheet.SheetCode}");
+            PopulateClosedTable(dbClosedSheet);
+		
+		}
 
-			var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
-			var dataRange = dataName.RefersToRange;
-
-			var topName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
-			var topRange = topName.RefersToRange;
-
-			var leftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
-			var leftRange = leftName.RefersToRange;
-
-			foreach (var dataRow in dataRange.Rows)
-			{
-				foreach (var cell in dataRow.Cells)
-				{
-					var dataCell = ExcelHelperSync.CreateRowColObject(cell.AddressR1C1Local);
-					var rowLabel = leftRange[dataCell.Row, leftRange.Column].Value;
-					var colLabel = topRange[topRange.Row, dataCell.Col].Value;
-
-					if (string.IsNullOrEmpty(rowLabel) || string.IsNullOrEmpty(colLabel))
-					{
-						continue;
-					}
-					var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
-					if (facts.Count == 0 || facts.Count > 1)
-					{
-						continue;
-					}
-
-					var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
-					SaveCellValue(cell, fact);
-				}
-			}
+		var dbOpenSheets = _commonRoutines.SelectTempateSheets(_documentId)
+			.Where(sheet => sheet.IsOpenTable);
+		foreach (var dbOpenSheet in dbOpenSheets)
+		{
+			Console.WriteLine($"open:{dbOpenSheet.SheetCode}");
+			PopulateOpenTable(dbOpenSheet);
 		}
 
 		var savedFile = @"C:\Users\kyrlo\soft\dotnet\insurance-project\TestingXbrl270\makaOUT1.xlsx";
@@ -110,6 +84,79 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 		return true;
 	}
+
+	private bool PopulateClosedTable(TemplateSheetInstance dbSheet)
+	{
+		
+		var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
+		var dataRange = dataName.RefersToRange;
+
+		var topName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
+		var topRange = topName.RefersToRange;
+
+		var leftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
+		var leftRange = leftName.RefersToRange;
+
+		foreach (var dataRow in dataRange.Rows)
+		{
+			foreach (var cell in dataRow.Cells)
+			{
+				var dataCell = ExcelHelperSync.CreateRowColObject(cell.AddressR1C1Local);
+				var rowLabel = leftRange[dataCell.Row, leftRange.Column].Value;
+				var colLabel = topRange[topRange.Row, dataCell.Col].Value;
+
+				if (string.IsNullOrEmpty(rowLabel) || string.IsNullOrEmpty(colLabel))
+				{
+					continue;
+				}
+				var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
+				if (facts.Count == 0 || facts.Count > 1)
+				{
+					continue;
+				}
+
+				var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
+				SaveCellValue(cell, fact);
+			}
+		}		
+		return false;
+	}
+
+
+	private bool PopulateOpenTable(TemplateSheetInstance dbSheet)
+	{		
+
+		var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
+		var dataRange = dataName.RefersToRange;
+		var workSheet = dataRange.Worksheet;
+
+		var topName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
+		var topRange = topName.RefersToRange;
+
+		
+		var rowLabels = SelectOpenRowLabels(dbSheet.TemplateSheetId);
+		var rowIndex = dataRange.Row;
+		foreach (var rowLabel in rowLabels)
+		{ 
+			foreach(var colCell in topRange)
+			{
+				var colObject = ExcelHelperSync.CreateRowColObject(colCell.AddressR1C1Local);
+				var colIndex = colObject.Col;								
+				var cell = workSheet[rowIndex,colIndex];
+
+				var facts = FindFactsFromRowCol(dbSheet, rowLabel, colCell.Text);
+				if (facts.Count == 0 || facts.Count > 1)
+				{
+					continue;
+				}
+				var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
+				SaveCellValue(cell, fact);
+			}
+			rowIndex += 1;
+		}
+		return true;
+	}
+
 
 	private void SaveCellValue(IRange cell, TemplateSheetFact fact)
 	{
@@ -199,7 +246,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 	}
 
 
-	private List<string> FindFactsFromRowCol(int templateSheetId)
+	private List<string> SelectOpenRowLabels(int templateSheetId)
 	{
 		using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
 		var sqlRows = @"select  distinct fact.Row from TemplateSheetFact fact  where  fact.TemplateSheetId= @sheetId order by fact.Row";
