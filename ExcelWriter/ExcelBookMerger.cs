@@ -190,7 +190,11 @@ public class ExcelBookMerger : ITemplateMerger
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var xxx = zetTemplateBundle.SheetsAndWorksheets.Any(ll=>ll.Any());
+        var hasElements = zetTemplateBundle.SheetsAndWorksheets.Any(ll=>ll.Any(sh=>sh.WorkSheet is not null));
+        if (!hasElements)
+        {
+            return;
+        }
 
         var mergedTabName = string.IsNullOrEmpty(zetTemplateBundle.Zet)
             ? zetTemplateBundle.GroupTableCode
