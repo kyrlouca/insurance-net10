@@ -9,20 +9,7 @@ using System.Threading.Tasks;
 namespace ExcelWriter.DataModels;
 
 
-public readonly record struct TemplateBundle
-{
-	public string TemplateCode { get; init; }
-	public string TemplateDescription { get; init; }
-	public List<String> TableCodes { get; init; }
-	public TemplateBundle(string templateTableCode, string templateDescription, List<string> tableCodes)
-	{
-		TemplateCode = templateTableCode;
-		TemplateDescription = templateDescription;
-		TableCodes = tableCodes;
-	}
-}
-
-public readonly record struct TemplateBundleNew(string TemplateTableCode, string TemplateDescription, List<string> TableCodes);
- 
+public readonly record struct TemplateBundle(string TemplateCode, string TemplateDescription, List<string> TableCodes); 
 public record struct SheetDbAndWorksheet(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet);
+//ZetTemplateBundle contains list of lists to accomodate horizontantal grouping
 public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string TemplateDescription, List<List<SheetDbAndWorksheet>> SheetsAndWorksheets);

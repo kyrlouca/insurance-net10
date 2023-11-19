@@ -103,11 +103,12 @@ public class ExcelBookMerger : ITemplateMerger
     }
     private List<ZetTemplateBundle> CreateZetTemplateBundles(TemplateBundle templateTableBundle)
     {
-        //One template may have many Zet dimensions(for business line or currency)
+        //A template has many tables S.23.01.01=>  S.23.01.01.01, S.23.01.01.02 
+        //each table may have many Zet dimensions(for business line or currency)
         // Merge sheets under the same template code if they have the same zet.
-        //for example S.23.01.01.01, S.23.01.01.02 are under the same template S.23.01.01 with the same BL, OC dim value should be merged 
+        // A Zet template bundle groups the tables for the same Zet zet.Dim IN('BL','OC','CR')
         //If they have no zet, they will also be merged
-        // zet.Dim IN('BL','OC','CR')
+        
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         //currency is can be CD,CR,OC but for s.19 is oc
@@ -130,6 +131,7 @@ public class ExcelBookMerger : ITemplateMerger
             zetBLList.Add("");
         }
 
+        //All the templates of a module are in this list
         var zetTemplateBundlesList = new List<ZetTemplateBundle>();
         foreach (var zet in zetBLList)
         {
@@ -138,8 +140,7 @@ public class ExcelBookMerger : ITemplateMerger
             var z1 = new ZetTemplateBundle()
             {
                 GroupTableCode = templateTableBundle.TemplateCode,
-                TemplateDescription = templateTableBundle.TemplateDescription,
-                //one record for this list since there are not horizontal tables
+                TemplateDescription = templateTableBundle.TemplateDescription,                
                 SheetsAndWorksheets = new List<List<SheetDbAndWorksheet>>() { workPairs },
             };
             zetTemplateBundlesList.Add(z1);
