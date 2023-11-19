@@ -8,9 +8,10 @@ using System.Threading.Tasks;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 
-internal class ExcelWriterHelper
+internal class HelperRoutines
 {
-	public static (IWorkbook? workbook,string errorMessage ) OpenExistingExcelWorkbook(ExcelEngine excelEngine, string fileName)
+    //***If the new instance for ExcelEngine is created in using statement, then there is no need to closing workbook and disposing excelEngine.
+    public static (IWorkbook? workbook,string errorMessage ) OpenExistingExcelWorkbook(ExcelEngine excelEngine, string fileName)
 	{
 		//**  excel engine will be disposed by caller
 		var message = "";
@@ -89,16 +90,18 @@ internal class ExcelWriterHelper
 		return (true, "");
 	}
 
-	public static void CopyFile(string originFileName, string destFileName)
+	public static (bool isValid, string message)  CopyFile(string originFileName, string destFileName)
 	{
 
 		try
 		{
 			System.IO.File.Copy(originFileName, destFileName, true);
+			return (true, "");
 		}
 		catch (Exception ex)
 		{
 			Console.WriteLine(ex.Message);
+			return (false, ex.Message);
 			throw;
 		}
 
@@ -129,7 +132,7 @@ internal class ExcelWriterHelper
 		return newRange;				
 	}
 
-	public record RowColObject(string addressR1C1, int Row, int Col);
+	public record RowColObject(string AddressR1C1, int Row, int Col);
 	public static RowColObject? CreateRowColObject(string addreessR1C1)
 	{
 		var rg = new Regex("R(\\d*)C(\\d*)");		

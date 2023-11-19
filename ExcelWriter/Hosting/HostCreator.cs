@@ -38,7 +38,7 @@ public class HostCreator
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
 			 services.AddScoped<IExcelBookWriter,ExcelBookCreator>();
 			 services.AddScoped<IExcelBookDataFiller, ExcelBookDataFiller>();
-			 services.AddScoped<ITemplateMerger, TemplateMerger>();
+			 services.AddScoped<ITemplateMerger, ExcelBookMerger>();
 			 services.AddScoped<IExcelWriterMainApp, ExcelWriterMainApp>();			 			 
 
 		 })

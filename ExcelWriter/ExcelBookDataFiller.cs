@@ -36,7 +36,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		_commonRoutines = commonRoutines;
 	}
 
-	public bool PopulateExcelBook(int documentId, string filename)
+	public bool PopulateExcelBook(int documentId, string sourceFilename,string destFileName)
 	{
 		_documentId = documentId;
 		_parameterData = _parameterHandler.GetParameterData();
@@ -48,7 +48,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		IApplication application = excelEngine.Excel;
 		application.DefaultVersion = ExcelVersion.Xlsx;
 
-		(Workbook, var originMessage) = ExcelWriterHelper.OpenExistingExcelWorkbook(excelEngine, filename);
+		(Workbook, var originMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, sourceFilename);
 		if (Workbook is null)
 		{
 			_logger.Error(originMessage);
@@ -73,8 +73,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			PopulateOpenTable(dbOpenSheet);
 		}
 
-		var savedFile = @"C:\Users\kyrlo\soft\dotnet\insurance-project\TestingXbrl270\makaOUT1.xlsx";
-		(var isValidSave, var destSaveMessage) = ExcelWriterHelper.SaveWorkbook(Workbook, savedFile);
+		
+		//var savedFile = @"C:\Users\kyrlo\soft\dotnet\insurance-project\TestingXbrl270\makaOUT1.xlsx";
+		(var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(Workbook, destFileName);
 		if (!isValidSave)
 		{
 			_logger.Error(destSaveMessage);
@@ -101,7 +102,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		{
 			foreach (var cell in dataRow.Cells)
 			{
-				var dataCell = ExcelWriterHelper.CreateRowColObject(cell.AddressR1C1Local);
+				var dataCell = HelperRoutines.CreateRowColObject(cell.AddressR1C1Local);
 				var rowLabel = leftRange[dataCell.Row, leftRange.Column].Value;
 				var colLabel = topRange[topRange.Row, dataCell.Col].Value;
 
@@ -140,7 +141,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		{ 
 			foreach(var colCell in topRange)
 			{
-				var colObject = ExcelWriterHelper.CreateRowColObject(colCell.AddressR1C1Local);
+				var colObject = HelperRoutines.CreateRowColObject(colCell.AddressR1C1Local);
 				var colIndex = colObject.Col;								
 				var cell = workSheet[rowIndex,colIndex];
 

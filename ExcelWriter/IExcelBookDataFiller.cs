@@ -2,6 +2,6 @@
 {
 	public interface IExcelBookDataFiller
 	{
-		bool PopulateExcelBook(int documentId, string filename);
+		bool PopulateExcelBook(int documentId, string sourceFilename, string destFileName);
 	}
 }

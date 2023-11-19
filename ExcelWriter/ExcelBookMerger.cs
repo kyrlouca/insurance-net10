@@ -11,7 +11,7 @@ using Syncfusion.XlsIO;
 using System;
 using System.Collections.Generic;
 
-public class TemplateMerger : ITemplateMerger
+public class ExcelBookMerger : ITemplateMerger
 {
 
 	private readonly IParameterHandler _parameterHandler;
@@ -23,14 +23,14 @@ public class TemplateMerger : ITemplateMerger
     int _documentId = 0;
 	string debugTableCode = "";
 
-	public TemplateMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
+	public ExcelBookMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
 	{
 		_parameterHandler = parametersHandler;
 		_logger = logger;
 		_commonRoutines = commonRoutines;
 	}
 
-	public bool MergeTemplates(int documentId, string filename,string destFilename)
+	public bool MergeTemplates(int documentId, string sourceFile,string destFile)
 	{
 		_documentId = documentId;
 		_parameterData = _parameterHandler.GetParameterData();
@@ -42,7 +42,7 @@ public class TemplateMerger : ITemplateMerger
 		IApplication application = excelEngine.Excel;
 		application.DefaultVersion = ExcelVersion.Xlsx;
 
-		(Workbook, var originMessage) = ExcelWriterHelper.OpenExistingExcelWorkbook(excelEngine, filename);
+		(Workbook, var originMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, sourceFile);
 		if (Workbook is null)
 		{
 			_logger.Error(originMessage);
@@ -51,7 +51,7 @@ public class TemplateMerger : ITemplateMerger
 		}
 
 
-		(DestWorkbook, var destMessage) = ExcelWriterHelper.CreateExcelWorkbook(excelEngine);
+		(DestWorkbook, var destMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);
         if (DestWorkbook is null)
         {
             _logger.Error(destMessage);
@@ -64,6 +64,7 @@ public class TemplateMerger : ITemplateMerger
         //Merge sheets for each templeate Code (3 digit code) based on dimension .(line of business BL and currency OC)
         //If there is a TemplateBundel, the Merged sheet can merge horizontally and vertically.
         //A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
+
         var templates = CreateTemplateTableBundlesForModule(_parameterData.ModuleCode);
 		//templates = templates.Where(bundle => (bundle.TemplateCode == "S.05.02.01" || bundle.TemplateCode == "S.19.01.01")).ToList();
 
@@ -75,7 +76,7 @@ public class TemplateMerger : ITemplateMerger
 
 
 		
-		(var isValidSave, var destSaveMessage) = ExcelWriterHelper.SaveWorkbook(DestWorkbook, destFilename);
+		(var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
 		if (!isValidSave)
 		{
 			_logger.Error(destSaveMessage);
@@ -331,6 +332,7 @@ public class TemplateMerger : ITemplateMerger
 
 	private List<TemplateBundle> CreateTemplateTableBundlesForModule(string moduleCode)
 	{
+		//templateCode="", tableCode=""
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
@@ -344,13 +346,12 @@ public class TemplateMerger : ITemplateMerger
                 WHERE 1 = 1
                     and TemplateOrTableCode like 'S.%'
                     and mod.ModuleCode= @moduleCode                    
-                ORDER BY mod.ModuleCode                       ";
-		//todo make it empty list if null
-		var templates = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleCode });
+                ORDER BY mod.ModuleCode                       ";		
+		var templateOrTables = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleCode });
 
 
 
-		foreach (var template in templates)
+		foreach (var tot in templateOrTables)
 		{
 			var sqlTableCodes = @"
                 SELECT  tab.TableCode
@@ -360,12 +361,12 @@ public class TemplateMerger : ITemplateMerger
                 LEFT OUTER JOIN mTaxonomyTable taxo ON taxo.AnnotatedTableID = anno.TemplateOrTableID
                 LEFT OUTER JOIN mTable tab ON tab.TableID = taxo.TableID
                 WHERE 1 = 1
-                    AND va.TemplateOrTableCode = @templateCode
+                    AND va.TemplateOrTableCode = @templateOrTableCode
                 ORDER BY tab.TableCode
 
                 ";
-			var tableCodes = connectionEiopa.Query<string>(sqlTableCodes, new { templateCode = template.TemplateOrTableCode })?.ToList() ?? new List<string>();
-			templateTableBundles.Add(new TemplateBundle(template.TemplateOrTableCode, template.TemplateOrTableLabel, tableCodes));
+			var tableCodes = connectionEiopa.Query<string>(sqlTableCodes, new {  tot.TemplateOrTableCode })?.ToList() ?? new List<string>();
+			templateTableBundles.Add(new TemplateBundle(tot.TemplateOrTableCode, tot.TemplateOrTableLabel, tableCodes));
 
 
 		}
