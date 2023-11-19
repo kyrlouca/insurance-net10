@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Shared.DataModels;
+using Syncfusion.XlsIO;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,3 +23,6 @@ public readonly record struct TemplateBundle
 }
 
 public readonly record struct TemplateBundleNew(string TemplateTableCode, string TemplateDescription, List<string> TableCodes);
+
+public record struct WorksheetPair(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet);
+public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string TemplateDescription, List<WorksheetPair> WorksheetPairs );

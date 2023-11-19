@@ -57,18 +57,21 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
-		//Create the empty excel file
-		var sourceFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
-		sourceFilename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
-		if (string.IsNullOrEmpty(sourceFilename))
-		{
-			return 1;
-		}
-
-        //Po;ddsssss
+        var sourceFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
         var filledFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaFilled.xlsx";
-        var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, sourceFilename,filledFilename);
 
+        if (1 == 2)
+		{
+			//Create the empty excel file
+			
+			sourceFilename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
+			if (string.IsNullOrEmpty(sourceFilename))
+			{
+				return 1;
+			}
+			
+			var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, sourceFilename, filledFilename);
+		}
         var mergedFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaMerge.xlsx";
         var x = _templateMerger.MergeTemplates(doc.InstanceId, filledFilename,mergedFilename);
 
