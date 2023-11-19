@@ -23,6 +23,6 @@ public readonly record struct TemplateBundle
 }
 
 public readonly record struct TemplateBundleNew(string TemplateTableCode, string TemplateDescription, List<string> TableCodes);
-
-public record struct WorksheetPair(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet);
-public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string TemplateDescription, List<WorksheetPair> WorksheetPairs );
+ 
+public record struct SheetDbAndWorksheet(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet);
+public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string TemplateDescription, List<List<SheetDbAndWorksheet>> SheetsAndWorksheets);
