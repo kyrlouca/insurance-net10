@@ -65,31 +65,22 @@ public class ExcelBookMerger : ITemplateMerger
         //Merge sheets for each template Code (3 parts) based on dimension.(line of business BL and currency OC)
         //"S.01.01.02=>"S.01.01.02.01","S.01.01.02.02","S.01.01.02.03"        
         //A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
-        //If there is a TemplateBundel, the Merged sheet can merge horizontally and vertically.
+        //using TemplateBundle, the Merged sheet can render tables horizontally and vertically.
+        
+        var moduleTemplateBundles = CreateTemplateBundlesForModule(_parameterData.ModuleCode);        
         //for each templateBundle, create one or more zetTempleateBundle (one per zet)
-        var moduleTemplateBundles = CreateTemplateBundlesForModule(_parameterData.ModuleCode);
-        var moduleZetTemplateBundles = new List<List<ZetTemplateBundle>>();
+        var moduleZetTemplateBundles = moduleTemplateBundles
+                .SelectMany(templateBundle => ToZetTemplateBundles(templateBundle))
+                .ToList();
 
-        foreach (var templateBundle in moduleTemplateBundles)
+
+
+
+        foreach (var zetTemplate in moduleZetTemplateBundles)
         {
-            Console.WriteLine($"template:{templateBundle.TemplateCode}");
-            //Each module template code has one or more tableCodes "S.01.01.02=>"S.01.01.02.01","S.01.01.02.02","S.01.01.02.03"        
-            // Each table code may correspone to one or MORE sheet instances, each with a diffrent zet
-            var templateList = CreateZetTemplateBundles(templateBundle);
-            moduleZetTemplateBundles.Add(templateList);
-            //MergeOneTemplatePerZet(template);
-        }
-
-        foreach(var zetTemplate in moduleZetTemplateBundles)
-        {
-            foreach(var templateBundle in zetTemplate)
-            {
-
-                var specialBundle = SpecialTemplateList.FindSpecialTemplateLayout(templateBundle.GroupTableCode);
-                ZetTemplateBundle zetBundle = specialBundle is null ? templateBundle : ToZetTemplateBundle(specialBundle, templateBundle);                                
-                CreateOneZetSheet(templateBundle);
-            }
-            
+            var specialBundle = SpecialTemplateList.FindSpecialTemplateLayout(zetTemplate.GroupTableCode);
+            ZetTemplateBundle zetBundle = specialBundle is null ? zetTemplate : ToZetTemplateBundle(specialBundle, zetTemplate);
+            RenderOneZetSheet(zetTemplate);
         }
 
         (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
@@ -102,14 +93,15 @@ public class ExcelBookMerger : ITemplateMerger
 
         return true;
     }
-    private List<ZetTemplateBundle> CreateZetTemplateBundles(TemplateBundle templateTableBundle)
+
+    private List<ZetTemplateBundle> ToZetTemplateBundles(TemplateBundle templateTableBundle)
     {
         //A template has many tables S.23.01.01=>  S.23.01.01.01, S.23.01.01.02 
         //each table may have many Zet dimensions(for business line or currency)
         // Merge sheets under the same template code if they have the same zet.
         // A Zet template bundle groups the tables for the same Zet zet.Dim IN('BL','OC','CR')
         //If they have no zet, they will also be merged
-        
+
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         //currency is can be CD,CR,OC but for s.19 is oc
@@ -137,23 +129,24 @@ public class ExcelBookMerger : ITemplateMerger
         foreach (var zet in zetBLList)
         {
             var tableSpecialInfoList = templateTableBundle.TableCodes.Select(tableCode => CreateTableInfo(tableCode, zet)).ToList();
+            var horizontalList = new HorizontalTableInfolList(tableSpecialInfoList);
 
             var ztb = new ZetTemplateBundle()
             {
                 GroupTableCode = templateTableBundle.TemplateCode,
                 TemplateDescription = templateTableBundle.TemplateDescription,
-                TableInfosMatrix = new List<List<TableInfo>>() { tableSpecialInfoList },
+                TableInfosMatrix = new() { horizontalList }
             };
             zetTemplateBundlesList.Add(ztb);
         }
         return zetTemplateBundlesList;
     }
-    private TableInfo CreateTableInfo(string tableCode, string zet)
+    private TableExtensiveInfo CreateTableInfo(string tableCode, string zet)
     {
         var dbSheet = SelectSheetByZet(zet, tableCode);
 
         var worksheet = Workbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
-        return new TableInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet };
+        return new TableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet };
     }
     private TemplateSheetInstance? SelectSheetByZet(string zetValue, string tableCode)
     {
@@ -182,13 +175,13 @@ public class ExcelBookMerger : ITemplateMerger
         var result = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSheets, new { _documentId, tableCode, zetValue });
         return result;
     }
-    private void CreateOneZetSheet(ZetTemplateBundle zetTemplateBundle)
+    private void RenderOneZetSheet(ZetTemplateBundle zetTemplateBundle)
     {
 
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var hasElements = zetTemplateBundle.TableInfosMatrix.Any(ll=>ll.Any(sh=>sh.WorkSheet is not null));
+        var hasElements = zetTemplateBundle.TableInfosMatrix.Any(row => row.HorizontalTables.Any(sh => sh.WorkSheet is not null));
         if (!hasElements)
         {
             return;
@@ -206,15 +199,16 @@ public class ExcelBookMerger : ITemplateMerger
             : $"{zetTemplateBundle.TemplateDescription.Trim()}#{zetLabel}";
 
 
-        var destSheet= DestWorkbook.Worksheets.Create(mergedTabName);
-        
-        var horizontalOffset = 1;
+        var destSheet = DestWorkbook.Worksheets.Create(mergedTabName);
+
+
         var verticalOffset = 1;
-        foreach (var ss in zetTemplateBundle.TableInfosMatrix)
+        foreach (var vertical in zetTemplateBundle.TableInfosMatrix)
         {
 
-            foreach (var sheet in ss)
+            foreach (var sheet in vertical.HorizontalTables)
             {
+                var horizontalOffset = 1;
                 var worksheet = sheet.WorkSheet;
                 if (worksheet is null)
                 {
@@ -277,40 +271,41 @@ public class ExcelBookMerger : ITemplateMerger
         return templateTableBundles;
 
     }
-    
-    private static ZetTemplateBundle ToZetTemplateBundle(SpecialTemplateLayout special,ZetTemplateBundle zetBundle)
+
+    private static ZetTemplateBundle ToZetTemplateBundle(SpecialTemplateLayout special, ZetTemplateBundle zetBundle)
     {
-        var sheetMatrix= new List<List<TableInfo>>();
-               
-        foreach (var horizontalLine in special.TableCodesMatrix?? new string[][] { })
+        var sheetMatrix = new List<List<TableExtensiveInfo>>();
+
+        foreach (var horizontalLine in special.TableCodesMatrix ?? new string[][] { })
         {
             horizontalLine
                 .Select(tableCode => FindMatchingTableInfo(tableCode))
-                .Where(shw=>shw is not null)
-                .ToList();            
-            var horizontalNL = new List<TableInfo>();
+                .Where(shw => shw is not null)
+                .ToList();
+            var horizontalNL = new List<TableExtensiveInfo>();
             sheetMatrix.Add(horizontalNL);
         }
 
         var ztb = new ZetTemplateBundle()
         {
             //var workPairs= special.TableCodes(debugTableCode=>CreateWorksheetPair())
-            GroupTableCode=special.TemplateCode,
-            TemplateDescription=special.TemplateSheetName
+            GroupTableCode = special.TemplateCode,
+            TemplateDescription = special.TemplateSheetName
         };
         return ztb;
 
-        TableInfo? FindMatchingTableInfo(string tableCode)
+        TableExtensiveInfo? FindMatchingTableInfo(string tableCode)
         {
-            var specialTableInfo = zetBundle.TableInfosMatrix
-                    .SelectMany(sw => sw)
-                    .FirstOrDefault(sw=>sw.Equals(tableCode));
-            return specialTableInfo;
+            var horizonalList = zetBundle.TableInfosMatrix.FirstOrDefault(hl => hl.HorizontalTables.Any(hor => hor.TableCode == tableCode));
+
+            var tableInfo = horizonalList.HorizontalTables.FirstOrDefault(tt => tt.TableCode == tableCode);
+
+            return tableInfo;
 
         }
 
 
     }
-        
+
 
 }
