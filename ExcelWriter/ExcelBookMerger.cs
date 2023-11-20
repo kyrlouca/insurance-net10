@@ -137,13 +137,13 @@ public class ExcelBookMerger : ITemplateMerger
         {
             var workPairs = templateTableBundle.TableCodes.Select(tableCode => CreateWorksheetPair(tableCode, zet)).ToList();
 
-            var z1 = new ZetTemplateBundle()
+            var ztb = new ZetTemplateBundle()
             {
                 GroupTableCode = templateTableBundle.TemplateCode,
                 TemplateDescription = templateTableBundle.TemplateDescription,                
                 SheetsAndWorksheets = new List<List<SheetDbAndWorksheet>>() { workPairs },
             };
-            zetTemplateBundlesList.Add(z1);
+            zetTemplateBundlesList.Add(ztb);
         }
         return zetTemplateBundlesList;
     }
