@@ -142,18 +142,18 @@ public class ExcelBookMerger : ITemplateMerger
             {
                 GroupTableCode = templateTableBundle.TemplateCode,
                 TemplateDescription = templateTableBundle.TemplateDescription,
-                TableInfosMatrix = new List<List<tableExtensiveInfo>>() { tableSpecialInfoList },
+                TableInfosMatrix = new List<List<TableInfo>>() { tableSpecialInfoList },
             };
             zetTemplateBundlesList.Add(ztb);
         }
         return zetTemplateBundlesList;
     }
-    private tableExtensiveInfo CreateTableInfo(string tableCode, string zet)
+    private TableInfo CreateTableInfo(string tableCode, string zet)
     {
         var dbSheet = SelectSheetByZet(zet, tableCode);
 
         var worksheet = Workbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
-        return new tableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet };
+        return new TableInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet };
     }
     private TemplateSheetInstance? SelectSheetByZet(string zetValue, string tableCode)
     {
@@ -280,7 +280,7 @@ public class ExcelBookMerger : ITemplateMerger
     
     private static ZetTemplateBundle ToZetTemplateBundle(SpecialTemplateLayout special,ZetTemplateBundle zetBundle)
     {
-        var sheetMatrix= new List<List<tableExtensiveInfo>>();
+        var sheetMatrix= new List<List<TableInfo>>();
                
         foreach (var horizontalLine in special.TableCodesMatrix?? new string[][] { })
         {
@@ -288,7 +288,7 @@ public class ExcelBookMerger : ITemplateMerger
                 .Select(tableCode => FindMatchingTableInfo(tableCode))
                 .Where(shw=>shw is not null)
                 .ToList();            
-            var horizontalNL = new List<tableExtensiveInfo>();
+            var horizontalNL = new List<TableInfo>();
             sheetMatrix.Add(horizontalNL);
         }
 
@@ -300,7 +300,7 @@ public class ExcelBookMerger : ITemplateMerger
         };
         return ztb;
 
-        tableExtensiveInfo? FindMatchingTableInfo(string tableCode)
+        TableInfo? FindMatchingTableInfo(string tableCode)
         {
             var specialTableInfo = zetBundle.TableInfosMatrix
                     .SelectMany(sw => sw)
