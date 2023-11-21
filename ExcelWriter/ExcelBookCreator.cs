@@ -68,10 +68,10 @@ public class ExcelBookCreator : IExcelBookWriter
 		//////////////////////////////////////////////////////////////////
 		//Start processing
 
-		var tableCodeStyle = CommonPensionStyles.TableCodeStyle(_destinationWorkbook);
-		var bodyStyle = CommonPensionStyles.BodyStyle(_destinationWorkbook);
-		var headerStyle = CommonPensionStyles.HeaderStyle(_destinationWorkbook);
-		var dataSectionStyle = CommonPensionStyles.DataSectionStyle(_destinationWorkbook);
+		var tableCodeStyle = CustomPensionStyles.TableCodeStyle(_destinationWorkbook);
+		var bodyStyle = CustomPensionStyles.BodyStyle(_destinationWorkbook);
+		var headerStyle = CustomPensionStyles.HeaderStyle(_destinationWorkbook);
+		var dataSectionStyle = CustomPensionStyles.DataSectionStyle(_destinationWorkbook);
 
 
 
@@ -224,7 +224,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
 		//////////////////////////////////////////////////////////////////
 
-		CommonPensionStyles.ChangeDiagonalStyle(_destinationWorkbook);
+		CustomPensionStyles.ChangeDiagonalStyle(_destinationWorkbook);
 
 		var savedFile = _parameterData.FileName;
 		var (isSaveValid, saveMessage) = HelperRoutines.SaveWorkbook(_destinationWorkbook, savedFile);

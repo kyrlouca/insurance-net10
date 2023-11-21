@@ -21,26 +21,30 @@ public class ExcelBookMerger : ITemplateMerger
     ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ICommonRoutines _commonRoutines;
+    private readonly ICustomPensionStyles2 _customPensionStyles;
+    PensionStyles _pensionStyles;
     private IWorkbook? Workbook;
     private IWorkbook? DestWorkbook;
     int _documentId = 0;
-    string debugTableCode = "";
-    IStyle tableCodeStyle;
-    IStyle bodyStyle;
-    IStyle headerStyle;
-    IStyle dataSectionStyle;
+
+    //private IStyle? tableCodeStyle;
+    //private IStyle? bodyStyle;
+    //private IStyle? headerStyle;
+    //private IStyle? dataSectionStyle;
 
 
-    public ExcelBookMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
+    public ExcelBookMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyles2 customPensionStyles)
     {
         _parameterHandler = parametersHandler;
         _logger = logger;
         _commonRoutines = commonRoutines;
+        _customPensionStyles = customPensionStyles;
     }
     public bool MergeTemplates(int documentId, string sourceFile, string destFile)
     {
         _documentId = documentId;
         _parameterData = _parameterHandler.GetParameterData();
+        
 
 
         Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
@@ -66,10 +70,9 @@ public class ExcelBookMerger : ITemplateMerger
             return false;
         }
 
-         tableCodeStyle = CustomPensionStyles.TableCodeStyle(DestWorkbook);
-         bodyStyle = CommonPensionStyles.BodyStyle(DestWorkbook);
-         headerStyle = CommonPensionStyles.HeaderStyle(DestWorkbook);
-         dataSectionStyle = CommonPensionStyles.DataSectionStyle(DestWorkbook);
+        _pensionStyles = _customPensionStyles.GetStyles(DestWorkbook);
+        
+   
 
 
 
@@ -266,21 +269,21 @@ public class ExcelBookMerger : ITemplateMerger
                 destRange.ColumnWidth = 30;
                 if (!isOpenTable)
                 {
-                    
+
                     if ((destRange.LastColumn - destRange.Column) > 1)
                     {
                         destRange.Columns[0].ColumnWidth = 50;
                         destRange.Columns[0].WrapText = false;
                         destRange.Columns[1].ColumnWidth = 10;
                     }
-                    if (destRange.LastColumn - destRange.Column == 3 )
+                    if (destRange.LastColumn - destRange.Column == 3)
                     {
                         WorksheetImpl.TRangeValueType cellType = (worksheet as WorksheetImpl).GetCellType(destRange.LastRow - 1, 3, false);
                         if (cellType.ToString() != "Number")
                         {
                             destRange.Columns[2].ColumnWidth = 80;
                         }
-                        
+
                     }
                 }
                 tableHeight = Math.Max(tableHeight, sheetLastRow);

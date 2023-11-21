@@ -41,7 +41,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
-		if (doc.Status == "P")
+ 		if (doc.Status == "P")
 		{
 			var message = $"Document currently being Processed by another User. Document Id:{doc.InstanceId}";
 			_logger.Error(message);
@@ -60,7 +60,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
         var sourceFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
         var filledFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaFilled.xlsx";
 
-        if (1 == 2)
+        if (1 == 1)
 		{
 			sourceFilename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
 			if (string.IsNullOrEmpty(sourceFilename))
