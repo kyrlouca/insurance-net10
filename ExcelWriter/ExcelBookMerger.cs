@@ -72,11 +72,6 @@ public class ExcelBookMerger : ITemplateMerger
 
         _pensionStyles = _customPensionStyles.GetStyles(DestWorkbook);
 
-
-
-
-
-
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //Merge sheets for each template Code (3 parts) based on dimension.(line of business BL and currency OC)
         //"S.01.01.02=>"S.01.01.02.01","S.01.01.02.02","S.01.01.02.03"        
@@ -85,13 +80,13 @@ public class ExcelBookMerger : ITemplateMerger
 
 
 
+        var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
 
         var moduleTemplateBundles = CreateTemplateBundlesForModule(_parameterData.ModuleCode);
         //for each templateBundle, create one or more zetTempleateBundle (one per zet)
         var moduleZetTemplateBundles = moduleTemplateBundles
                 .SelectMany(templateBundle => ToZetTemplateBundles(templateBundle))
                 .ToList();
-
 
         foreach (var zetTemplate in moduleZetTemplateBundles)
         {
@@ -100,8 +95,11 @@ public class ExcelBookMerger : ITemplateMerger
                 ? zetTemplate
                 : ToZetTemplateBundleSpecial(specialTemplateLayout);
             RenderOneZetSheet(zetBundle);
+            var indexItem = new IndexSheetListItem(zetTemplate.GroupTableCode, zetTemplate.TemplateDescription);
+            indexList.ListItems.Add(indexItem);
         }
 
+        RenderIndexList(indexList);
 
         (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
         if (!isValidSave)
@@ -243,6 +241,8 @@ public class ExcelBookMerger : ITemplateMerger
 
 
         var destSheet = DestWorkbook.Worksheets.Create(mergedTabName);
+        
+        
         destSheet.Zoom = 80;
 
         var verticalOffset = 1;
@@ -255,7 +255,7 @@ public class ExcelBookMerger : ITemplateMerger
             foreach (var sheet in vertical.HorizontalTables)
             {
                 var isOpenTable = sheet.DbSheet?.IsOpenTable ?? false;
-                
+
                 var worksheet = sheet.WorkSheet;
                 if (worksheet is null)
                 {
@@ -271,25 +271,9 @@ public class ExcelBookMerger : ITemplateMerger
                 var copyRange = worksheet.Range[1, 1, sheetLastRow, sheetLastCol];
                 var destRange = destSheet.Range[verticalOffset, horizontalOffset, verticalOffset + sheetLastRow, verticalOffset + sheetLastCol];
                 copyRange.CopyTo(destRange);
-                destRange.ColumnWidth = 30;
-                if (!isOpenTable)
-                {
+                
+                FormatColumnsWidth(isOpenTable, worksheet, destRange);
 
-                    if ((destRange.LastColumn - destRange.Column) > 1)
-                    {
-                        destRange.Columns[0].ColumnWidth = 50;
-                        destRange.Columns[0].WrapText = false;
-                        destRange.Columns[1].ColumnWidth = 10;
-                    }
-                    if (destRange.LastColumn - destRange.Column == 3)
-                    {
-                        WorksheetImpl.TRangeValueType cellType = (worksheet as WorksheetImpl).GetCellType(destRange.LastRow - 1, 3, false);
-                        if (cellType.ToString() != "Number")
-                        {
-                            destRange.Columns[2].ColumnWidth = 80;
-                        }
-                    }
-                }
                 tableHeight = Math.Max(tableHeight, sheetLastRow);
                 tableWidth = Math.Max(tableWidth, sheetLastCol);
                 horizontalOffset += horizontalOffset + tableWidth + 0;
@@ -297,6 +281,9 @@ public class ExcelBookMerger : ITemplateMerger
             verticalOffset = verticalOffset + tableHeight + 5;
         }
 
+
+        return;
+        /////////////////////////////////////////////////////////////////////
         static string BuildMergedTabName(ZetTemplateBundle zetTemplateBundle)
         {
             var mergedTabName = string.IsNullOrEmpty(zetTemplateBundle.Zet)
@@ -304,6 +291,29 @@ public class ExcelBookMerger : ITemplateMerger
                 : zetTemplateBundle.GroupTableCode + "#" + zetTemplateBundle.Zet;
             mergedTabName = mergedTabName.Replace(":", "_");
             return mergedTabName;
+        }
+
+        static void FormatColumnsWidth(bool isOpenTable, IWorksheet? worksheet, IRange destRange)
+        {
+            destRange.ColumnWidth = 30;
+            if (!isOpenTable)
+            {
+
+                if ((destRange.LastColumn - destRange.Column) > 1)
+                {
+                    destRange.Columns[0].ColumnWidth = 50;
+                    destRange.Columns[0].WrapText = false;
+                    destRange.Columns[1].ColumnWidth = 10;
+                }
+                if (destRange.LastColumn - destRange.Column == 3)
+                {
+                    WorksheetImpl.TRangeValueType cellType = (worksheet as WorksheetImpl).GetCellType(destRange.LastRow - 1, 3, false);
+                    if (cellType.ToString() != "Number")
+                    {
+                        destRange.Columns[2].ColumnWidth = 80;
+                    }
+                }
+            }
         }
     }
     private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode)
@@ -350,6 +360,22 @@ public class ExcelBookMerger : ITemplateMerger
 
     }
 
-
+    private void RenderIndexList(IndexSheetList indexList)
+    {
+        var indexSheet = DestWorkbook.Worksheets.Create("List");
+        indexSheet.SetColumnWidth(1, 12);        
+        indexSheet[1, 1].Text = "List of Templates";
+        var row = 3;
+        foreach(var sheet in indexList.ListItems)
+        {
+            var code = indexSheet[row, 1];
+            code.Text = sheet.templateCode;
+            code.CellStyle = _pensionStyles.TableCodeStyle;            
+            var description = indexSheet[row, 2];
+            description.Text = sheet.Description;
+            description.CellStyle = _pensionStyles.BodyStyle;
+            row++;
+        }
+    }
 
 }
