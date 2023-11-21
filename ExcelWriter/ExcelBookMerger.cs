@@ -130,8 +130,6 @@ public class ExcelBookMerger : ITemplateMerger
         }
         return zetTemplateBundlesList;
     }
-
-
     private ZetTemplateBundle ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout)
     {
         
@@ -149,8 +147,6 @@ public class ExcelBookMerger : ITemplateMerger
         return ztb;        
 
     }
-
-
     private List<string> SelectSpecialZetList(string templateCode)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -308,43 +304,6 @@ public class ExcelBookMerger : ITemplateMerger
 
     }
 
-    private static ZetTemplateBundle ToZetTemplateBundleSpecialOld(SpecialTemplateLayout special, ZetTemplateBundle zetBundle)
-    {
-        var sheetMatrix = new List<HorizontalTableInfolList>();
-
-        foreach (var tableCodesLine in special.TableCodesMatrix)
-        {
-            var hr = tableCodesLine
-                .Select(tableCode => ToTableInfo(tableCode))
-                .Where(tblInfo => tblInfo is not null)
-                .ToList();
-
-            //var horizontalNL = new List<TableExtensiveInfo>();
-            //sheetMatrix.Add(hr);
-        }
-
-        var ztb = new ZetTemplateBundle()
-        {
-            //var workPairs= special.TableCodes(debugTableCode=>CreateWorksheetPair())
-            GroupTableCode = special.TemplateCode,
-            TemplateDescription = special.TemplateSheetName,
-            TableMatrix = sheetMatrix
-
-        };
-        return ztb;
-
-        TableExtensiveInfo? ToTableInfo(string tableCode)
-        {
-            //find the line first
-            var horizonalList = zetBundle.TableMatrix.FirstOrDefault(hl => hl.HorizontalTables.Any(hor => hor.TableCode == tableCode));
-            var tableInfo = horizonalList.HorizontalTables.FirstOrDefault(tt => tt.TableCode == tableCode);
-
-            return tableInfo;
-
-        }
-
-
-    }
-
+    
 
 }
