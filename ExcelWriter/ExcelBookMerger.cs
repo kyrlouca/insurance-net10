@@ -239,7 +239,7 @@ public class ExcelBookMerger : ITemplateMerger
         var verticalOffset = 1;
         foreach (var vertical in zetTemplateBundle.TableMatrix)
         {
-
+            var tableSize = 1;
             foreach (var sheet in vertical.HorizontalTables)
             {
                 var horizontalOffset = 1;
@@ -255,9 +255,11 @@ public class ExcelBookMerger : ITemplateMerger
                 var copyRange = worksheet.Range[1, 1, sheetLastRow, sheetLastCol];
                 var destRange = destSheet.Range[verticalOffset, horizontalOffset];
                 copyRange.CopyTo(destRange);
-                horizontalOffset += 25;
+
+                tableSize = Math.Max(tableSize, sheetLastRow);
+                horizontalOffset += sheetLastRow +5;
             }
-            verticalOffset = verticalOffset + 30;
+            verticalOffset = verticalOffset + tableSize +5;
 
         }
 
