@@ -7,20 +7,18 @@ using System.Threading.Tasks;
 
 namespace ExcelWriter;
 
-public class Styles
+public static class CommonPensionStyles
 {
-	public static IStyle? HeaderStyle(IWorkbook workbook)
-	{
-		if (workbook is null) { return null; }
+	public static IStyle HeaderStyle(IWorkbook workbook)
+	{		
 		IStyle style = workbook.Styles.Add("HeaderStyle");
 		style.Font.Bold = true;
 		
 		return style;
 	}
 
-	public static IStyle? BodyStyle(IWorkbook workbook)
-	{
-		if (workbook is null) { return null; }
+	public static IStyle BodyStyle(IWorkbook workbook)
+	{		
 		//IStyle bodyStyle = _destinationWorkbook.Styles.Add("BodyStyle");
 		IStyle bodyStyle = workbook.Styles.Add("BodyStyle");
 
@@ -35,9 +33,8 @@ public class Styles
 		return bodyStyle;
 	}
 
-	public static IStyle? TableCodeStyle(IWorkbook workbook)
-	{
-		if (workbook is null) { return null; }
+	public static IStyle TableCodeStyle(IWorkbook workbook)
+	{		
 		IStyle style = workbook.Styles.Add("TableCodeStyle");
 		//style.Color = Syncfusion.Drawing.Color.Red;
 		style.Font.Color = ExcelKnownColors.Red;

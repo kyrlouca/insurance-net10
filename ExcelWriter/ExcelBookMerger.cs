@@ -25,6 +25,11 @@ public class ExcelBookMerger : ITemplateMerger
     private IWorkbook? DestWorkbook;
     int _documentId = 0;
     string debugTableCode = "";
+    IStyle tableCodeStyle;
+    IStyle bodyStyle;
+    IStyle headerStyle;
+    IStyle dataSectionStyle;
+
 
     public ExcelBookMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
     {
@@ -61,10 +66,10 @@ public class ExcelBookMerger : ITemplateMerger
             return false;
         }
 
-        var tableCodeStyle = Styles.TableCodeStyle(DestWorkbook);
-        var bodyStyle = Styles.BodyStyle(DestWorkbook);
-        var headerStyle = Styles.HeaderStyle(DestWorkbook);
-        var dataSectionStyle = Styles.DataSectionStyle(DestWorkbook);
+         tableCodeStyle = CustomPensionStyles.TableCodeStyle(DestWorkbook);
+         bodyStyle = CommonPensionStyles.BodyStyle(DestWorkbook);
+         headerStyle = CommonPensionStyles.HeaderStyle(DestWorkbook);
+         dataSectionStyle = CommonPensionStyles.DataSectionStyle(DestWorkbook);
 
 
 

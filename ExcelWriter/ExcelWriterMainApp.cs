@@ -62,8 +62,6 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 
         if (1 == 2)
 		{
-			//Create the empty excel file
-			
 			sourceFilename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
 			if (string.IsNullOrEmpty(sourceFilename))
 			{
