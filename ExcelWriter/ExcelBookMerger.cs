@@ -258,6 +258,9 @@ public class ExcelBookMerger : ITemplateMerger
                 if (worksheet is null)
                 {
                     //noramlly you write the description of the empty table
+                    var emptyTableCode = destSheet[verticalOffset, horizontalOffset];
+                    emptyTableCode.Text = $"{sheet.TableCode} - empty table";
+                    emptyTableCode.CellStyle = _pensionStyles.TableCodeStyle;
                     continue;
                 }
                 var sheetLastRow = worksheet.Rows.Last().LastRow;
