@@ -44,7 +44,7 @@ public class ExcelBookMerger : ITemplateMerger
     {
         _documentId = documentId;
         _parameterData = _parameterHandler.GetParameterData();
-        
+
 
 
         Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
@@ -71,8 +71,8 @@ public class ExcelBookMerger : ITemplateMerger
         }
 
         _pensionStyles = _customPensionStyles.GetStyles(DestWorkbook);
-        
-   
+
+
 
 
 
@@ -99,7 +99,7 @@ public class ExcelBookMerger : ITemplateMerger
             ZetTemplateBundle zetBundle = specialTemplateLayout is null
                 ? zetTemplate
                 : ToZetTemplateBundleSpecial(specialTemplateLayout);
-            RenderOneZetSheet(zetTemplate);
+            RenderOneZetSheet(zetBundle);
         }
 
 
@@ -250,10 +250,12 @@ public class ExcelBookMerger : ITemplateMerger
         {
 
             var tableHeight = 1;
+            var tableWidth = 1;
+            var horizontalOffset = 1;
             foreach (var sheet in vertical.HorizontalTables)
             {
                 var isOpenTable = sheet.DbSheet?.IsOpenTable ?? false;
-                var horizontalOffset = 1;
+                
                 var worksheet = sheet.WorkSheet;
                 if (worksheet is null)
                 {
@@ -286,15 +288,13 @@ public class ExcelBookMerger : ITemplateMerger
                         {
                             destRange.Columns[2].ColumnWidth = 80;
                         }
-
                     }
                 }
                 tableHeight = Math.Max(tableHeight, sheetLastRow);
-
-                horizontalOffset += sheetLastRow + 5;
+                tableWidth = Math.Max(tableWidth, sheetLastCol);
+                horizontalOffset += horizontalOffset + tableWidth + 0;
             }
             verticalOffset = verticalOffset + tableHeight + 5;
-
         }
 
         static string BuildMergedTabName(ZetTemplateBundle zetTemplateBundle)
