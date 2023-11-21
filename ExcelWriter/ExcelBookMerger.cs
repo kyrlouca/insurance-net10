@@ -69,7 +69,7 @@ public class ExcelBookMerger : ITemplateMerger
         
         var moduleTemplateBundles = CreateTemplateBundlesForModule(_parameterData.ModuleCode);        
         //for each templateBundle, create one or more zetTempleateBundle (one per zet)
-        var moduleZetTemplateBundles = moduleTemplateBundles
+        var moduleZetTemplateBundles = moduleTemplateBundles                
                 .SelectMany(templateBundle => ToZetTemplateBundles(templateBundle))
                 .ToList();
 
@@ -129,13 +129,18 @@ public class ExcelBookMerger : ITemplateMerger
         foreach (var zet in zetBLList)
         {
             var tableSpecialInfoList = templateTableBundle.TableCodes.Select(tableCode => CreateTableInfo(tableCode, zet)).ToList();
-            var horizontalList = new HorizontalTableInfolList(tableSpecialInfoList);
+
+            //the matrix has one row for each tablecode and each row has just one table info 
+            //this way, the render layout is vertical with one table under the other
+            var tableMatrix = templateTableBundle.TableCodes.Select(tableCode => 
+                    new HorizontalTableInfolList( new List<TableExtensiveInfo>() { CreateTableInfo(tableCode, zet) } ) )
+                    .ToList();
 
             var ztb = new ZetTemplateBundle()
             {
                 GroupTableCode = templateTableBundle.TemplateCode,
                 TemplateDescription = templateTableBundle.TemplateDescription,
-                TableInfosMatrix = new() { horizontalList }
+                TableInfosMatrix = tableMatrix
             };
             zetTemplateBundlesList.Add(ztb);
         }
