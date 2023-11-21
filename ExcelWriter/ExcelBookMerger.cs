@@ -67,13 +67,13 @@ public class ExcelBookMerger : ITemplateMerger
         //A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
         //using TemplateBundle, the Merged sheet can render tables horizontally and vertically.
         
+
+
         var moduleTemplateBundles = CreateTemplateBundlesForModule(_parameterData.ModuleCode);        
         //for each templateBundle, create one or more zetTempleateBundle (one per zet)
         var moduleZetTemplateBundles = moduleTemplateBundles                
                 .SelectMany(templateBundle => ToZetTemplateBundles(templateBundle))
                 .ToList();
-
-
 
 
         foreach (var zetTemplate in moduleZetTemplateBundles)
@@ -82,6 +82,7 @@ public class ExcelBookMerger : ITemplateMerger
             ZetTemplateBundle zetBundle = specialBundle is null ? zetTemplate : ToZetTemplateBundle(specialBundle, zetTemplate);
             RenderOneZetSheet(zetTemplate);
         }
+
 
         (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
         if (!isValidSave)
@@ -94,14 +95,44 @@ public class ExcelBookMerger : ITemplateMerger
         return true;
     }
 
-    private List<ZetTemplateBundle> ToZetTemplateBundles(TemplateBundle templateTableBundle)
+    private List<ZetTemplateBundle> ToZetTemplateBundles(TemplateBundle templateBundle)
     {
-        //A template has many tables S.23.01.01=>  S.23.01.01.01, S.23.01.01.02 
-        //each table may have many Zet dimensions(for business line or currency)
-        // Merge sheets under the same template code if they have the same zet.
-        // A Zet template bundle groups the tables for the same Zet zet.Dim IN('BL','OC','CR')
-        //If they have no zet, they will also be merged
+        // A for each special Zet (for business line or currency 'BL','OC','CR'), a template has many tables S.23.01.01=>  S.23.01.01.01, S.23.01.01.02         
+        // For each zet, merge all the template sheets        
+        // If they have no special zet, they will all be merged
+        // for the template, return a list of zetBundles (one for each zet)
 
+
+        var zetList = SelectSpecialZetList(templateBundle.TemplateCode);
+        
+        var zetTemplateBundlesList = new List<ZetTemplateBundle>();
+        foreach (var zet in zetList)
+        {
+            //var tableSpecialInfoList = templateTableBundle.TableCodes.Select(tableCode => CreateTableInfo(tableCode, zet)).ToList();
+            //var matrix = tableSpecialInfoList.Select(tblinfo => new HorizontalTableInfolList(  new List<TableExtensiveInfo>() { tblinfo } ))
+            //    .ToList();
+
+            //each table in a horizontal list of the matrix is rendered one next to each other
+            // each horizontal list of tables in the matrix are rendered one under the other             
+            //the matrix has one row for each tablecode and each row has just one table (basically all tables will be rendered vertically this way) 
+            
+            var tableMatrix = templateBundle.TableCodes.Select(tableCode => 
+                    new HorizontalTableInfolList( new List<TableExtensiveInfo>() { CreateTableInfo(tableCode, zet) } ) )
+                    .ToList();
+
+            var ztb = new ZetTemplateBundle()
+            {
+                GroupTableCode = templateBundle.TemplateCode,
+                TemplateDescription = templateBundle.TemplateDescription,
+                TableMatrix = tableMatrix
+            };
+            zetTemplateBundlesList.Add(ztb);
+        }
+        return zetTemplateBundlesList;
+    }
+
+    private List<string> SelectSpecialZetList(string templateCode)
+    {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         //currency is can be CD,CR,OC but for s.19 is oc
@@ -115,36 +146,14 @@ public class ExcelBookMerger : ITemplateMerger
                         AND zet.Dim IN ('BL','OC','CR')
                     GROUP BY zet.Value
             ";
-        var templateCode = $"{templateTableBundle.TemplateCode}%";
-        var zetBLList = connectionInsurance.Query<string>(sqlZet, new { _documentId, templateCode }).ToList();
-
-
+        var templateCodeLike = $"{templateCode}%";
+        var zetBLList = connectionInsurance.Query<string>(sqlZet, new { _documentId, templateCode=templateCodeLike }).ToList();
         if (!zetBLList.Any())
         {
             zetBLList.Add("");
         }
+        return zetBLList;
 
-        //
-        var zetTemplateBundlesList = new List<ZetTemplateBundle>();
-        foreach (var zet in zetBLList)
-        {
-            var tableSpecialInfoList = templateTableBundle.TableCodes.Select(tableCode => CreateTableInfo(tableCode, zet)).ToList();
-
-            //the matrix has one row for each tablecode and each row has just one table info 
-            //this way, the render layout is vertical with one table under the other
-            var tableMatrix = templateTableBundle.TableCodes.Select(tableCode => 
-                    new HorizontalTableInfolList( new List<TableExtensiveInfo>() { CreateTableInfo(tableCode, zet) } ) )
-                    .ToList();
-
-            var ztb = new ZetTemplateBundle()
-            {
-                GroupTableCode = templateTableBundle.TemplateCode,
-                TemplateDescription = templateTableBundle.TemplateDescription,
-                TableInfosMatrix = tableMatrix
-            };
-            zetTemplateBundlesList.Add(ztb);
-        }
-        return zetTemplateBundlesList;
     }
     private TableExtensiveInfo CreateTableInfo(string tableCode, string zet)
     {
@@ -186,7 +195,7 @@ public class ExcelBookMerger : ITemplateMerger
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var hasElements = zetTemplateBundle.TableInfosMatrix.Any(row => row.HorizontalTables.Any(sh => sh.WorkSheet is not null));
+        var hasElements = zetTemplateBundle.TableMatrix.Any(row => row.HorizontalTables.Any(sh => sh.WorkSheet is not null));
         if (!hasElements)
         {
             return;
@@ -208,7 +217,7 @@ public class ExcelBookMerger : ITemplateMerger
 
 
         var verticalOffset = 1;
-        foreach (var vertical in zetTemplateBundle.TableInfosMatrix)
+        foreach (var vertical in zetTemplateBundle.TableMatrix)
         {
 
             foreach (var sheet in vertical.HorizontalTables)
@@ -301,7 +310,7 @@ public class ExcelBookMerger : ITemplateMerger
 
         TableExtensiveInfo? FindMatchingTableInfo(string tableCode)
         {
-            var horizonalList = zetBundle.TableInfosMatrix.FirstOrDefault(hl => hl.HorizontalTables.Any(hor => hor.TableCode == tableCode));
+            var horizonalList = zetBundle.TableMatrix.FirstOrDefault(hl => hl.HorizontalTables.Any(hor => hor.TableCode == tableCode));
 
             var tableInfo = horizonalList.HorizontalTables.FirstOrDefault(tt => tt.TableCode == tableCode);
 

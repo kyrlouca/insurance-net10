@@ -18,7 +18,7 @@ public record struct HorizontalTableInfolList(List<TableExtensiveInfo> Horizonta
 //ZetTemplateBundle contains list of lists to accomodate a list of horizontal tables layout
 //Each outer vertical list contains a horizontal line of tables
 public record struct xxZetTemplateBundleListxx(List<ZetTemplateBundle> ZetBundleList);
-public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string TemplateDescription, List<HorizontalTableInfolList> TableInfosMatrix);
+public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string TemplateDescription, List<HorizontalTableInfolList> TableMatrix);
 
 public static class SPT
 {
