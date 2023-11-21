@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Metadata;
+using Syncfusion.XlsIO.Implementation;
 
 public class ExcelBookMerger : ITemplateMerger
 {
@@ -60,12 +61,20 @@ public class ExcelBookMerger : ITemplateMerger
             return false;
         }
 
+        var tableCodeStyle = Styles.TableCodeStyle(DestWorkbook);
+        var bodyStyle = Styles.BodyStyle(DestWorkbook);
+        var headerStyle = Styles.HeaderStyle(DestWorkbook);
+        var dataSectionStyle = Styles.DataSectionStyle(DestWorkbook);
+
+
+
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //Merge sheets for each template Code (3 parts) based on dimension.(line of business BL and currency OC)
         //"S.01.01.02=>"S.01.01.02.01","S.01.01.02.02","S.01.01.02.03"        
         //A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
         //using TemplateBundle, the Merged sheet can render tables horizontally and vertically.
+
 
 
 
@@ -99,7 +108,7 @@ public class ExcelBookMerger : ITemplateMerger
 
     private List<ZetTemplateBundle> ToZetTemplateBundles(TemplateBundle templateBundle)
     {
-        
+
         //A template has many tables S.23.01.01=>  S.23.01.01.01, S.23.01.01.02         
         //A template bundle groups the tables codes without considering a zet value
         // A ZetTemplate bundle contains the table info for a specific special Zet (for business line or currency 'BL','OC','CR'),
@@ -111,7 +120,7 @@ public class ExcelBookMerger : ITemplateMerger
 
         var zetTemplateBundlesList = new List<ZetTemplateBundle>();
         foreach (var zet in zetList)
-        {            
+        {
             //each table in a horizontal list of the matrix is rendered one next to each other
             // each horizontal list of tables in the matrix are rendered one under the other             
             //the matrix has one row for each tablecode and each row has just one table (basically all tables will be rendered vertically this way) 
@@ -132,19 +141,19 @@ public class ExcelBookMerger : ITemplateMerger
     }
     private ZetTemplateBundle ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout)
     {
-        
+
         var tableMatrix = specialTemplateLayout.TableCodesMatrix.Select(line =>
             new HorizontalTableInfolList(line.Select(code => CreateTableInfo(code, "")).ToList())
         )
         .ToList();
-        
+
         var ztb = new ZetTemplateBundle()
-        {            
+        {
             GroupTableCode = specialTemplateLayout.TemplateCode,
             TemplateDescription = specialTemplateLayout.TemplateSheetName,
             TableMatrix = tableMatrix
         };
-        return ztb;        
+        return ztb;
 
     }
     private List<string> SelectSpecialZetList(string templateCode)
@@ -216,11 +225,7 @@ public class ExcelBookMerger : ITemplateMerger
         {
             return;
         }
-
-        var mergedTabName = string.IsNullOrEmpty(zetTemplateBundle.Zet)
-            ? zetTemplateBundle.GroupTableCode
-            : zetTemplateBundle.GroupTableCode + "#" + zetTemplateBundle.Zet;
-        mergedTabName = mergedTabName.Replace(":", "_");
+        string mergedTabName = BuildMergedTabName(zetTemplateBundle);
 
         var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
         var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.Zet });
@@ -230,14 +235,16 @@ public class ExcelBookMerger : ITemplateMerger
 
 
         var destSheet = DestWorkbook.Worksheets.Create(mergedTabName);
-
+        destSheet.Zoom = 80;
 
         var verticalOffset = 1;
         foreach (var vertical in zetTemplateBundle.TableMatrix)
         {
-            var tableSize = 1;
+
+            var tableHeight = 1;
             foreach (var sheet in vertical.HorizontalTables)
             {
+                var isOpenTable = sheet.DbSheet?.IsOpenTable ?? false;
                 var horizontalOffset = 1;
                 var worksheet = sheet.WorkSheet;
                 if (worksheet is null)
@@ -249,16 +256,44 @@ public class ExcelBookMerger : ITemplateMerger
                 var sheetLastCol = worksheet.Columns.Last().LastColumn;
 
                 var copyRange = worksheet.Range[1, 1, sheetLastRow, sheetLastCol];
-                var destRange = destSheet.Range[verticalOffset, horizontalOffset];
+                var destRange = destSheet.Range[verticalOffset, horizontalOffset, verticalOffset + sheetLastRow, verticalOffset + sheetLastCol];
                 copyRange.CopyTo(destRange);
+                destRange.ColumnWidth = 30;
+                if (!isOpenTable)
+                {
+                    
+                    if ((destRange.LastColumn - destRange.Column) > 1)
+                    {
+                        destRange.Columns[0].ColumnWidth = 50;
+                        destRange.Columns[0].WrapText = false;
+                        destRange.Columns[1].ColumnWidth = 10;
+                    }
+                    if (destRange.LastColumn - destRange.Column == 3 )
+                    {
+                        WorksheetImpl.TRangeValueType cellType = (worksheet as WorksheetImpl).GetCellType(destRange.LastRow - 1, 3, false);
+                        if (cellType.ToString() != "Number")
+                        {
+                            destRange.Columns[2].ColumnWidth = 80;
+                        }
+                        
+                    }
+                }
+                tableHeight = Math.Max(tableHeight, sheetLastRow);
 
-                tableSize = Math.Max(tableSize, sheetLastRow);
-                horizontalOffset += sheetLastRow +5;
+                horizontalOffset += sheetLastRow + 5;
             }
-            verticalOffset = verticalOffset + tableSize +5;
+            verticalOffset = verticalOffset + tableHeight + 5;
 
         }
 
+        static string BuildMergedTabName(ZetTemplateBundle zetTemplateBundle)
+        {
+            var mergedTabName = string.IsNullOrEmpty(zetTemplateBundle.Zet)
+                ? zetTemplateBundle.GroupTableCode
+                : zetTemplateBundle.GroupTableCode + "#" + zetTemplateBundle.Zet;
+            mergedTabName = mergedTabName.Replace(":", "_");
+            return mergedTabName;
+        }
     }
     private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode)
     {
@@ -304,6 +339,6 @@ public class ExcelBookMerger : ITemplateMerger
 
     }
 
-    
+
 
 }
