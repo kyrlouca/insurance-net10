@@ -63,9 +63,6 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 		var EmptyFilename = Path.Combine(dir, $"{file}_empty.xlsx");
 		var filledFilename = Path.Combine(dir, $"{file}_filled.xlsx");
 		var mergedFilename = Path.Combine(dir, $"{file}_merged.xlsx");
-        
-		//EmptyFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
-  //      filledFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaFilled.xlsx";
 
         if (1 == 2)
 		{

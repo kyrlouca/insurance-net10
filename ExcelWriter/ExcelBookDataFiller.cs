@@ -16,6 +16,7 @@ using Syncfusion.XlsIO.Parser.Biff_Records;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
 using System.Linq.Expressions;
+using ExcelWriter.Common;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {

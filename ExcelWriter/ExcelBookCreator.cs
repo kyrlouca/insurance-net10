@@ -12,6 +12,7 @@ using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System;
 using System.Drawing;
+using ExcelWriter.Common;
 
 public class ExcelBookCreator : IExcelBookWriter
 {
