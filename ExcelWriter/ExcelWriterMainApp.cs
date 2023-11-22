@@ -57,20 +57,25 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			return 1;
 		}
 
-        var sourceFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
-        var filledFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaFilled.xlsx";
+		var xx=_parameterData.FileName.Trim();
+		var file= Path.GetFileName(xx);
+		var dir=Path.GetDirectoryName(xx);
+		var EmptyFilename = Path.Combine(dir, $"{file}_empty.xlsx");
+		var filledFilename = Path.Combine(dir, $"{file}_filled.xlsx");
+		var mergedFilename = Path.Combine(dir, $"{file}_merged.xlsx");
+        
+		//EmptyFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
+  //      filledFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaFilled.xlsx";
 
         if (1 == 2)
 		{
-			sourceFilename = _excelBookWriter.CreateExcelBook(doc.InstanceId);
-			if (string.IsNullOrEmpty(sourceFilename))
+			_excelBookWriter.CreateExcelBook(doc.InstanceId,EmptyFilename);
+			if (string.IsNullOrEmpty(EmptyFilename))
 			{
 				return 1;
-			}
-			
-			var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, sourceFilename, filledFilename);
-		}
-        var mergedFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaMerge.xlsx";
+			}			
+			var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
+	}        
         var x = _templateMerger.MergeTemplates(doc.InstanceId, filledFilename,mergedFilename);
 
 

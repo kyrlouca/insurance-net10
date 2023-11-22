@@ -33,7 +33,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
 
 
-	public string CreateExcelBook(int documentId)
+	public string CreateExcelBook(int documentId,string filename)
 	{
 		_documentId = documentId;
 		_parameterData = _parameterHandler.GetParameterData();
@@ -226,8 +226,9 @@ public class ExcelBookCreator : IExcelBookWriter
 
 		CustomPensionStyles.ChangeDiagonalStyle(_destinationWorkbook);
 
-		var savedFile = _parameterData.FileName;
-		var (isSaveValid, saveMessage) = HelperRoutines.SaveWorkbook(_destinationWorkbook, savedFile);
+		//var savedFile = _parameterData.FileName;
+		var savedFile = filename;
+        var (isSaveValid, saveMessage) = HelperRoutines.SaveWorkbook(_destinationWorkbook, savedFile);
 		if (!isSaveValid)
 		{
 			_logger.Error(saveMessage);

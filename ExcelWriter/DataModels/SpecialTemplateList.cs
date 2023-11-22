@@ -51,7 +51,9 @@ public static class SpecialTemplateList
             new SpecialTemplateLayout("S.28.01.01", "S.28.01.01", new[]
                 {
                     new string[] { "S.28.01.01.01" },
-                    new string[] { "S.28.01.01.02", "S.28.01.01.05" }
+                    new string[] { "S.28.01.01.02" },
+                    new string[] { "S.28.01.01.03", "S.28.01.01.04" },
+                    new string[] { "S.28.01.01.05" }
             })
         };
 	}
