@@ -265,8 +265,8 @@ public class ExcelBookMerger : ITemplateMerger
             {
                 var isOpenTable = ztbSheet.DbSheet?.IsOpenTable ?? false;
 
-                var worksheet = ztbSheet.WorkSheet;
-                if (worksheet is null)
+                var srcWorksheet = ztbSheet.WorkSheet;
+                if (srcWorksheet is null)
                 {
                     //noramlly you write the description of the empty table
                     var emptyTableCode = destSheet[verticalOffset, horizontalOffset];
@@ -276,36 +276,19 @@ public class ExcelBookMerger : ITemplateMerger
                 }
 
 
-                var sheetLastRow = worksheet.Rows.Last().LastRow;
-                var sheetLastCol = worksheet.Columns.Last().LastColumn;
+                var sheetLastRow = srcWorksheet.Rows.Last().LastRow;
+                var sheetLastCol = srcWorksheet.Columns.Last().LastColumn;
 
-                var copyRange = worksheet.Range[1, 1, sheetLastRow, sheetLastCol];
+                var copyRange = srcWorksheet.Range[1, 1, sheetLastRow, sheetLastCol];
                 var destRange = destSheet.Range[verticalOffset, horizontalOffset, verticalOffset + sheetLastRow, verticalOffset + sheetLastCol];
                 copyRange.CopyTo(destRange);
-                //****************************************************************
+                
                 //save the ranges of the dest
-                var srcDataName = Workbook.Names[$"{worksheet.Name.Trim()}_data"];
-
-                if (srcDataName != null)
-                {
-                    var srcDataAddress = srcDataName.RefersToRange.AddressR1C1Local;
-                    var srcDataRange = srcDataName.RefersToRange;
-                    var obj = HelperRoutines.CreateRowColObject(srcDataAddress);
-                    var dataDestRange = destSheet[obj.Row + verticalOffset - 1, obj.Col + horizontalOffset - 1
-                        , obj.LastRow + verticalOffset - 1, obj.LastCol + horizontalOffset - 1];
-
-                    var name = $"{worksheet.Name.Trim()}_data";
-
-
-
-                    //var xx = destRange.AddressLocal;
-                    var destName = DestWorkbook.Names.Add(name);
-                    destName.RefersToRange = dataDestRange;
-                }
-                //////////////////////////////////////////////////////////////
+                SaveDestDataRange(destSheet, verticalOffset, horizontalOffset, srcWorksheet);
+                
 
                 CreateLinkToHomePage(destSheet);
-                FormatColumnsWidth(isOpenTable, worksheet, destRange);
+                FormatColumnsWidth(isOpenTable, srcWorksheet, destRange);
 
                 tableHeight = Math.Max(tableHeight, sheetLastRow);
                 tableWidth = Math.Max(tableWidth, sheetLastCol);
@@ -358,6 +341,23 @@ public class ExcelBookMerger : ITemplateMerger
             var address = $"List!A1";
             hyperlink.Address = address;
             linkRange.CellStyle = _pensionStyles.TableCodeStyle;
+        }
+
+        void SaveDestDataRange(IWorksheet destSheet, int verticalOffset, int horizontalOffset, IWorksheet? worksheet)
+        {
+            var srcDataName = Workbook.Names[$"{worksheet.Name.Trim()}_data"];
+
+            if (srcDataName != null)
+            {                
+                var srcDataRange = srcDataName.RefersToRange;
+                var obj = HelperRoutines.CreateRowColObject(srcDataRange.AddressR1C1Local);
+
+                var dataDestRange = destSheet[obj.Row + verticalOffset - 1, obj.Col + horizontalOffset - 1
+                    , obj.LastRow + verticalOffset - 1, obj.LastCol + horizontalOffset - 1];
+
+                var destName = DestWorkbook.Names.Add($"{worksheet.Name.Trim()}_data");
+                destName.RefersToRange = dataDestRange;
+            }
         }
     }
     private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode)
