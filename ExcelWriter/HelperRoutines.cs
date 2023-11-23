@@ -132,12 +132,32 @@ internal class HelperRoutines
 		return newRange;				
 	}
 
-	public record RowColObject(string AddressR1C1, int Row, int Col);
-	public static RowColObject? CreateRowColObject(string addreessR1C1)
-	{
-		var rg = new Regex("R(\\d*)C(\\d*)");		
-		var match = rg.Match(addreessR1C1);
-		if (!match.Success) return null;
-		return new RowColObject(addreessR1C1, int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value));		
-	}
+
+
+    public record RowColObject(string AddressR1C1, int Row, int Col, int LastRow, int LastCol);
+    public static RowColObject? CreateRowColObject(string addreessR1C1)
+    {
+        var rg = new Regex("R(\\d*)C(\\d*)");
+        var match = rg.Matches(addreessR1C1);
+		if (match is null) {
+			return null;
+		}
+		var row = int.Parse(match[0].Groups[1].Value);
+		var col = int.Parse(match[0].Groups[2].Value);
+		
+        if (match.Count== 1)
+		{
+			return new RowColObject(addreessR1C1, row, col, row, col);
+		}
+		else if (match.Count == 2)
+		{
+			var lastrow = int.Parse(match[1].Groups[1].Value);
+			var lastcol = int.Parse(match[1].Groups[2].Value);
+            return new RowColObject(addreessR1C1, row, col, lastrow, lastcol);
+        };
+		return null;
+        
+    }
+
+    
 }

@@ -279,7 +279,7 @@ public class ExcelBookMerger : ITemplateMerger
                 var destRange = destSheet.Range[verticalOffset, horizontalOffset, verticalOffset + sheetLastRow, verticalOffset + sheetLastCol];
                 copyRange.CopyTo(destRange);
 
-                SaveDestDataRange(srcWorkSheet, verticalOffset, horizontalOffset, destWorksheet);
+                SaveDestDataRange(worksheet, verticalOffset, horizontalOffset, destSheet);
 
                 CreateLinkToHomePage(destSheet);
                 FormatColumnsWidth(isOpenTable, worksheet, destRange);
