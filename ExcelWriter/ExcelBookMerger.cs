@@ -463,6 +463,7 @@ public class ExcelBookMerger : ITemplateMerger
             return false;
         }
 
+        //the range for the s61 and s62 data is just one row, and we need to expand to the end of the sheet
         var s61DataLine = DestWorkbook?.Names[$"{s61Code}_data"]?.RefersToRange;
         var s62DataLine =DestWorkbook?.Names[$"{s62Code}_data"]?.RefersToRange;
 
@@ -481,6 +482,10 @@ public class ExcelBookMerger : ITemplateMerger
             }
             s62Row.CopyTo(sCombined.Range[ s61row.Row, s62Row.LastColumn + 5]);
         }
+
+
+        var sortedRange = sCombined.Range[s62Data.Row, s62Data.LastColumn+5, s61Data.LastRow, s62Data.LastColumn+5 + s62Data.Columns.Length-1];
+        sortedRange.MoveTo(s62Data); 
 
         return true;
 
