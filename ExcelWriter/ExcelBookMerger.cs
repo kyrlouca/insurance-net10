@@ -23,7 +23,7 @@ public class ExcelBookMerger : ITemplateMerger
     private readonly ICommonRoutines _commonRoutines;
     private readonly ICustomPensionStyles2 _customPensionStyles;
     PensionStyles _pensionStyles;
-    private IWorkbook? Workbook;
+    private IWorkbook? SourceWorkbook;
     private IWorkbook? DestWorkbook;
     int _documentId = 0;
 
@@ -53,8 +53,8 @@ public class ExcelBookMerger : ITemplateMerger
         IApplication application = excelEngine.Excel;
         application.DefaultVersion = ExcelVersion.Xlsx;
 
-        (Workbook, var originMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, sourceFile);
-        if (Workbook is null)
+        (SourceWorkbook, var originMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, sourceFile);
+        if (SourceWorkbook is null)
         {
             _logger.Error(originMessage);
             _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, originMessage);
@@ -195,7 +195,7 @@ public class ExcelBookMerger : ITemplateMerger
     {
         var dbSheet = SelectSheetByZet(zet, tableCode);
 
-        var worksheet = Workbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
+        var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
         return new TableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet };
     }
     private TemplateSheetInstance? SelectSheetByZet(string zetValue, string tableCode)
@@ -278,6 +278,8 @@ public class ExcelBookMerger : ITemplateMerger
                 var copyRange = worksheet.Range[1, 1, sheetLastRow, sheetLastCol];
                 var destRange = destSheet.Range[verticalOffset, horizontalOffset, verticalOffset + sheetLastRow, verticalOffset + sheetLastCol];
                 copyRange.CopyTo(destRange);
+
+                SaveDestDataRange(srcWorkSheet, verticalOffset, horizontalOffset, destWorksheet);
 
                 CreateLinkToHomePage(destSheet);
                 FormatColumnsWidth(isOpenTable, worksheet, destRange);
@@ -410,5 +412,20 @@ public class ExcelBookMerger : ITemplateMerger
         }
         return indexSheet;
     }
+    void SaveDestDataRange(IWorksheet? srcWorksheet,  int verticalOffset, int horizontalOffset, IWorksheet destSheet )
+    {
+        var srcDataName = SourceWorkbook.Names[$"{srcWorksheet.Name.Trim()}_data"];
 
+        if (srcDataName != null)
+        {
+            var srcDataRange = srcDataName.RefersToRange;
+            var srcDataObj = HelperRoutines.CreateRowColObject(srcDataRange.AddressR1C1Local);
+
+            var dataDestRange = destSheet[srcDataObj.Row + verticalOffset - 1, srcDataObj.Col + horizontalOffset - 1
+                , srcDataObj.LastRow + verticalOffset - 1, srcDataObj.LastCol + horizontalOffset - 1];
+
+            var destName = DestWorkbook.Names.Add($"{srcWorksheet.Name.Trim()}_data");
+            destName.RefersToRange = dataDestRange;
+        }
+    }
 }
