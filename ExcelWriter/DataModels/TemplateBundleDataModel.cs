@@ -13,12 +13,12 @@ public readonly record struct TemplateBundle(string TemplateCode, string Templat
 
 ///////////
 public record struct TableExtensiveInfo(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet);
-public record struct HorizontalTableInfolList(List<TableExtensiveInfo> HorizontalTables);
+public record struct HorizontalLine(List<TableExtensiveInfo> HorizontalTables);
 
 //ZetTemplateBundle contains list of lists to accomodate a list of horizontal tables layout
 //Each outer vertical list contains a horizontal line of tables
 public record struct xxZetTemplateBundleListxx(List<ZetTemplateBundle> ZetBundleList);
-public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string TemplateDescription, List<HorizontalTableInfolList> TableMatrix);
+public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string TemplateDescription, List<HorizontalLine> TableMatrix);
 
 public static class SPT
 {

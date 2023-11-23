@@ -102,8 +102,8 @@ public class ExcelBookMerger : ITemplateMerger
 
         }
 
-        //var s6 = moduleZetTemplateBundles.FirstOrDefault(zetTemplate => zetTemplate.GroupTableCode == "S.06.02.01");
-        //CreateCombinedS6Form(s6);
+        var s6Bundle = moduleZetTemplateBundles.FirstOrDefault(zetTemplate => zetTemplate.GroupTableCode == "S.06.02.01");
+        FixCombinedS6Form(s6Bundle);
 
         var indexSheet = RenderIndexList(indexList);
         indexSheet.Activate();
@@ -139,7 +139,7 @@ public class ExcelBookMerger : ITemplateMerger
             //the matrix has one row for each tablecode and each row has just one table (basically all tables will be rendered vertically this way) 
 
             var tableMatrix = templateBundle.TableCodes.Select(tableCode =>
-                    new HorizontalTableInfolList(new List<TableExtensiveInfo>() { CreateTableInfo(tableCode, zet) }))
+                    new HorizontalLine(new List<TableExtensiveInfo>() { CreateTableInfo(tableCode, zet) }))
                     .ToList();
 
             var ztb = new ZetTemplateBundle()
@@ -156,7 +156,7 @@ public class ExcelBookMerger : ITemplateMerger
     {
 
         var tableMatrix = specialTemplateLayout.TableCodesMatrix.Select(line =>
-            new HorizontalTableInfolList(line.Select(code => CreateTableInfo(code, "")).ToList())
+            new HorizontalLine(line.Select(code => CreateTableInfo(code, "")).ToList())
         )
         .ToList();
 
@@ -441,36 +441,60 @@ public class ExcelBookMerger : ITemplateMerger
         return indexSheet;
     }
     
-    private bool CreateCombinedS6Form(ZetTemplateBundle zetTemplateBundle)
+    private bool FixCombinedS6Form(ZetTemplateBundle zetTemplateBundle)
     {
 
-        var s61 = zetTemplateBundle.TableMatrix
-            .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.01"))
-            .HorizontalTables.FirstOrDefault(htbl => htbl.TableCode == "S.06.02.01.01");
+        var s61Code = "S.06.02.01.01";
+        var s62Code = "S.06.02.01.02";
+        
 
-        var s62 = zetTemplateBundle.TableMatrix
-            .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.02"))
-            .HorizontalTables.FirstOrDefault(htbl => htbl.TableCode == "S.06.02.01.02");
+        var s61Line = zetTemplateBundle.TableMatrix
+            .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.01"));
+        var s61Worksheet = s61Line.HorizontalTables.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.01").WorkSheet;
 
-        if (s61.WorkSheet is null || s62.WorkSheet is null)
+        var s62Line = zetTemplateBundle.TableMatrix
+            .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.02"));
+        var s62Worksheet = s62Line.HorizontalTables.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.02").WorkSheet;
+
+        var sCombined= DestWorkbook.Worksheets["S.06.02.01"];
+
+        if (s61Worksheet is null || s62Worksheet is null)
         {
             return false;
         }
 
-        var destSheet = DestWorkbook.Worksheets.Create("S6.01Combined");
+        var s61DataLine = DestWorkbook?.Names[$"{s61Code}_data"]?.RefersToRange;
+        var s62DataLine =DestWorkbook?.Names[$"{s62Code}_data"]?.RefersToRange;
 
-        destSheet.Zoom = 80;
+        var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, sCombined.UsedRange.LastColumn];
+        var s62Data = sCombined.Range[s62DataLine.Row, s62DataLine.Column, s62Worksheet.UsedRange.LastRow, sCombined.UsedRange.LastColumn];
+        var s62KeyColumn = s62Data.Columns[0];
 
 
-        var s61LastRow = s61.WorkSheet.Rows.Last().LastRow;
-        var s61LastCol = s61.WorkSheet.Columns.Last().LastColumn;
-
-        var copyRange = s61.WorkSheet.Range[1, 1, s61LastRow, s61LastCol];
-        var destRange = destSheet.Range[1, 1];
-        copyRange.CopyTo(destRange);
-
+        foreach (var s61row in s61Data.Rows)
+        {
+            var key = s61row.Columns[1].Value;            
+            var s62Row = FindRow(key);     
+            if(s62Row is null)
+            {
+                continue;
+            }
+            s62Row.CopyTo(sCombined.Range[ s61row.Row, s62Row.LastColumn + 5]);
+        }
 
         return true;
+
+        IRange? FindRow(string key)
+        {
+            foreach (IRange keyRange in s62KeyColumn.FindAll(key, ExcelFindType.Text))
+            {            
+                var s62Row =s62Data[keyRange.Row,s62Data.Column,keyRange.Row,s62Data.LastColumn] ;
+                return s62Row;
+            }
+            return null;
+        }
+
+        
     }
 
 }
