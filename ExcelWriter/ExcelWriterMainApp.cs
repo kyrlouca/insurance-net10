@@ -67,7 +67,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 		//EmptyFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
   //      filledFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaFilled.xlsx";
 
-        if (1 == 1)
+        if (1 ==1)
 		{
 			_excelBookWriter.CreateExcelBook(doc.InstanceId,EmptyFilename);
 			if (string.IsNullOrEmpty(EmptyFilename))
