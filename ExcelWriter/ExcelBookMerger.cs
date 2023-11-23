@@ -102,8 +102,8 @@ public class ExcelBookMerger : ITemplateMerger
 
         }
 
-        var s6 = moduleZetTemplateBundles.FirstOrDefault(zetTemplate => zetTemplate.GroupTableCode == "S.06.02.01");
-        CreateCombinedS6Form(s6);
+        //var s6 = moduleZetTemplateBundles.FirstOrDefault(zetTemplate => zetTemplate.GroupTableCode == "S.06.02.01");
+        //CreateCombinedS6Form(s6);
 
         var indexSheet = RenderIndexList(indexList);
         indexSheet.Activate();
