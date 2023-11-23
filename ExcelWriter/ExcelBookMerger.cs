@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Metadata;
 using Syncfusion.XlsIO.Implementation;
+using ExcelWriter.Common;
 
 public class ExcelBookMerger : ITemplateMerger
 {
@@ -78,8 +79,6 @@ public class ExcelBookMerger : ITemplateMerger
         //A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
         //using TemplateBundle, the Merged sheet can render tables horizontally and vertically.
 
-
-
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
 
         var moduleTemplateBundles = CreateTemplateBundlesForModule(_parameterData.ModuleCode);
@@ -94,16 +93,19 @@ public class ExcelBookMerger : ITemplateMerger
             ZetTemplateBundle zetBundle = specialTemplateLayout is null
                 ? zetTemplate
                 : ToZetTemplateBundleSpecial(specialTemplateLayout);
-            var isRendered=RenderOneZetSheet(zetBundle);            
+            var isRendered = RenderOneZetSheet(zetBundle);
             if (isRendered)
             {
                 var indexItem = new IndexSheetListItem(zetTemplate.GroupTableCode, zetTemplate.TemplateDescription);
                 indexList.ListItems.Add(indexItem);
             }
-            
+
         }
 
-       var indexSheet= RenderIndexList(indexList);
+        var s6 = moduleZetTemplateBundles.FirstOrDefault(zetTemplate => zetTemplate.GroupTableCode == "S.06.02.01");
+        CreateCombinedS6Form(s6);
+
+        var indexSheet = RenderIndexList(indexList);
         indexSheet.Activate();
 
         (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
@@ -225,7 +227,7 @@ public class ExcelBookMerger : ITemplateMerger
         var result = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSheets, new { _documentId, tableCode, zetValue });
         return result;
     }
-    private Boolean RenderOneZetSheet(ZetTemplateBundle zetTemplateBundle)
+    private bool RenderOneZetSheet(ZetTemplateBundle zetTemplateBundle)
     {
 
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -246,44 +248,48 @@ public class ExcelBookMerger : ITemplateMerger
 
 
         var destSheet = DestWorkbook.Worksheets.Create(mergedTabName);
-        
-        
+
+
         destSheet.Zoom = 80;
 
         var verticalOffset = 1;
         foreach (var vertical in zetTemplateBundle.TableMatrix)
         {
             //check if there is at least one sheet which is not null in tableMatrix 
-            var hasTable= zetTemplateBundle.TableMatrix.Any(line=> line.HorizontalTables.Any(ht=>ht.WorkSheet is not null));
+            var hasTable = zetTemplateBundle.TableMatrix.Any(line => line.HorizontalTables.Any(ht => ht.WorkSheet is not null));
 
             var tableHeight = 1;
             var tableWidth = 1;
             var horizontalOffset = 1;
-            foreach (var sheet in vertical.HorizontalTables)
+            foreach (var ztbSheet in vertical.HorizontalTables)
             {
-                var isOpenTable = sheet.DbSheet?.IsOpenTable ?? false;
+                var isOpenTable = ztbSheet.DbSheet?.IsOpenTable ?? false;
 
-                var worksheet = sheet.WorkSheet;
-                if (worksheet is null)
+                var srcWorksheet = ztbSheet.WorkSheet;
+                if (srcWorksheet is null)
                 {
                     //noramlly you write the description of the empty table
                     var emptyTableCode = destSheet[verticalOffset, horizontalOffset];
-                    emptyTableCode.Text = $"{sheet.TableCode} - empty table";
+                    emptyTableCode.Text = $"{ztbSheet.TableCode} - empty table";
                     emptyTableCode.CellStyle = _pensionStyles.TableCodeStyle;
                     continue;
                 }
-                var sheetLastRow = worksheet.Rows.Last().LastRow;
-                var sheetLastCol = worksheet.Columns.Last().LastColumn;
 
-                var copyRange = worksheet.Range[1, 1, sheetLastRow, sheetLastCol];
+
+                var sheetLastRow = srcWorksheet.Rows.Last().LastRow;
+                var sheetLastCol = srcWorksheet.Columns.Last().LastColumn;
+
+                var copyRange = srcWorksheet.Range[1, 1, sheetLastRow, sheetLastCol];
                 var destRange = destSheet.Range[verticalOffset, horizontalOffset, verticalOffset + sheetLastRow, verticalOffset + sheetLastCol];
                 copyRange.CopyTo(destRange);
 
-                SaveDestDataRange(worksheet, verticalOffset, horizontalOffset, destSheet);
+                //save the ranges of the dest
+                SaveDestDataRange(destSheet, verticalOffset, horizontalOffset, srcWorksheet);
+
 
                 CreateLinkToHomePage(destSheet);
-                FormatColumnsWidth(isOpenTable, worksheet, destRange);
-                
+                FormatColumnsWidth(isOpenTable, srcWorksheet, destRange);
+
                 tableHeight = Math.Max(tableHeight, sheetLastRow);
                 tableWidth = Math.Max(tableWidth, sheetLastCol);
                 horizontalOffset += horizontalOffset + tableWidth + 0;
@@ -291,7 +297,7 @@ public class ExcelBookMerger : ITemplateMerger
             verticalOffset = verticalOffset + tableHeight + 5;
         }
 
-        
+
         return true;
         /////////////////////////////////////////////////////////////////////
         static string BuildMergedTabName(ZetTemplateBundle zetTemplateBundle)
@@ -329,12 +335,29 @@ public class ExcelBookMerger : ITemplateMerger
         void CreateLinkToHomePage(IWorksheet destSheet)
         {
             var linkRange = destSheet["A1"];
-            
+
             IHyperLink hyperlink = destSheet.HyperLinks.Add(linkRange);
             hyperlink.Type = ExcelHyperLinkType.Workbook;
             var address = $"List!A1";
             hyperlink.Address = address;
             linkRange.CellStyle = _pensionStyles.TableCodeStyle;
+        }
+
+        void SaveDestDataRange(IWorksheet destSheet, int verticalOffset, int horizontalOffset, IWorksheet? worksheet)
+        {
+            var srcDataName = SourceWorkbook.Names[$"{worksheet.Name.Trim()}_data"];
+
+            if (srcDataName != null)
+            {
+                var srcDataRange = srcDataName.RefersToRange;
+                var obj = HelperRoutines.CreateRowColObject(srcDataRange.AddressR1C1Local);
+
+                var dataDestRange = destSheet[obj.Row + verticalOffset - 1, obj.Col + horizontalOffset - 1
+                    , obj.LastRow + verticalOffset - 1, obj.LastCol + horizontalOffset - 1];
+
+                var destName = DestWorkbook.Names.Add($"{worksheet.Name.Trim()}_data");
+                destName.RefersToRange = dataDestRange;
+            }
         }
     }
     private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode)
@@ -383,21 +406,21 @@ public class ExcelBookMerger : ITemplateMerger
 
     private IWorksheet RenderIndexList(IndexSheetList indexList)
     {
-        
-        
+
+
         var indexSheet = DestWorkbook.Worksheets.Create("List");
-        indexSheet.Move(0);        
+        indexSheet.Move(0);
         indexSheet.SetColumnWidth(1, 12);
         var titleCell = indexSheet[1, 1];
         titleCell.Text = "List of Templates";
         titleCell.CellStyle = _pensionStyles.HeaderStyle;
         var row = 3;
-        foreach(var indexItem in indexList.ListItems)
-        {            
+        foreach (var indexItem in indexList.ListItems)
+        {
 
             var tableCodeCell = indexSheet[row, 1];
             tableCodeCell.Text = indexItem.templateCode;
-            tableCodeCell.CellStyle = _pensionStyles.TableCodeStyle;            
+            tableCodeCell.CellStyle = _pensionStyles.TableCodeStyle;
             var descriptionCell = indexSheet[row, 2];
             descriptionCell.Text = indexItem.Description;
             descriptionCell.CellStyle = _pensionStyles.BodyStyle;
@@ -412,7 +435,7 @@ public class ExcelBookMerger : ITemplateMerger
         }
         return indexSheet;
     }
-    void SaveDestDataRange(IWorksheet? srcWorksheet,  int verticalOffset, int horizontalOffset, IWorksheet destSheet )
+    void SaveDestDataRange(IWorksheet? srcWorksheet, int verticalOffset, int horizontalOffset, IWorksheet destSheet)
     {
         var srcDataName = SourceWorkbook.Names[$"{srcWorksheet.Name.Trim()}_data"];
 
@@ -423,9 +446,38 @@ public class ExcelBookMerger : ITemplateMerger
 
             var dataDestRange = destSheet[srcDataObj.Row + verticalOffset - 1, srcDataObj.Col + horizontalOffset - 1
                 , srcDataObj.LastRow + verticalOffset - 1, srcDataObj.LastCol + horizontalOffset - 1];
-
-            var destName = DestWorkbook.Names.Add($"{srcWorksheet.Name.Trim()}_data");
-            destName.RefersToRange = dataDestRange;
         }
     }
+    private bool CreateCombinedS6Form(ZetTemplateBundle zetTemplateBundle)
+    {
+
+        var s61 = zetTemplateBundle.TableMatrix
+            .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.01"))
+            .HorizontalTables.FirstOrDefault(htbl => htbl.TableCode == "S.06.02.01.01");
+
+        var s62 = zetTemplateBundle.TableMatrix
+            .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.02"))
+            .HorizontalTables.FirstOrDefault(htbl => htbl.TableCode == "S.06.02.01.02");
+
+        if (s61.WorkSheet is null || s62.WorkSheet is null)
+        {
+            return false;
+        }
+
+        var destSheet = DestWorkbook.Worksheets.Create("S6.01Combined");
+
+        destSheet.Zoom = 80;
+
+
+        var s61LastRow = s61.WorkSheet.Rows.Last().LastRow;
+        var s61LastCol = s61.WorkSheet.Columns.Last().LastColumn;
+
+        var copyRange = s61.WorkSheet.Range[1, 1, s61LastRow, s61LastCol];
+        var destRange = destSheet.Range[1, 1];
+        copyRange.CopyTo(destRange);
+
+
+        return true;
+    }
+
 }
