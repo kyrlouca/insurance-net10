@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -132,13 +133,25 @@ internal class HelperRoutines
         return newRange;
     }
 
-    public record RowColObject(string AddressR1C1, int Row, int Col,int LastRow, int LastCol);
+    public record RowColObject(string AddressR1C1, int Row, int Col, int LastRow, int LastCol);
     public static RowColObject? CreateRowColObject(string addreessR1C1)
     {
         var rg = new Regex("R(\\d*)C(\\d*)");
         var match = rg.Matches(addreessR1C1);
-        if (match.Count!=2) return null;
-        return new RowColObject(addreessR1C1, int.Parse(match[0].Groups[1].Value), int.Parse(match[0].Groups[2].Value),
-            int.Parse(match[1].Groups[1].Value), int.Parse(match[1].Groups[2].Value));
+        if (match is null)
+        {
+            return null;
+        }
+        var row = int.Parse(match[0].Groups[1].Value);
+        var col = int.Parse(match[0].Groups[2].Value);
+
+        RowColObject? rowcolObject = match.Count switch
+        {
+            1 => new RowColObject(addreessR1C1, row, col, row, col),
+            2 => new RowColObject(addreessR1C1, row, col, int.Parse(match[1].Groups[1].Value), int.Parse(match[1].Groups[2].Value)),
+            _ => null
+        };
+        return rowcolObject;
+        
     }
 }

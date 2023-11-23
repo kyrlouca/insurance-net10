@@ -64,7 +64,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 		var filledFilename = Path.Combine(dir, $"{file}_filled.xlsx");
 		var mergedFilename = Path.Combine(dir, $"{file}_merged.xlsx");
 
-        if (1 == 2)
+        if (1 == 1)
 		{
 			_excelBookWriter.CreateExcelBook(doc.InstanceId,EmptyFilename);
 			if (string.IsNullOrEmpty(EmptyFilename))
