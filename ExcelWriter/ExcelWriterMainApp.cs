@@ -60,13 +60,18 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 		var xx=_parameterData.FileName.Trim();
 		var file= Path.GetFileName(xx);
 		var dir=Path.GetDirectoryName(xx);
+		if(dir is null)
+		{
+            var message = $"Cannot find Directory for path {xx} :FundId: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
+            _logger.Error(message);
+            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
+            return 1;
+        }
 		var EmptyFilename = Path.Combine(dir, $"{file}_empty.xlsx");
 		var filledFilename = Path.Combine(dir, $"{file}_filled.xlsx");
 		var mergedFilename = Path.Combine(dir, $"{file}_merged.xlsx");
         
-		//EmptyFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\maka.xlsx";
-  //      filledFilename = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\makaFilled.xlsx";
-
+		
         if (1 == 1)
 		{
 			_excelBookWriter.CreateExcelBook(doc.InstanceId,EmptyFilename);

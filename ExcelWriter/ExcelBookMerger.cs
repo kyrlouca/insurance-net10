@@ -345,17 +345,22 @@ public class ExcelBookMerger : ITemplateMerger
 
         void SaveDestDataRange(IWorksheet destSheet, int verticalOffset, int horizontalOffset, IWorksheet? worksheet)
         {
-            var srcDataName = SourceWorkbook.Names[$"{worksheet.Name.Trim()}_data"];
+            if(SourceWorkbook is null)
+            {
+                return;
+            }
+            var srcDataName = SourceWorkbook.Names[$"{worksheet?.Name.Trim()}_data"];
 
             if (srcDataName != null)
             {
                 var srcDataRange = srcDataName.RefersToRange;
                 var obj = HelperRoutines.CreateRowColObject(srcDataRange.AddressR1C1Local);
+                if(obj is null) { return; }
 
                 var dataDestRange = destSheet[obj.Row + verticalOffset - 1, obj.Col + horizontalOffset - 1
                     , obj.LastRow + verticalOffset - 1, obj.LastCol + horizontalOffset - 1];
 
-                var destName = DestWorkbook.Names.Add($"{worksheet.Name.Trim()}_data");
+                var destName = DestWorkbook.Names.Add($"{worksheet?.Name.Trim()}_data");
                 destName.RefersToRange = dataDestRange;
             }
         }
@@ -435,19 +440,7 @@ public class ExcelBookMerger : ITemplateMerger
         }
         return indexSheet;
     }
-    void SaveDestDataRange(IWorksheet? srcWorksheet, int verticalOffset, int horizontalOffset, IWorksheet destSheet)
-    {
-        var srcDataName = SourceWorkbook.Names[$"{srcWorksheet.Name.Trim()}_data"];
-
-        if (srcDataName != null)
-        {
-            var srcDataRange = srcDataName.RefersToRange;
-            var srcDataObj = HelperRoutines.CreateRowColObject(srcDataRange.AddressR1C1Local);
-
-            var dataDestRange = destSheet[srcDataObj.Row + verticalOffset - 1, srcDataObj.Col + horizontalOffset - 1
-                , srcDataObj.LastRow + verticalOffset - 1, srcDataObj.LastCol + horizontalOffset - 1];
-        }
-    }
+    
     private bool CreateCombinedS6Form(ZetTemplateBundle zetTemplateBundle)
     {
 
