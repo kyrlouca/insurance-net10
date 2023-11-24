@@ -201,8 +201,21 @@ public class ExcelBookCreator : IExcelBookWriter
 			var _TT = template.TT;
 			if (_TT is not null)
 			{
-				var otr = originSheet.Range[_TT];
-				var expandedTopLabel = originSheet.Range[otr.Row, originDataRange.Column, otr.LastRow, otr.LastColumn];
+				IRange expandedTopLabel ;
+
+                var otr = originSheet.Range[_TT];
+				try
+				{
+                    expandedTopLabel = originSheet.Range[otr.Row, originDataRange.Column, otr.LastRow, otr.LastColumn];
+                }
+                catch (Exception ex)
+				{
+					var message = $"Fail to read top label TT for {sheet.TableCode}";
+					Console.WriteLine(message);
+					Log.Error(message + ex.Message);
+					throw ex;
+				}
+				
 
 				var upperRowPosition = dataRowPos - (otr.LastRow - otr.Row) - 2;
 				var topLabelsRange = CopyRangeToFixedPosition(upperRowPosition, dataColPos, originSheet, destSheet, expandedTopLabel.Address);

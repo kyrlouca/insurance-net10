@@ -2,7 +2,7 @@
   "profiles": {
     "ExcelWriter": {
       "commandName": "Project",
-      "commandLineArgs": "eiopa-version=\"IU270\"\r\nfund-id=117\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=1\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\ALTIUS INSURANCE LTD Q1 2023.xbrl\"",
+      "commandLineArgs": "eiopa-version=\"IU270\"\r\nfund-id=97\r\nmodule-code=\"ars\"\r\nyear=2022\r\nquarter=0\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\ancoriaNew2002.xlsx\"",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }

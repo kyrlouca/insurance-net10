@@ -94,6 +94,7 @@ public class ExcelBookMerger : ITemplateMerger
             ZetTemplateBundle zetBundle = specialTemplateLayout is null
                 ? zetTemplate
                 : ToZetTemplateBundleSpecial(specialTemplateLayout);
+            Log.Information($"Merging Template:{zetBundle.GroupTableCode}");
             var isRendered = RenderOneZetSheet(zetBundle);
             if (isRendered)
             {
@@ -382,7 +383,7 @@ public class ExcelBookMerger : ITemplateMerger
                 WHERE 1 = 1
                     and TemplateOrTableCode like 'S.%'
                     and mod.ModuleCode= @moduleCode                    
-                ORDER BY mod.ModuleCode                       ";
+                ORDER BY va.TemplateOrTableCode                       ";
         var templateOrTables = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleCode });
 
 
