@@ -69,6 +69,7 @@ public class ExcelBookCreator : IExcelBookWriter
 			return "";
 		}
 
+        var originpensionStyles = _customPensionStyles.GetStyles(_originWorkbook);
         _pensionStyles = _customPensionStyles.GetStyles(_destinationWorkbook);
 
 
@@ -158,10 +159,9 @@ public class ExcelBookCreator : IExcelBookWriter
 			if(!sheet.IsOpenTable)
 			{
 				var bor = dataRange.Borders;
-				dataRange.BorderAround(ExcelLineStyle.Thick);
+				//dataRange.BorderAround(ExcelLineStyle.Thick);
 			}			
-			//bor[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thick;
-			//bor[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
+			
 
 
 			/////////////LEFT Labels 

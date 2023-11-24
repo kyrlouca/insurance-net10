@@ -55,22 +55,21 @@ public class CustomPensionStyles2 : ICustomPensionStyles2
         return style;
     }
     private IStyle DataSectionStyle()
-    {
-        //IStyle bodyStyle = _destinationWorkbook.Styles.Add("BodyStyle");
-        IStyle bodyStyle = Workbook.Styles.Add("dataSection");
+    {        
+        IStyle style = Workbook.Styles.Add("dataSection");
 
-        bodyStyle.BeginUpdate();
+        style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
-        bodyStyle.Font.FontName = "Calibri";
-        bodyStyle.Font.Size = 10;
-        bodyStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thick;
-        bodyStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
-        bodyStyle.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
-        bodyStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-        bodyStyle.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
-        bodyStyle.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
-        bodyStyle.EndUpdate();
-        return bodyStyle;
+        style.Font.FontName = "Calibri";
+        style.Font.Size = 10;
+        style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thick;
+        style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
+        style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
+        style.EndUpdate();
+        return style;
     }
     private IStyle DiagonalStyle()
     {
