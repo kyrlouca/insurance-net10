@@ -25,12 +25,17 @@ public class ExcelBookCreator : IExcelBookWriter
 	int _documentId = 0;
 	string debugTableCode = "";
 
-	public ExcelBookCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
+    private readonly ICustomPensionStyles2 _customPensionStyles;
+    PensionStyles _pensionStyles;
+
+    public ExcelBookCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyles2 customPensionStyles)
 	{
 		_parameterHandler = parametersHandler;
 		_logger = logger;
 		_commonRoutines = commonRoutines;
-	}
+        _customPensionStyles = customPensionStyles;
+
+    }
 
 
 
@@ -44,6 +49,7 @@ public class ExcelBookCreator : IExcelBookWriter
 		//return true;
 
 		using var excelEngine = new ExcelEngine();
+
 
 
 		(_originWorkbook, var originMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, _parameterData.ExcelTemplateFile);
@@ -63,20 +69,20 @@ public class ExcelBookCreator : IExcelBookWriter
 			return "";
 		}
 
+        _pensionStyles = _customPensionStyles.GetStyles(_destinationWorkbook);
+
+
+        //////////////////////////////////////////////////////////////////
+        //Start processing
+
+        //      var tableCodeStyle = _pensionStyles.ta TableCodeStyle();
+        //var bodyStyle = CustomPensionStyles.BodyStyle(_destinationWorkbook);
+        //var headerStyle = CustomPensionStyles.HeaderStyle(_destinationWorkbook);
+        //var dataSectionStyle = CustomPensionStyles.DataSectionStyle(_destinationWorkbook);
 
 
 
-		//////////////////////////////////////////////////////////////////
-		//Start processing
-
-		var tableCodeStyle = CustomPensionStyles.TableCodeStyle(_destinationWorkbook);
-		var bodyStyle = CustomPensionStyles.BodyStyle(_destinationWorkbook);
-		var headerStyle = CustomPensionStyles.HeaderStyle(_destinationWorkbook);
-		var dataSectionStyle = CustomPensionStyles.DataSectionStyle(_destinationWorkbook);
-
-
-
-		var sheets = SelectTempateSheetInstances().OrderBy(sh => sh.TableCode);
+        var sheets = SelectTempateSheetInstances().OrderBy(sh => sh.TableCode);
 
 
 		int START_ROW = 1;
@@ -106,13 +112,13 @@ public class ExcelBookCreator : IExcelBookWriter
 			/////Table code
 			var tableCode = destSheet.Range["A1"];
 			tableCode.Text = sheet.TableCode;
-			tableCode.CellStyle = tableCodeStyle;
+			tableCode.CellStyle = _pensionStyles.TableCodeStyle;
 
 			//template code
 			var parentTemplate = GetTableOrTemplate(filingSheetCode, false);
 			var tblLabel = destSheet.Range["A2"];
 			tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
-			tblLabel.CellStyle = headerStyle;
+			tblLabel.CellStyle = _pensionStyles.HeaderStyle;
 
 
 
@@ -225,7 +231,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
 		//////////////////////////////////////////////////////////////////
 
-		CustomPensionStyles.ChangeDiagonalStyle(_destinationWorkbook);
+		//CustomPensionStyles.ChangeDiagonalStyle(_destinationWorkbook);
 
 		//var savedFile = _parameterData.FileName;
 		var savedFile = filename;

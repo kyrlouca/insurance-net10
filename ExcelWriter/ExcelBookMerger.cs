@@ -21,6 +21,7 @@ public class ExcelBookMerger : ITemplateMerger
     private readonly IParameterHandler _parameterHandler;
     ParameterData _parameterData = new();
     private readonly ILogger _logger;
+    
     private readonly ICommonRoutines _commonRoutines;
     private readonly ICustomPensionStyles2 _customPensionStyles;
     PensionStyles _pensionStyles;
@@ -45,7 +46,7 @@ public class ExcelBookMerger : ITemplateMerger
     {
         _documentId = documentId;
         _parameterData = _parameterHandler.GetParameterData();
-
+        
 
 
         Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
@@ -471,6 +472,7 @@ public class ExcelBookMerger : ITemplateMerger
         var s62Data = sCombined.Range[s62DataLine.Row, s62DataLine.Column, s62Worksheet.UsedRange.LastRow, sCombined.UsedRange.LastColumn];
         var s62KeyColumn = s62Data.Columns[0];
 
+        
 
         foreach (var s61row in s61Data.Rows)
         {
@@ -485,7 +487,11 @@ public class ExcelBookMerger : ITemplateMerger
 
 
         var sortedRange = sCombined.Range[s62Data.Row, s62Data.LastColumn+5, s61Data.LastRow, s62Data.LastColumn+5 + s62Data.Columns.Length-1];
-        sortedRange.MoveTo(s62Data); 
+        sortedRange.MoveTo(s62Data);
+        sCombined.UsedRange.ColumnWidth = 30;
+        var xxstyle = _pensionStyles.DataSectionStyle;
+        s62Data.CellStyle = _pensionStyles.DataSectionStyle;
+        
 
         return true;
 
