@@ -2,7 +2,7 @@
 
 namespace ExcelWriter
 {
-    public interface ICustomPensionStyles2
+    public interface ICustomPensionStyler
     {
         IWorkbook? Workbook { get; }
 

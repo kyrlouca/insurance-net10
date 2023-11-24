@@ -40,7 +40,7 @@ public class HostCreator
 			 services.AddScoped<IExcelBookDataFiller, ExcelBookDataFiller>();
 			 services.AddScoped<ITemplateMerger, ExcelBookMerger>();
 			 services.AddScoped<IExcelWriterMainApp, ExcelWriterMainApp>();
-             services.AddScoped<ICustomPensionStyles2, CustomPensionStyles2>();
+             services.AddScoped<ICustomPensionStyler, CustomPensionStyler>();
          })
 		.UseSerilog((hostingContext, loggerConfiguration) =>
 		{

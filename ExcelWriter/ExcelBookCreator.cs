@@ -25,10 +25,10 @@ public class ExcelBookCreator : IExcelBookWriter
 	int _documentId = 0;
 	string debugTableCode = "";
 
-    private readonly ICustomPensionStyles2 _customPensionStyles;
+    private readonly ICustomPensionStyler _customPensionStyles;
     PensionStyles _pensionStyles;
 
-    public ExcelBookCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyles2 customPensionStyles)
+    public ExcelBookCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyler customPensionStyles)
 	{
 		_parameterHandler = parametersHandler;
 		_logger = logger;
@@ -184,8 +184,9 @@ public class ExcelBookCreator : IExcelBookWriter
 				var leftRowNumRange = CopyRangeToFixedPosition(dataRowPos, dataColPos - 1, originSheet, destSheet, orignColumnNames.Address);
 				if (leftRowNumRange != null)
 				{
-					leftRowNumRange.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thick;
-					leftRowNumRange.WrapText = false;
+					leftRowNumRange.CellStyle = _pensionStyles.LeftRowNumbersSectionStyle;
+					//leftRowNumRange.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thick;
+					//leftRowNumRange.WrapText = false;
 				}
 				var leftNamed = $"{destSheet.Name.Trim()}_left";
 				_destinationWorkbook.Names.Remove(leftNamed);
@@ -214,9 +215,11 @@ public class ExcelBookCreator : IExcelBookWriter
 			var tcn = originDataRange.Offset(-1, 0);
 			var orignColumnNumbers = tcn.Rows[0];
 			var topColumnsRange = CopyRangeToFixedPosition(dataRowPos - 1, dataColPos, originSheet, destSheet, orignColumnNumbers.Address);
-			//var btc = dataRange.Borders;
-			topColumnsRange.BorderAround(ExcelLineStyle.Thick);
-
+			if(topColumnsRange is not null)
+			{
+                topColumnsRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+            }
+						
 
 			var topNamed = $"{destSheet.Name.Trim()}_top";
 			_destinationWorkbook.Names.Remove(topNamed);

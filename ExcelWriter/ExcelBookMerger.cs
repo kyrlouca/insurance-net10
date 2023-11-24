@@ -23,7 +23,7 @@ public class ExcelBookMerger : ITemplateMerger
     private readonly ILogger _logger;
     
     private readonly ICommonRoutines _commonRoutines;
-    private readonly ICustomPensionStyles2 _customPensionStyles;
+    private readonly ICustomPensionStyler _customPensionStyles;
     PensionStyles _pensionStyles;
     private IWorkbook? SourceWorkbook;
     private IWorkbook? DestWorkbook;
@@ -35,7 +35,7 @@ public class ExcelBookMerger : ITemplateMerger
     //private IStyle? dataSectionStyle;
 
 
-    public ExcelBookMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyles2 customPensionStyles)
+    public ExcelBookMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyler customPensionStyles)
     {
         _parameterHandler = parametersHandler;
         _logger = logger;
@@ -429,7 +429,7 @@ public class ExcelBookMerger : ITemplateMerger
             tableCodeCell.CellStyle = _pensionStyles.TableCodeStyle;
             var descriptionCell = indexSheet[row, 2];
             descriptionCell.Text = indexItem.Description;
-            descriptionCell.CellStyle = _pensionStyles.BodyStyle;
+            descriptionCell.CellStyle = _pensionStyles.Normal;
 
             IHyperLink hyperlink4 = indexSheet.HyperLinks.Add(tableCodeCell);
             hyperlink4.Type = ExcelHyperLinkType.Workbook;
@@ -489,9 +489,15 @@ public class ExcelBookMerger : ITemplateMerger
         var sortedRange = sCombined.Range[s62Data.Row, s62Data.LastColumn+5, s61Data.LastRow, s62Data.LastColumn+5 + s62Data.Columns.Length-1];
         sortedRange.MoveTo(s62Data);
         sCombined.UsedRange.ColumnWidth = 30;
-        var xxstyle = _pensionStyles.DataSectionStyle;
-        s62Data.CellStyle = _pensionStyles.DataSectionStyle;
+        var xxstyle = _pensionStyles.DataSectionStyle.Borders[ExcelBordersIndex.EdgeLeft];
+        var newS62Range = sCombined.Range[s62Data.Row, s62Data.Column, s61Data.LastRow, s62Data.LastColumn];
+        newS62Range.CellStyle = _pensionStyles.DataSectionStyle;
+        s61Data.CellStyle= _pensionStyles.DataSectionStyle;
+        var xxss = newS62Range.Columns.First();
+        //xxss.CellStyle.Borders[ExcelBordersIndex.EdgeLeft] = ExcelLineStyle.Thick;
+        xxss.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
         
+
 
         return true;
 
