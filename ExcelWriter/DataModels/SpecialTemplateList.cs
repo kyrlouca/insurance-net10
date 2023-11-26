@@ -12,7 +12,7 @@ public class SpecialTemplateLayout
     public string TemplateCode { get; init; }
     public string TemplateSheetName { get; init; }
     public String[][] TableCodesMatrix { get; init; }
-    public List<List<string>> TableCodes { get; init; }
+    public List<List<string>> TableCodes { get; init; } 
     public SpecialTemplateLayout(string templateCode, string templateSheetName, string[][] tableCodes)
     {
         TemplateCode = templateCode;

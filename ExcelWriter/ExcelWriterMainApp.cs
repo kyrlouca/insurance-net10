@@ -72,7 +72,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 		var mergedFilename = Path.Combine(dir, $"{file}_merged.xlsx");
         
 		
-        if (1 == 1)
+        if (1 == 2)
 		{
 			_excelBookWriter.CreateExcelBook(doc.InstanceId,EmptyFilename);
 			if (string.IsNullOrEmpty(EmptyFilename))
@@ -81,7 +81,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 			}			
 			var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
 	}        
-        var x = _templateMerger.MergeTemplates(doc.InstanceId, filledFilename,mergedFilename);
+        var x = _templateMerger.MergeTables(doc.InstanceId, filledFilename,mergedFilename);
 
 
 		return 0;

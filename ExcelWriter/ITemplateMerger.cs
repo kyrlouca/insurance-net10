@@ -2,6 +2,6 @@
 {
 	public interface ITemplateMerger
 	{
-		bool MergeTemplates(int documentId, string filename,string destFilename);
+		bool MergeTables(int documentId, string filename,string destFilename);
 	}
 }

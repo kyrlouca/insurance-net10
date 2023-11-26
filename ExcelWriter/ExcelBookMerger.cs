@@ -21,7 +21,7 @@ public class ExcelBookMerger : ITemplateMerger
     private readonly IParameterHandler _parameterHandler;
     ParameterData _parameterData = new();
     private readonly ILogger _logger;
-    
+
     private readonly ICommonRoutines _commonRoutines;
     private readonly ICustomPensionStyler _customPensionStyles;
     PensionStyles _pensionStyles;
@@ -42,11 +42,11 @@ public class ExcelBookMerger : ITemplateMerger
         _commonRoutines = commonRoutines;
         _customPensionStyles = customPensionStyles;
     }
-    public bool MergeTemplates(int documentId, string sourceFile, string destFile)
+    public bool MergeTables(int documentId, string sourceFile, string destFile)
     {
         _documentId = documentId;
         _parameterData = _parameterHandler.GetParameterData();
-        
+
 
 
         Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
@@ -89,11 +89,12 @@ public class ExcelBookMerger : ITemplateMerger
                 .ToList();
 
         foreach (var zetTemplate in moduleZetTemplateBundles)
-        {
+        {            
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(zetTemplate.GroupTableCode);
+            //if there is a specialTemplateLayout, create the ZetTemplates again
             ZetTemplateBundle zetBundle = specialTemplateLayout is null
                 ? zetTemplate
-                : ToZetTemplateBundleSpecial(specialTemplateLayout);
+                : ToZetTemplateBundleSpecial(specialTemplateLayout,zetTemplate.Zet);
             Log.Information($"Merging Template:{zetBundle.GroupTableCode}");
             var isRendered = RenderOneZetSheet(zetBundle);
             if (isRendered)
@@ -146,6 +147,7 @@ public class ExcelBookMerger : ITemplateMerger
 
             var ztb = new ZetTemplateBundle()
             {
+                Zet=zet,
                 GroupTableCode = templateBundle.TemplateCode,
                 TemplateDescription = templateBundle.TemplateDescription,
                 TableMatrix = tableMatrix
@@ -154,7 +156,7 @@ public class ExcelBookMerger : ITemplateMerger
         }
         return zetTemplateBundlesList;
     }
-    private ZetTemplateBundle ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout)
+    private ZetTemplateBundle ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout,string zet)
     {
 
         var tableMatrix = specialTemplateLayout.TableCodesMatrix.Select(line =>
@@ -163,7 +165,8 @@ public class ExcelBookMerger : ITemplateMerger
         .ToList();
 
         var ztb = new ZetTemplateBundle()
-        {
+        {            
+            Zet=zet,
             GroupTableCode = specialTemplateLayout.TemplateCode,
             TemplateDescription = specialTemplateLayout.TemplateSheetName,
             TableMatrix = tableMatrix
@@ -254,15 +257,14 @@ public class ExcelBookMerger : ITemplateMerger
 
         destSheet.Zoom = 80;
 
-        var verticalOffset = 1;
+        var offsetVERTICAL = 1;
         foreach (var vertical in zetTemplateBundle.TableMatrix)
         {
             //check if there is at least one sheet which is not null in tableMatrix 
             var hasTable = zetTemplateBundle.TableMatrix.Any(line => line.HorizontalTables.Any(ht => ht.WorkSheet is not null));
 
-            var tableHeight = 1;
-            var tableWidth = 1;
-            var horizontalOffset = 1;
+            var maxTableHeight = 0;
+            var OffesetHORIZONTAL = 1;
             foreach (var ztbSheet in vertical.HorizontalTables)
             {
                 var isOpenTable = ztbSheet.DbSheet?.IsOpenTable ?? false;
@@ -271,7 +273,7 @@ public class ExcelBookMerger : ITemplateMerger
                 if (srcWorksheet is null)
                 {
                     //noramlly you write the description of the empty table
-                    var emptyTableCode = destSheet[verticalOffset, horizontalOffset];
+                    var emptyTableCode = destSheet[offsetVERTICAL, OffesetHORIZONTAL];
                     emptyTableCode.Text = $"{ztbSheet.TableCode} - empty table";
                     emptyTableCode.CellStyle = _pensionStyles.TableCodeStyle;
                     continue;
@@ -282,21 +284,24 @@ public class ExcelBookMerger : ITemplateMerger
                 var sheetLastCol = srcWorksheet.Columns.Last().LastColumn;
 
                 var copyRange = srcWorksheet.Range[1, 1, sheetLastRow, sheetLastCol];
-                var destRange = destSheet.Range[verticalOffset, horizontalOffset, verticalOffset + sheetLastRow, verticalOffset + sheetLastCol];
+                var dCol = OffesetHORIZONTAL + sheetLastCol + 1;
+                var dRow = offsetVERTICAL + sheetLastRow;
+                var destRange = destSheet.Range[offsetVERTICAL, OffesetHORIZONTAL, offsetVERTICAL + sheetLastRow -1, OffesetHORIZONTAL + sheetLastCol -1];
+
                 copyRange.CopyTo(destRange);
 
                 //save the ranges of the dest
-                SaveDestDataRange(destSheet, verticalOffset, horizontalOffset, srcWorksheet);
+                SaveDestDataName(destSheet, offsetVERTICAL, OffesetHORIZONTAL, srcWorksheet);
 
 
                 CreateLinkToHomePage(destSheet);
                 FormatColumnsWidth(isOpenTable, srcWorksheet, destRange);
 
-                tableHeight = Math.Max(tableHeight, sheetLastRow);
-                tableWidth = Math.Max(tableWidth, sheetLastCol);
-                horizontalOffset += horizontalOffset + tableWidth + 0;
+                maxTableHeight = Math.Max(maxTableHeight, sheetLastRow);
+
+                OffesetHORIZONTAL += OffesetHORIZONTAL + sheetLastCol + 3;
             }
-            verticalOffset = verticalOffset + tableHeight + 5;
+            offsetVERTICAL = offsetVERTICAL + maxTableHeight + 5;
         }
 
 
@@ -345,9 +350,9 @@ public class ExcelBookMerger : ITemplateMerger
             linkRange.CellStyle = _pensionStyles.TableCodeStyle;
         }
 
-        void SaveDestDataRange(IWorksheet destSheet, int verticalOffset, int horizontalOffset, IWorksheet? worksheet)
+        void SaveDestDataName(IWorksheet destSheet, int verticalOffset, int horizontalOffset, IWorksheet? worksheet)
         {
-            if(SourceWorkbook is null)
+            if (SourceWorkbook is null)
             {
                 return;
             }
@@ -357,7 +362,7 @@ public class ExcelBookMerger : ITemplateMerger
             {
                 var srcDataRange = srcDataName.RefersToRange;
                 var obj = HelperRoutines.CreateRowColObject(srcDataRange.AddressR1C1Local);
-                if(obj is null) { return; }
+                if (obj is null) { return; }
 
                 var dataDestRange = destSheet[obj.Row + verticalOffset - 1, obj.Col + horizontalOffset - 1
                     , obj.LastRow + verticalOffset - 1, obj.LastCol + horizontalOffset - 1];
@@ -442,13 +447,13 @@ public class ExcelBookMerger : ITemplateMerger
         }
         return indexSheet;
     }
-    
+
     private bool FixCombinedS6Form(ZetTemplateBundle zetTemplateBundle)
     {
 
         var s61Code = "S.06.02.01.01";
         var s62Code = "S.06.02.01.02";
-        
+
 
         var s61Line = zetTemplateBundle.TableMatrix
             .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.01"));
@@ -458,7 +463,7 @@ public class ExcelBookMerger : ITemplateMerger
             .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.02"));
         var s62Worksheet = s62Line.HorizontalTables.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.02").WorkSheet;
 
-        var sCombined= DestWorkbook.Worksheets["S.06.02.01"];
+        var sCombined = DestWorkbook.Worksheets["S.06.02.01"];
 
         if (s61Worksheet is null || s62Worksheet is null)
         {
@@ -467,37 +472,37 @@ public class ExcelBookMerger : ITemplateMerger
 
         //the range for the s61 and s62 data is just one row, and we need to expand to the end of the sheet
         var s61DataLine = DestWorkbook?.Names[$"{s61Code}_data"]?.RefersToRange;
-        var s62DataLine =DestWorkbook?.Names[$"{s62Code}_data"]?.RefersToRange;
+        var s62DataLine = DestWorkbook?.Names[$"{s62Code}_data"]?.RefersToRange;
 
         var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, sCombined.UsedRange.LastColumn];
         var s62Data = sCombined.Range[s62DataLine.Row, s62DataLine.Column, s62Worksheet.UsedRange.LastRow, sCombined.UsedRange.LastColumn];
         var s62KeyColumn = s62Data.Columns[0];
 
-        
+
 
         foreach (var s61row in s61Data.Rows)
         {
-            var key = s61row.Columns[1].Value;            
-            var s62Row = FindRow(key);     
-            if(s62Row is null)
+            var key = s61row.Columns[1].Value;
+            var s62Row = FindRow(key);
+            if (s62Row is null)
             {
                 continue;
             }
-            s62Row.CopyTo(sCombined.Range[ s61row.Row, s62Row.LastColumn + 5]);
+            s62Row.CopyTo(sCombined.Range[s61row.Row, s62Row.LastColumn + 5]);
         }
 
 
-        var sortedRange = sCombined.Range[s62Data.Row, s62Data.LastColumn+5, s61Data.LastRow, s62Data.LastColumn+5 + s62Data.Columns.Length-1];
+        var sortedRange = sCombined.Range[s62Data.Row, s62Data.LastColumn + 5, s61Data.LastRow, s62Data.LastColumn + 5 + s62Data.Columns.Length - 1];
         sortedRange.MoveTo(s62Data);
         sCombined.UsedRange.ColumnWidth = 30;
         var xxstyle = _pensionStyles.DataSectionStyle.Borders[ExcelBordersIndex.EdgeLeft];
         var newS62Range = sCombined.Range[s62Data.Row, s62Data.Column, s61Data.LastRow, s62Data.LastColumn];
         newS62Range.CellStyle = _pensionStyles.DataSectionStyle;
-        s61Data.CellStyle= _pensionStyles.DataSectionStyle;
+        s61Data.CellStyle = _pensionStyles.DataSectionStyle;
         var xxss = newS62Range.Columns.First();
         //xxss.CellStyle.Borders[ExcelBordersIndex.EdgeLeft] = ExcelLineStyle.Thick;
         xxss.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
-        
+
 
 
         return true;
@@ -505,14 +510,14 @@ public class ExcelBookMerger : ITemplateMerger
         IRange? FindRow(string key)
         {
             foreach (IRange keyRange in s62KeyColumn.FindAll(key, ExcelFindType.Text))
-            {            
-                var s62Row =s62Data[keyRange.Row,s62Data.Column,keyRange.Row,s62Data.LastColumn] ;
+            {
+                var s62Row = s62Data[keyRange.Row, s62Data.Column, keyRange.Row, s62Data.LastColumn];
                 return s62Row;
             }
             return null;
         }
 
-        
+
     }
 
 }
