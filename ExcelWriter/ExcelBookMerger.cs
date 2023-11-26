@@ -92,14 +92,16 @@ public class ExcelBookMerger : ITemplateMerger
         {            
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(zetTemplate.GroupTableCode);
             //if there is a specialTemplateLayout, create the ZetTemplates again
-            ZetTemplateBundle zetBundle = specialTemplateLayout is null
+            ZetTemplateBundle zetTemplateToRender = specialTemplateLayout is null
                 ? zetTemplate
-                : ToZetTemplateBundleSpecial(specialTemplateLayout,zetTemplate.Zet);
-            Log.Information($"Merging Template:{zetBundle.GroupTableCode}");
-            var isRendered = RenderOneZetSheet(zetBundle);
+                : ToZetTemplateBundleSpecial(specialTemplateLayout,zetTemplate.Zet,zetTemplate.TemplateDescription);
+            
+            zetTemplateToRender.SheetName = BuildMergedTabName(zetTemplateToRender);
+            Log.Information($"Rendering Single Template:{zetTemplateToRender.GroupTableCode}");
+            var isRendered = RenderOneZetSheet(zetTemplateToRender);
             if (isRendered)
             {
-                var indexItem = new IndexSheetListItem(zetTemplate.GroupTableCode, zetTemplate.TemplateDescription);
+                var indexItem = new IndexSheetListItem(zetTemplateToRender.GroupTableCode, zetTemplateToRender.SheetName, zetTemplateToRender.TemplateDescription);
                 indexList.ListItems.Add(indexItem);
             }
 
@@ -120,6 +122,15 @@ public class ExcelBookMerger : ITemplateMerger
         }
 
         return true;
+
+        static string BuildMergedTabName(ZetTemplateBundle zetTemplateBundle)
+        {
+            var mergedTabName = string.IsNullOrEmpty(zetTemplateBundle.Zet)
+                ? zetTemplateBundle.GroupTableCode
+                : zetTemplateBundle.GroupTableCode + "#" + zetTemplateBundle.Zet;
+            mergedTabName = mergedTabName.Replace(":", "_");
+            return mergedTabName;
+        }
     }
 
     private List<ZetTemplateBundle> ToZetTemplateBundles(TemplateBundle templateBundle)
@@ -156,19 +167,20 @@ public class ExcelBookMerger : ITemplateMerger
         }
         return zetTemplateBundlesList;
     }
-    private ZetTemplateBundle ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout,string zet)
+    private ZetTemplateBundle ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout,string zet,string templateDescription)
     {
 
         var tableMatrix = specialTemplateLayout.TableCodesMatrix.Select(line =>
-            new HorizontalLine(line.Select(code => CreateTableInfo(code, "")).ToList())
+            new HorizontalLine(line.Select(code => CreateTableInfo(code, zet)).ToList())
         )
         .ToList();
 
         var ztb = new ZetTemplateBundle()
-        {            
-            Zet=zet,
+        {
+            Zet = zet,
+            SheetName = specialTemplateLayout.TemplateSheetName,
             GroupTableCode = specialTemplateLayout.TemplateCode,
-            TemplateDescription = specialTemplateLayout.TemplateSheetName,
+            TemplateDescription = templateDescription,
             TableMatrix = tableMatrix
         };
         return ztb;
@@ -242,8 +254,7 @@ public class ExcelBookMerger : ITemplateMerger
         if (!hasElements)
         {
             return false;
-        }
-        string mergedTabName = BuildMergedTabName(zetTemplateBundle);
+        }        
 
         var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
         var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.Zet });
@@ -252,7 +263,7 @@ public class ExcelBookMerger : ITemplateMerger
             : $"{zetTemplateBundle.TemplateDescription.Trim()}#{zetLabel}";
 
 
-        var destSheet = DestWorkbook.Worksheets.Create(mergedTabName);
+        var destSheet = DestWorkbook.Worksheets.Create(zetTemplateBundle.SheetName);
 
 
         destSheet.Zoom = 80;
@@ -306,15 +317,7 @@ public class ExcelBookMerger : ITemplateMerger
 
 
         return true;
-        /////////////////////////////////////////////////////////////////////
-        static string BuildMergedTabName(ZetTemplateBundle zetTemplateBundle)
-        {
-            var mergedTabName = string.IsNullOrEmpty(zetTemplateBundle.Zet)
-                ? zetTemplateBundle.GroupTableCode
-                : zetTemplateBundle.GroupTableCode + "#" + zetTemplateBundle.Zet;
-            mergedTabName = mergedTabName.Replace(":", "_");
-            return mergedTabName;
-        }
+        /////////////////////////////////////////////////////////////////////        
 
         static void FormatColumnsWidth(bool isOpenTable, IWorksheet? worksheet, IRange destRange)
         {
@@ -439,7 +442,7 @@ public class ExcelBookMerger : ITemplateMerger
 
             IHyperLink hyperlink4 = indexSheet.HyperLinks.Add(tableCodeCell);
             hyperlink4.Type = ExcelHyperLinkType.Workbook;
-            var address = $"{indexItem.templateCode}!A1";
+            var address = $"{indexItem.sheetName}!A1";
             hyperlink4.Address = address;
             tableCodeCell.CellStyle = _pensionStyles.TableCodeStyle;
 
