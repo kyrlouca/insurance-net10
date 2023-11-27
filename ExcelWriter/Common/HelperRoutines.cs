@@ -124,12 +124,13 @@ internal class HelperRoutines
         return new RangeCoordinates(startRow, startCol, endRow, endCol);
     }
 
-    public static IRange ExtendRangeLowerCorner(IRange range, int rowInc, int colInc)
+    public static IRange ExtendRangeRowCols(IRange range, int rowInc, int colInc)
     {
+        //works with negative numbers as well
         var lastRow = Math.Max(0, range.LastRow + rowInc);
         var lastCol = Math.Max(0, range.LastColumn + colInc);
 
-        var newRange = range.Application.Range[range.Row, range.Column, lastRow, lastCol];
+        var newRange = range.Worksheet.Range[range.Row, range.Column, lastRow, lastCol];
         return newRange;
     }
 
