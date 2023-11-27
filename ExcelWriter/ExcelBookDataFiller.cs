@@ -100,13 +100,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var leftRange = leftName.RefersToRange;
 
         var topLabelRange = topRange.Offset(-1, 0);
+        var zetRange= topLabelRange.Offset(-1, 0);
 
         var zetList = GetFactPivotZets();
+        var isMultiZet = zetList.Count > 1;
         if (zetList.Count > 1)
         {
             topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, zetList.Count - 1);        
             dataRange=  HelperRoutines.ExtendRangeRowCols(dataRange,0,zetList.Count -1);
             topRange= HelperRoutines.ExtendRangeRowCols(topRange,0,zetList.Count - 1);
+            zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, 0, zetList.Count - 1);
 
             var val= topRange.Rows.First().Columns.First().Value;
             topRange.Value = val;
@@ -118,6 +121,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 var mMember = _commonRoutines.SelectDomainMember(zetList[zetIndex]);
                 var domainValue = mMember?.MemberLabel;
                 cell.Text = domainValue;
+                cell.Offset(-1,0).Text = zetList[zetIndex];
+
                 zetIndex++;
             }
             
@@ -136,21 +141,29 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 {
                     continue;
                 }
+                var zetxxx = zetRange[zetRange.Row, cell.Column];
+                var zet = isMultiZet ? zetRange[zetRange.Row, cell.Column].Value :"";
+                var factX = FindFactFromRowColZet(dbSheet, rowLabel, colLabel, zet);
+                if(factX is null)
+                {
+                    continue;
+                }
+                SaveCellValue(cell, factX);
                 var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
                 if (facts.Count == 0)
                 {
                     continue;
                 }
 
-                if (facts.Count > 1)
+                if (factX.TextValue!= facts.First().TextValue)
                 {
                     var x = 22;
-                    continue;
+                    
                 }
 
 
                 var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
-                SaveCellValue(cell, fact);
+                //SaveCellValue(cell, fact);
             }
         }
 
@@ -264,7 +277,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     private TemplateSheetFact? FindFactFromRowColZet(TemplateSheetInstance sheet, string row, string col, string zet)
     {
         //more than one fact with the same row,col but with different currency
-        var sqlFact =
+        var sqlFactNoZet =
+      @"
+		SELECT *                  
+		FROM dbo.TemplateSheetFact fact
+		WHERE
+		  fact.TemplateSheetId = @sheetId
+		  AND fact.Row = @row
+		  AND fact.Col = @col                                    
+	";
+        var sqlFactZet =
       @"
             SELECT *    
 			FROM dbo.TemplateSheetFact fact
@@ -274,7 +296,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 			  AND fact.Col = @col
 			  AND fact.Zet = @zet                
      ";
+        var sqlFact = string.IsNullOrEmpty(zet) ? sqlFactNoZet : sqlFactZet;
         using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
+
         var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlFact, new { sheetId = sheet.TemplateSheetId, row, col, zet });
         return fact;
     }
