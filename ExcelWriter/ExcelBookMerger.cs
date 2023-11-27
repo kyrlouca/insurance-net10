@@ -104,7 +104,7 @@ public class ExcelBookMerger : ITemplateMerger
             var isRendered = RenderOneZetSheet(zetTemplateToRender);
             if (isRendered)
             {
-                var indexItem = new IndexSheetListItem(zetTemplateToRender.GroupTableCode, zetTemplateToRender.SheetName, zetTemplateToRender.TemplateDescription);
+                var indexItem = new IndexSheetListItem(zetTemplateToRender.SheetName, zetTemplateToRender.SheetName, zetTemplateToRender.TemplateDescription);
                 indexList.ListItems.Add(indexItem);
             }
 
@@ -114,6 +114,7 @@ public class ExcelBookMerger : ITemplateMerger
         FixCombinedS6Form(s6Bundle);
 
         var indexSheet = RenderIndexList(indexList);
+        
         indexSheet.Activate();
 
         (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
@@ -431,7 +432,7 @@ public class ExcelBookMerger : ITemplateMerger
 
         var indexSheet = DestWorkbook.Worksheets.Create("List");
         indexSheet.Move(0);
-        indexSheet.SetColumnWidth(1, 12);
+        indexSheet.SetColumnWidth(1, 30);
         var titleCell = indexSheet[1, 1];
         titleCell.Text = "List of Templates";
         titleCell.CellStyle = _pensionStyles.HeaderStyle;
@@ -441,7 +442,7 @@ public class ExcelBookMerger : ITemplateMerger
 
             var tableCodeCell = indexSheet[row, 1];
             tableCodeCell.Text = indexItem.templateCode;
-            tableCodeCell.CellStyle = _pensionStyles.TableCodeStyle;
+            
             var descriptionCell = indexSheet[row, 2];
             descriptionCell.Text = indexItem.Description;
             descriptionCell.CellStyle = _pensionStyles.Normal;
@@ -450,10 +451,11 @@ public class ExcelBookMerger : ITemplateMerger
             hyperlink.Type = ExcelHyperLinkType.Workbook;
             var address = $"'{indexItem.sheetName}'!A1";
             hyperlink.Address = address;
-            tableCodeCell.CellStyle = _pensionStyles.TableCodeStyle;
 
+            tableCodeCell.CellStyle = _pensionStyles.TableCodeStyle;
             row++;
         }
+        
         return indexSheet;
     }
 
