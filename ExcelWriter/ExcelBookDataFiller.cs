@@ -112,10 +112,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 					continue;
 				}
 				var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
-				if (facts.Count == 0 || facts.Count > 1)
+                if (facts.Count == 0 )
+                {
+                    continue;
+                }
+
+                if ( facts.Count > 1)
 				{
+					var x = 22;
 					continue;
 				}
+
 
 				var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
 				SaveCellValue(cell, fact);

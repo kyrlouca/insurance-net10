@@ -433,6 +433,7 @@ public class ExcelBookMerger : ITemplateMerger
         var indexSheet = DestWorkbook.Worksheets.Create("List");
         indexSheet.Move(0);
         indexSheet.SetColumnWidth(1, 30);
+        indexSheet.Zoom = 80;
         var titleCell = indexSheet[1, 1];
         titleCell.Text = "List of Templates";
         titleCell.CellStyle = _pensionStyles.HeaderStyle;
