@@ -97,6 +97,8 @@ public class ExcelBookMerger : ITemplateMerger
                 : ToZetTemplateBundleSpecial(specialTemplateLayout,zetTemplate.Zet,zetTemplate.TemplateDescription);
             
             zetTemplateToRender.SheetName = BuildMergedTabName(zetTemplateToRender);
+            zetTemplateToRender.TemplateDescription=BuildMergedTableDescription(zetTemplateToRender);
+
             Log.Information($"Rendering Single Template:{zetTemplateToRender.GroupTableCode}");
             ///RENDER the Merged Sheet
             var isRendered = RenderOneZetSheet(zetTemplateToRender);
@@ -132,6 +134,17 @@ public class ExcelBookMerger : ITemplateMerger
             mergedTabName = mergedTabName.Replace(":", "_");
             return mergedTabName;
         }
+        string BuildMergedTableDescription(ZetTemplateBundle zetTemplateBundle)
+        {
+            using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+            var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
+            var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.Zet });
+            var templateDesciption = string.IsNullOrEmpty(zetLabel)
+                ? $"{zetTemplateBundle.TemplateDescription.Trim()}"
+                : $"{zetTemplateBundle.TemplateDescription.Trim()} # {zetLabel}";
+            return templateDesciption;            
+        }
+
     }
 
     private List<ZetTemplateBundle> ToZetTemplateBundles(TemplateBundle templateBundle)
@@ -257,15 +270,7 @@ public class ExcelBookMerger : ITemplateMerger
             return false;
         }        
 
-        var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
-        var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.Zet });
-        var templateDesciption = string.IsNullOrEmpty(zetLabel)
-            ? $"{zetTemplateBundle.TemplateDescription.Trim()}"
-            : $"{zetTemplateBundle.TemplateDescription.Trim()}#{zetLabel}";
-
-
         var destSheet = DestWorkbook.Worksheets.Create(zetTemplateBundle.SheetName);
-
 
         destSheet.Zoom = 80;
 
