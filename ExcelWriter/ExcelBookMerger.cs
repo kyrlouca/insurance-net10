@@ -98,6 +98,7 @@ public class ExcelBookMerger : ITemplateMerger
             
             zetTemplateToRender.SheetName = BuildMergedTabName(zetTemplateToRender);
             Log.Information($"Rendering Single Template:{zetTemplateToRender.GroupTableCode}");
+            ///RENDER the Merged Sheet
             var isRendered = RenderOneZetSheet(zetTemplateToRender);
             if (isRendered)
             {
@@ -212,14 +213,14 @@ public class ExcelBookMerger : ITemplateMerger
     }
     private TableExtensiveInfo CreateTableInfo(string tableCode, string zet)
     {
-        var dbSheet = SelectSheetByZet(zet, tableCode);
+        var dbSheet = SelectDbSheetByZet(zet, tableCode);
 
         var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
         return new TableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet };
     }
-    private TemplateSheetInstance? SelectSheetByZet(string zetValue, string tableCode)
+    private TemplateSheetInstance? SelectDbSheetByZet(string zetValue, string tableCode)
     {
-
+        //if zet is null or empty do NOT use it in selection
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
@@ -440,10 +441,10 @@ public class ExcelBookMerger : ITemplateMerger
             descriptionCell.Text = indexItem.Description;
             descriptionCell.CellStyle = _pensionStyles.Normal;
 
-            IHyperLink hyperlink4 = indexSheet.HyperLinks.Add(tableCodeCell);
-            hyperlink4.Type = ExcelHyperLinkType.Workbook;
-            var address = $"{indexItem.sheetName}!A1";
-            hyperlink4.Address = address;
+            IHyperLink hyperlink = indexSheet.HyperLinks.Add(tableCodeCell);
+            hyperlink.Type = ExcelHyperLinkType.Workbook;
+            var address = $"'{indexItem.sheetName}'!A1";
+            hyperlink.Address = address;
             tableCodeCell.CellStyle = _pensionStyles.TableCodeStyle;
 
             row++;

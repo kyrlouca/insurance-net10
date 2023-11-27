@@ -364,7 +364,7 @@ public class FactsProcessor : IFactsProcessor
 	TemplateSheetFact UpdateFactWithCellValuesInDb(MTable table, MTableCell cell, MAPPING cellMapping, TemplateSheetFact realFact, string tablePivotZet)
 	{
 		//update the fact with row,col, cellId and assign it to a sheet (or create a new one if does not exist)
-		//we create a sheet when the fact cannot find another fact with similar Zet values
+		//we create a SHEET when the fact cannot find another fact with similar Zet values
 		//fact zet values are the zet dims present in the fact signature
 		//they tell us when the same facts belong in different sheets either bucause of
 		//-- different open values which means multiple sheets of the same tableI
@@ -550,7 +550,7 @@ public class FactsProcessor : IFactsProcessor
 		var sheetId = connectionInsurance.QuerySingle<int>(SqlInsertTemplateSheet, sheet);
 		sheet.TemplateSheetId = sheetId;
 
-
+		//ad the zet dims for each TemplateSheetInstance
 		var dims = sheetCode.Split("__");
 		foreach (var factDim in dims)
 		{
@@ -1252,9 +1252,11 @@ public class FactsProcessor : IFactsProcessor
 	private void UpdateSheetTabNames(string tableCode)
 	{
 		//excel tab sheet names cannot exceed 30 chars
-		//sheetCodes exceet the limit because we add zetDims to the tablecode (create one sheet for each z dim)
+		//sheetCodes exceet the limit because we add zetDims to the tablecode (create one sheet for each OPEN zet dim)
+		//CAN we have more than ONE open ZET ?? I think no
 		//therefore, build sheetTabName which is the first 25 chars of the sheetcode + serial (resets for every tableCode)
 		//if there is no open Z do not add the z in name
+		
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
