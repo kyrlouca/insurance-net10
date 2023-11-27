@@ -99,7 +99,26 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		var leftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
 		var leftRange = leftName.RefersToRange;
 
-		foreach (var dataRow in dataRange.Rows)
+		var topCol = topRange.Offset(-1, 0);		
+
+		var zetList = GetFactPivotZets();
+		if (zetList.Count > 1)
+		{
+			var tt = topCol.Rows.First().Columns.First();
+
+            var count = 0;
+            foreach (var zet in zetList)
+            {
+				var xxxx = _commonRoutines.SelectDomainMember(zet);
+				var cell = tt.Offset(0,count);
+				cell.Value = xxxx?.MemberLabel;
+                count++;
+
+            }
+        }
+		
+
+        foreach (var dataRow in dataRange.Rows)
 		{
 			foreach (var cell in dataRow.Cells)
 			{
@@ -128,8 +147,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 				SaveCellValue(cell, fact);
 			}
 		}		
+
 		return false;
-	}
+        
+		List<string> GetFactPivotZets()
+        {
+            using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+            var sqlZetValues = @"select distinct fact.Zet from TemplateSheetFact fact where fact.TemplateSheetId = @sheetId order by fact.Zet";
+            var pivotZets = connectionInsurance.Query<string>(sqlZetValues, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
+            return pivotZets;
+        }
+    }
 
 
 	private bool PopulateOpenTable(TemplateSheetInstance dbSheet)

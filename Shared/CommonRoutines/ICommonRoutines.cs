@@ -13,5 +13,7 @@ public interface ICommonRoutines
 	MModule? SelectModuleByCode(string moduleCode);
 	public void CreateTransactionLog(int docInstanceId, MessageType messageType, string message);
 	public void UpdateDocumentStatus(int documentId, string status);
-	
+	public MMember? SelectDomainMember(string domainString);
+
+
 }

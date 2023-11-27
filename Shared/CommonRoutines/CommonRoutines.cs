@@ -4,10 +4,10 @@ using Microsoft.Data.SqlClient;
 using Shared.DataModels;
 using Shared.HostRoutines;
 using Shared.SharedHost;
+using Shared.SpecialRoutines;
+using Shared.GeneralUtils;
 using System.Reflection;
 using Serilog;
-
-
 public class CommonRoutines : ICommonRoutines
 {
 	readonly ParameterData _parameterData;
@@ -59,8 +59,6 @@ public class CommonRoutines : ICommonRoutines
 		return sheets.ToList();
 
 	}
-
-
 
 	public DocInstance? SelectDocInstance(int fundId,string moduleCode, int ApplicableYear, int ApplicableQuarter)
 	{
@@ -125,5 +123,13 @@ public class CommonRoutines : ICommonRoutines
 		var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
 	}
 
+    public MMember? SelectDomainMember(string domainString)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var xbrlCode =  SpecialRoutines.DimDom.GetParts(domainString).DomAndValRaw;
+        var sqlMem = @"select * from mMember mem where MemberXBRLCode = @xbrlCode";
+        var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { xbrlCode });
+        return val;
+    }
 
 }
