@@ -25,7 +25,7 @@ public class ExcelBookCreator : IExcelBookWriter
     int _documentId = 0;
     string debugTableCode = "";
 
-    private readonly ICustomPensionStyler _customPensionStyles;
+    private readonly ICustomPensionStyler _customPensionStyler;
     PensionStyles _pensionStyles;
 
     public ExcelBookCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyler customPensionStyles)
@@ -33,7 +33,7 @@ public class ExcelBookCreator : IExcelBookWriter
         _parameterHandler = parametersHandler;
         _logger = logger;
         _commonRoutines = commonRoutines;
-        _customPensionStyles = customPensionStyles;
+        _customPensionStyler = customPensionStyles;
 
     }
 
@@ -69,8 +69,8 @@ public class ExcelBookCreator : IExcelBookWriter
             return "";
         }
 
-        var originpensionStyles = _customPensionStyles.GetStyles(_originWorkbook);
-        _pensionStyles = _customPensionStyles.GetStyles(_destinationWorkbook);
+        var originpensionStyles = _customPensionStyler.GetStyles(_originWorkbook);
+        _pensionStyles = _customPensionStyler.GetStyles(_destinationWorkbook);
 
 
         //////////////////////////////////////////////////////////////////

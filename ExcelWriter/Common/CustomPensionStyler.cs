@@ -33,25 +33,33 @@ public class CustomPensionStyler : ICustomPensionStyler
     private IStyle LeftLabelStyle()
     {
 
-        //IStyle bodyStyle = _destinationWorkbook.Styles.Add("BodyStyle");        
-        IStyle bodyStyle = Workbook.Styles.Add("LeftLabelStyle");
+        var styleName = "LeftLabelStyle";
+        IStyle style = GetOrCreateStyle(styleName);
 
-        bodyStyle.BeginUpdate();
-        bodyStyle.Font.FontName = "Calibri";
-        bodyStyle.WrapText = false;
-        bodyStyle.EndUpdate();
-        return bodyStyle;
+        style.BeginUpdate();
+        style.Font.FontName = "Calibri";
+        style.WrapText = false;
+        style.EndUpdate();
+        return style;
     }
     private IStyle HeaderStyle()
     {
-        IStyle style = Workbook.Styles.Add("HeaderStyle");
+        
+        var styleName = "HeaderStyle";
+        IStyle style = GetOrCreateStyle(styleName);
+
+
         style.Font.Bold = true;
 
         return style;
     }
     private IStyle TableCodeStyle()
-    {
-        IStyle style = Workbook.Styles.Add("TableCodeStyle");
+    {        
+        
+        var styleName = "TableCodeStyle";
+        IStyle style = GetOrCreateStyle(styleName);
+
+
         //style.Color = Syncfusion.Drawing.Color.Red;
         style.Font.Color = ExcelKnownColors.Red;
         style.Font.Underline = ExcelUnderline.Single;
@@ -61,7 +69,10 @@ public class CustomPensionStyler : ICustomPensionStyler
     }
     private IStyle DataSectionStyle()
     {
-        IStyle style = Workbook.Styles.Add("dataSection");
+        
+        var styleName = "dataSection";
+        IStyle style = GetOrCreateStyle(styleName);
+
 
         style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
@@ -78,7 +89,10 @@ public class CustomPensionStyler : ICustomPensionStyler
     }
     private IStyle LeftRowNumbersSectionStyle()
     {
-        IStyle style = Workbook.Styles.Add("leftRow");
+     
+        var styleName = "leftRow";
+        IStyle style = GetOrCreateStyle(styleName);
+
 
         style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
@@ -97,7 +111,10 @@ public class CustomPensionStyler : ICustomPensionStyler
     }
     private IStyle TopColumnNumbersStyle()
     {
-        IStyle style = Workbook.Styles.Add("ColumnNumber");
+     
+        var styleName = "ColumnNumber";
+        IStyle style = GetOrCreateStyle(styleName);
+
 
         style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
@@ -117,42 +134,44 @@ public class CustomPensionStyler : ICustomPensionStyler
     }
     private IStyle DiagonalStyle()
     {
-        IStyle st;
-        try
-        {
-            st = Workbook.Styles["DPM_EmptyCell"];
-        }
-        catch (Exception ex)
-        {
-            st = Workbook.Styles.Add("DPM_EmptyCell");
-        }
-
+        var styleName = "DPM_EmptyCell";
+        IStyle style = GetOrCreateStyle(styleName);
+        
         //st.FillPattern = ExcelPattern.Percent25Gray;
-        st.Color = Syncfusion.Drawing.Color.LightGray;
+        style.Color = Syncfusion.Drawing.Color.LightGray;
         //st.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
-        st.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
-        st.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-        st.IncludeBorder = true;
+        style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+        style.IncludeBorder = true;
         //st.ColorIndex = ExcelKnownColors.Grey_50_percent;
-        return st;
+        return style;
 
     }
+
+    
     private IStyle NormalStyle()
     {
-        IStyle st;
+        var styleName = "Normal";
+        IStyle style=GetOrCreateStyle(styleName);
+        
+        style.Font.FontName = "Calibri";
+        style.Font.Size = 11;
+        return style;
+
+    }
+    private IStyle GetOrCreateStyle(string styleName)
+    {
+        IStyle style;
         try
         {
-            st = Workbook.Styles["Normal"];
+            style = Workbook.Styles[styleName];
         }
         catch (Exception ex)
         {
-            st = Workbook.Styles.Add("normal");
+            style = Workbook.Styles.Add(styleName);
+            return style;
         }
-
-        st.Font.FontName = "Calibri";
-        st.Font.Size = 11;
-        return st;
-
+        return style;
     }
 }
 

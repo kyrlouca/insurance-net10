@@ -29,12 +29,15 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     //private IWorkbook? _originWorkbook; //template workbook
     int _documentId = 0;
     string debugTableCode = "";
+    private readonly ICustomPensionStyler _customPensionStyler;
+    PensionStyles _pensionStyles;
 
-    public ExcelBookDataFiller(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
+    public ExcelBookDataFiller(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyler customPensionStyles)
     {
         _parameterHandler = parametersHandler;
         _logger = logger;
         _commonRoutines = commonRoutines;
+        _customPensionStyler = customPensionStyles;
     }
 
     public bool PopulateExcelBook(int documentId, string sourceFilename, string destFileName)
@@ -57,6 +60,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             return false;
         }
 
+
+        _pensionStyles = _customPensionStyler.GetStyles(Workbook);
+
+        ///////////////////////////////////////////////////////////////////
         var dbClosedSheets = _commonRoutines.SelectTempateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
         foreach (var dbClosedSheet in dbClosedSheets)
@@ -110,6 +117,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             dataRange=  HelperRoutines.ExtendRangeRowCols(dataRange,0,zetList.Count -1);
             topRange= HelperRoutines.ExtendRangeRowCols(topRange,0,zetList.Count - 1);
             zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, 0, zetList.Count - 1);
+
+            dataRange.CellStyle = _pensionStyles.DataSectionStyle;
 
             var val= topRange.Rows.First().Columns.First().Value;
             topRange.Value = val;
@@ -185,12 +194,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 var colIndex = colObject.Col;
                 var cell = workSheet[rowIndex, colIndex];
 
-                var facts = FindFactsFromRowCol(dbSheet, rowLabel, colCell.Text);
-                if (facts.Count == 0 || facts.Count > 1)
+                var fact = FindFactFromRowColZet(dbSheet, rowLabel, colCell.Text,"");
+                if (fact is null )
                 {
                     continue;
-                }
-                var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
+                }                
                 SaveCellValue(cell, fact);
             }
             rowIndex += 1;
