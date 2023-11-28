@@ -123,7 +123,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
 
 
-            ///////////DESCRIPTION LABEL
+            ///////////LABELs ab
             var _TC = template.TC;
             var descRange = CopyRangeToFixedPosition(START_ROW + 2, START_COL, originSheet, destSheet, _TC);
 
@@ -205,7 +205,7 @@ public class ExcelBookCreator : IExcelBookWriter
             }
 
 
-            ////////////TOP LABELS
+            ////////////TOP LABELS(above columns)
             //Top labels must be above the destination data range
             var _TT = template.TT;
             if (_TT is not null)

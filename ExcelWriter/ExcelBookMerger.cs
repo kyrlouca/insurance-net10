@@ -131,7 +131,7 @@ public class ExcelBookMerger : ITemplateMerger
         {
             var mergedTabName = string.IsNullOrEmpty(zetTemplateBundle.Zet)
                 ? zetTemplateBundle.GroupTableCode
-                : zetTemplateBundle.GroupTableCode + "#" + zetTemplateBundle.Zet;
+                : zetTemplateBundle.GroupTableCode + "__" + zetTemplateBundle.Zet;
             mergedTabName = mergedTabName.Replace(":", "_");
             return mergedTabName;
         }
@@ -142,7 +142,7 @@ public class ExcelBookMerger : ITemplateMerger
             var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.Zet });
             var templateDesciption = string.IsNullOrEmpty(zetLabel)
                 ? $"{zetTemplateBundle.TemplateDescription.Trim()}"
-                : $"{zetTemplateBundle.TemplateDescription.Trim()} # {zetLabel}";
+                : $"{zetTemplateBundle.TemplateDescription.Trim()} -- {zetLabel}";
             return templateDesciption;            
         }
 

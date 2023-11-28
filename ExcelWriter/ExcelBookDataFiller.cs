@@ -100,13 +100,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
 
-        var topName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
-        var topRange = topName.RefersToRange;
+        var topColName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
+        var topColumnRange = topColName.RefersToRange;
 
-        var leftName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
-        var leftRange = leftName.RefersToRange;
+        var leftRowName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
+        var leftRowRange = leftRowName.RefersToRange;
 
-        var topLabelRange = topRange.Offset(-1, 0);
+        var topLabelRange = topColumnRange.Offset(-1, 0);
         var zetRange= topLabelRange.Offset(-1, 0);
 
         var zetList = GetFactPivotZets().Order().ToList();
@@ -115,13 +115,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         {
             topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, zetList.Count - 1);        
             dataRange=  HelperRoutines.ExtendRangeRowCols(dataRange,0,zetList.Count -1);
-            topRange= HelperRoutines.ExtendRangeRowCols(topRange,0,zetList.Count - 1);
+            topColumnRange= HelperRoutines.ExtendRangeRowCols(topColumnRange,0,zetList.Count - 1);
             zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, 0, zetList.Count - 1);
 
             dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+            topColumnRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
-            var val= topRange.Rows.First().Columns.First().Value;
-            topRange.Value = val;
+            var val= topColumnRange.Rows.First().Columns.First().Value;
+            topColumnRange.Value = val;
 
             var zetIndex = 0;
             var topRows = topLabelRange.Rows.First().Cells;
@@ -134,7 +135,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
                 zetIndex++;
             }
-            
+            topLabelRange.Offset(-1,0).Clear();
         }
 
 
@@ -143,8 +144,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             foreach (var cell in dataRow.Cells)
             {
                 var dataCell = HelperRoutines.CreateRowColObject(cell.AddressR1C1Local);
-                var rowLabel = leftRange[dataCell.Row, leftRange.Column].Value;
-                var colLabel = topRange[topRange.Row, dataCell.Col].Value;
+                var rowLabel = leftRowRange[dataCell.Row, leftRowRange.Column].Value;
+                var colLabel = topColumnRange[topColumnRange.Row, dataCell.Col].Value;
 
                 if (string.IsNullOrEmpty(rowLabel) || string.IsNullOrEmpty(colLabel))
                 {
