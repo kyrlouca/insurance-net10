@@ -36,7 +36,7 @@ public class HostCreator
 			 var vr = context.Configuration["eiopa-version"] ?? "";
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));
 			 //services.Configure<LoggerFiles>(context.Configuration.GetSection("LoggerFiles"));
-			 services.AddScoped<ICommonRoutines, CommonRoutines>();
+			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
 			 services.AddScoped<IFactsProcessor, FactsProcessor>();
 			 services.AddScoped<IFactsCreator, FactsCreator>();

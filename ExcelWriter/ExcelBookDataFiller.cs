@@ -24,7 +24,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     private readonly IParameterHandler _parameterHandler;
     ParameterData _parameterData = new();
     private readonly ILogger _logger;
-    private readonly ICommonRoutines _commonRoutines;
+    private readonly ISqlFunctions _SqlFunctions;
     private IWorkbook? Workbook;
     //private IWorkbook? _originWorkbook; //template workbook
     int _documentId = 0;
@@ -32,11 +32,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     private readonly ICustomPensionStyler _customPensionStyler;
     PensionStyles _pensionStyles;
 
-    public ExcelBookDataFiller(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyler customPensionStyles)
+    public ExcelBookDataFiller(IParameterHandler parametersHandler, ILogger logger, ISqlFunctions sqlFunctions, ICustomPensionStyler customPensionStyles)
     {
         _parameterHandler = parametersHandler;
         _logger = logger;
-        _commonRoutines = commonRoutines;
+        _SqlFunctions = sqlFunctions;
         _customPensionStyler = customPensionStyles;
     }
 
@@ -56,7 +56,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (Workbook is null)
         {
             _logger.Error(originMessage);
-            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, originMessage);
             return false;
         }
 
@@ -64,7 +64,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         _pensionStyles = _customPensionStyler.GetStyles(Workbook);
 
         ///////////////////////////////////////////////////////////////////
-        var dbClosedSheets = _commonRoutines.SelectTempateSheets(_documentId)
+        var dbClosedSheets = _SqlFunctions.SelectTempateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
         foreach (var dbClosedSheet in dbClosedSheets)
         {
@@ -73,7 +73,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         }
 
-        var dbOpenSheets = _commonRoutines.SelectTempateSheets(_documentId)
+        var dbOpenSheets = _SqlFunctions.SelectTempateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
         foreach (var dbOpenSheet in dbOpenSheets)
         {
@@ -87,7 +87,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (!isValidSave)
         {
             _logger.Error(destSaveMessage);
-            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, destSaveMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, destSaveMessage);
             return false;
         }
 
@@ -129,7 +129,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             var topRows = topLabelRange.Rows.First().Cells;
             foreach (var cell in topRows)
             {
-                var mMember = _commonRoutines.SelectDomainMember(zetList[zetIndex]);
+                var mMember = _SqlFunctions.SelectDomainMember(zetList[zetIndex]);
                 var domainValue = mMember?.MemberLabel;
                 cell.Text = domainValue;
                 cell.Offset(-1,0).Text = zetList[zetIndex];

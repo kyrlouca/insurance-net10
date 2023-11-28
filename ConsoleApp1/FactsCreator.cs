@@ -22,7 +22,7 @@ public class FactsCreator : IFactsCreator
 	private readonly IParameterHandler _parameterHandler;
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
-	private readonly ICommonRoutines _commonRoutines;
+	private readonly ISqlFunctions _SqlFunctions;
 
 
 	MModule _mModule = new();
@@ -42,11 +42,11 @@ public class FactsCreator : IFactsCreator
 
 
 
-	public FactsCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines)
+	public FactsCreator(IParameterHandler parametersHandler, ILogger logger, ISqlFunctions commonRoutines)
 	{
 		_parameterHandler = parametersHandler;
 		_logger = logger;
-		_commonRoutines = commonRoutines;
+		_SqlFunctions = commonRoutines;
 	}
 
 
@@ -62,7 +62,7 @@ public class FactsCreator : IFactsCreator
 		if (!parseValid)
 		{
 			_logger.Error(parseMessage);
-			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, parseMessage);
+			_SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, parseMessage);
 			return (0, FilingsSubmitted);
 		}
 
@@ -71,7 +71,7 @@ public class FactsCreator : IFactsCreator
 
 
 		var moduleCodeXbrl = GeneralUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);
-		_mModule = _commonRoutines.SelectModuleByCode(_parameterData.ModuleCode);
+		_mModule = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
 		Console.WriteLine($"Opened Xblrl=>  Module: {moduleCodeXbrl} ");
 		if (moduleCodeXbrl != _mModule.ModuleCode)
 		{
@@ -86,7 +86,7 @@ public class FactsCreator : IFactsCreator
 		if (!isValidReferenceDate)
 		{
 			_logger.Error(referenceMessage);
-			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, referenceMessage);
+			_SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, referenceMessage);
 			return (0, FilingsSubmitted);
 		}
 
@@ -96,7 +96,7 @@ public class FactsCreator : IFactsCreator
 		{
 			message = $"The license number is incorrect:{fundLei}";
 			_logger.Error(message);
-			_commonRoutines.CreateTransactionLog(0, MessageType.ERROR, message);
+			_SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
 			return (0, FilingsSubmitted);
 		}
 

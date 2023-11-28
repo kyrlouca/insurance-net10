@@ -34,7 +34,7 @@ public class HostCreator
 			 //**!! vr -GetSection will get the values of the section corrsoponding to eiopa-versions (IU270, IU280, etc)
 			 var vr = context.Configuration["eiopa-version"] ?? "";
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
-			 services.AddScoped<ICommonRoutines, CommonRoutines>();
+			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
 			 services.AddScoped<IExcelBookWriter,ExcelBookCreator>();
 			 services.AddScoped<IExcelBookDataFiller, ExcelBookDataFiller>();

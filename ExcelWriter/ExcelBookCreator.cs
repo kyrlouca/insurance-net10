@@ -19,7 +19,7 @@ public class ExcelBookCreator : IExcelBookWriter
     private readonly IParameterHandler _parameterHandler;
     ParameterData _parameterData = new();
     private readonly ILogger _logger;
-    private readonly ICommonRoutines _commonRoutines;
+    private readonly ISqlFunctions _SqlFunctions;
     private IWorkbook? _destinationWorkbook;
     private IWorkbook? _originWorkbook; //template workbook
     int _documentId = 0;
@@ -28,11 +28,11 @@ public class ExcelBookCreator : IExcelBookWriter
     private readonly ICustomPensionStyler _customPensionStyler;
     PensionStyles _pensionStyles;
 
-    public ExcelBookCreator(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyler customPensionStyles)
+    public ExcelBookCreator(IParameterHandler parametersHandler, ILogger logger, ISqlFunctions sqlFunctions, ICustomPensionStyler customPensionStyles)
     {
         _parameterHandler = parametersHandler;
         _logger = logger;
-        _commonRoutines = commonRoutines;
+        _SqlFunctions = sqlFunctions;
         _customPensionStyler = customPensionStyles;
 
     }
@@ -56,7 +56,7 @@ public class ExcelBookCreator : IExcelBookWriter
         if (_originWorkbook is null)
         {
             _logger.Error(originMessage);
-            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, originMessage);
             return "";
         }
 
@@ -65,7 +65,7 @@ public class ExcelBookCreator : IExcelBookWriter
         if (_destinationWorkbook is null)
         {
             _logger.Error(errorMessage);
-            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, errorMessage + "--" + xMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, errorMessage + "--" + xMessage);
             return "";
         }
 
@@ -268,7 +268,7 @@ public class ExcelBookCreator : IExcelBookWriter
         if (!isSaveValid)
         {
             _logger.Error(saveMessage);
-            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, saveMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, saveMessage);
             return "";
         }
 

@@ -22,7 +22,7 @@ public class ExcelBookMerger : ITemplateMerger
     ParameterData _parameterData = new();
     private readonly ILogger _logger;
 
-    private readonly ICommonRoutines _commonRoutines;
+    private readonly ISqlFunctions _SqlFunctions;
     private readonly ICustomPensionStyler _customPensionStyles;
     PensionStyles _pensionStyles;
     private IWorkbook? SourceWorkbook;
@@ -35,11 +35,11 @@ public class ExcelBookMerger : ITemplateMerger
     //private IStyle? dataSectionStyle;
 
 
-    public ExcelBookMerger(IParameterHandler parametersHandler, ILogger logger, ICommonRoutines commonRoutines, ICustomPensionStyler customPensionStyles)
+    public ExcelBookMerger(IParameterHandler parametersHandler, ILogger logger, ISqlFunctions sqlFunctions, ICustomPensionStyler customPensionStyles)
     {
         _parameterHandler = parametersHandler;
         _logger = logger;
-        _commonRoutines = commonRoutines;
+        _SqlFunctions = sqlFunctions;
         _customPensionStyles = customPensionStyles;
     }
     public bool MergeTables(int documentId, string sourceFile, string destFile)
@@ -59,7 +59,7 @@ public class ExcelBookMerger : ITemplateMerger
         if (SourceWorkbook is null)
         {
             _logger.Error(originMessage);
-            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, originMessage);
             return false;
         }
 
@@ -68,7 +68,7 @@ public class ExcelBookMerger : ITemplateMerger
         if (DestWorkbook is null)
         {
             _logger.Error(destMessage);
-            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, destMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, destMessage);
             return false;
         }
 
@@ -121,7 +121,7 @@ public class ExcelBookMerger : ITemplateMerger
         if (!isValidSave)
         {
             _logger.Error(destSaveMessage);
-            _commonRoutines.CreateTransactionLog(0, MessageType.ERROR, destSaveMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, destSaveMessage);
             return false;
         }
 
@@ -229,7 +229,7 @@ public class ExcelBookMerger : ITemplateMerger
     {
         var dbSheet = SelectDbSheetByZet(zet, tableCode);
         var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
-        var tableDesc = _commonRoutines.SelectTable(tableCode)?.TableLabel ?? "" ;
+        var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "" ;
         return new TableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet,TableDescription=tableDesc };
     }    
     private TemplateSheetInstance? SelectDbSheetByZet(string zetValue, string tableCode)

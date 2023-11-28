@@ -27,7 +27,7 @@ public class FactsProcessor : IFactsProcessor
 	private readonly IParameterHandler _parameterHandler;
 	ParameterData _parameterData = new();
 	private readonly ILogger _logger;
-	private readonly ICommonRoutines _commonRoutines;
+	private readonly ISqlFunctions _SqlFunctions;
 	private int DocumentId = 0;
 	private List<string> _filings = new();
 	private DocInstance _document = new();
@@ -39,7 +39,7 @@ public class FactsProcessor : IFactsProcessor
 	public List<MTable> ModuleTablesFiled { get; private set; } = new List<MTable>();
 
 
-	public FactsProcessor(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines)
+	public FactsProcessor(IParameterHandler getParameters, ILogger logger, ISqlFunctions commonRoutines)
 	{
 		//process all the tables (S.01.01.01.01, S.01.01.02.01, etc ) related to the filings (S.01.01)
 		//for each cell in each table, create a sheet and associate the mathcing facts (or create new facts if a fact should be in two tables)            
@@ -47,7 +47,7 @@ public class FactsProcessor : IFactsProcessor
 
 		_parameterHandler = getParameters;
 		_logger = logger;
-		_commonRoutines = commonRoutines;
+		_SqlFunctions = commonRoutines;
 	}
 
 
@@ -57,7 +57,7 @@ public class FactsProcessor : IFactsProcessor
 		_filings = filings;
 		_parameterData = _parameterHandler.GetParameterData();
 
-		_document = _commonRoutines.SelectDocInstance(documentId);
+		_document = _SqlFunctions.SelectDocInstance(documentId);
 		_moduleCode = _document.ModuleCode.Trim();
 		_moduleId = _document.ModuleId;
 

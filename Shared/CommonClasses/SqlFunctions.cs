@@ -8,12 +8,12 @@ using Shared.SpecialRoutines;
 using Shared.GeneralUtils;
 using System.Reflection;
 using Serilog;
-public class CommonRoutines : ICommonRoutines
+public class SqlFunctions : ISqlFunctions
 {
 	readonly ParameterData _parameterData;
 	readonly IParameterHandler? _parameterHandler;
 	readonly ILogger _logger;
-	public CommonRoutines(IParameterHandler parameterHandler, ILogger logger)
+	public SqlFunctions(IParameterHandler parameterHandler, ILogger logger)
 	{
 		_parameterHandler = parameterHandler;
 		_parameterData = _parameterHandler?.GetParameterData() ?? new();

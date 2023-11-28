@@ -10,18 +10,18 @@ public class MyMainApp : IMyMainApp
 	private readonly IParameterHandler _parameterHandler;
 	private ParameterData _parameterData = new();
 	private readonly ILogger _logger;
-	private readonly ICommonRoutines _commonRoutines;
+	private readonly ISqlFunctions _SqlFunctions;
 	private readonly IFactsProcessor _factsProcessor;
 	private readonly IFactsCreator _factsCreator;
 		
 	
 
 	public int id = 12;
-	public MyMainApp(IParameterHandler getParameters, ILogger logger, ICommonRoutines commonRoutines, IFactsCreator factsCreator, IFactsProcessor factsProcessor)
+	public MyMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator, IFactsProcessor factsProcessor)
 	{
 		_parameterHandler = getParameters;
 		_logger = logger;
-		_commonRoutines = commonRoutines;
+		_SqlFunctions = sqlFunctions;
 		_factsProcessor = factsProcessor;
 		_factsCreator = factsCreator;
 
@@ -41,11 +41,11 @@ public class MyMainApp : IMyMainApp
 			return res;
 		}
 		
-		_commonRoutines.UpdateDocumentStatus(_documentId,"L");
+		_SqlFunctions.UpdateDocumentStatus(_documentId,"L");
 
 		var message = $"Xbrl Document Loaded Successfully:DocumentId= {_documentId}";
 		_logger.Information(message);
-		_commonRoutines.CreateTransactionLog(0, MessageType.COMPLETE, message);
+		_SqlFunctions.CreateTransactionLog(0, MessageType.COMPLETE, message);
 		return 0;
 	}
 
