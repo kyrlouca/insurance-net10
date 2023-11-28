@@ -131,5 +131,14 @@ public class CommonRoutines : ICommonRoutines
         var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { xbrlCode });
         return val;
     }
+    public MTable? SelectTable(string tableCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTable = @"SELECT * from mTable mtab   where mtab.TableCode= @tableCode";
+
+
+        var result = connectionEiopa.QueryFirstOrDefault<MTable>(sqlTable, new { tableCode });
+        return result;
+    }
 
 }

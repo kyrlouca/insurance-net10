@@ -12,7 +12,7 @@ namespace ExcelWriter.DataModels;
 public readonly record struct TemplateBundle(string TemplateCode, string TemplateDescription, List<string> TableCodes); 
 
 ///////////
-public record struct TableExtensiveInfo(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet);
+public record struct TableExtensiveInfo(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet,string TableDescription);
 public record struct HorizontalLine(List<TableExtensiveInfo> HorizontalTables);
 
 //ZetTemplateBundle contains list of lists to accomodate a list of horizontal tables layout

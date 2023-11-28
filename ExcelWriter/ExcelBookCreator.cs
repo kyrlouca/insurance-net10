@@ -103,13 +103,10 @@ public class ExcelBookCreator : IExcelBookWriter
             var originSheet = _originWorkbook.Worksheets[filingSheetCode];
             if (originSheet is null) continue;
 
-            var sheetName = sheet.SheetTabName.Trim();
-            //var sheetName = sheet.SheetTabName.Replace("#", "__").Trim();
+            var sheetName = sheet.SheetTabName.Trim();            
             var destSheet = _destinationWorkbook.Worksheets.Create(sheetName);
             destSheet.Zoom = 80;
-
-            //destSheet.UsedRange.CellStyle = bodyStyle;
-
+            
 
             /////Table code
             var tableCode = destSheet.Range["A1"];
@@ -124,9 +121,15 @@ public class ExcelBookCreator : IExcelBookWriter
 
 
 
-            ///////////LABELs ab
+            ///////////A descritpion which is normally found above column labels
             var _TC = template.TC;
             var descRange = CopyRangeToFixedPosition(START_ROW + 2, START_COL, originSheet, destSheet, _TC);
+            
+            var descriptionName = $"{destSheet.Name.Trim()}_desc";
+            _destinationWorkbook.Names.Remove(descriptionName);
+            var descNamedObject = _destinationWorkbook.Names.Add(descriptionName);
+            descNamedObject.RefersToRange = descRange;
+
 
 
             //////////DATA RANGE 			

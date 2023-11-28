@@ -14,6 +14,7 @@ public interface ICommonRoutines
 	public void CreateTransactionLog(int docInstanceId, MessageType messageType, string message);
 	public void UpdateDocumentStatus(int documentId, string status);
 	public MMember? SelectDomainMember(string domainString);
+	public MTable? SelectTable(string tableCode);
 
 
 }

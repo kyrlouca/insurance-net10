@@ -228,10 +228,10 @@ public class ExcelBookMerger : ITemplateMerger
     private TableExtensiveInfo CreateTableInfo(string tableCode, string zet)
     {
         var dbSheet = SelectDbSheetByZet(zet, tableCode);
-
         var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
-        return new TableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet };
-    }
+        var tableDesc = _commonRoutines.SelectTable(tableCode)?.TableLabel ?? "" ;
+        return new TableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet,TableDescription=tableDesc };
+    }    
     private TemplateSheetInstance? SelectDbSheetByZet(string zetValue, string tableCode)
     {
         //if zet is null or empty do NOT use it in selection
@@ -294,6 +294,8 @@ public class ExcelBookMerger : ITemplateMerger
                     var emptyTableCode = destSheet[offsetVERTICAL, OffesetHORIZONTAL];
                     emptyTableCode.Text = $"{ztbSheet.TableCode} - empty table";
                     emptyTableCode.CellStyle = _pensionStyles.TableCodeStyle;
+                    //var xx = ztbSheet.DbSheet.Description;                    
+                    emptyTableCode.Offset(1, 0).Value = ztbSheet.TableDescription;
                     continue;
                 }
 
