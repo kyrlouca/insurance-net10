@@ -103,8 +103,9 @@ public class ExcelBookCreator : IExcelBookWriter
             var originSheet = _originWorkbook.Worksheets[filingSheetCode];
             if (originSheet is null) continue;
 
-
-            var destSheet = _destinationWorkbook.Worksheets.Create(sheet.SheetTabName.Trim());
+            //todo change the sheetTabName (replace # with __)
+            var sheetName = sheet.SheetTabName.Replace("#", "__").Trim();
+            var destSheet = _destinationWorkbook.Worksheets.Create(sheetName);
             destSheet.Zoom = 80;
 
             //destSheet.UsedRange.CellStyle = bodyStyle;

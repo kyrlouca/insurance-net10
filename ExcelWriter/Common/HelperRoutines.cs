@@ -59,9 +59,7 @@ internal class HelperRoutines
 
         try
         {
-            IWorkbook workbook = application.Workbooks.Create(0);
-            //Creating a Sheet
-            //IWorksheet sheet = workbook.Worksheets.Create();
+            IWorkbook workbook = application.Workbooks.Create(0);            
             return (workbook, "");
         }
         catch (Exception ex)

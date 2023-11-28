@@ -75,7 +75,7 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
         if (1 == 1)
         {
             _excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);
-            return 0;
+            //return 0;
             if (string.IsNullOrEmpty(EmptyFilename))
             {
                 return 1;

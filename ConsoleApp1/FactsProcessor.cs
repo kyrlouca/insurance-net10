@@ -551,7 +551,7 @@ public class FactsProcessor : IFactsProcessor
 		sheet.TemplateSheetId = sheetId;
 
 		//ad the zet dims for each TemplateSheetInstance
-		var dims = sheetCode.Split("#");
+		var dims = sheetCode.Split("__");
 		foreach (var factDim in dims)
 		{
 			var zetParts = factDim.Split("#").ToList();
@@ -1272,7 +1272,7 @@ public class FactsProcessor : IFactsProcessor
 			var isOpenZet = table.ZDimVal?.Contains("*") ?? false;
 
 			var sheetTabName = isOpenZet
-				? $"{tableCode.Trim()}__{count++:D2} "
+				? $"{tableCode.Trim()}#{count++:D2} "
 				: tableCode.Trim(); //if no open z then just use the tablecode as the sheettab name
 
 			var sqlUpdSheet = @"update TemplateSheetInstance set SheetTabName= @SheetTabName where TemplateSheetId = @TemplateSheetId";
