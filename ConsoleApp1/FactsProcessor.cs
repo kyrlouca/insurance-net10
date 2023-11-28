@@ -1272,7 +1272,7 @@ public class FactsProcessor : IFactsProcessor
 			var isOpenZet = table.ZDimVal?.Contains("*") ?? false;
 
 			var sheetTabName = isOpenZet
-				? $"{tableCode.Trim()}#{count++:D2} "
+				? $"{tableCode.Trim()}___{count++:D2} "
 				: tableCode.Trim(); //if no open z then just use the tablecode as the sheettab name
 
 			var sqlUpdSheet = @"update TemplateSheetInstance set SheetTabName= @SheetTabName where TemplateSheetId = @TemplateSheetId";
