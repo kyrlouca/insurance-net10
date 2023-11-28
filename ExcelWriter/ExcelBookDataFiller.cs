@@ -102,9 +102,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var topLabelRange = topRange.Offset(-1, 0);
         var zetRange= topLabelRange.Offset(-1, 0);
 
-        var zetList = GetFactPivotZets();
-        var isMultiZet = zetList.Count > 1;
-        if (zetList.Count > 1)
+        var zetList = GetFactPivotZets().Order().ToList();
+        var isMultiZet = (zetList.Count > 0) && !string.IsNullOrEmpty(zetList.FirstOrDefault()) ;
+        if (isMultiZet)
         {
             topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, zetList.Count - 1);        
             dataRange=  HelperRoutines.ExtendRangeRowCols(dataRange,0,zetList.Count -1);
@@ -141,29 +141,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 {
                     continue;
                 }
-                var zetxxx = zetRange[zetRange.Row, cell.Column];
+                
                 var zet = isMultiZet ? zetRange[zetRange.Row, cell.Column].Value :"";
                 var factX = FindFactFromRowColZet(dbSheet, rowLabel, colLabel, zet);
                 if(factX is null)
                 {
                     continue;
                 }
-                SaveCellValue(cell, factX);
-                var facts = FindFactsFromRowCol(dbSheet, rowLabel, colLabel);
-                if (facts.Count == 0)
-                {
-                    continue;
-                }
-
-                if (factX.TextValue!= facts.First().TextValue)
-                {
-                    var x = 22;
-                    
-                }
-
-
-                var fact = facts.First(); //should'nt get more than one for open (no multicurrency facts)
-                //SaveCellValue(cell, fact);
+                SaveCellValue(cell, factX);                
             }
         }
 
