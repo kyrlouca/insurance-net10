@@ -2,7 +2,7 @@
   "profiles": {
     "ExcelWriter": {
       "commandName": "Project",
-      "commandLineArgs": "eiopa-version=\"IU270\"\r\nfund-id=97\r\nmodule-code=\"ars\"\r\nyear=2022\r\nquarter=0\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\ancoriaAAA2022.xlsx\"",
+      "commandLineArgs": "user-id=1\r\nfund-id=110\r\ncurrency-batch-id=1\r\neiopa-version=\"IU270\"\r\nmodule-code=\"ars\"\r\nyear=2022\r\nquarter=0\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl270\\CNP Cyprialife Annual 2022.xbrl\"",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }
