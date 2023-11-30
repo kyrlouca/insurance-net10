@@ -108,7 +108,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var leftRowRange = leftRowName.RefersToRange;
 
         var topLabelRange = topColumnRange.Offset(-1, 0);
-        var zetRange= topLabelRange.Offset(-1, 0);
+        var zetRange= topLabelRange.Offset(-2, 0);
 
         var zetList = GetFactPivotZets().Order().ToList();
         var isMultiZet = (zetList.Count > 0) && !string.IsNullOrEmpty(zetList.FirstOrDefault()) ;
@@ -167,6 +167,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         List<string> GetFactPivotZets()
         {
+            //AND zet.Dim IN ('BL','OC','CR')
             using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
             var sqlZetValues = @"select distinct fact.Zet from TemplateSheetFact fact where fact.TemplateSheetId = @sheetId order by fact.Zet";
             var pivotZets = connectionInsurance.Query<string>(sqlZetValues, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();

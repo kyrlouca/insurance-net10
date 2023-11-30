@@ -153,8 +153,8 @@ public class ExcelBookMerger : ITemplateMerger
 
         //A template has many tables S.23.01.01=>  S.23.01.01.01, S.23.01.01.02         
         //A template bundle groups the tables codes without considering a zet value
-        // A ZetTemplate bundle contains the table info for a specific special Zet (for business line or currency 'BL','OC','CR'),
-        // For the  templatedBundle return a list of ZetTemplatebundles (one for each zet)
+        // A ZetTemplate contains the table info for a specific special Zet (for business line or currency 'BL','OC','CR'),
+        // For the  templatedBundbundle cle return a list of ZetTemplatebundles (one for each zet)
         // If they have no special zet, just return one ZetTemplatebundle        
 
 

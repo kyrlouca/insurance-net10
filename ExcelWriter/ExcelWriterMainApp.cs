@@ -57,19 +57,20 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
             return 1;
         }
 
-        var xx = _parameterData.FileName.Trim();
-        var file = Path.GetFileName(xx);
-        var dir = Path.GetDirectoryName(xx);
+        var fileName = _parameterData.FileName.Trim();
+        var fileNoExtension = Path.GetFileNameWithoutExtension(fileName);
+        var dir = Path.GetDirectoryName(fileName);
         if (dir is null)
         {
-            var message = $"Cannot find Directory for path {xx} :FundId: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
+            var message = $"Cannot find Directory for path {fileName} :FundId: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
             return 1;
         }
-        var EmptyFilename = Path.Combine(dir, $"{file}_empty.xlsx");
-        var filledFilename = Path.Combine(dir, $"{file}_filled.xlsx");
-        var mergedFilename = Path.Combine(dir, $"{file}_merged.xlsx");
+       
+        var EmptyFilename = Path.Combine(dir, $"{fileNoExtension}_empty.xlsx");
+        var filledFilename = Path.Combine(dir, $"{fileNoExtension}_filled.xlsx");
+        var mergedFilename = Path.Combine(dir, $"{fileNoExtension}_merged.xlsx");
 
 
         if (1 == 1)
