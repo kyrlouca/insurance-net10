@@ -15,6 +15,20 @@ public static class GeneralUtils
 
     }
 
+
+    public static string GetRegexSingleMatch(Regex regEx, string inputString)
+    {
+        //you need at least *ONE* capture
+        //return just the value of the group capture or space
+        if (inputString is null || regEx is null)
+        {
+            return "";
+        }        
+        var match = regEx.Match(inputString);        
+        return  match.Success? match.Groups[1].Value: "";
+
+    }
+
     public static string GetRegexSingleMatch(string RegExpression, string inputString)
     {
         //you need at least *ONE* capture

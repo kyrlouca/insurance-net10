@@ -113,10 +113,11 @@ public class FactsProcessor : IFactsProcessor
 			Console.WriteLine($"\nTable start : {table.TableCode}");
 
 			//************************************************************************
-			var factCount = AssignFactsToTableDb(table);
-			//************************************************************************
+				var factCount = AssignFactsToTableDb(table);
+            
+            //************************************************************************
 
-			UpdateSheetTabNames(table.TableCode); //make the tabnames simler to read
+            UpdateSheetTabNames(table.TableCode); //make the tabnames simler to read
 
 			count += factCount;
 			Console.WriteLine($"\n---facts:{factCount}");
@@ -134,8 +135,10 @@ public class FactsProcessor : IFactsProcessor
 		return count;
 	}
 
+    
 
-	private int AssignFactsToTableDb(MTable table)
+
+    private int AssignFactsToTableDb(MTable table)
 	{
 		//Iterate through all the cells of the table and find the facts for each cell           
 		// For each cell of the table
