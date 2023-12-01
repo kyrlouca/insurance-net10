@@ -67,13 +67,42 @@ public class FactsMover : IFactsMover
         ModuleTablesFiled = GetFiledModuleTables();
 
         //***Process the facts in all module tables
-        var countFacts = AssignFactsToTables();
+        var count = 0;
+        _testingTableId = 1;
+        if (_testingTableId > 0)
+        {
+            ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 66).ToList();
+        }
+
+        //************************************************************************
+        foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
+        {
+        
+            Console.WriteLine($"\nTable start : {table.TableCode}");
+            var tableFacts = SelectTableFacts(table);
+            //UpdateSheetTabNames(table.TableCode); //make the tabnames simler to read
+
+            Console.WriteLine($"\n---facts:{tableFacts.Count}");
+        }
+
+        //Create the Y facts fore open tables
+        //var sqlSelectSheets = @"select sheet.TemplateSheetId from TemplateSheetInstance sheet where sheet.InstanceId = @documentId";
+        //var sheets = connectionInsurance.Query<TemplateSheetInstance>(sqlSelectSheets, new { _documentId })?.ToList() ?? new();
+        //foreach (var sheet in sheets)
+        //{
+        //    var yFactsCounter = CreateYFactsInDb(sheet.TemplateSheetId);
+        //    Console.WriteLine($"\n---Yfacts:{yFactsCounter}");
+        //}
+
+
+        
+        
 
         //****Update the foreign Keys of the cells in open tables
-        UpdateCellsForeignRow(_documentId);
+        //UpdateCellsForeignRow(_documentId);
 
 
-        Console.WriteLine($"\ndocId: {_documentId} -- sheets: facts:{countFacts}");
+        //Console.WriteLine($"\ndocId: {_documentId} -- sheets: facts:{countFacts}");
         return 0;
 
     }
@@ -88,59 +117,44 @@ public class FactsMover : IFactsMover
         return;
     }
 
-    private int AssignFactsToTables()
+    private int AssignFactsToTablesNew()
     {
         //iterate each table. For each table, read its cells, find the matching facts, and assign them rowcols            
-        var count = 0;
-
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
+        var count = 0;        
         _testingTableId = 1;
         if (_testingTableId > 0)
         {
             ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 66).ToList();
         }
-
-        //ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 29 || table.TableID == 39).ToList();
-
-
+        
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
-
-            //A table may result in many sheets, facts for the table may have different Z values.
-            //if there is an open Z(*) for a table, one or more sheets will be created (one for each Z)
-            //each z sheet will have its own facts with the same row/col 
-            //In the same sheet, A cell can still result in more than one fact, if multicurrency. In this, case create another column when creating excel
-            Console.WriteLine($"\nTable start : {table.TableCode}");
-
             //************************************************************************
-            //var factCount = AssignFactsToTableDb(table);
-            var factCount = AssignFactsToTableDbNew(table);
+            Console.WriteLine($"\nTable start : {table.TableCode}");            
+            var tableFacts = SelectTableFacts(table);            
 
-            //************************************************************************
+            //UpdateSheetTabNames(table.TableCode); //make the tabnames simler to read
 
-            UpdateSheetTabNames(table.TableCode); //make the tabnames simler to read
-
-            count += factCount;
-            Console.WriteLine($"\n---facts:{factCount}");
+            
+            Console.WriteLine($"\n---facts:{tableFacts.Count}");
         }
 
         //Create the Y facts fore open tables
-        var sqlSelectSheets = @"select sheet.TemplateSheetId from TemplateSheetInstance sheet where sheet.InstanceId = @documentId";
-        var sheets = connectionInsurance.Query<TemplateSheetInstance>(sqlSelectSheets, new { _documentId })?.ToList() ?? new();
-        foreach (var sheet in sheets)
-        {
-            var yFactsCounter = CreateYFactsInDb(sheet.TemplateSheetId);
-            Console.WriteLine($"\n---Yfacts:{yFactsCounter}");
-        }
+        //var sqlSelectSheets = @"select sheet.TemplateSheetId from TemplateSheetInstance sheet where sheet.InstanceId = @documentId";
+        //var sheets = connectionInsurance.Query<TemplateSheetInstance>(sqlSelectSheets, new { _documentId })?.ToList() ?? new();
+        //foreach (var sheet in sheets)
+        //{
+        //    var yFactsCounter = CreateYFactsInDb(sheet.TemplateSheetId);
+        //    Console.WriteLine($"\n---Yfacts:{yFactsCounter}");
+        //}
 
         return count;
     }
 
-    private int AssignFactsToTableDbNew(MTable table)
+    private List<TemplateSheetFact> SelectTableFacts(MTable table)
     {
-
+        //use the xbrl mappings of the table to find the matching facts
+        List<TemplateSheetFact> tableFacts = new();
         var tableMappings = _SqlFunctions.SelectTableMappings(table.TableID);
         var xbrlMappings = tableMappings.Where(map => map.ORIGIN == "F" && map.DIM_CODE.StartsWith("MET"));
         foreach (var xbrlMapping in xbrlMappings)
@@ -151,9 +165,10 @@ public class FactsMover : IFactsMover
             var zetDims = table.ZDimVal ?? "";
             var yDims = table.YDimVal ?? "";
             var mathcingFacts = FindMatchingFacts(xbrlMapping,zetDims, yDims );
+            tableFacts.AddRange(mathcingFacts);
             var y = 3;
         }
-        return 0;
+        return tableFacts ;
     }
     private List<TemplateSheetFact> FindMatchingFacts(MAPPING mapping, string zetString, string yString)
     {
@@ -165,10 +180,16 @@ public class FactsMover : IFactsMover
         //rowCol = "R0020C0080";
         //var allDimsStr = "'s2c_dim:BL(s2c_LB:x59)', 's2c_dim:DI(s2c_DI:x5)', 's2c_dim:IZ(s2c_RT:x1)', 's2c_dim:TB(s2c_LB:x28)', 's2c_dim:VG(s2c_AM:x84)'";
 
-        var zetDims =  zetString
-            .Split("|")
+        var zetDimsxxx = zetString
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)
             .Where(dim => !dim.Contains('*'))
-            .Select(dim => DimDom.GetParts(dim).DomAndValRaw).ToList();
+            .Select(dim => DimDom.GetParts(dim).Signature).ToList();
+
+
+        var zetDims =  zetString
+            .Split("|",StringSplitOptions.RemoveEmptyEntries)
+            .Where(dim => !dim.Contains('*'))
+            .Select(dim => DimDom.GetParts(dim).Signature).ToList();
 
 
 
@@ -184,11 +205,22 @@ public class FactsMover : IFactsMover
                         
         var dimsString = string.Join(",",allDims );
 
-               
-        var dimsCount =allDims.Count();
-        
-        var sqlSelect = @$"
-            SELECT fact.FactId
+                               
+
+
+        var sqlSelectWithoutDims = @$"
+            SELECT *
+            FROM TemplateSheetFact fact
+                 JOIN DocInstance doc ON doc.InstanceId= fact.InstanceId
+            WHERE
+              1=1
+              AND fact.XBRLCode = @XBRLCode
+              AND fact.Row=@ROW AND fact.Col=@COL
+              AND fact.InstanceId=@_documentId              
+            ";
+
+        var sqlSelectWithDims = @$"
+            SELECT fact.*
             FROM TemplateSheetFact fact
                  JOIN DocInstance doc ON doc.InstanceId= fact.InstanceId
             WHERE
@@ -207,30 +239,27 @@ public class FactsMover : IFactsMover
                 HAVING COUNT(*)=@dimsCount
                 ); 
             ";
-        //xbrlCode = "s2md_met:mi503";
-        var xbrlCode = RegexUtils.GetRegexSingleMatch(new Regex("MET\\((.*)\\)"), mapping.DIM_CODE);
-        var rowcol = NewUtils.CreateRowColRecord(mapping.DYN_TAB_COLUMN_NAME);
+        var dimsCount = allDims.Count();
+        var sqlSelect = dimsCount == 0 ? sqlSelectWithoutDims : sqlSelectWithDims;
+        
+        var xbrlCode = RegexUtils.GetRegexSingleMatch(new Regex("MET\\((.*)\\)"), mapping.DIM_CODE);//xbrlCode = "s2md_met:mi503";
+        var rowcolRec = NewUtils.CreateRowColRecord(mapping.DYN_TAB_COLUMN_NAME);
 
-        Console.Write($"Find Fact:xbrl{xbrlCode},row:{rowcol.Row},col{rowcol.Col}");
-        var facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { _documentId, xbrlCode, row = rowcol.Row, col = rowcol.Col, dimsCount })?.ToList();
+        Console.Write($"Find Fact:xbrl{xbrlCode},row:{rowcolRec.Row},col{rowcolRec.Col}");
+        var facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { _documentId, xbrlCode, row = rowcolRec.Row, col = rowcolRec.Col, dimsCount })?.ToList();
         if (facts.Count > 0)
         {
             var xx = 3;
         }
         return facts ?? new List<TemplateSheetFact>();
 
-
-
-        return facts;
+        
     }
 
     private string toProperXbrl(string xbrlWithParenthesis)
     {
         return xbrlWithParenthesis.Replace("(", "").Replace("(", "");
     }
-
-
-
 
     private int AssignFactsToTableDb(MTable table)
     {
