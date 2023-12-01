@@ -71,7 +71,7 @@ public class FactsMover : IFactsMover
         _testingTableId = 1;
         if (_testingTableId > 0)
         {
-            ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 66).ToList();
+            ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 78).ToList();
         }
 
         //************************************************************************
@@ -164,13 +164,13 @@ public class FactsMover : IFactsMover
             //find zet and y dims
             var zetDims = table.ZDimVal ?? "";
             var yDims = table.YDimVal ?? "";
-            var mathcingFacts = FindMatchingFacts(xbrlMapping,zetDims, yDims );
+            var mathcingFacts = FindMatchingFacts(xbrlMapping,zetDims );
             tableFacts.AddRange(mathcingFacts);
             var y = 3;
         }
         return tableFacts ;
     }
-    private List<TemplateSheetFact> FindMatchingFacts(MAPPING mapping, string zetString, string yString)
+    private List<TemplateSheetFact> FindMatchingFacts(MAPPING mapping, string zetString)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
@@ -203,9 +203,9 @@ public class FactsMover : IFactsMover
             .Concat(fieldMappings)
             .Select(dim => $"'{dim}'"); 
                         
-        var dimsString = string.Join(",",allDims );
-
-                               
+        var dimsStringSQL = string.Join(",",allDims );
+        var rowcolRec = NewUtils.CreateRowColRecord(mapping.DYN_TAB_COLUMN_NAME);
+        var andRowSQL = rowcolRec.HasOnlyCol ? "" : "AND fact.Row=@ROW  ";
 
 
         var sqlSelectWithoutDims = @$"
@@ -215,7 +215,8 @@ public class FactsMover : IFactsMover
             WHERE
               1=1
               AND fact.XBRLCode = @XBRLCode
-              AND fact.Row=@ROW AND fact.Col=@COL
+              {andRowSQL}
+              AND fact.Col=@COL
               AND fact.InstanceId=@_documentId              
             ";
 
@@ -226,7 +227,8 @@ public class FactsMover : IFactsMover
             WHERE
               1=1
               AND fact.XBRLCode = @XBRLCode
-              AND fact.Row=@ROW AND fact.Col=@COL
+              {andRowSQL}
+              AND fact.Col=@COL
               AND fact.InstanceId=@_documentId
               AND EXISTS (
                 SELECT COUNT(*) AS cnt
@@ -234,16 +236,19 @@ public class FactsMover : IFactsMover
                 WHERE 1=1
                 AND fd.FactId=fact.FactId
                 AND fd.IsExplicit=1
-                AND fd.Signature IN ({dimsString})
+                AND fd.Signature IN ({dimsStringSQL})
                 GROUP BY fd.FactId
                 HAVING COUNT(*)=@dimsCount
                 ); 
-            ";
+           ";
+
+        
+        
         var dimsCount = allDims.Count();
         var sqlSelect = dimsCount == 0 ? sqlSelectWithoutDims : sqlSelectWithDims;
         
         var xbrlCode = RegexUtils.GetRegexSingleMatch(new Regex("MET\\((.*)\\)"), mapping.DIM_CODE);//xbrlCode = "s2md_met:mi503";
-        var rowcolRec = NewUtils.CreateRowColRecord(mapping.DYN_TAB_COLUMN_NAME);
+        
 
         Console.Write($"Find Fact:xbrl{xbrlCode},row:{rowcolRec.Row},col{rowcolRec.Col}");
         var facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { _documentId, xbrlCode, row = rowcolRec.Row, col = rowcolRec.Col, dimsCount })?.ToList();
