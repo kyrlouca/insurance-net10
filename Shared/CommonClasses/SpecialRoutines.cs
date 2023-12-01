@@ -62,27 +62,25 @@ public class DimDom
 
 	}
 
-public record RowColRecord(string AddressR1C1, int Row, int Col, int LastRow, int LastCol);
+public record RowColRecord(string rowcol, string Row,  string Col, bool IsValid, bool HasOnlyCol);
 public class NewUtils
 {
-    public static RowColRecord? CreateRowColRecord(string addreessR1C1)
+    public static RowColRecord CreateRowColRecord(string RowCol)
     {
-        //public const string ColRowRegEx = @"[A-Z]{1,3}\d{4}";//c0010, r0010
-        var rg = new Regex("R(\\d*)C(\\d*)");
-        var match = rg.Matches(addreessR1C1);
-        if (match is null)
+        //R0120C0080=> row=R0120 col=C0080        
+        var rg = new Regex(@"^(R\d{4})?(C\d{4})$");
+        var match = rg.Match(RowCol.Trim());
+        if (!match.Success)
         {
-            return null;
+            return new RowColRecord(RowCol,"","",false,false);
         }
-        var row = int.Parse(match[0].Groups[1].Value);
-        var col = int.Parse(match[0].Groups[2].Value);
+		var rowcol = match.Groups[0].Value;
+        var row = match.Groups[1].Value;
+        var col = match.Groups[2].Value;
 
-        RowColRecord? rowColRecord = match.Count switch
-        {
-            1 => new RowColRecord(addreessR1C1, row, col, row, col),
-            2 => new RowColRecord(addreessR1C1, row, col, int.Parse(match[1].Groups[1].Value), int.Parse(match[1].Groups[2].Value)),
-            _ => null
-        };
+		var hasOnlyCol = string.IsNullOrEmpty(match.Groups[1].Value);
+		var rowColRecord = new RowColRecord(rowcol, row, col, true, hasOnlyCol);
+        
         return rowColRecord;
 
     }

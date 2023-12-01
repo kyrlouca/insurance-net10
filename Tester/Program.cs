@@ -11,9 +11,10 @@ if (match.Success)
 	Console.WriteLine(match.Groups[1]);
 }
 
+var rowcol = "C0023";
 
-var xx = NewUtils.CreateRowColRecord("");
+var xx = NewUtils.CreateRowColRecord(rowcol);
 
-
+var y = 5;
 
 
