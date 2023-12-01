@@ -96,9 +96,10 @@ public class FactsMover : IFactsMover
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
+        _testingTableId = 1;
         if (_testingTableId > 0)
         {
-            ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
+            ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 66).ToList();
         }
 
         //ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 29 || table.TableID == 39).ToList();
@@ -145,22 +146,47 @@ public class FactsMover : IFactsMover
         foreach (var xbrlMapping in xbrlMappings)
         {
             Console.WriteLine(xbrlMapping.DYN_TAB_COLUMN_NAME);
-            var xbrlCode = RegexUtils.GetRegexSingleMatch(new Regex("MET\\((.*)\\)"),xbrlMapping.DIM_CODE);
+
             //find zet and y dims
-            var mathcingFacts = FindMatchingFacts( xbrlMapping ,xbrlCode);
+            var zetDims = table.ZDimVal ?? "";
+            var yDims = table.YDimVal ?? "";
+            var mathcingFacts = FindMatchingFacts(xbrlMapping,zetDims, yDims );
             var y = 3;
         }
         return 0;
     }
-    private List<TemplateSheetFact> FindMatchingFacts(MAPPING mapping, string xbrlCode)
+    private List<TemplateSheetFact> FindMatchingFacts(MAPPING mapping, string zetString, string yString)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        //xbrlCode = "s2md_met:mi503";
 
-        var row = "R0110";
-        var col = "C0100";
-        var allDims = "'s2c_dim:BL(s2c_LB:x59)', 's2c_dim:DI(s2c_DI:x5)', 's2c_dim:IZ(s2c_RT:x1)', 's2c_dim:TB(s2c_LB:x28)', 's2c_dim:VG(s2c_AM:x84)'";
-        var dimsCount = 5;
+        var tableId = (int)mapping.TABLE_VERSION_ID;
+        var rowCol = mapping.DYN_TAB_COLUMN_NAME;
+        //tableId = 59;
+        //rowCol = "R0020C0080";
+        //var allDimsStr = "'s2c_dim:BL(s2c_LB:x59)', 's2c_dim:DI(s2c_DI:x5)', 's2c_dim:IZ(s2c_RT:x1)', 's2c_dim:TB(s2c_LB:x28)', 's2c_dim:VG(s2c_AM:x84)'";
+
+        var zetDims =  zetString
+            .Split("|")
+            .Where(dim => !dim.Contains('*'))
+            .Select(dim => DimDom.GetParts(dim).DomAndValRaw).ToList();
+
+
+
+        var fieldMappings = _SqlFunctions.SelectRowColMappings(tableId, rowCol)
+            .Where(map => !map.DIM_CODE.StartsWith("MET"))
+            .Select(map => map.DIM_CODE);
+            
+
+        var allDims = new List<string>()
+            .Concat(zetDims)
+            .Concat(fieldMappings)
+            .Select(dim => $"'{dim}'"); 
+                        
+        var dimsString = string.Join(",",allDims );
+
+               
+        var dimsCount =allDims.Count();
+        
         var sqlSelect = @$"
             SELECT fact.FactId
             FROM TemplateSheetFact fact
@@ -176,13 +202,17 @@ public class FactsMover : IFactsMover
                 WHERE 1=1
                 AND fd.FactId=fact.FactId
                 AND fd.IsExplicit=1
-                AND fd.Signature IN ({allDims})
+                AND fd.Signature IN ({dimsString})
                 GROUP BY fd.FactId
                 HAVING COUNT(*)=@dimsCount
                 ); 
             ";
+        //xbrlCode = "s2md_met:mi503";
+        var xbrlCode = RegexUtils.GetRegexSingleMatch(new Regex("MET\\((.*)\\)"), mapping.DIM_CODE);
+        var rowcol = NewUtils.CreateRowColRecord(mapping.DYN_TAB_COLUMN_NAME);
 
-        var facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { _documentId, xbrlCode,row,col,allDims,dimsCount })?.ToList();
+        Console.Write($"Find Fact:xbrl{xbrlCode},row:{rowcol.Row},col{rowcol.Col}");
+        var facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { _documentId, xbrlCode, row = rowcol.Row, col = rowcol.Col, dimsCount })?.ToList();
         if (facts.Count > 0)
         {
             var xx = 3;
@@ -190,7 +220,7 @@ public class FactsMover : IFactsMover
         return facts ?? new List<TemplateSheetFact>();
 
 
-        
+
         return facts;
     }
 
@@ -199,13 +229,6 @@ public class FactsMover : IFactsMover
         return xbrlWithParenthesis.Replace("(", "").Replace("(", "");
     }
 
-    private List<TemplateSheetFact> SelectXbrlFacts(string xbrlCode)
-    {
-        var sqlGetDocument = @"    SELECT* from  TemplateSheetFact fact where fact.InstanceId = @_documentId and fact.XBRLCode = @XBRLCode";
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var facts = connectionInsurance.Query<TemplateSheetFact>(sqlGetDocument, new { _documentId, xbrlCode })?.ToList();
-        return facts ?? new List<TemplateSheetFact>();
-    }
 
 
 
@@ -764,7 +787,7 @@ public class FactsMover : IFactsMover
     }
 
 
-   
+
     private bool IsFactDimMatchingCellExpensive(string cellDim, string factDim)
     {
         //            
@@ -865,7 +888,7 @@ public class FactsMover : IFactsMover
         }
 
         var factDimDoms = factDims.Select(fd => DimDom.GetParts(fd)).Skip(1).ToList();
-        var cellDimDoms = cellDims.Select(cd =>    DimDom.GetParts(cd)).Skip(1).ToList();
+        var cellDimDoms = cellDims.Select(cd => DimDom.GetParts(cd)).Skip(1).ToList();
 
 
         //List<DimDom> xx = cellDimDoms.Sort((DimDom a, DimDom b) => string.Compare(a.DomValue, b.DomValue)).ToList<DimDom>;

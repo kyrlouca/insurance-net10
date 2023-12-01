@@ -166,10 +166,11 @@ public class SqlFunctions : ISqlFunctions
 			WHERE  
 			  map.TABLE_VERSION_ID=@tableId
 			  AND ORIGIN='F'
+              AND DYN_TAB_COLUMN_NAME= @rowcol
 			ORDER BY DYN_TABLE_NAME, DYN_TAB_COLUMN_NAME
 			";
 
-        var result = connectionEiopa.Query<MAPPING>(sqlTable, new { tableId })?.ToList();
+        var result = connectionEiopa.Query<MAPPING>(sqlTable, new { tableId,rowCol })?.ToList();
         return result ?? new List<MAPPING>();
     }
 
