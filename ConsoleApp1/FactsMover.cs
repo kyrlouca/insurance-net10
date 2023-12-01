@@ -140,16 +140,58 @@ public class FactsMover : IFactsMover
     private int AssignFactsToTableDbNew(MTable table)
     {
 
-        var tableMappings = _SqlFunctions.SelectMappings(table.TableID);
+        var tableMappings = _SqlFunctions.SelectTableMappings(table.TableID);
         var xbrlMappings = tableMappings.Where(map => map.ORIGIN == "F" && map.DIM_CODE.StartsWith("MET"));
         foreach (var xbrlMapping in xbrlMappings)
         {
             Console.WriteLine(xbrlMapping.DYN_TAB_COLUMN_NAME);
             var xbrlCode = GeneralUtils.GetRegexSingleMatch(new Regex("MET\\((.*)\\)"),xbrlMapping.DIM_CODE);
-            var xbrlFacts = SelectXbrlFacts(xbrlCode);
-            
+            //find zet and y dims
+            var mathcingFacts = FindMatchingFacts( xbrlMapping ,xbrlCode);
+            var y = 3;
         }
         return 0;
+    }
+    private List<TemplateSheetFact> FindMatchingFacts(MAPPING mapping, string xbrlCode)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        //xbrlCode = "s2md_met:mi503";
+
+        var row = "R0110";
+        var col = "C0100";
+        var allDims = "'s2c_dim:BL(s2c_LB:x59)', 's2c_dim:DI(s2c_DI:x5)', 's2c_dim:IZ(s2c_RT:x1)', 's2c_dim:TB(s2c_LB:x28)', 's2c_dim:VG(s2c_AM:x84)'";
+        var dimsCount = 5;
+        var sqlSelect = @$"
+            SELECT fact.FactId
+            FROM TemplateSheetFact fact
+                 JOIN DocInstance doc ON doc.InstanceId= fact.InstanceId
+            WHERE
+              1=1
+              AND fact.XBRLCode = @XBRLCode
+              AND fact.Row=@ROW AND fact.Col=@COL
+              AND fact.InstanceId=@_documentId
+              AND EXISTS (
+                SELECT COUNT(*) AS cnt
+                  FROM TemplateSheetFactDim fd
+                WHERE 1=1
+                AND fd.FactId=fact.FactId
+                AND fd.IsExplicit=1
+                AND fd.Signature IN ({allDims})
+                GROUP BY fd.FactId
+                HAVING COUNT(*)=@dimsCount
+                ); 
+            ";
+
+        var facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { _documentId, xbrlCode,row,col,allDims,dimsCount })?.ToList();
+        if (facts.Count > 0)
+        {
+            var xx = 3;
+        }
+        return facts ?? new List<TemplateSheetFact>();
+
+
+        
+        return facts;
     }
 
     private string toProperXbrl(string xbrlWithParenthesis)
@@ -722,155 +764,7 @@ public class FactsMover : IFactsMover
     }
 
 
-    public List<TemplateSheetFact> FindMatchingFactsRegexOld(int documentId, string cellSignature)
-    {
-        //MET(s2md_met:mi87)|s2c_dim:AF(*?[59])|s2c_dim:AX(*[8;1;0])|s2c_dim:BL(s2c_LB:x9)|s2c_dim:DI(s2c_DI:x5)|s2c_dim:OC(*?[237])|s2c_dim:RB(*[332;1512;0])|s2c_dim:RM(s2c_TI:x44)|s2c_dim:TB(s2c_LB:x28)|s2c_dim:VG(s2c_AM:x80)
-        //find the list of facts that match the dimensions of the cell
-        //the cells may have open dimensions * but the facts have the real dimdom values from the context
-        //More than one fact may be found because of open Z, or even open fact dim (for currency or country for example)
-        //** the fact signature has the REAL value (From its context) 
-        //** A cell signature may have optional dims : s2c_dim:FN(*?[16]) 
-        //-- the cells' signature with wildcards: s2c_dim:FN(*)
-
-        //Cell signature MET(s2md_met:mi686)|s2c_dim:AO(*?[16])|s2c_dim:EA(s2c_VM:x23)|s2c_dim:RT(s2c_RT:x97)|s2c_dim:VG(s2c_AM:x80)
-
-        //both fact signatures both are valid
-        //MET(s2md_met:mi686)|s2c_dim:AO(s2c_LB:x93)|s2c_dim:EA(s2c_VM:x23)|s2c_dim:RT(s2c_RT:x97)|s2c_dim:VG(s2c_AM:x80)
-        //MET(s2md_met:mi686)|s2c_dim:EA(s2c_VM:x23)|s2c_dim:RT(s2c_RT:x97)|s2c_dim:VG(s2c_AM:x80)
-        //this is invalid
-        //MET(s2md_met:mi686)|s2c_dim:EA(s2c_VM:x23)|s2c_dim:RT(s2c_RT:x97)|s2c_dim:VG(s2c_AM:x80)|s2c_dim:BB(s2c_AM:x80)
-        //MET(s2md_met:mi289)|s2c_dim:AF(*?[59])|s2c_dim:AX(*[8;1;0])|s2c_dim:BL(*[332;1512;0])|s2c_dim:DY(s2c_TI:x1)|s2c_dim:OC(*?[237])|s2c_dim:RM(s2c_TI:x49)|s2c_dim:TA(s2c_AM:x57)|s2c_dim:VG(s2c_AM:x80)
-
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var factList = new List<TemplateSheetFact>();
-
-        var cleanSignatureWithoutOptional = SimplifyCellSignature(cellSignature, false);
-        var dimListWithoutOptional = cleanSignatureWithoutOptional.Split("|").ToList();
-
-        var xbrlMetric = dimListWithoutOptional.FirstOrDefault();
-        var xbrlCode = string.IsNullOrEmpty(xbrlMetric) ? "EmptyXbrlCode" : GeneralUtils.GetRegexSingleMatch(@"MET\((.*?)\)", xbrlMetric);
-
-        var sqlSelectFacts = @"
-              SELECT  
-                  fact.FactId
-                 ,fact.TemplateSheetId
-                 ,fact.Row
-                 ,fact.Col
-                 ,fact.Zet
-                 ,fact.CellID
-                 ,fact.FieldOrigin
-                 ,fact.TableID
-                 ,fact.DataPointSignature
-                 ,fact.Unit
-                 ,fact.Decimals
-                 ,fact.NumericValue
-                 ,fact.BooleanValue
-                 ,fact.DateTimeValue
-                 ,fact.TextValue
-                 ,fact.DPS
-                 ,fact.IsRowKey
-                 ,fact.IsShaded
-                 ,fact.XBRLCode
-                 ,fact.DataType
-                 ,fact.DataPointSignatureFilled                 
-                 ,fact.InternalRow
-                 ,fact.internalCol
-                 ,fact.DataTypeUse
-                 ,fact.IsEmpty
-                 ,fact.IsConversionError
-                 ,fact.ZetValues
-                 ,fact.OpenRowSignature
-                 ,fact.CurrencyDim                 
-                 ,fact.contextId                 
-                 ,fact.Signature
-                 ,fact.RowSignature                 
-                 ,fact.InstanceId                  
-
-                FROM dbo.TemplateSheetFact fact
-                WHERE fact.InstanceId = @documentId
-                AND fact.XBRLCode = @xbrlCode
-                AND fact.DataPointSignatureFilled like @sig;
-             ";
-        var factListWithout = connectionInsurance.Query<TemplateSheetFact>(sqlSelectFacts, new { documentId, xbrlCode, sig = cleanSignatureWithoutOptional }).ToList();
-        factList.AddRange(factListWithout);
-
-
-        //***********************************************
-        ///get the facts using the optional dims
-        var cleanSignatureWithOptional = SimplifyCellSignature(cellSignature, true);
-        var dimListWithOptional = cleanSignatureWithOptional.Split("|").ToList();
-        if (!dimListWithOptional.Any())
-        {
-            return new List<TemplateSheetFact>();
-        }
-        //to avoid using twice
-        if (dimListWithoutOptional.Count != dimListWithOptional.Count)
-        {
-            var factListWithOptional = connectionInsurance.Query<TemplateSheetFact>(sqlSelectFacts, new { documentId, xbrlCode, sig = cleanSignatureWithOptional }).ToList();
-            factList.AddRange(factListWithOptional);
-            if (factListWithOptional.Any())
-            {
-                Console.WriteLine($"*%!**&%^* - OPTIONAL DIM  was found: Signature: {cellSignature}");
-            }
-        }
-
-        //***********************************************
-
-
-        //This is an extra filtering of facts when there is a cell which specified a dims hierarchy 
-        if (cellSignature.Contains("*["))
-        {
-            factList = factList.Where(fact => IsFactSignatureMatchingExpensive(cellSignature, fact.DataPointSignatureFilled)).ToList();
-        }
-
-        //some facts may exist in many tables (we only need one)
-        var distinctList = new List<TemplateSheetFact>();
-        foreach (var fact in factList)
-        {
-            var found = distinctList.Exists(dfact => dfact.DataPointSignatureFilled == fact.DataPointSignatureFilled);
-            if (!found)
-            {
-                distinctList.Add(fact);
-            }
-        }
-
-        ////////////////////////////////////////
-        var nnn = FindFactsFromSignatureWild(documentId, cellSignature);
-        if (nnn.Count != distinctList.Count)
-        {
-            throw (new Exception($"different number of facts found{cellSignature}"));
-        }
-
-        return distinctList;
-
-    }
-
-
-
-    public bool IsFactSignatureMatchingExpensive(string cellSignature, string factSignature)
-    {
-        //check all fact dims against cell dims the expenive way
-        //check optional dims for 
-        //check for valid hierarchy members[323;3;3] 
-        var factDims = factSignature.Split("|").ToList();
-        var cellDims = cellSignature.Split("|");
-
-        foreach (var cellDim in cellDims)
-        {
-            var factDimFound = factDims.FirstOrDefault(factDim => IsFactDimMatchingCellExpensive(cellDim, factDim));
-            //if (factDimFound is null)
-            //if the cell dim is optional 
-            if (factDimFound is null && !cellDim.Contains('?'))
-            {
-                return false;
-            }
-            factDims.Remove(factDimFound);
-        }
-        return factDims.Count == 0;
-
-    }
-
-
+   
     private bool IsFactDimMatchingCellExpensive(string cellDim, string factDim)
     {
         //            

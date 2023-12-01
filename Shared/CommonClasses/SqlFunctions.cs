@@ -141,7 +141,7 @@ public class SqlFunctions : ISqlFunctions
         return result;
     }
 
-    public List<MAPPING> SelectMappings(int tableId)
+    public List<MAPPING> SelectTableMappings(int tableId)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlTable = @"
@@ -157,5 +157,20 @@ public class SqlFunctions : ISqlFunctions
         return result ?? new List<MAPPING>();
     }
 
+    public List<MAPPING> SelectRowColMappings(int tableId, string  rowCol)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTable = @"
+			SELECT map.* 
+			FROM MAPPING map
+			WHERE  
+			  map.TABLE_VERSION_ID=@tableId
+			  AND ORIGIN='F'
+			ORDER BY DYN_TABLE_NAME, DYN_TAB_COLUMN_NAME
+			";
+
+        var result = connectionEiopa.Query<MAPPING>(sqlTable, new { tableId })?.ToList();
+        return result ?? new List<MAPPING>();
+    }
 
 }

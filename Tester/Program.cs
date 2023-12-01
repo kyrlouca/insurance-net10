@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Text.RegularExpressions;
+using Shared.SpecialRoutines;
 using System.Linq;
 Console.WriteLine("Hello, World!");
 var rg = new Regex("(R\\d*)(C\\d*)");
@@ -9,6 +10,7 @@ if (match.Success)
 	Console.WriteLine(match.Groups[0]);
 	Console.WriteLine(match.Groups[1]);
 }
+
 
 
 

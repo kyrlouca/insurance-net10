@@ -31,7 +31,7 @@ public class MyMainApp : IMyMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        
+
         if (1 == 2)
         {
             var (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
@@ -59,9 +59,9 @@ public class MyMainApp : IMyMainApp
             "S.28.01",
         };
 
-        var ukDocumentId = 13030;        
+        var ukDocumentId = 13030;
 
-        var res2 = _factsMover.DecorateFactsAndAssignToSheets(ukDocumentId,filings);
+        var res2 = _factsMover.DecorateFactsAndAssignToSheets(ukDocumentId, filings);
         if (res2 != 0)
         {
             return res2;

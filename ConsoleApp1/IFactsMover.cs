@@ -10,8 +10,7 @@ namespace XbrlReader
         int DecorateFactsAndAssignToSheets(int documentId, List<string> filings);
         List<TemplateSheetFact> FindFactsFromSignatureNewxx(int documentId, string cellSignature);
         List<TemplateSheetFact> FindFactsFromSignatureWild(int documentId, string cellSignature);
-        List<TemplateSheetFact> FindMatchingFactsRegexOld(int documentId, string cellSignature);
-        bool IsFactSignatureMatchingExpensive(string cellSignature, string factSignature);
+                
         bool IsNewSignatureMatch(string cellSignature, string factSignature);
         void TestingCode();
         void UpdateCellsForeignRow(int documentId);
