@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 
-public static class GeneralUtils
+public static class RegexUtils
 {
     public static bool IsMatch(string RegExpression, string inputString)
     {            

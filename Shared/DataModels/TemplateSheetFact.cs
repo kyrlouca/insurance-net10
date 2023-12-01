@@ -58,7 +58,7 @@ public class TemplateSheetFact
         DataPointSignatureFilled = DataPointSignature;
         if (TextValue.Trim().Length > 1200)
         {
-            TextValue = GeneralUtils.TruncateString(TextValue, 1200);
+            TextValue = RegexUtils.TruncateString(TextValue, 1200);
         }
 
         ConvertTextValue();

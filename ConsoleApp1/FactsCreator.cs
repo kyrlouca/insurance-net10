@@ -10,6 +10,7 @@ using Shared.HostRoutines;
 using Shared.SharedHost;
 using System;
 using System.Globalization;
+
 using System.Reflection.Metadata;
 using System.Reflection;
 using System.Xml.Linq;
@@ -70,7 +71,7 @@ public class FactsCreator : IFactsCreator
 		var reference = RootNode?.Element(link + "schemaRef")?.Attribute(xlink + "href")?.Value ?? "N?F";
 
 
-		var moduleCodeXbrl = GeneralUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);
+		var moduleCodeXbrl = RegexUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);
 		_mModule = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
 		Console.WriteLine($"Opened Xblrl=>  Module: {moduleCodeXbrl} ");
 		if (moduleCodeXbrl != _mModule.ModuleCode)
@@ -273,7 +274,7 @@ public class FactsCreator : IFactsCreator
 
 				var mMetric = FindFactMetricId(xbrlCode);  //"s2md_met:ei1633"                
 
-				var dataTypeUse = mMetric is not null ? CntConstants.SimpleDataTypes[mMetric.DataType] : "";
+				var dataTypeUse = mMetric is not null ? ConstantsAndUtils.SimpleDataTypes[mMetric.DataType] : "";
 				//var dataTypeUse = CntConstants.SimpleDataTypes[mMetric.DataType]; //N, S,B,E..
 
 				//var unitNN = XbuFact.Units.ContainsKey(unitRef) ? Units[unitRef] : unitRef;
@@ -663,7 +664,7 @@ VALUES (
 		foreach (var dim in dims)
 		{
 			count++;
-			var dimDom = SpecialRoutines.DimDom.GetParts(dim);
+			var dimDom = Shared.SpecialRoutines.DimDom.GetParts(dim);
 			var factDim = new TemplateSheetFactDim()
 			{
 				FactId = factId,

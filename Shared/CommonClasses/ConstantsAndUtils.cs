@@ -16,7 +16,7 @@ public enum CntTypedExplicit
 
 
 
-public static class CntConstants
+public static class ConstantsAndUtils
 {
 
     public static Dictionary<string, string> SimpleDataTypes { get; } = new()

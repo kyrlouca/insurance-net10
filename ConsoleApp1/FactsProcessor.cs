@@ -15,7 +15,7 @@ using Shared.HostRoutines;
 using Shared.DataModels;
 
 
-using static Shared.SpecialRoutines.SpecialRoutines;
+
 
 
 
@@ -380,8 +380,8 @@ public class FactsProcessor : IFactsProcessor
 		realFact.TableID = table.TableID;
 
 		var factRowCol = cellMapping.DYN_TAB_COLUMN_NAME;
-		realFact.Col = GeneralUtils.GetRegexSingleMatch(@"(C\d*)", factRowCol);
-		realFact.Row = GeneralUtils.GetRegexSingleMatch(@"(R\d*)", factRowCol);
+		realFact.Col = RegexUtils.GetRegexSingleMatch(@"(C\d*)", factRowCol);
+		realFact.Row = RegexUtils.GetRegexSingleMatch(@"(R\d*)", factRowCol);
 		realFact.IsRowKey = (cellMapping.IS_PAGE_COLUMN_KEY == 1);
 
 		//the fact.RowSignature was already builted when reading the element from xbrl 
@@ -395,7 +395,7 @@ public class FactsProcessor : IFactsProcessor
 
 		//fact.zet is the zet dimension of the fact, in case a cell corresponds to more than one fact in the same sheet (currency, etc)
 		var factPivotZet = GetFactPivotZet(realFact.DataPointSignatureFilled, tablePivotZet);
-		var pivotZetDimDom = SpecialRoutines.DimDom.GetParts(factPivotZet);
+		var pivotZetDimDom = DimDom.GetParts(factPivotZet);
 		//realFact.Zet = string.IsNullOrEmpty(factPivotZet) ? "" : $"{pivotZetDimDom.Dim}#{pivotZetDimDom.DomAndValFull }";
 		realFact.Zet = factPivotZet ?? "";
 		realFact.CurrencyDim = pivotZetDimDom.Dim == "OC" ? pivotZetDimDom.Dom : DefaultCurrency;
@@ -443,8 +443,8 @@ public class FactsProcessor : IFactsProcessor
 		{
 			return "";
 		}
-		var tableZetDim = SpecialRoutines.DimDom.GetParts(zetDim).Dim;
-		var factDims = factSignature.Split("|")?.Where(dim => SpecialRoutines.DimDom.GetParts(dim).Dim.Contains(tableZetDim))?.ToList();
+		var tableZetDim = DimDom.GetParts(zetDim).Dim;
+		var factDims = factSignature.Split("|")?.Where(dim => DimDom.GetParts(dim).Dim.Contains(tableZetDim))?.ToList();
 		if (factDims.Count == 0)
 		{
 			return "";
@@ -544,7 +544,7 @@ public class FactsProcessor : IFactsProcessor
 			YDimVal = table.YDimVal,
 			ZDimVal = table.ZDimVal,
 			Status = "LD",
-			Description = GeneralUtils.TruncateString(table.TableLabel, 199),
+			Description = RegexUtils.TruncateString(table.TableLabel, 199),
 			XbrlFilingIndicatorCode = table.XbrlFilingIndicatorCode,
 			IsOpenTable = table.IsOpenTable,
 			OpenRowCounter = 0
@@ -719,7 +719,7 @@ public class FactsProcessor : IFactsProcessor
 		var dimListWithoutOptional = cleanSignatureWithoutOptional.Split("|").ToList();
 
 		var xbrlMetric = dimListWithoutOptional.FirstOrDefault();
-		var xbrlCode = string.IsNullOrEmpty(xbrlMetric) ? "EmptyXbrlCode" : GeneralUtils.GetRegexSingleMatch(@"MET\((.*?)\)", xbrlMetric);
+		var xbrlCode = string.IsNullOrEmpty(xbrlMetric) ? "EmptyXbrlCode" : RegexUtils.GetRegexSingleMatch(@"MET\((.*?)\)", xbrlMetric);
 
 		var sqlSelectFacts = @"
               SELECT  
@@ -858,8 +858,8 @@ public class FactsProcessor : IFactsProcessor
 		}
 		else
 		{
-			var factDimDom = SpecialRoutines.DimDom.GetParts(factDim);
-			var cellDimDom = SpecialRoutines.DimDom.GetParts(cellDim);
+			var factDimDom = DimDom.GetParts(factDim);
+			var cellDimDom = DimDom.GetParts(cellDim);
 
 			if (factDimDom.Dim != cellDimDom.Dim)
 			{
@@ -875,7 +875,7 @@ public class FactsProcessor : IFactsProcessor
 			//check if the fact's dom value belongs in the hierarchy
 			using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
-			var hierarchyParts = GeneralUtils.GetRegexSingleMatch(@"\[(.*)\]", cellDimDom.DomAndValRaw).Split(";");
+			var hierarchyParts = RegexUtils.GetRegexSingleMatch(@"\[(.*)\]", cellDimDom.DomAndValRaw).Split(";");
 			if (hierarchyParts.Length < 1)
 			{
 				return false;
@@ -915,7 +915,7 @@ public class FactsProcessor : IFactsProcessor
 		var tableZetOpenDims = zDimVal
 		?.Split("|")
 		?.Where(dim => dim.Contains("*"))
-		?.Select(dim => SpecialRoutines.DimDom.GetParts(dim).Dim)?.ToList() ?? new List<string>();
+		?.Select(dim => DimDom.GetParts(dim).Dim)?.ToList() ?? new List<string>();
 
 		var factZetDims = factAllDims?.Where(dim => tableZetOpenDims.Exists(tblDim => dim.Contains(tblDim))).ToList() ?? new List<string>();
 
@@ -941,12 +941,12 @@ public class FactsProcessor : IFactsProcessor
 			return false;
 		}
 
-		var factDimDoms = factDims.Select(fd => SpecialRoutines.DimDom.GetParts(fd)).Skip(1).ToList();
-		var cellDimDoms = cellDims.Select(cd => SpecialRoutines.DimDom.GetParts(cd)).Skip(1).ToList();
+		var factDimDoms = factDims.Select(fd => DimDom.GetParts(fd)).Skip(1).ToList();
+		var cellDimDoms = cellDims.Select(cd => DimDom.GetParts(cd)).Skip(1).ToList();
 
 
 		//List<DimDom> xx = cellDimDoms.Sort((DimDom a, DimDom b) => string.Compare(a.DomValue, b.DomValue)).ToList<DimDom>;
-		cellDimDoms.Sort((SpecialRoutines.DimDom a, SpecialRoutines.DimDom b) => string.Compare(b.DomValue, a.DomValue));
+		cellDimDoms.Sort((DimDom a, DimDom b) => string.Compare(b.DomValue, a.DomValue));
 
 		var countFactDimDoms = factDimDoms.Count();
 		foreach (var cellDimDom in cellDimDoms)
@@ -982,7 +982,7 @@ public class FactsProcessor : IFactsProcessor
 	}
 
 
-	private bool IsNewDimMatch(SpecialRoutines.DimDom cellDimDom, SpecialRoutines.DimDom factDimDom)
+	private bool IsNewDimMatch(DimDom cellDimDom, DimDom factDimDom)
 	{
 		//            
 		// "*" allows for any value but brackets constrain the values to the hierechy members
@@ -1012,7 +1012,7 @@ public class FactsProcessor : IFactsProcessor
 		//check if the fact's dom value belongs in the hierarchy
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
-		var hierarchyParts = GeneralUtils.GetRegexSingleMatch(@"\[(.*)\]", cellDimDom.DomAndValRaw).Split(";");
+		var hierarchyParts = RegexUtils.GetRegexSingleMatch(@"\[(.*)\]", cellDimDom.DomAndValRaw).Split(";");
 		if (hierarchyParts.Length < 1)
 		{
 			return false;
@@ -1058,11 +1058,11 @@ public class FactsProcessor : IFactsProcessor
 		}
 
 		var zdims = table.ZDimVal?.Split("|")
-			?.Select(dim => SpecialRoutines.DimDom.GetParts(dim).Dim)
+			?.Select(dim => DimDom.GetParts(dim).Dim)
 			?.ToList() ?? new List<string>();
 
 		var filterDims = inTableDims
-			?.Where(inTabDim => !zdims.Contains(SpecialRoutines.DimDom.GetParts(inTabDim).Dim))
+			?.Where(inTabDim => !zdims.Contains(DimDom.GetParts(inTabDim).Dim))
 			?.ToList() ?? new List<string>();
 		if (inTableDims.Count != filterDims.Count)
 		{
@@ -1123,7 +1123,7 @@ public class FactsProcessor : IFactsProcessor
 
 			foreach (var tableYdim in tableYdims)
 			{
-				var yTableDimDom = SpecialRoutines.DimDom.GetParts(tableYdim);
+				var yTableDimDom = DimDom.GetParts(tableYdim);
 				var sqlFindMapping = @"
                             SELECT
                               map.DYN_TAB_COLUMN_NAME
@@ -1148,14 +1148,14 @@ public class FactsProcessor : IFactsProcessor
 					continue;
 				}
 
-				var factYdim = factYdims.FirstOrDefault(dim => SpecialRoutines.DimDom.GetParts(dim).Dim == yTableDimDom.Dim);
+				var factYdim = factYdims.FirstOrDefault(dim => DimDom.GetParts(dim).Dim == yTableDimDom.Dim);
 				if (factYdim is null)
 				{
 					continue;
 				}
 
-				var factDimDomValue = SpecialRoutines.DimDom.GetParts(factYdim);
-				var signatureFilled = $"YR|{SpecialRoutines.DimDom.GetParts(factYdim).Dim}|{factWithRowSignature.OpenRowSignature}";
+				var factDimDomValue = DimDom.GetParts(factYdim);
+				var signatureFilled = $"YR|{DimDom.GetParts(factYdim).Dim}|{factWithRowSignature.OpenRowSignature}";
 				var newFact = new TemplateSheetFact()
 				{
 					InstanceId = DocumentId,
@@ -1308,23 +1308,23 @@ public class FactsProcessor : IFactsProcessor
 		foreach (var zetDim in zetOpenList)
 		{
 
-			var zetDimPart = GeneralUtils.GetRegexSingleMatch(@"(s2c_dim.*?:\w\w)", zetDim);//s2c_dim:AF(*?[59]) => s2c_dim:AF
+			var zetDimPart = RegexUtils.GetRegexSingleMatch(@"(s2c_dim.*?:\w\w)", zetDim);//s2c_dim:AF(*?[59]) => s2c_dim:AF
 			var factDim = factDims.SingleOrDefault(dim => dim.Contains(zetDimPart));
 
 			if (factDim is not null)
 			{
-				var fff = SpecialRoutines.DimDom.GetParts(factDim);
-				var factDimPart = GeneralUtils.GetRegexSingleMatch(@"s2c_dim:(\w\w)", factDim);//"s2c_dim:AF(s2c_CA:x1)=> AF
-				var factDomPart = GeneralUtils.GetRegexSingleMatch(@"s2c_dim:\w\w\((.*?)\)", factDim); //"s2c_dim:AF(s2c_CA:x1)=> s2c_CA:x1                                        
+				var fff = DimDom.GetParts(factDim);
+				var factDimPart = RegexUtils.GetRegexSingleMatch(@"s2c_dim:(\w\w)", factDim);//"s2c_dim:AF(s2c_CA:x1)=> AF
+				var factDomPart = RegexUtils.GetRegexSingleMatch(@"s2c_dim:\w\w\((.*?)\)", factDim); //"s2c_dim:AF(s2c_CA:x1)=> s2c_CA:x1                                        
 				zetFinalList.Add($"{factDimPart}#{factDomPart}");
 			}
 		}
 
 		foreach (var dim in zetClosedList)
 		{
-			var zetDimPart = GeneralUtils.GetRegexSingleMatch(@"s2c_dim:(\w\w)", dim); //"s2c_dim:TA(s2c_AM:x57)=>TA
-			var zetDomPart = GeneralUtils.GetRegexSingleMatch(@"s2c_dim:\w\w\((s2c_.*?)\)", dim);// "s2c_dim:TA(s2c_AM:x57)=> AM:x57
-			var xxx = SpecialRoutines.DimDom.GetParts(dim);
+			var zetDimPart = RegexUtils.GetRegexSingleMatch(@"s2c_dim:(\w\w)", dim); //"s2c_dim:TA(s2c_AM:x57)=>TA
+			var zetDomPart = RegexUtils.GetRegexSingleMatch(@"s2c_dim:\w\w\((s2c_.*?)\)", dim);// "s2c_dim:TA(s2c_AM:x57)=> AM:x57
+			var xxx = DimDom.GetParts(dim);
 			if (!string.IsNullOrEmpty(zetDimPart) && !string.IsNullOrEmpty(zetDomPart))
 			{
 				zetFinalList.Add($"{zetDimPart}#{zetDomPart}");
@@ -1442,7 +1442,7 @@ public class FactsProcessor : IFactsProcessor
 		var dimsMandatoryAndXbrl = mandatoryWildSignature.Split("|").ToList();
 		var dimsMandatory = dimsMandatoryAndXbrl.Skip(1).ToList();
 		var xbrlMetric = dimsMandatoryAndXbrl.FirstOrDefault();
-		var xbrlCode = string.IsNullOrEmpty(xbrlMetric) ? "" : GeneralUtils.GetRegexSingleMatch(@"MET\((.*?)\)", xbrlMetric);
+		var xbrlCode = string.IsNullOrEmpty(xbrlMetric) ? "" : RegexUtils.GetRegexSingleMatch(@"MET\((.*?)\)", xbrlMetric);
 		if (string.IsNullOrEmpty(xbrlCode))
 		{
 			return factList;
@@ -1586,7 +1586,7 @@ public class FactsProcessor : IFactsProcessor
             ";
 
 			var mandatoryDimsInQuotes = dimsMandatory
-				.Select(dm => SpecialRoutines.DimDom.GetParts(dm).Dim)
+				.Select(dm => DimDom.GetParts(dm).Dim)
 				.Select(dm => $"'{dm}'");
 			var sqldimPart2 = $" and dim in ({string.Join(",", mandatoryDimsInQuotes)})";
 			var sqlByGrouping = sqlNewPart1 + sqldimPart2 + " Group by fact.factId,fact.DataPointSignature " + $" having count(*) ={dimsMandatory.Count} ";
@@ -1630,7 +1630,7 @@ public class FactsProcessor : IFactsProcessor
 		var dimsMandatoryAndXbrl = mandatoryWildSignature.Split("|").ToList();
 		var dimsMandatory = dimsMandatoryAndXbrl.Skip(1).ToList();
 		var xbrlMetric = dimsMandatoryAndXbrl.FirstOrDefault();
-		var xbrlCode = string.IsNullOrEmpty(xbrlMetric) ? "" : GeneralUtils.GetRegexSingleMatch(@"MET\((.*?)\)", xbrlMetric);
+		var xbrlCode = string.IsNullOrEmpty(xbrlMetric) ? "" : RegexUtils.GetRegexSingleMatch(@"MET\((.*?)\)", xbrlMetric);
 		if (string.IsNullOrEmpty(xbrlCode))
 		{
 			return factList;
