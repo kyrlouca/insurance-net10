@@ -2,7 +2,7 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "user-id=1\r\nfund-id=182\r\ncurrency-batch-id=1\r\neiopa-version=\"IU270\"\r\nmodule-code=\"qrs\"\r\nyear=2022\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingNew\\UK DEFENCE.xbrl\"",
+      "commandLineArgs": "user-id=1\r\nfund-id=182\r\ncurrency-batch-id=1\r\neiopa-version=\"IU270\"\r\nmodule-code=\"ars\"\r\nyear=2022\r\nquarter=0\r\nfile-name=\"aaa.xlsx\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
         "Default": "MyDef",

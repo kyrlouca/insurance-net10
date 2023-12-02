@@ -14,10 +14,7 @@ using Shared.CommonRoutines;
 using Shared.SpecialRoutines;
 using Shared.HostRoutines;
 using Shared.DataModels;
-
-
-
-
+using Microsoft.VisualBasic.FileIO;
 
 public class FactsMover : IFactsMover
 {
@@ -66,7 +63,7 @@ public class FactsMover : IFactsMover
 
         ModuleTablesFiled = GetFiledModuleTables();        
                    
-        _testingTableId = 78;
+        _testingTableId = 59;
         if (_testingTableId > 0)
         {
             ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
@@ -106,17 +103,7 @@ public class FactsMover : IFactsMover
         return 0;
 
     }
-    public void TestingCode()
-    {
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var sqlx = "select tab.TableID from mTable tab where tab.TableID =222333";
-        var xtab = connectionEiopa.Query<MTable>(sqlx).ToList();
-        var list = new List<int>() { 1, 3, 5 };
-        var l = list.Where(item => item > 22).ToList();
-        return;
-    }
-
+    
     private int AssignFactsToTablesNew()
     {
         //iterate each table. For each table, read its cells, find the matching facts, and assign them rowcols            
@@ -187,31 +174,38 @@ public class FactsMover : IFactsMover
 
         
 
-        var zetClosedDims =  zetString
+        var zetClosedDimCodes =  zetString
             .Split("|",StringSplitOptions.RemoveEmptyEntries)
             .Where(dim => !dim.Contains('*'))
             .Select(dim => DimDom.GetParts(dim).Signature).ToList();
 
-        var zetOpenDim = zetString
+
+        //need to use this to get the fact. but it it can also be a page zet
+        var zetOpenDimCodes = zetString
             .Split("|", StringSplitOptions.RemoveEmptyEntries)
             .Where(dim => dim.Contains('*'))
-            .FirstOrDefault()
-            .Select(dim => DimDom.GetParts(dim).Signature)
-            
-            
-        
-
+            .Select(dim => DimDom.GetParts(dim).Signature).ToList();
 
         var fieldMappings = _SqlFunctions.SelectRowColMappings(tableId, rowCol)
-            .Where(map => !map.DIM_CODE.StartsWith("MET"))
-            .Select(map => map.DIM_CODE);
-            
+            .Where(map => !map.DIM_CODE.StartsWith("MET"));
 
-        var allDims = new List<string>()
-            .Concat(zetClosedDims)
-            .Concat(fieldMappings)
-            .Select(dim => $"'{dim}'"); 
-                        
+
+        var fieldClosedDimCodes = fieldMappings.Where(map => !map.DIM_CODE.Contains("*")).Select(map=>map.DIM_CODE).ToList();
+        var fieldOpenDimCodes = fieldMappings.Where(map => map.DIM_CODE.Contains("*")).Select(map=>map.DIM_CODE).ToList();
+
+
+
+
+        var openDimCodes = new List<string>()
+            .Concat(zetOpenDimCodes)
+            .Concat(fieldOpenDimCodes)
+            .Select(dim => $"'{dim}'");
+
+        var closedDimCodes = new List<string>()
+            .Concat(zetClosedDimCodes)
+            .Concat(fieldClosedDimCodes)
+            .Select(dim => $"'{dim}'");
+
         var dimsStringSQL = string.Join(",",allDims );
         var rowcolRec = NewUtils.CreateRowColRecord(xbrlMapping.DYN_TAB_COLUMN_NAME);
         var andRowSQL = rowcolRec.HasOnlyCol ? "" : "AND fact.Row=@ROW  ";
