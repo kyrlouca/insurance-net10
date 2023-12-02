@@ -141,15 +141,35 @@ public class SqlFunctions : ISqlFunctions
         return result;
     }
 
-    public List<MAPPING> SelectTableMappings(int tableId)
+
+   
+    public List<MAPPING> SelectTableMappings(int tableId, MappingOrigin mappingOrigin)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var sqlTable = @"
+        var andOriginSQL = "";
+
+        switch (mappingOrigin)
+        {
+            case MappingOrigin.Field:
+                andOriginSQL = "AND ORIGIN = 'F' ";
+                break;
+            case MappingOrigin.Page:
+                andOriginSQL = "AND DYN_TABLE_NAME LIKE 'PAGE%' ";
+                break;
+            case MappingOrigin.Column:
+                andOriginSQL = "AND ORIGIN = 'C' ";
+                break;
+            default:
+                andOriginSQL = "";
+                break;
+        }
+
+        var sqlTable = @$"
 			SELECT map.* 
 			FROM MAPPING map
 			WHERE  
 			  map.TABLE_VERSION_ID=@tableId
-			  AND ORIGIN='F'
+			  {andOriginSQL}
 			ORDER BY DYN_TABLE_NAME, DYN_TAB_COLUMN_NAME
 			";
 
@@ -157,7 +177,7 @@ public class SqlFunctions : ISqlFunctions
         return result ?? new List<MAPPING>();
     }
 
-    public List<MAPPING> SelectRowColMappings(int tableId, string  rowCol)
+    public List<MAPPING> SelectRowColMappings(int tableId, string rowCol)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlTable = @"
@@ -170,7 +190,7 @@ public class SqlFunctions : ISqlFunctions
 			ORDER BY DYN_TABLE_NAME, DYN_TAB_COLUMN_NAME
 			";
 
-        var result = connectionEiopa.Query<MAPPING>(sqlTable, new { tableId,rowCol })?.ToList();
+        var result = connectionEiopa.Query<MAPPING>(sqlTable, new { tableId, rowCol })?.ToList();
         return result ?? new List<MAPPING>();
     }
 

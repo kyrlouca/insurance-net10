@@ -5,6 +5,7 @@ public enum ProgramCode { AG, DO, XB, VA, CX, RX }
 public enum ProgramAction { DEL, INS, UPD }
 public enum MessageType { ERROR, INFO, COMPLETE }
 
+public enum MappingOrigin { Field, Column, Page , All };
 public interface ISqlFunctions
 {
 	DocInstance? SelectDocInstance(int documentId);
@@ -15,7 +16,7 @@ public interface ISqlFunctions
 	public void UpdateDocumentStatus(int documentId, string status);
 	public MMember? SelectDomainMember(string domainString);
 	public MTable? SelectTable(string tableCode);
-	public List<MAPPING> SelectTableMappings(int tableId);
+	public List<MAPPING> SelectTableMappings(int tableId,MappingOrigin mapping);
 	public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
 

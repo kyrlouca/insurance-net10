@@ -61,25 +61,25 @@ public class FactsMover : IFactsMover
         _document = _SqlFunctions.SelectDocInstance(documentId);
         _moduleCode = _document.ModuleCode.Trim();
         _moduleId = _document.ModuleId;
-
+        ////////////////////////////////////////////////////////////////////
         Console.WriteLine($"\n Facts processing Started");
 
-        ModuleTablesFiled = GetFiledModuleTables();
-
-        //***Process the facts in all module tables
-        var count = 0;
-        _testingTableId = 1;
+        ModuleTablesFiled = GetFiledModuleTables();        
+                   
+        _testingTableId = 78;
         if (_testingTableId > 0)
         {
-            ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == 78).ToList();
+            ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
         }
+        var count = 0;
 
         //************************************************************************
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
         
-            Console.WriteLine($"\nTable start : {table.TableCode}");
+            Console.WriteLine($"\nTable Processed : {table.TableCode}");
             var tableFacts = SelectTableFacts(table);
+            var sheetNames = tableFacts.GroupBy(fact => fact.Zet);
             //UpdateSheetTabNames(table.TableCode); //make the tabnames simler to read
 
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
@@ -155,8 +155,10 @@ public class FactsMover : IFactsMover
     {
         //use the xbrl mappings of the table to find the matching facts
         List<TemplateSheetFact> tableFacts = new();
-        var tableMappings = _SqlFunctions.SelectTableMappings(table.TableID);
+        var tableMappings = _SqlFunctions.SelectTableMappings(table.TableID,MappingOrigin.All);
         var xbrlMappings = tableMappings.Where(map => map.ORIGIN == "F" && map.DIM_CODE.StartsWith("MET"));
+        var pageZet = tableMappings.FirstOrDefault(map => map.ORIGIN == "C" && map.DYN_TAB_COLUMN_NAME.StartsWith("PAGE"))?.DIM_CODE??"";
+
         foreach (var xbrlMapping in xbrlMappings)
         {
             Console.WriteLine(xbrlMapping.DYN_TAB_COLUMN_NAME);
@@ -164,33 +166,40 @@ public class FactsMover : IFactsMover
             //find zet and y dims
             var zetDims = table.ZDimVal ?? "";
             var yDims = table.YDimVal ?? "";
-            var mathcingFacts = FindMatchingFacts(xbrlMapping,zetDims );
+            var mathcingFacts = FindMatchingFacts(xbrlMapping,zetDims,pageZet );
             tableFacts.AddRange(mathcingFacts);
             var y = 3;
         }
         return tableFacts ;
     }
-    private List<TemplateSheetFact> FindMatchingFacts(MAPPING mapping, string zetString)
+    private List<TemplateSheetFact> FindMatchingFacts(MAPPING xbrlMapping, string zetString,string pageZet)
     {
+        //find the facts which have the xbrl code and the  right mappings of the table (the xblr and the tableID are found in the xbrl mapping)
+        //the right mappings are all the origin='F' plus the Zet mappings of the table
+
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var tableId = (int)mapping.TABLE_VERSION_ID;
-        var rowCol = mapping.DYN_TAB_COLUMN_NAME;
+        var tableId = (int)xbrlMapping.TABLE_VERSION_ID;
+        var rowCol = xbrlMapping.DYN_TAB_COLUMN_NAME;
         //tableId = 59;
         //rowCol = "R0020C0080";
         //var allDimsStr = "'s2c_dim:BL(s2c_LB:x59)', 's2c_dim:DI(s2c_DI:x5)', 's2c_dim:IZ(s2c_RT:x1)', 's2c_dim:TB(s2c_LB:x28)', 's2c_dim:VG(s2c_AM:x84)'";
 
-        var zetDimsxxx = zetString
-            .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            .Where(dim => !dim.Contains('*'))
-            .Select(dim => DimDom.GetParts(dim).Signature).ToList();
+        
 
-
-        var zetDims =  zetString
+        var zetClosedDims =  zetString
             .Split("|",StringSplitOptions.RemoveEmptyEntries)
             .Where(dim => !dim.Contains('*'))
             .Select(dim => DimDom.GetParts(dim).Signature).ToList();
 
+        var zetOpenDim = zetString
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)
+            .Where(dim => dim.Contains('*'))
+            .FirstOrDefault()
+            .Select(dim => DimDom.GetParts(dim).Signature)
+            
+            
+        
 
 
         var fieldMappings = _SqlFunctions.SelectRowColMappings(tableId, rowCol)
@@ -199,12 +208,12 @@ public class FactsMover : IFactsMover
             
 
         var allDims = new List<string>()
-            .Concat(zetDims)
+            .Concat(zetClosedDims)
             .Concat(fieldMappings)
             .Select(dim => $"'{dim}'"); 
                         
         var dimsStringSQL = string.Join(",",allDims );
-        var rowcolRec = NewUtils.CreateRowColRecord(mapping.DYN_TAB_COLUMN_NAME);
+        var rowcolRec = NewUtils.CreateRowColRecord(xbrlMapping.DYN_TAB_COLUMN_NAME);
         var andRowSQL = rowcolRec.HasOnlyCol ? "" : "AND fact.Row=@ROW  ";
 
 
@@ -247,7 +256,7 @@ public class FactsMover : IFactsMover
         var dimsCount = allDims.Count();
         var sqlSelect = dimsCount == 0 ? sqlSelectWithoutDims : sqlSelectWithDims;
         
-        var xbrlCode = RegexUtils.GetRegexSingleMatch(new Regex("MET\\((.*)\\)"), mapping.DIM_CODE);//xbrlCode = "s2md_met:mi503";
+        var xbrlCode = RegexUtils.GetRegexSingleMatch(new Regex("MET\\((.*)\\)"), xbrlMapping.DIM_CODE);//xbrlCode = "s2md_met:mi503";
         
 
         Console.Write($"Find Fact:xbrl{xbrlCode},row:{rowcolRec.Row},col{rowcolRec.Col}");
