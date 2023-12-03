@@ -173,7 +173,9 @@ public class SqlFunctions : ISqlFunctions
 			ORDER BY DYN_TABLE_NAME, DYN_TAB_COLUMN_NAME
 			";
 
-        var result = connectionEiopa.Query<MAPPING>(sqlTable, new { tableId })?.ToList();
+        var result = connectionEiopa!.Query<MAPPING>(sqlTable, new { tableId })?.ToList();
+
+     
         return result ?? new List<MAPPING>();
     }
 
@@ -190,7 +192,7 @@ public class SqlFunctions : ISqlFunctions
 			ORDER BY DYN_TABLE_NAME, DYN_TAB_COLUMN_NAME
 			";
 
-        var result = connectionEiopa.Query<MAPPING>(sqlTable, new { tableId, rowCol })?.ToList();
+        var result = connectionEiopa!.Query<MAPPING>(sqlTable, new { tableId, rowCol })?.ToList();
         return result ?? new List<MAPPING>();
     }
 

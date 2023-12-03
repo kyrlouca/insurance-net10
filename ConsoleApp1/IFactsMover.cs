@@ -11,8 +11,7 @@ namespace XbrlReader
         List<TemplateSheetFact> FindFactsFromSignatureNewxx(int documentId, string cellSignature);
         List<TemplateSheetFact> FindFactsFromSignatureWild(int documentId, string cellSignature);
                 
-        bool IsNewSignatureMatch(string cellSignature, string factSignature);
-        void TestingCode();
+        bool IsNewSignatureMatch(string cellSignature, string factSignature);        
         void UpdateCellsForeignRow(int documentId);
     }
 }
