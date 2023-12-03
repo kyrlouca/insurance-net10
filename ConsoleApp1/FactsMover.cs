@@ -141,12 +141,24 @@ public class FactsMover : IFactsMover
 
     private List<TemplateSheetFact> SelectTableFacts(MTable table)
     {
-        //use the xbrl mappings of the table to find the matching facts
+        //1.select a list of row/cols from the xbrl mappings (which have a rowcol)
+        // --then for each rowcol, find the dims from the field mappings, and the zet mappings from the table zet
+        // --find the facts by using the xbrl code and all the mappings above
+        //2. if there are no xbrl facts (as in table 19.01.01.01) which whould have a rowCol then
+        // --select the rowcols from the page mappings (distinct) and get the xbrl MET from the table zet,
+        // --find any other dims from the page mappings (is_InTable=1) and add the zet mappings 
+        // --find the facts
         List<TemplateSheetFact> tableFacts = new();
         var tableMappings = _SqlFunctions.SelectTableMappings(table.TableID,MappingOrigin.All);
         var xbrlMappings = tableMappings.Where(map => map.ORIGIN == "F" && map.DIM_CODE.StartsWith("MET"));
         var pageZetMappings = tableMappings?.Where(map => map.ORIGIN == "C" && map.DYN_TAB_COLUMN_NAME.StartsWith("PAGE"))?.ToList() ?? new List<MAPPING>();
-        
+
+        if (!xbrlMappings.Any())
+        {
+            return SelectTableFactsFrom19(table);
+        }
+
+        var xbrmps = _SqlFunctions.SelectTableMappings(table.TableID, MappingOrigin.Field).ToList();
 
         foreach (var xbrlMapping in xbrlMappings)
         {
@@ -161,6 +173,50 @@ public class FactsMover : IFactsMover
         }
         return tableFacts ;
     }
+
+    private List<TemplateSheetFact> SelectTableFactsFrom19(MTable table)
+    {
+        var tableFacts = new List<TemplateSheetFact>();
+        var tableMappings = _SqlFunctions.SelectTableMappings(table.TableID, MappingOrigin.All);
+        var rowColMappings = tableMappings
+            .Where(map => map.DYN_TAB_COLUMN_NAME.StartsWith("R"))
+            .GroupBy(map => map.DYN_TAB_COLUMN_NAME)
+            .Select(map => map.First())
+            .OrderBy(map=>map.DYN_TAB_COLUMN_NAME)
+            .ToList();
+
+        var pageKeys = tableMappings.Where(map => map.IS_PAGE_COLUMN_KEY==1);
+        IEnumerable<string> tableZetDims = table.ZDimVal?
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)            
+            ??  Enumerable.Empty<string>();
+
+
+        var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
+        var xbrl = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault()??"";
+        
+
+        foreach( var rowColMapping in rowColMappings)
+        {
+            var ungroupInTableZets = tableMappings
+                .Where(map => map.DYN_TAB_COLUMN_NAME == rowColMapping.DYN_TAB_COLUMN_NAME)
+                .Select(map=>map.DIM_CODE);
+            var  allZets = new List<string>().Concat(ungroupInTableZets).Concat(zetDims);
+            var openDims = allZets.Where(map => map.Contains("*"));
+            var openDimsOptionalCount = openDims.Where(map => map.Contains("?")).Count();
+            var openDimsStr = string.Join(",", openDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
+
+            var closedDims = allZets.Where(map => !map.Contains("*"));
+            var closedDimsStr = string.Join(",", closedDims.Select(dim => $"'{DimDom.GetParts(dim).Signature}'"));
+            
+            
+            
+            Console.WriteLine(rowColMapping.DYN_TAB_COLUMN_NAME);
+        }
+
+        return tableFacts;
+    }
+
+
     private List<TemplateSheetFact> FindMatchingFacts(MAPPING xbrlMapping, string zetString,List<MAPPING>? pageZetMappings)
     {
         //find the facts which have the xbrl code and the  right mappings of the table (the xblr and the tableID are found in the xbrl mapping)
