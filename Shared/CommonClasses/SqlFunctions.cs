@@ -75,7 +75,14 @@ public class SqlFunctions : ISqlFunctions
         return doc;
     }
 
+    public List<TemplateSheetFactDim> SelectFactDims(int factId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
+        var sqlSelect = @"select * from TemplateSheetFactDim fd where fd.FactId= @factId;";
+        var res = connectionInsurance?.Query<TemplateSheetFactDim>(sqlSelect, new { factId })?.ToList() ?? new List<TemplateSheetFactDim>();
+        return res;
+    }
 
     public MModule? SelectModuleByCode(string moduleCode)
     {
@@ -195,5 +202,7 @@ public class SqlFunctions : ISqlFunctions
         var result = connectionEiopa!.Query<MAPPING>(sqlTable, new { tableId, rowCol })?.ToList();
         return result ?? new List<MAPPING>();
     }
+
+    
 
 }

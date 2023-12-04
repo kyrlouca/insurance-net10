@@ -177,20 +177,25 @@ public class FactsMover : IFactsMover
 
     private List<TemplateSheetFact> SelectTableFactsFrom19(MTable table)
     {
-        //2. if there are no xbrl facts (as in table 19.01.01.01) which whould have a rowCol then
+        //2. if there are no xbrl mappings (as in table 19.01.01.01) which whould have a rowCol then
         // --select the rowcols from the page mappings (distinct) and get the xbrl MET from the table zet,
-        // --find any other dims from the page mappings (is_InTable=1) and add the zet mappings 
+        // --find any other dims from the page mappings (is_InTable=1) and then add the zet mappings 
         // --find the facts
         var tableFacts = new List<TemplateSheetFact>();
-        var tableMappings = _SqlFunctions.SelectTableMappings(table.TableID, MappingOrigin.All)?.ToList() ?? new List<MAPPING>();
-        var rowColMappings = tableMappings
+        var allMappings = _SqlFunctions.SelectTableMappings(table.TableID, MappingOrigin.All)?.ToList() ?? new List<MAPPING>();
+        var rowColMappings = allMappings
             .Where(map => map.DYN_TAB_COLUMN_NAME.StartsWith("R"))
             .GroupBy(map => map.DYN_TAB_COLUMN_NAME)
             .Select(map => map.First())
             .OrderBy(map => map.DYN_TAB_COLUMN_NAME)
             .ToList();
 
-        var pageKeys = tableMappings.Where(map => map.IS_PAGE_COLUMN_KEY == 1);
+        //pagekeys create new sheets (not all zets do that)
+        var pageDims = allMappings
+            .Where(map => map.IS_PAGE_COLUMN_KEY == 1)
+            .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
+            .ToList();
+
         IEnumerable<string> tableZetDims = table.ZDimVal?
             .Split("|", StringSplitOptions.RemoveEmptyEntries)
             ?? Enumerable.Empty<string>();
@@ -198,25 +203,26 @@ public class FactsMover : IFactsMover
 
         var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
         var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
-        var xbrl = RegexUtils.GetRegexSingleMatch(new Regex(@"MET\((.*?)\)"),xbrlFull);
+        var xbrl = RegexUtils.GetRegexSingleMatch(new Regex(@"MET\((.*?)\)"), xbrlFull);
 
 
         foreach (var rowColMapping in rowColMappings)
         {
-            var ungroupInTableZets = tableMappings
+            //
+            var ungrouppedMappingZets = allMappings
                 .Where(map => map.DYN_TAB_COLUMN_NAME == rowColMapping.DYN_TAB_COLUMN_NAME)
                 .Select(map => map.DIM_CODE).ToList() ?? new List<string>();
-            var allZets = new List<string>().Concat(ungroupInTableZets)?.Concat(zetDims).ToList() ?? new List<string>();
+            var allZets = new List<string>().Concat(ungrouppedMappingZets)?.Concat(zetDims).ToList() ?? new List<string>();
             var openDims = allZets.Where(map => map.Contains('*')).ToList() ?? new List<string>();
-            var openOptionalDims = openDims.Where(map => map.Contains('?')).ToList()?? new List<string>() ;
+            var openOptionalDims = openDims.Where(map => map.Contains('?')).ToList() ?? new List<string>();
 
-            var closedDims = allZets.Where(map => !map.Contains('*')).ToList()?? new List<string>();
+            var closedDims = allZets.Where(map => !map.Contains('*')).ToList() ?? new List<string>();
             var closedDimsx = closedDims.Select(dim => DimDom.GetParts(dim).Signature);
 
 
-            
+
             var rowCol = RowColUtil.CreateRowCol(rowColMapping.DYN_TAB_COLUMN_NAME);
-            var ff = SelectFactsByDims(xbrl, rowCol.Row, rowCol.Col, openDims, openOptionalDims, closedDims);
+            var ff = SelectFactsByDims(xbrl, rowCol.Row, rowCol.Col, openDims, openOptionalDims, closedDims, pageDims);
             Console.WriteLine($"row:{rowCol.Row}, {rowCol.Col}, {ff.Count()}");
         }
 
@@ -366,9 +372,12 @@ public class FactsMover : IFactsMover
 
     }
 
-    private List<TemplateSheetFact> SelectFactsByDims(string xbrlCode, string row, string col, List<string> openAllDims, List<string> openOptionalDims, List<string> closedDims)
+    private List<TemplateSheetFact> SelectFactsByDims(string xbrlCode, string row, string col, List<string> openAllDims, List<string> openOptionalDims, List<string> closedDims, List<string> pageDims)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var allFactDims = closedDims.Concat(openAllDims).Select(dim => $"'{DimDom.GetParts(dim).Dim}'");
+        var allFactDimsStr = string.Join(",", allFactDims);
 
         var openMandatoryDims = openAllDims.Where(dim => !openOptionalDims.Any(odim => odim.Contains(dim)));
         var openMandatoryString = string.Join(",", openMandatoryDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
@@ -387,8 +396,7 @@ public class FactsMover : IFactsMover
                 SELECT COUNT(*) AS cnt
                   FROM TemplateSheetFactDim fd
                 WHERE 1=1
-                AND fd.FactId=fact.FactId
-                AND fd.IsExplicit=1
+                AND fd.FactId=fact.FactId                
                 AND fd.Signature IN ({closedString})
                 GROUP BY fd.FactId
                 HAVING COUNT(*)=@closedCount
@@ -400,8 +408,7 @@ public class FactsMover : IFactsMover
                 SELECT COUNT(*) AS cnt
                   FROM TemplateSheetFactDim fd
                 WHERE 1=1
-                AND fd.FactId=fact.FactId
-                AND fd.IsExplicit=0
+                AND fd.FactId=fact.FactId                
                 AND fd.DIM IN ({openMandatoryString})
                 GROUP BY fd.FactId
                 HAVING COUNT(*)=@openMandatoryCount
@@ -413,9 +420,8 @@ public class FactsMover : IFactsMover
                 SELECT 1
                   FROM TemplateSheetFactDim fd
                 WHERE 1=1
-                    AND fd.FactId=fact.FactId
-                    AND fd.IsExplicit=0
-                    AND fd.DIM NOT IN ({openAllString})                                
+                    AND fd.FactId=fact.FactId                    
+                    AND fd.DIM NOT IN ({allFactDimsStr})                                
                 ) 
         ";
 
@@ -458,7 +464,21 @@ public class FactsMover : IFactsMover
             col,
             closedCount,
             openMandatoryCount
-        })?.ToList();
+        })?.ToList() ?? new List<TemplateSheetFact>();
+
+
+        foreach (var fact in facts)
+        {
+            var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
+            var pageFactDims = factdims
+                .Where(dim => pageDims.Contains(dim.Dim))
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
+                .Select(dim => dim.Replace(":", "_"));
+
+            var pageZet = string.Join("__", pageFactDims);
+            fact.Zet = pageZet;
+        }
+
 
         return facts;
 

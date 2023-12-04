@@ -44,8 +44,9 @@ public class MyMainApp : IMyMainApp
             {
                 return res;
             }
+            return 0;
         }
-
+        
         //S.04.01.01
         var filingsHD = new List<string>()
         {
@@ -53,6 +54,8 @@ public class MyMainApp : IMyMainApp
             "S.19.01",            
         };
         var hDDocumentId = 13029;
+
+
         var filingsUkDefence = new List<string>()
         {
 
@@ -65,8 +68,7 @@ public class MyMainApp : IMyMainApp
             "S.17.01",
             "S.23.01",
             "S.28.01",
-        };
-       
+        };       
         var ukDocumentId = 13030;
 
         var res2 = _factsMover.DecorateFactsAndAssignToSheets(hDDocumentId, filingsHD);
