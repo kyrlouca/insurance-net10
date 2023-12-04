@@ -197,7 +197,8 @@ public class FactsMover : IFactsMover
 
 
         var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
-        var xbrl = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
+        var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
+        var xbrl = RegexUtils.GetRegexSingleMatch(new Regex(@"MET\((.*?)\)"),xbrlFull);
 
 
         foreach (var rowColMapping in rowColMappings)
@@ -213,8 +214,10 @@ public class FactsMover : IFactsMover
             var closedDimsx = closedDims.Select(dim => DimDom.GetParts(dim).Signature);
 
 
-            Console.WriteLine(rowColMapping.DYN_TAB_COLUMN_NAME);
-            var ff = SelectFactsByDims(xbrl, "R0100", "C0010", openDims, openOptionalDims, closedDims);
+            
+            var rowCol = RowColUtil.CreateRowCol(rowColMapping.DYN_TAB_COLUMN_NAME);
+            var ff = SelectFactsByDims(xbrl, rowCol.Row, rowCol.Col, openDims, openOptionalDims, closedDims);
+            Console.WriteLine($"row:{rowCol.Row}, {rowCol.Col}, {ff.Count()}");
         }
 
         return tableFacts;
@@ -275,7 +278,7 @@ public class FactsMover : IFactsMover
         var closedStringSQL = string.Join(",", closedDimCodes);
         var openStringSQL = string.Join(",", openDimCodes);
 
-        var rowcolRec = NewUtils.CreateRowColRecord(xbrlMapping.DYN_TAB_COLUMN_NAME);
+        var rowcolRec = RowColUtil.CreateRowCol(xbrlMapping.DYN_TAB_COLUMN_NAME);
         var andRowSQL = rowcolRec.HasOnlyCol ? "" : "AND fact.Row=@ROW  ";
 
 
@@ -457,7 +460,7 @@ public class FactsMover : IFactsMover
             openMandatoryCount
         })?.ToList();
 
-        return new List<TemplateSheetFact>();
+        return facts;
 
     }
 

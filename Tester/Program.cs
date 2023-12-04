@@ -13,7 +13,7 @@ if (match.Success)
 
 var rowcol = "C0023";
 
-var xx = NewUtils.CreateRowColRecord(rowcol);
+var xx = RowColUtil.CreateRowCol(rowcol);
 
 var y = 5;
 

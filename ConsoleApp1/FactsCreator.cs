@@ -665,6 +665,7 @@ VALUES (
 		{
 			count++;
 			var dimDom = Shared.SpecialRoutines.DimDom.GetParts(dim);
+			var isExplicit = !dimDom.IsWild;
 			var factDim = new TemplateSheetFactDim()
 			{
 				FactId = factId,
@@ -672,7 +673,7 @@ VALUES (
 				Dom = dimDom.Dom,
 				DomValue = dimDom.DomValue,
 				Signature = dimDom.Signature,
-				IsExplicit = true
+				IsExplicit = isExplicit
 			};
 			var sqlInsDim = @"
                     INSERT INTO dbo.TemplateSheetFactDim (FactId, Dim, Dom, DomValue, Signature, IsExplicit)

@@ -63,9 +63,9 @@ public class DimDom
 	}
 
 public record RowColRecord(string rowcol, string Row,  string Col, bool IsValid, bool HasOnlyCol);
-public class NewUtils
+public class RowColUtil
 {
-    public static RowColRecord CreateRowColRecord(string RowCol)
+    public static RowColRecord CreateRowCol(string RowCol)
     {
         //R0120C0080=> row=R0120 col=C0080        
         var rg = new Regex(@"^(R\d{4})?(C\d{4})$");
