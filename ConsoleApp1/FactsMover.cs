@@ -158,7 +158,10 @@ public class FactsMover : IFactsMover
         {
             return SelectTableFactsFrom19(table);
         }
-
+        // Or select normal
+        //find distinct page Zets
+        //create sheets
+        //assign the facts (upate the zet too)
         var xbrmps = _SqlFunctions.SelectTableMappings(table.TableID, MappingOrigin.Field).ToList();
 
         foreach (var xbrlMapping in xbrlMappings)
@@ -473,7 +476,8 @@ public class FactsMover : IFactsMover
             var pageFactDims = factdims
                 .Where(dim => pageDims.Contains(dim.Dim))
                 .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
-                .Select(dim => dim.Replace(":", "_"));
+                .Select(dim => dim.Replace(":", "_"))
+                .Order();
 
             var pageZet = string.Join("__", pageFactDims);
             fact.Zet = pageZet;
