@@ -17,6 +17,7 @@ using Shared.DataModels;
 using Microsoft.VisualBasic.FileIO;
 using System.Text.Json.Serialization.Metadata;
 using System.Security.Cryptography;
+using Syncfusion.XlsIO.FormatParser.FormatTokens;
 
 public class FactsMover : IFactsMover
 {
@@ -149,12 +150,18 @@ public class FactsMover : IFactsMover
         // --select the rowcols from the page mappings (distinct) and get the xbrl MET from the table zet,
         // --find any other dims from the page mappings (is_InTable=1) and add the zet mappings 
         // --find the facts
-        List<TemplateSheetFact> tableFacts = new();
-        var tableMappings = _SqlFunctions.SelectTableMappings(table.TableID, MappingOrigin.All);
-        var xbrlMappings = tableMappings.Where(map => map.ORIGIN == "F" && map.DIM_CODE.StartsWith("MET"));
-        var pageZetMappings = tableMappings?.Where(map => map.ORIGIN == "C" && map.DYN_TAB_COLUMN_NAME.StartsWith("PAGE"))?.ToList() ?? new List<MAPPING>();
 
-        if (!xbrlMappings.Any())
+        var tableZetDims = table.ZDimVal?.Split("|", StringSplitOptions.RemoveEmptyEntries);
+        var xbrlDim = tableZetDims?.FirstOrDefault(dim => dim.StartsWith("MET")) ?? "";
+        var xbrl = RegexUtils.GetRegexSingleMatch(new Regex(@"MET\((.*?)\)"), xbrlDim);
+
+
+        List<TemplateSheetFact> tableFacts = new();
+        var allMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.All);
+        var xbrlMappings = allMappings.Where(map => map.ORIGIN == "F" && map.DIM_CODE.StartsWith("MET"));
+
+
+        if (!string.IsNullOrEmpty(xbrl))
         {
             return SelectTableFactsFrom19(table);
         }
@@ -162,7 +169,8 @@ public class FactsMover : IFactsMover
         //find distinct page Zets
         //create sheets
         //assign the facts (upate the zet too)
-        var xbrmps = _SqlFunctions.SelectTableMappings(table.TableID, MappingOrigin.Field).ToList();
+        var pageZetMappings = allMappings?.Where(map => map.ORIGIN == "C" && map.DYN_TAB_COLUMN_NAME.StartsWith("PAGE"))?.ToList() ?? new List<MAPPING>();
+        //var xbrmps = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Field).ToList();
 
         foreach (var xbrlMapping in xbrlMappings)
         {
@@ -181,25 +189,33 @@ public class FactsMover : IFactsMover
     private List<TemplateSheetFact> SelectTableFactsFrom19(MTable table)
     {
         //2. if there are no xbrl mappings (as in table 19.01.01.01) which whould have a rowCol then
-        // --select the rowcols from the page mappings (distinct) and get the xbrl MET from the table zet,
+        //+ table 19.01.01 has the MET xbrl codes in table ZDimVal and not in the mappings
+        //+ table 19.01.01 has 'F' mappings with RowCol like every other table
+        // --select the rowcols from the page mappings (distinct) and not from the Xbrl mappings (origin 'F' and dim_code starting with MET)
         // --find any other dims from the page mappings (is_InTable=1) and then add the zet mappings 
         // --find the facts
         var tableFacts = new List<TemplateSheetFact>();
-        var allMappings = _SqlFunctions.SelectTableMappings(table.TableID, MappingOrigin.All)?.ToList() ?? new List<MAPPING>();
-        var rowColMappings = allMappings
-            .Where(map => map.DYN_TAB_COLUMN_NAME.StartsWith("R"))
+        var allTableFieldMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Field)?.ToList() ?? new List<MAPPING>();
+
+        //pagekeys create new sheets (not all zets do that)        
+
+        var pageDims1 = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
+            .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
+            .ToList();
+
+        var rowColDistinctMappings = allTableFieldMappings
+            .Where(map => map.ORIGIN == "F")
             .GroupBy(map => map.DYN_TAB_COLUMN_NAME)
             .Select(map => map.First())
             .OrderBy(map => map.DYN_TAB_COLUMN_NAME)
             .ToList();
 
-        //pagekeys create new sheets (not all zets do that)
-        var pageDims = allMappings
-            .Where(map => map.IS_PAGE_COLUMN_KEY == 1)
-            .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
-            .ToList();
 
         IEnumerable<string> tableZetDims = table.ZDimVal?
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)
+            ?? Enumerable.Empty<string>();
+
+        IEnumerable<string> tableYDims = table.YDimVal?
             .Split("|", StringSplitOptions.RemoveEmptyEntries)
             ?? Enumerable.Empty<string>();
 
@@ -209,24 +225,31 @@ public class FactsMover : IFactsMover
         var xbrl = RegexUtils.GetRegexSingleMatch(new Regex(@"MET\((.*?)\)"), xbrlFull);
 
 
-        foreach (var rowColMapping in rowColMappings)
+        foreach (var rowColDistinctMapping in rowColDistinctMappings)
         {
-            //
-            var ungrouppedMappingZets = allMappings
-                .Where(map => map.DYN_TAB_COLUMN_NAME == rowColMapping.DYN_TAB_COLUMN_NAME)
-                .Select(map => map.DIM_CODE).ToList() ?? new List<string>();
-            var allZets = new List<string>().Concat(ungrouppedMappingZets)?.Concat(zetDims).ToList() ?? new List<string>();
-            var openDims = allZets.Where(map => map.Contains('*')).ToList() ?? new List<string>();
-            var openOptionalDims = openDims.Where(map => map.Contains('?')).ToList() ?? new List<string>();
-
-            var closedDims = allZets.Where(map => !map.Contains('*')).ToList() ?? new List<string>();
-            var closedDimsx = closedDims.Select(dim => DimDom.GetParts(dim).Signature);
-
+            var rowCol = rowColDistinctMapping.DYN_TAB_COLUMN_NAME.Trim();
+            var rowColObject = RowColUtil.CreateRowCol(rowCol);
+            //get the 'f' minus the met
+            
+            var FFieldMappings1 = _SqlFunctions.SelectRowColMappings(table.TableID, rowCol)
+                .Where(map => map.ORIGIN == "F")
+                .Select(map => map.DIM_CODE);
+            var xbrl1 = !string.IsNullOrEmpty(xbrl) ? FFieldMappings1.FirstOrDefault(map => map.StartsWith("MET")) : xbrl;
+            var fieldMappings1 = FFieldMappings1.Where(map => !map.Contains("MET"));
 
 
-            var rowCol = RowColUtil.CreateRowCol(rowColMapping.DYN_TAB_COLUMN_NAME);
-            var ff = SelectFactsByDims(xbrl, rowCol.Row, rowCol.Col, openDims, openOptionalDims, closedDims, pageDims);
-            Console.WriteLine($"row:{rowCol.Row}, {rowCol.Col}, {ff.Count()}");
+            var allCellMappings = fieldMappings1.Concat(zetDims).Concat(tableYDims).ToList();
+
+            //var openDims = zetDims.Where(map => map.Contains('*')).ToList() ?? new List<string>();
+            //var openOptionalDims = zetDims.Where(map => map.Contains('?')).ToList() ?? new List<string>();
+            //var closedZetDims = zetDims
+            //    .Where(map => !map.Contains('*'))
+            //    .ToList() ?? new List<string>();
+            //var closedDims = fieldMappings1.Concat(closedZetDims).ToList();
+
+
+            var ff = SelectFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, pageDims1);
+            Console.WriteLine($"row:{rowColObject.Row}, {rowColObject.Col}, {ff.Count()}");
         }
 
         return tableFacts;
@@ -375,24 +398,31 @@ public class FactsMover : IFactsMover
 
     }
 
-    private List<TemplateSheetFact> SelectFactsByDims(string xbrlCode, string row, string col, List<string> openAllDims, List<string> openOptionalDims, List<string> closedDims, List<string> pageDims)
+    private List<TemplateSheetFact> SelectFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> pageDims)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var allFactDims = closedDims.Concat(openAllDims).Select(dim => $"'{DimDom.GetParts(dim).Dim}'");
-        var allFactDimsStr = string.Join(",", allFactDims);
 
-        var openMandatoryDims = openAllDims.Where(dim => !openOptionalDims.Any(odim => odim.Contains(dim)));
+        var allFactDimsStr = string.Join(",", allMappings.Select(map => $"'{DimDom.GetParts(map).Dim}'"));
+
+        var openAllDims = allMappings.Where(dim => dim.Contains('*'));
+        var openAllStr = string.Join(",", openAllDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
+        var openAllCount = openAllDims.Count();
+
+        var openMandatoryDims = allMappings.Where(dim => dim.Contains('*') && !dim.Contains('?'));
         var openMandatoryString = string.Join(",", openMandatoryDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
         var openMandatoryCount = openMandatoryDims.Count();
 
-        var closedString = string.Join(",", closedDims.Select(dim => $"'{dim}'"));
+        var hasOpenOptionalDims = allMappings.Any(dim => dim.Contains('*') && dim.Contains('?'))  ;
+        
+
+        var closedDims = allMappings.Where(dim => !dim.Contains('*'));
+        var closedString = string.Join(",", closedDims.Select(dim => $"'{DimDom.GetParts(dim).Signature}'"));
         var closedCount = closedDims.Count();
 
-        var openAllString = string.Join(",", openAllDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
-        var openAllCount = openAllDims.Count();
+        
 
-        var optionalOpenString = string.Join(",", openOptionalDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
+        
 
         string sqlClosed = @$"
             AND EXISTS (                
@@ -418,7 +448,7 @@ public class FactsMover : IFactsMover
                 )
         ";
 
-        var sqlOpenOptional = $@"
+        var sqlNotExist = $@"
             AND NOT EXISTS (
                 SELECT 1
                   FROM TemplateSheetFactDim fd
@@ -453,11 +483,11 @@ public class FactsMover : IFactsMover
             sqlSelect = @$" {sqlSelect} {sqlOpenMandatory} {Environment.NewLine}";
         };
 
-        if (!string.IsNullOrEmpty(optionalOpenString))
+        if (hasOpenOptionalDims)
         {
-            sqlSelect = @$" {sqlSelect} {sqlOpenOptional}";
+            sqlSelect = @$" {sqlSelect} {sqlNotExist}";
         };
-
+        sqlSelect = $"{sqlSelect} order by fact.Row,fact.Col";
 
         var facts = connectionInsurance!.Query<TemplateSheetFact>(sqlSelect, new
         {

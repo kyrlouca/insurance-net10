@@ -17,7 +17,7 @@ public interface ISqlFunctions
 	public void UpdateDocumentStatus(int documentId, string status);
 	public MMember? SelectDomainMember(string domainString);
 	public MTable? SelectTable(string tableCode);
-	public List<MAPPING> SelectTableMappings(int tableId,MappingOrigin mapping);
+	public List<MAPPING> SelectMappings(int tableId,MappingOrigin mapping);
 	public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
 
