@@ -51,7 +51,7 @@ public class MyMainApp : IMyMainApp
         var filingsHD = new List<string>()
         {
 
-            "S.02.01",            
+            "S.06.02",            
         };
         var hDDocumentId = 13029;
 

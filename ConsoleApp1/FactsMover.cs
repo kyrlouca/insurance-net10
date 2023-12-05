@@ -244,7 +244,7 @@ public class FactsMover : IFactsMover
 
             var rowColFacts = SelectFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, pageDims1);
             tableFacts.AddRange(rowColFacts);
-            Console.WriteLine($"row:{rowColObject.Row}, {rowColObject.Col}, {rowColFacts.Count()}");
+            Console.WriteLine($"row:{rowColObject?.Row}, {rowColObject?.Col}, {rowColFacts?.Count()} {rowColFacts?.Last().Row}/{rowColFacts?.Last().Col} max={rowColFacts?.Last().TextValue}");
         }
 
         return tableFacts;
