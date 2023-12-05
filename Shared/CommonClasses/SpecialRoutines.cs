@@ -63,7 +63,7 @@ public class DimDom
 	}
 
 public record RowColRecord(string rowcol, string Row,  string Col, bool IsValid, bool HasOnlyCol);
-public class RowColUtil
+public class DimUtils
 {
     public static RowColRecord CreateRowCol(string RowCol)
     {
@@ -85,6 +85,19 @@ public class RowColUtil
 
     }
 
+    public static string ExtractXbrl(string metXblr)
+    {
+		
+		var rg = new Regex(@"MET\((.*?)\)");        
+        var match = rg.Match(metXblr);
+        if (!match.Success)
+        {
+			return "";
+        }        
+        return match.Groups[1].Value;        
+    }
+
 
 }
+
 

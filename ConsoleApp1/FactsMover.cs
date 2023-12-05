@@ -66,7 +66,8 @@ public class FactsMover : IFactsMover
 
         ModuleTablesFiled = GetFiledModuleTables();
 
-        _testingTableId = 130;
+        //_testingTableId = 130;
+        _testingTableId = 0;
         if (_testingTableId > 0)
         {
             ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
@@ -161,10 +162,9 @@ public class FactsMover : IFactsMover
         var xbrlMappings = allMappings.Where(map => map.ORIGIN == "F" && map.DIM_CODE.StartsWith("MET"));
 
 
-        if (!string.IsNullOrEmpty(xbrl))
-        {
-            return SelectTableFactsFrom19(table);
-        }
+
+        return SelectTableFactsFrom19(table);
+
         // Or select normal
         //find distinct page Zets
         //create sheets
@@ -221,35 +221,30 @@ public class FactsMover : IFactsMover
 
 
         var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
-        var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
-        var xbrl = RegexUtils.GetRegexSingleMatch(new Regex(@"MET\((.*?)\)"), xbrlFull);
+        var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";        
+        var xbrlTable = DimUtils.ExtractXbrl(xbrlFull);
 
 
         foreach (var rowColDistinctMapping in rowColDistinctMappings)
         {
             var rowCol = rowColDistinctMapping.DYN_TAB_COLUMN_NAME.Trim();
-            var rowColObject = RowColUtil.CreateRowCol(rowCol);
+            var rowColObject = DimUtils.CreateRowCol(rowCol);
             //get the 'f' minus the met
-            
-            var FFieldMappings1 = _SqlFunctions.SelectRowColMappings(table.TableID, rowCol)
+
+            var fieldMappings = _SqlFunctions.SelectRowColMappings(table.TableID, rowCol)
                 .Where(map => map.ORIGIN == "F")
                 .Select(map => map.DIM_CODE);
-            var xbrl1 = !string.IsNullOrEmpty(xbrl) ? FFieldMappings1.FirstOrDefault(map => map.StartsWith("MET")) : xbrl;
-            var fieldMappings1 = FFieldMappings1.Where(map => !map.Contains("MET"));
 
 
-            var allCellMappings = fieldMappings1.Concat(zetDims).Concat(tableYDims).ToList();
+            var xbrlDim = fieldMappings?.FirstOrDefault(map => map.StartsWith("MET")) ?? "";
+            var xbrl = string.IsNullOrEmpty(xbrlTable) ? DimUtils.ExtractXbrl(xbrlDim) : xbrlTable;
+            fieldMappings = fieldMappings.Where(map => !map.Contains("MET"));
 
-            //var openDims = zetDims.Where(map => map.Contains('*')).ToList() ?? new List<string>();
-            //var openOptionalDims = zetDims.Where(map => map.Contains('?')).ToList() ?? new List<string>();
-            //var closedZetDims = zetDims
-            //    .Where(map => !map.Contains('*'))
-            //    .ToList() ?? new List<string>();
-            //var closedDims = fieldMappings1.Concat(closedZetDims).ToList();
+            var allCellMappings = fieldMappings.Concat(zetDims).Concat(tableYDims).ToList();
 
-
-            var ff = SelectFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, pageDims1);
-            Console.WriteLine($"row:{rowColObject.Row}, {rowColObject.Col}, {ff.Count()}");
+            var rowColFacts = SelectFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, pageDims1);
+            tableFacts.AddRange(rowColFacts);
+            Console.WriteLine($"row:{rowColObject.Row}, {rowColObject.Col}, {rowColFacts.Count()}");
         }
 
         return tableFacts;
@@ -310,7 +305,7 @@ public class FactsMover : IFactsMover
         var closedStringSQL = string.Join(",", closedDimCodes);
         var openStringSQL = string.Join(",", openDimCodes);
 
-        var rowcolRec = RowColUtil.CreateRowCol(xbrlMapping.DYN_TAB_COLUMN_NAME);
+        var rowcolRec = DimUtils.CreateRowCol(xbrlMapping.DYN_TAB_COLUMN_NAME);
         var andRowSQL = rowcolRec.HasOnlyCol ? "" : "AND fact.Row=@ROW  ";
 
 
@@ -413,16 +408,16 @@ public class FactsMover : IFactsMover
         var openMandatoryString = string.Join(",", openMandatoryDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
         var openMandatoryCount = openMandatoryDims.Count();
 
-        var hasOpenOptionalDims = allMappings.Any(dim => dim.Contains('*') && dim.Contains('?'))  ;
-        
+        var hasOpenOptionalDims = allMappings.Any(dim => dim.Contains('*') && dim.Contains('?'));
+
 
         var closedDims = allMappings.Where(dim => !dim.Contains('*'));
         var closedString = string.Join(",", closedDims.Select(dim => $"'{DimDom.GetParts(dim).Signature}'"));
         var closedCount = closedDims.Count();
 
-        
 
-        
+
+
 
         string sqlClosed = @$"
             AND EXISTS (                
