@@ -207,6 +207,87 @@ public class SqlFunctions : ISqlFunctions
         return result ?? new List<MAPPING>();
     }
 
-    
+
+
+
+    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetTabName, MTable table )
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var SqlInsertTemplateSheet = @"
+                         INSERT INTO TemplateSheetInstance
+                           (
+                            [InstanceId]
+                           ,[UserId]         
+                           ,[TableId]
+                           ,[DateCreated]
+                           ,[SheetCode]                 
+                           ,[sheetTabName]                 
+                           ,[TableCode]                 
+                           ,[YDimVal]
+                           ,[ZDimVal]
+                           ,[status]
+                           ,[Description]
+                           ,[XbrlFilingIndicatorCode]
+                            ,[IsOpenTable]
+
+                            )
+                        VALUES
+                           (
+                            @InstanceId
+                           ,@UserId  
+                           ,@TableId
+                           ,@DateCreated
+                           ,@SheetCode
+                           ,@sheetTabName
+                           ,@TableCode
+                           ,@YDimVal
+                           ,@ZDimVal
+                           ,@status           
+                           ,@Description
+                           ,@XbrlFilingIndicatorCode
+                            ,@IsOpenTable
+                            );        
+                            SELECT CAST(SCOPE_IDENTITY() as int);
+                        ";
+        Console.Write(',');
+
+        var sheet = new TemplateSheetInstance()
+        {
+            InstanceId = documentId,
+            UserId = "KL",
+            TableID = table.TableID,
+            TableCode = table.TableCode,
+            DateCreated = DateTime.Now,
+            SheetCode = sheetCode,
+            SheetTabName = sheetTabName,
+            YDimVal = table.YDimVal,
+            ZDimVal = table.ZDimVal,
+            Status = "LD",
+            Description = RegexUtils.TruncateString(table.TableLabel, 199),
+            XbrlFilingIndicatorCode = table.XbrlFilingIndicatorCode,
+            IsOpenTable = table.IsOpenTable,
+            OpenRowCounter = 0
+        };
+
+        var sheetId = connectionInsurance.QuerySingle<int>(SqlInsertTemplateSheet, sheet);
+        sheet.TemplateSheetId = sheetId;
+
+        //ad the zet dims for each TemplateSheetInstance
+        //var dims = sheetCode.Split("__");
+        //foreach (var factDim in dims)
+        //{
+        //    var zetParts = factDim.Split("#").ToList();
+        //    if (zetParts.Count == 2)
+        //    {
+        //        var sqlZet = @"INSERT INTO SheetZetValue (Dim, Value, TemplateSheetId) VALUES (@dim, @value, @templateSheetId)";
+        //        connectionInsurance.Execute(sqlZet, new { dim = zetParts[0], value = zetParts[1], templateSheetId = sheetId });
+        //        Console.Write(',');
+        //    }
+        //}
+
+        return sheet;
+    }
+
+
 
 }

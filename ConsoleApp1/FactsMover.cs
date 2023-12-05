@@ -51,7 +51,7 @@ public class FactsMover : IFactsMover
         _SqlFunctions = sqlFunctions;
     }
 
-
+    record SheetDataType(int SheetId,string SheetCode, string SheetName );
     public int DecorateFactsAndAssignToSheets(int documentId, List<string> filings)
     {
         _documentId = documentId;
@@ -61,6 +61,7 @@ public class FactsMover : IFactsMover
         _document = _SqlFunctions.SelectDocInstance(documentId);
         _moduleCode = _document.ModuleCode.Trim();
         _moduleId = _document.ModuleId;
+        
         ////////////////////////////////////////////////////////////////////
         Console.WriteLine($"\n Facts processing Started");
 
@@ -72,17 +73,39 @@ public class FactsMover : IFactsMover
         {
             ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
         }
-        var count = 0;
+        
 
         //************************************************************************
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
+            
 
             Console.WriteLine($"\nTable Processed : {table.TableCode}");
-            var tableFacts = SelectTableFacts(table);
-            var sheetNames = tableFacts.GroupBy(fact => fact.Zet);
-            //UpdateSheetTabNames(table.TableCode); //make the tabnames simler to read
+            var tableFacts = SelectTableFactsWorksForAllNew(table);
+            
+            var sheetCodes = tableFacts.GroupBy(fact => fact.Zet).Select(group => group.Key).ToList();
+            var sheetCount = 0;
+            var sheetData = new List<SheetDataType>();
+            
+            //create sheets
+            foreach(var sheetCode in sheetCodes)
+            {
+                var sheetName = $"{table.TableCode}__{sheetCount:D2}";
+                //Create a Sheet
+                var sheet= _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, sheetName, table);
+                sheetData.Add(new SheetDataType(sheet.TemplateSheetId, sheetCode, sheetName));
+                //  var yFactsCounter = CreateYFactsInDb(sheet.TemplateSheetId);
+                sheetCount++;
+            }            
 
+            //assign the facts
+            foreach(var tableFact in tableFacts)
+            {
+                var sh=sheetData.FirstOrDefault(sd=>sd.SheetCode == tableFact.Zet);
+                if (sh is null) continue;
+                var xx = AssignFactToSheet(tableFact.FactId, sh.SheetId);
+            }
+            
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
         }
 
@@ -96,9 +119,6 @@ public class FactsMover : IFactsMover
         //}
 
 
-
-
-
         //****Update the foreign Keys of the cells in open tables
         //UpdateCellsForeignRow(_documentId);
 
@@ -107,6 +127,15 @@ public class FactsMover : IFactsMover
         return 0;
 
     }
+
+    private int AssignFactToSheet(int factId,int templateSheetId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlInsert = "update TemplateSheetFact set TemplateSheetId=@TemplateSheetId where FactId= @FactId";
+        var x = connectionInsurance.Execute(sqlInsert, new { factId, templateSheetId });
+        return x;
+    }
+
 
     private int AssignFactsToTablesNew()
     {
@@ -122,12 +151,12 @@ public class FactsMover : IFactsMover
         {
             //************************************************************************
             Console.WriteLine($"\nTable start : {table.TableCode}");
-            var tableFacts = SelectTableFacts(table);
+            //var tableFacts = SelectTableFacts(table);
 
             //UpdateSheetTabNames(table.TableCode); //make the tabnames simler to read
 
 
-            Console.WriteLine($"\n---facts:{tableFacts.Count}");
+            //Console.WriteLine($"\n---facts:{tableFacts.Count}");
         }
 
         //Create the Y facts fore open tables
@@ -142,28 +171,6 @@ public class FactsMover : IFactsMover
         return count;
     }
 
-    private List<TemplateSheetFact> SelectTableFacts(MTable table)
-    {
-        //1.select a list of row/cols from the xbrl mappings (which have a rowcol)
-        // --then for each rowcol, find the dims from the field mappings, and the zet mappings from the table zet
-        // --find the facts by using the xbrl code and all the mappings above
-        //2. if there are no xbrl facts (as in table 19.01.01.01) which whould have a rowCol then
-        // --select the rowcols from the page mappings (distinct) and get the xbrl MET from the table zet,
-        // --find any other dims from the page mappings (is_InTable=1) and add the zet mappings 
-        // --find the facts
-
-        var tableZetDims = table.ZDimVal?.Split("|", StringSplitOptions.RemoveEmptyEntries);
-        var xbrlDim = tableZetDims?.FirstOrDefault(dim => dim.StartsWith("MET")) ?? "";
-        var xbrl = RegexUtils.GetRegexSingleMatch(new Regex(@"MET\((.*?)\)"), xbrlDim);
-
-
-        List<TemplateSheetFact> tableFacts = new();
-        var allMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.All);
-        var xbrlMappings = allMappings.Where(map => map.ORIGIN == "F" && map.DIM_CODE.StartsWith("MET"));
-
-        return SelectTableFactsWorksForAllNew(table);
-        
-    }
 
     private List<TemplateSheetFact> SelectTableFactsWorksForAllNew(MTable table)
     {
