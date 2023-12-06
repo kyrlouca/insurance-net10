@@ -21,5 +21,5 @@ public interface ISqlFunctions
 	public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
 	public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetTabName, MTable table);
-
+	public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact);
 }

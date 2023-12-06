@@ -8,6 +8,8 @@ using Shared.SpecialRoutines;
 using Shared.GeneralUtils;
 using System.Reflection;
 using Serilog;
+using System.Data;
+
 public class SqlFunctions : ISqlFunctions
 {
     readonly ParameterData _parameterData;
@@ -149,7 +151,7 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-   
+
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mappingOrigin)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -183,7 +185,7 @@ public class SqlFunctions : ISqlFunctions
 
         var result = connectionEiopa!.Query<MAPPING>(sqlTable, new { tableId })?.ToList();
 
-     
+
         return result ?? new List<MAPPING>();
     }
 
@@ -210,7 +212,7 @@ public class SqlFunctions : ISqlFunctions
 
 
 
-    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetTabName, MTable table )
+    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetTabName, MTable table)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var SqlInsertTemplateSheet = @"
@@ -288,6 +290,24 @@ public class SqlFunctions : ISqlFunctions
         return sheet;
     }
 
-
+    public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        if(fact is null )
+        {
+            return null;
+        }
+        var sqlInsertFact = @"
+             INSERT INTO dbo.TemplateSheetFact 
+                (InstanceId ,templateSheetId Row, Col, Zet, CellID, FieldOrigin, TableID, DataPointSignature, Unit, Decimals, NumericValue, BooleanValue, DateTimeValue, TextValue, DPS, IsRowKey, IsShaded, XBRLCode, DataType, DataPointSignatureFilled,  InternalRow, internalCol, DataTypeUse, IsEmpty, IsConversionError, ZetValues, OpenRowSignature, CurrencyDim,  metricId, contextId,  RowSignature  )
+             VALUES 
+                (@InstanceId,@templateSheetId,  @Row, @Col, @Zet, @CellID, @FieldOrigin, @TableID, @DataPointSignature, @Unit, @Decimals, @NumericValue, @BooleanValue, @DateTimeValue, @TextValue, @DPS, @IsRowKey, @IsShaded, @XBRLCode, @DataType, @DataPointSignatureFilled,  @InternalRow, @internalCol, @DataTypeUse, @IsEmpty, @IsConversionError, @ZetValues, @OpenRowSignature, @CurrencyDim,  @metricId,  @contextId,  @RowSignature );
+             SELECT CAST(SCOPE_IDENTITY() as int);
+             ";        
+        var factId = connectionInsurance.QuerySingle<int>(sqlInsertFact);
+        if (factId == 0) { return null; }
+        fact.FactId = factId;
+        return fact;
+    }
 
 }

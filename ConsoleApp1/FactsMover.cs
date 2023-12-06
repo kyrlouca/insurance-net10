@@ -51,7 +51,7 @@ public class FactsMover : IFactsMover
         _SqlFunctions = sqlFunctions;
     }
 
-    record SheetDataType(int SheetId,string SheetCode, string SheetName );
+    record SheetDataType(int TempleateSheetId, string SheetCode, string SheetName);
     public int DecorateFactsAndAssignToSheets(int documentId, List<string> filings)
     {
         _documentId = documentId;
@@ -61,7 +61,7 @@ public class FactsMover : IFactsMover
         _document = _SqlFunctions.SelectDocInstance(documentId);
         _moduleCode = _document.ModuleCode.Trim();
         _moduleId = _document.ModuleId;
-        
+
         ////////////////////////////////////////////////////////////////////
         Console.WriteLine($"\n Facts processing Started");
 
@@ -73,39 +73,49 @@ public class FactsMover : IFactsMover
         {
             ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
         }
-        
+
 
         //************************************************************************
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
-            
+
 
             Console.WriteLine($"\nTable Processed : {table.TableCode}");
             var tableFacts = SelectTableFactsWorksForAllNew(table);
-            
+
             var sheetCodes = tableFacts.GroupBy(fact => fact.Zet).Select(group => group.Key).ToList();
             var sheetCount = 0;
             var sheetData = new List<SheetDataType>();
-            
+
             //create sheets
-            foreach(var sheetCode in sheetCodes)
+            foreach (var sheetCode in sheetCodes)
             {
                 var sheetName = $"{table.TableCode}__{sheetCount:D2}";
                 //Create a Sheet
-                var sheet= _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, sheetName, table);
+                var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, sheetName, table);
                 sheetData.Add(new SheetDataType(sheet.TemplateSheetId, sheetCode, sheetName));
                 //  var yFactsCounter = CreateYFactsInDb(sheet.TemplateSheetId);
                 sheetCount++;
-            }            
+            }
 
             //assign the facts
-            foreach(var tableFact in tableFacts)
+            foreach (var tableFact in tableFacts)
             {
-                var sh=sheetData.FirstOrDefault(sd=>sd.SheetCode == tableFact.Zet);
-                if (sh is null) continue;
-                var xx = AssignFactToSheet(tableFact.FactId, sh.SheetId);
+                var sh = sheetData.FirstOrDefault(sd => sd.SheetCode == tableFact.Zet);
+                if (sh is null)
+                {
+                    continue;
+                };
+                //if the fact is alreate assigned to antoher shhet, create a clone fact
+                var cnt = AssignFactToSheet(tableFact.FactId, sh.TempleateSheetId);
+                if (cnt == 0)
+                {
+                    Console.WriteLine($"+ FactId{tableFact.FactId}");
+                    tableFact.TemplateSheetId = sh.TempleateSheetId;
+                    var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
+                }
             }
-            
+
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
         }
 
@@ -128,13 +138,14 @@ public class FactsMover : IFactsMover
 
     }
 
-    private int AssignFactToSheet(int factId,int templateSheetId)
+    private int AssignFactToSheet(int factId, int templateSheetId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlInsert = "update TemplateSheetFact set TemplateSheetId=@TemplateSheetId where FactId= @FactId";
+        var sqlInsert = "update TemplateSheetFact set TemplateSheetId=@TemplateSheetId where FactId= @FactId and TemplateSheetId is null ";
         var x = connectionInsurance.Execute(sqlInsert, new { factId, templateSheetId });
         return x;
     }
+
 
 
     private int AssignFactsToTablesNew()
@@ -207,7 +218,7 @@ public class FactsMover : IFactsMover
 
 
         var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
-        var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";        
+        var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
         var xbrlTable = DimUtils.ExtractXbrl(xbrlFull);
 
 
@@ -235,10 +246,10 @@ public class FactsMover : IFactsMover
             {
                 Console.Write($"row:{rowColObject?.Row}, {rowColObject?.Col}, {rowColFacts?.Count()} ");
             }
-            
+
         }
 
-        return tableFacts;
+        return tableFacts ?? new List<TemplateSheetFact>();
     }
 
 
@@ -362,7 +373,7 @@ public class FactsMover : IFactsMover
 
     }
 
-    
+
 
     private int AssignFactsToTableDb(MTable table)
     {

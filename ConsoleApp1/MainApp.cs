@@ -31,30 +31,33 @@ public class MyMainApp : IMyMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
+        var _documentId = 13032;
+        var filingsSubmitted = new List<string>()
+        {
+            "S.06.02",
+        };
 
         if (1 == 2)
         {
-            var (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
+            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)
             {
                 return 1;
             }
-            var res = _factsProcessor.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
+
+        }
+
+        if (1 == 1)
+        {
+            var res = _factsMover.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
             if (res != 0)
             {
                 return res;
             }
             return 0;
         }
+
         
-        //S.04.01.01
-        var filingsHD = new List<string>()
-        {
-
-            "S.21.01",            
-        };
-        var hDDocumentId = 13029;
-
 
         var filingsUkDefence = new List<string>()
         {
@@ -68,15 +71,10 @@ public class MyMainApp : IMyMainApp
             "S.17.01",
             "S.23.01",
             "S.28.01",
-        };       
-        var ukDocumentId = 13030;
+        };
+     
 
-        var res2 = _factsMover.DecorateFactsAndAssignToSheets(hDDocumentId, filingsHD);
-        if (res2 != 0)
-        {
-            return res2;
-        }
-
+        
 
         //_SqlFunctions.UpdateDocumentStatus(_documentId, "L");
 
