@@ -273,20 +273,7 @@ public class SqlFunctions : ISqlFunctions
 
         var sheetId = connectionInsurance.QuerySingle<int>(SqlInsertTemplateSheet, sheet);
         sheet.TemplateSheetId = sheetId;
-
-        //ad the zet dims for each TemplateSheetInstance
-        //var dims = sheetCode.Split("__");
-        //foreach (var factDim in dims)
-        //{
-        //    var zetParts = factDim.Split("#").ToList();
-        //    if (zetParts.Count == 2)
-        //    {
-        //        var sqlZet = @"INSERT INTO SheetZetValue (Dim, Value, TemplateSheetId) VALUES (@dim, @value, @templateSheetId)";
-        //        connectionInsurance.Execute(sqlZet, new { dim = zetParts[0], value = zetParts[1], templateSheetId = sheetId });
-        //        Console.Write(',');
-        //    }
-        //}
-
+        
         return sheet;
     }
 
