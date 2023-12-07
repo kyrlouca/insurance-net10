@@ -51,7 +51,7 @@ public class FactsMover : IFactsMover
         _SqlFunctions = sqlFunctions;
     }
 
-    record SheetDataType(int TempleateSheetId, string SheetCode, string SheetName);
+    record SheetDataType(int TemplateSheetId, string SheetCode, string SheetName);
     public int DecorateFactsAndAssignToSheets(int documentId, List<string> filings)
     {
         _documentId = documentId;
@@ -109,18 +109,20 @@ public class FactsMover : IFactsMover
                 };
                 //******* Assign the facts to the sheet
                 //if the fact is alreate assigned to antoher shhet, create a clone fact
-                var cnt = AssignFactToSheet(tableFact.FactId, sh.TempleateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature);
+                var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature);
                 if (cnt == 0)
                 {
                     Console.WriteLine($"+ FactId{tableFact.FactId}");
-                    tableFact.TemplateSheetId = sh.TempleateSheetId;
+                    tableFact.TemplateSheetId = sh.TemplateSheetId;
                     var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
                 }
             }
+            
+            UpdateRowsForOpenTables(sheetData, tableFacts);
 
-            if(table.IsOpenTable)
+            if (table.IsOpenTable)
             {
-                UpdateRowsForOpenTables(sheetData, tableFacts);
+             
             }
             
 
@@ -157,13 +159,13 @@ public class FactsMover : IFactsMover
                 GROUP BY fact.RowSignature;
             ";
 
-        foreach(var sheetInfo in sheetsInfo)
+        foreach( var sheetInfo in sheetsInfo)
         {
-            var distinctRowSignatures = connectionInsurance.Query<string>(sqlDistinct, new { _documentId, sheetInfo.TempleateSheetId});
+            var distinctRowSignatures = connectionInsurance.Query<string>(sqlDistinct, new { _documentId, sheetInfo.TemplateSheetId});
             foreach(var distinctRowSignature in distinctRowSignatures)
             {
                 var sqlRow = @"update TemplateSheetFact set Row= @row where TemplateSheetId= @TemplateSheetId AND RowSignature = @RowSignature;";
-                var xx = connectionInsurance.Execute(sqlRow, new { templateSheetId = sheetInfo.TempleateSheetId, rowSignature = distinctRowSignature });
+                var xx = connectionInsurance.Execute(sqlRow, new { templateSheetId = sheetInfo.TemplateSheetId, rowSignature = distinctRowSignature });
             }
 
         }
