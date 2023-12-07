@@ -223,6 +223,8 @@ public class FactsCreator : IFactsCreator
 				}
 				var sqlUpdateContext = @"update Context set Signature=@Signature where ContextId=@ContextId;";
 
+				//todo We do not need to update the signature since we are finding the facts using fact dims
+				//however, we sould create fact dims directly
 				contextDb.BuildSignature();
 				connectionInsurance.Execute(sqlUpdateContext, new { contextDb.Signature, contextId });
 				Console.Write($"^");

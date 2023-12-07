@@ -80,14 +80,15 @@ public class FactsMover : IFactsMover
         {
 
 
-            Console.WriteLine($"\nTable Processed : {table.TableCode}");
+            Console.WriteLine($"\nTable beign Processed : {table.TableCode}");
+            //*********** Select the facts
             var tableFacts = SelectTableFactsWorksForAllNew(table);
 
             var sheetCodes = tableFacts.GroupBy(fact => fact.Zet).Select(group => group.Key).ToList();
             var sheetCount = 0;
             var sheetData = new List<SheetDataType>();
 
-            //create sheets
+            //create sheets for the tableCode (more than one)
             foreach (var sheetCode in sheetCodes)
             {
                 var sheetName = $"{table.TableCode}__{sheetCount:D2}";
@@ -98,7 +99,7 @@ public class FactsMover : IFactsMover
                 sheetCount++;
             }
 
-            //assign the facts
+            //assign the facts to each sheet
             foreach (var tableFact in tableFacts)
             {
                 var sh = sheetData.FirstOrDefault(sd => sd.SheetCode == tableFact.Zet);
@@ -106,8 +107,9 @@ public class FactsMover : IFactsMover
                 {
                     continue;
                 };
+                //******* Assign the facts to the sheet
                 //if the fact is alreate assigned to antoher shhet, create a clone fact
-                var cnt = AssignFactToSheet(tableFact.FactId, sh.TempleateSheetId);
+                var cnt = AssignFactToSheet(tableFact.FactId, sh.TempleateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature);
                 if (cnt == 0)
                 {
                     Console.WriteLine($"+ FactId{tableFact.FactId}");
@@ -115,6 +117,12 @@ public class FactsMover : IFactsMover
                     var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
                 }
             }
+
+            if(table.IsOpenTable)
+            {
+                UpdateRowsForOpenTables(sheetData, tableFacts);
+            }
+            
 
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
         }
@@ -138,11 +146,42 @@ public class FactsMover : IFactsMover
 
     }
 
-    private int AssignFactToSheet(int factId, int templateSheetId)
+    private int UpdateRowsForOpenTables(List<SheetDataType> sheetsInfo,List<TemplateSheetFact> facts)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlInsert = "update TemplateSheetFact set TemplateSheetId=@TemplateSheetId where FactId= @FactId and TemplateSheetId is null ";
-        var x = connectionInsurance.Execute(sqlInsert, new { factId, templateSheetId });
+        var sqlDistinct = @"
+            SELECT DISTINCT fact.RowSignature
+                FROM TemplateSheetFact fact
+                WHERE
+                  fact.InstanceId= @_documentId AND fact.TemplateSheetId= @templateSheetId
+                GROUP BY fact.RowSignature;
+            ";
+
+        foreach(var sheetInfo in sheetsInfo)
+        {
+            var distinctRowSignatures = connectionInsurance.Query<string>(sqlDistinct, new { _documentId, sheetInfo.TempleateSheetId});
+            foreach(var distinctRowSignature in distinctRowSignatures)
+            {
+                var sqlRow = @"update TemplateSheetFact set Row= @row where TemplateSheetId= @TemplateSheetId AND RowSignature = @RowSignature;";
+                var xx = connectionInsurance.Execute(sqlRow, new { templateSheetId = sheetInfo.TempleateSheetId, rowSignature = distinctRowSignature });
+            }
+
+        }
+
+        return 0;
+        
+    }
+    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlInsert = @"
+            UPDATE TemplateSheetFact
+            SET 
+              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature
+            WHERE 
+              FactId= @FactId AND TemplateSheetId IS NULL 
+            ";
+        var x = connectionInsurance.Execute(sqlInsert, new { factId, templateSheetId, row, col, rowSignature });
         return x;
     }
 
@@ -212,14 +251,16 @@ public class FactsMover : IFactsMover
             .Split("|", StringSplitOptions.RemoveEmptyEntries)
             ?? Enumerable.Empty<string>();
 
-        IEnumerable<string> tableYDims = table.YDimVal?
+        List<string> tableYDims = table.YDimVal?
             .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            ?? Enumerable.Empty<string>();
+            .ToList() ?? new List<string>();
+
 
 
         var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
         var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
         var xbrlTable = DimUtils.ExtractXbrl(xbrlFull);
+
 
 
         foreach (var rowColDistinctMapping in rowColDistinctMappings)
@@ -239,7 +280,9 @@ public class FactsMover : IFactsMover
 
             var allCellMappings = fieldMappings.Concat(zetDims).Concat(tableYDims).ToList();
 
-            var rowColFacts = SelectFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, pageDims1);
+            //******************************************************************************
+            //*** find the facts and update there col, row, and ysignature
+            var rowColFacts = SelectFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1);
             tableFacts.AddRange(rowColFacts);
             Console.WriteLine($"row:{rowColObject?.Row}, {rowColObject?.Col}");
             if (tableFacts.Count() > 0)
@@ -253,7 +296,7 @@ public class FactsMover : IFactsMover
     }
 
 
-    private List<TemplateSheetFact> SelectFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> pageDims)
+    private List<TemplateSheetFact> SelectFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
@@ -346,15 +389,18 @@ public class FactsMover : IFactsMover
         {
             _documentId,
             xbrlCode,
-            row,
-            col,
             closedCount,
             openMandatoryCount
         })?.ToList() ?? new List<TemplateSheetFact>();
 
+        //todo update row and column, 
+        //remove row col from select
+        //what about row ??
 
+        var yMappingsDims = yMappings.Select(map => DimDom.GetParts(map).Dim);
         foreach (var fact in facts)
         {
+
             var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
             var pageFactDims = factdims
                 .Where(dim => pageDims.Contains(dim.Dim))
@@ -362,8 +408,18 @@ public class FactsMover : IFactsMover
                 .Select(dim => dim.Replace(":", "_"))
                 .Order();
 
+
+            var yFactDims = factdims
+                .Where(dim => yMappingsDims.Contains(dim.Dim))
+                .Select(dim => DimDom.GetParts(dim.Signature).Signature)
+                .Order();
+
             var pageZet = string.Join("__", pageFactDims);
+            var yRowSignature = string.Join("|", yFactDims);
+            fact.Row = row;//open tables will be updated later based on their y dims
+            fact.Col = col;
             fact.Zet = pageZet;
+            fact.RowSignature = yRowSignature;
         }
 
 
