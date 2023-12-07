@@ -319,9 +319,7 @@ public class FactsMover : IFactsMover
             SELECT fact.*
             FROM TemplateSheetFact fact                 
             WHERE 1=1              
-              AND fact.XBRLCode = @XBRLCode
-              {andRowSQL}
-              AND fact.Col=@COL
+              AND fact.XBRLCode = @XBRLCode              
               AND fact.InstanceId=@_documentId
             ";
 

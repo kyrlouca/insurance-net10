@@ -164,13 +164,12 @@ public class FactsCreator : IFactsCreator
 		void AddContexts()
 		{
 			using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+            //Each contextElement has contextLines (typed and implicit)
+            //I save context but do not  context-lines.
+            // context has a signature wich concatenates  and all the context lines (explicit and typed)
+            //typed context lines are converted same format as explicit (the is explicit/type info is lost)
 
-
-
-
-			//ADD all the context elements 
-			//Each contextElement has contextLines (typed and implicit)
-			var contextElements = RootNode.Elements(xbrli + "context");
+            var contextElements = RootNode.Elements(xbrli + "context");
 			var i = 0;
 			foreach (var contextElement in contextElements)
 			{
