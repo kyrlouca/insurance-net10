@@ -5,6 +5,7 @@ public class TemplateSheetInstance
     public int TemplateSheetId { get; set; }
     public int InstanceId { get; set; }
     public string SheetCode { get; set; }
+    public string SheetCodeZet { get; set; }
     public string SheetTabName { get; set; }
     public string TableCode { get; set; }        
     public int TableID { get; set; }

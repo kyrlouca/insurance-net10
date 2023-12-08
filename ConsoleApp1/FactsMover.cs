@@ -48,7 +48,7 @@ public class FactsMover : IFactsMover
         _SqlFunctions = sqlFunctions;
     }
 
-    record SheetInfoType(int tableId, int TemplateSheetId, string SheetCode, string SheetName, string YDims);
+    record SheetInfoType(int tableId, int TemplateSheetId, string SheetCode, string SheetCodeZet, string SheetName, string YDims);
     public int DecorateFactsAndAssignToSheets(int documentId, List<string> filings)
     {
         _documentId = documentId;
@@ -81,7 +81,14 @@ public class FactsMover : IFactsMover
             //*********** Select the facts for a template 
             var tableFacts = SelectFactsForTempateTable(table);
             //the fact.zet has a unique combination of fact zets
-            var sheetZetCodes = tableFacts.GroupBy(fact => fact.Zet).Select(group => group.Key).ToList();
+
+
+
+            List<string> sheetZetCodes = tableFacts
+                    .GroupBy(fact => fact.Zet ?? "")
+                    .Select(group => group.Key).ToList();
+
+
 
             //*********** Create one  sheet per zet group 
             List<SheetInfoType> sheetInfo = CreateSheetForEachZet(table, sheetZetCodes);
@@ -116,7 +123,7 @@ public class FactsMover : IFactsMover
         //assign the facts to each sheet
         foreach (var tableFact in tableFacts)
         {
-            var sh = sheetInfo.FirstOrDefault(sd => sd.SheetCode == tableFact.Zet);
+            var sh = sheetInfo.FirstOrDefault(sd => sd.SheetCodeZet == tableFact.Zet);
             if (sh is null)
             {
                 continue;
@@ -147,13 +154,14 @@ public class FactsMover : IFactsMover
                     ? table.TableCode
                     : $"{table.TableCode}__{sheetZetCode}";
 
-            var sheetName = $"{table.TableCode}__{sheetCount:D2}";
+            //var sheetName = $"{table.TableCode}__{sheetCount:D2}";
+            var sheetName = sheetCode;
             table.IsOpenTable = table.YDimVal.Contains('*');
             //************************************************
             //Create a Sheet
-            var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, sheetName, table);
-            Console.WriteLine($"Create SheetCode: {sheetZetCode} {sheetName}");
-            sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetZetCode, sheetName, sheet.YDimVal));
+            var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, sheetZetCode, sheetName, table);
+            Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
+            sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, sheetZetCode, sheetName, sheet.YDimVal));
 
             sheetCount++;
         }
@@ -174,6 +182,17 @@ public class FactsMover : IFactsMover
             .Split("|", StringSplitOptions.RemoveEmptyEntries)
             .ToList() ?? new List<string>();
 
+            foreach (var ydim in tableYDims)
+            {
+                var x = SelectMapping(sheetInfo.tableId, ydim);
+            }
+
+            var yTableMappings1 = tableYDims
+                        .Select(ydim => SelectMapping(sheetInfo.tableId, ydim));
+
+
+
+
             var yTableMappings = tableYDims
                         .Select(ydim => SelectMapping(sheetInfo.tableId, ydim))
                         .Where(mappping => mappping != null) ?? new List<MAPPING>();
@@ -182,14 +201,18 @@ public class FactsMover : IFactsMover
             var sqlDistinct = @"select min(fact.Row)as minRow, max(fact.Row)as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
             var sheetRows = connectionInsurance.QueryFirstOrDefault<(string minRow, string maxRow)>(sqlDistinct, new { _documentId, sheetInfo.TemplateSheetId });
 
-            var minRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex("R(/d{3})"), sheetRows.minRow ?? "0"));
-            var maxRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex("R(/d{3})"), sheetRows.maxRow ?? "0"));
+            var minRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.minRow ?? "0"));
+            var maxRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.maxRow ?? "0"));
+            if (minRow == 0 || maxRow == 0)
+            {
+                return 0;
+            }
             foreach (var rowInt in Enumerable.Range(minRow, maxRow))
             {
                 CreateYFactsForRow(sheetInfo, rowInt, yTableMappings);
             }
         }
-        return 0;
+        return 1;
     }
 
     private void CreateYFactsForRow(SheetInfoType sheetInfo, int rowInt, IEnumerable<MAPPING> yTableMappings)
@@ -202,9 +225,17 @@ public class FactsMover : IFactsMover
         }
         foreach (var yMapping in yTableMappings)
         {
-            var factDim = _SqlFunctions.SelectFactDims(rowFact.FactId).Where(fd => fd.Dim == yMapping.DIM_CODE);
+            var factDimsAll = _SqlFunctions.SelectFactDims(rowFact.FactId);
+            var factDim = factDimsAll.FirstOrDefault(fd => fd.Dim == DimDom.GetParts(yMapping.DIM_CODE).Dim);
+            if(factDim is null)
+            {
+                return;
+            }
             var newFact = rowFact.Adapt<TemplateSheetFact>();
-            newFact.Col = yMapping.DIM_CODE;
+            newFact.Col = yMapping.DYN_TAB_COLUMN_NAME;
+            //DimDom.GetParts(factDim?.DomValue??"").DomValue;
+            newFact.TextValue = factDim.DomValue;
+            var x= _SqlFunctions.CreateTemplateSheetFact(newFact);
 
 
         }
@@ -216,21 +247,22 @@ public class FactsMover : IFactsMover
     private MAPPING? SelectMapping(int tableId, string dimCode)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        //var yDimMapping = connectionEiopa.QueryFirstOrDefault<MAPPING>(sqlFindMapping, new { tableId = sheet.TableID, dimCode = $"s2c_dim:{yTableDimDom.Dim}%" });
-        var sqlDim = "select * from MAPPING map where map.TABLE_VERSION_ID= @tableId and map.DIM_CODE like 's2c_dim:@dimCode%'";
-        var dimMapping = connectionEiopa.QueryFirstOrDefault<MAPPING>(sqlDim, new { tableId, dimCode });
+        var dimx = DimDom.GetParts(dimCode).Dim;
+        var dimCodeLike = $"s2c_dim:{dimx}%";
+        var sqlDim = "select * from MAPPING map where map.TABLE_VERSION_ID= @tableId and map.DIM_CODE like @dimCodeLike";
+        var dimMapping = connectionEiopa.QueryFirstOrDefault<MAPPING>(sqlDim, new { tableId, dimCodeLike });
         return dimMapping;
     }
 
     private TemplateSheetFact? SelectRowFact(int templateSheetId, string row)
     {
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlDim = @"select * from TemplateSheetFact fact where 
                         fact.TemplateSheetId= @TemplateSheetId 
                         and fact.Row=@row 
-                        and not (fact.TextValue is null Or trim(fact.TextValue)='')            
+                        and not (fact.TextValue is null Or fact.TextValue='')            
             ";
-        var fact = connectionEiopa.QueryFirstOrDefault<TemplateSheetFact>(sqlDim, new { templateSheetId, row });
+        var fact = connectionInsurance.QueryFirstOrDefault<TemplateSheetFact>(sqlDim, new { templateSheetId, row });
         return fact;
     }
 
@@ -346,8 +378,8 @@ public class FactsMover : IFactsMover
             Console.WriteLine("");
 
         }
-
-        return tableFacts ?? new List<TemplateSheetFact>();
+        var res = tableFacts ?? new List<TemplateSheetFact>();
+        return res;
     }
     private List<TemplateSheetFact> SelectFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims)
     {

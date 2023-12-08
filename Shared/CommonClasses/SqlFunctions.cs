@@ -212,7 +212,7 @@ public class SqlFunctions : ISqlFunctions
 
 
 
-    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetTabName, MTable table)
+    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, MTable table)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var SqlInsertTemplateSheet = @"
@@ -223,6 +223,7 @@ public class SqlFunctions : ISqlFunctions
                            ,[TableId]
                            ,[DateCreated]
                            ,[SheetCode]                 
+                           ,[SheetCodeZet]                 
                            ,[sheetTabName]                 
                            ,[TableCode]                 
                            ,[YDimVal]
@@ -240,6 +241,7 @@ public class SqlFunctions : ISqlFunctions
                            ,@TableId
                            ,@DateCreated
                            ,@SheetCode
+                           ,@SheetCodeZet
                            ,@sheetTabName
                            ,@TableCode
                            ,@YDimVal
@@ -285,14 +287,21 @@ public class SqlFunctions : ISqlFunctions
             return null;
         }
         var sqlInsertFact = @"
-             INSERT INTO dbo.TemplateSheetFact 
-                (InstanceId ,templateSheetId Row, Col, Zet, CellID, FieldOrigin, TableID, DataPointSignature, Unit, Decimals, NumericValue, BooleanValue, DateTimeValue, TextValue, DPS, IsRowKey, IsShaded, XBRLCode, DataType, DataPointSignatureFilled,  InternalRow, internalCol, DataTypeUse, IsEmpty, IsConversionError, ZetValues, OpenRowSignature, CurrencyDim,  metricId, contextId,  RowSignature  )
+             INSERT INTO TemplateSheetFact 
+                (InstanceId ,templateSheetId, Row, Col, Zet, CellID, FieldOrigin, TableID, DataPointSignature, Unit, Decimals, NumericValue, BooleanValue, DateTimeValue, TextValue, DPS, IsRowKey, IsShaded, XBRLCode, DataType, DataPointSignatureFilled,  InternalRow, internalCol, DataTypeUse, IsEmpty, IsConversionError, ZetValues, OpenRowSignature, CurrencyDim,  metricId, contextId,  RowSignature  )
              VALUES 
                 (@InstanceId,@templateSheetId,  @Row, @Col, @Zet, @CellID, @FieldOrigin, @TableID, @DataPointSignature, @Unit, @Decimals, @NumericValue, @BooleanValue, @DateTimeValue, @TextValue, @DPS, @IsRowKey, @IsShaded, @XBRLCode, @DataType, @DataPointSignatureFilled,  @InternalRow, @internalCol, @DataTypeUse, @IsEmpty, @IsConversionError, @ZetValues, @OpenRowSignature, @CurrencyDim,  @metricId,  @contextId,  @RowSignature );
-             SELECT CAST(SCOPE_IDENTITY() as int);
-             ";        
-        var factId = connectionInsurance.QuerySingle<int>(sqlInsertFact);
-        if (factId == 0) { return null; }
+             SELECT CAST(SCOPE_IDENTITY() as int);            
+            ";
+        int factId = 0;
+        try
+        {
+            factId = connectionInsurance.QuerySingle<int>(sqlInsertFact,fact);
+        }
+        catch( Exception ex ) {
+            Log.Error($"error creating Fact :{fact.Row} col:{fact.Col} - {ex.Message}");
+            return null;
+        }
         fact.FactId = factId;
         return fact;
     }
