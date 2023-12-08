@@ -83,12 +83,9 @@ public class FactsMover : IFactsMover
             //the fact.zet has a unique combination of fact zets
 
 
-
             List<string> sheetZetCodes = tableFacts
                     .GroupBy(fact => fact.Zet ?? "")
                     .Select(group => group.Key).ToList();
-
-
 
             //*********** Create one  sheet per zet group 
             List<SheetInfoType> sheetInfo = CreateSheetForEachZet(table, sheetZetCodes);
@@ -134,7 +131,7 @@ public class FactsMover : IFactsMover
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature);
             if (cnt == 0)
             {
-                Console.WriteLine($"+ FactId{tableFact.FactId}");
+                Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
                 tableFact.TemplateSheetId = sh.TemplateSheetId;
                 var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
             }
