@@ -619,7 +619,7 @@ public class FactsMover : IFactsMover
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
         var sqlKyrTables = @"select * from mTableKyrKeys";
-        var kyrTables = connectionLocal.Query<MTableKyrKeys>(sqlKyrTables);
+        var kyrTables = connectionEiopa.Query<MTableKyrKeys>(sqlKyrTables);//S.06.02.01.01       
         kyrTables = kyrTables.Where(kt => kt.TableCode == "S.06.02.01.01");
         foreach (var kyrTable in kyrTables)
         {
