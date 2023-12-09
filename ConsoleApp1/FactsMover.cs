@@ -15,6 +15,8 @@ using Shared.SpecialRoutines;
 using Shared.HostRoutines;
 using Shared.DataModels;
 using Mapster;
+using System.Security.AccessControl;
+using Syncfusion.XlsIO.Parser.Biff_Records;
 
 public class FactsMover : IFactsMover
 {
@@ -76,40 +78,35 @@ public class FactsMover : IFactsMover
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
 
-
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
             //*********** Select the facts for a template 
             var tableFacts = SelectFactsForTempateTable(table);
-            //the fact.zet has a unique combination of fact zets
+            Console.WriteLine($"\n---facts:{tableFacts.Count}");
 
-
+            //*********** Create one  sheet per zet group 
+            //todo check if already exists !!
             List<string> sheetZetCodes = tableFacts
                     .GroupBy(fact => fact.Zet ?? "")
                     .Select(group => group.Key).ToList();
-
-            //*********** Create one  sheet per zet group 
             List<SheetInfoType> sheetInfo = CreateSheetForEachZet(table, sheetZetCodes);
 
-
+            //*********** Assign facts to sheets
             AssignFactsToSheet(tableFacts, sheetInfo);
 
             //*********** update rows for Open tables 
             UpdateRowsForOpenTables(sheetInfo, tableFacts);
 
-            //*********** Create Y facts  
-            CreateYFactsForOpenTables(sheetInfo);
-
+            //*********** Create Y facts             
             if (table.IsOpenTable)
             {
-
+                CreateYFactsForOpenTables(sheetInfo);
             }
 
-
-            Console.WriteLine($"\n---facts:{tableFacts.Count}");
+            //*********** update Foreign Keys (S.06.02.01.01)
+            UpdateForeignKeysOfChildTablesNN();
         }
 
-
-        //Console.WriteLine($"\ndocId: {_documentId} -- sheets: facts:{countFacts}");
+        Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
         return 0;
 
     }
@@ -224,15 +221,15 @@ public class FactsMover : IFactsMover
         {
             var factDimsAll = _SqlFunctions.SelectFactDims(rowFact.FactId);
             var factDim = factDimsAll.FirstOrDefault(fd => fd.Dim == DimDom.GetParts(yMapping.DIM_CODE).Dim);
-            if(factDim is null)
+            if (factDim is null)
             {
-                return;
+                continue;
             }
             var newFact = rowFact.Adapt<TemplateSheetFact>();
             newFact.Col = yMapping.DYN_TAB_COLUMN_NAME;
             //DimDom.GetParts(factDim?.DomValue??"").DomValue;
             newFact.TextValue = factDim.DomValue;
-            var x= _SqlFunctions.CreateTemplateSheetFact(newFact);
+            var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
 
 
         }
@@ -616,6 +613,74 @@ public class FactsMover : IFactsMover
         return fact.FactId;
 
     }
+    private void UpdateForeignKeysOfChildTablesNN()
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+
+        var sqlKyrTables = @"select * from mTableKyrKeys";
+        var kyrTables = connectionLocal.Query<MTableKyrKeys>(sqlKyrTables);
+        kyrTables = kyrTables.Where(kt => kt.TableCode == "S.06.02.01.01");
+        foreach (var kyrTable in kyrTables)
+        {
+            var sqlChild = @"select * from TemplateSheetInstance sheet where sheet.InstanceId= @docId and TableCode=@tableCode ";
+            var childSheet = connectionLocal.QueryFirst<TemplateSheetInstance>(sqlChild, new { docId = _document, tableCode = kyrTable.TableCode });
+            if (childSheet is null) continue;
+
+            var parentSheet = connectionLocal.Query<TemplateSheetInstance>(sqlChild, new { docId = _document, tableCode = kyrTable.FK_TableCode })
+                    .Where(sh => sh.SheetCodeZet == childSheet.SheetCodeZet)
+                    .FirstOrDefault();
+            if (parentSheet is null) continue;
+
+            var dimLike = $"%:{kyrTable.FK_TableDim}%";
+            var sqlMapping = @"select * from MAPPING where TABLE_VERSION_ID=78  and DIM_CODE like @dimLike";
+
+            var commonCol = connectionEiopa.QueryFirstOrDefault<MAPPING>(dimLike, new { dimLike });
+            if (commonCol is null) continue;
+
+            UpdateFactsWithMasterRowNN(childSheet.TemplateSheetId, parentSheet.TemplateSheetId, commonCol.DYN_TAB_COLUMN_NAME);
+
+
+        }
+
+    }
+    private int UpdateFactsWithMasterRowNN(int childSheetId, int parentSheedId, string commonCol)
+    {
+        //update the RowForeign of the main table with the row of a related table.
+        //For example, S.06.02.01.01 has links with S.06.02.01.02 on the "UI" dim. (SEVERAL rows of S.06.02.01.01 may correspond to a row of S.06.02.01.02 ** checked and true)       
+        //  Therefore, each cell of the S.06.02.01 has a rowForeign which points to a cell of S.06.02.01.02
+        //  ---------------------------------------------------------------------------------------------
+        //Actually the main table may be related with more than one related tables.        
+
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlUpdate = @"
+                WITH jq AS (
+                SELECT child.Row AS child_row, parent.TextValue AS key_value, parent.Row AS parent_row
+                    FROM TemplateSheetFact child
+                    LEFT OUTER JOIN TemplateSheetFact parent ON parent.TextValue=child.TextValue
+                  WHERE child.InstanceId=@docId
+                  AND child.TemplateSheetId=@child
+                  AND child.Col=@commonCol
+                  AND parent.InstanceId=@docId
+                  AND parent.TemplateSheetId=@parent
+                  AND parent.Col=@commonCol
+                )
+                UPDATE TemplateSheetFact
+                SET RowForeign= jq.parent_row
+                FROM TemplateSheetFact fact
+                  JOIN jq ON fact.Row= jq.child_row
+                WHERE InstanceId=@docId
+                AND TemplateSheetId=@child
+                -- all the cols in this row
+            ";
+        var count = connectionLocal.Execute(sqlUpdate, new { docId = _documentId, child = childSheetId, parent = parentSheedId, commonCol });
+        return count;
+
+    }
+
+
+
     //*******************************
 
 

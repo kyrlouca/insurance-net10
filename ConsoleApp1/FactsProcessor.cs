@@ -1424,6 +1424,7 @@ public class FactsProcessor : IFactsProcessor
 		return fact.FactId;
 
 	}
+	
 	//*******************************
 
 	public List<TemplateSheetFact> FindFactsFromSignatureNewxx(int documentId, string cellSignature)
