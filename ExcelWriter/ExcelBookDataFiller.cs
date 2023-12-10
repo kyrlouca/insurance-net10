@@ -69,6 +69,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         foreach (var dbClosedSheet in dbClosedSheets)
         {
             Console.WriteLine($"Closed:{dbClosedSheet.SheetCode}");
+            //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
+            if(dbClosedSheet.TableCode== "S.04.01.01.02")
+            {
+                var x = 2;
+            }
             PopulateClosedTable(dbClosedSheet);
 
         }
@@ -110,7 +115,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var topLabelRange = topColumnRange.Offset(-1, 0);
         var zetRange= topLabelRange.Offset(-2, 0);
 
-        var zetList = GetFactPivotZets().Order().ToList();
+        var zetList = GetFactPivotZets ().Order().ToList();
         var isMultiZet = (zetList.Count > 0) && !string.IsNullOrEmpty(zetList.FirstOrDefault()) ;
         if (isMultiZet)
         {

@@ -34,11 +34,10 @@ public class MyMainApp : IMyMainApp
         var _documentId = 13043;
         var filingsSubmitted = new List<string>()
         {
-            "S.01.01",
-            "S.06.02",
+            "S.04.01",            
         };
 
-        if (1 == 1)
+        if (1 == 2)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)

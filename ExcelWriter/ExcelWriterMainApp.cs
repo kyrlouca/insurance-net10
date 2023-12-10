@@ -75,14 +75,17 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
 
         if (1 == 1)
         {
+            Console.WriteLine($"\n Create Empty File : {EmptyFilename}");
             _excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);
             //return 0;
             if (string.IsNullOrEmpty(EmptyFilename))
             {
                 return 1;
             }
+            Console.WriteLine($"\n Fill excel File : {filledFilename}");
             var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
         }
+        Console.WriteLine($"\n Merge to File : {mergedFilename}");
         var x = _templateMerger.MergeTables(doc.InstanceId, filledFilename, mergedFilename);
 
 
