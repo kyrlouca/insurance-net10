@@ -31,9 +31,10 @@ public class MyMainApp : IMyMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 13040;
+        var _documentId = 13043;
         var filingsSubmitted = new List<string>()
         {
+            "S.01.01",
             "S.06.02",
         };
 

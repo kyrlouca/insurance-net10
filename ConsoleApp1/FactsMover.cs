@@ -77,7 +77,7 @@ public class FactsMover : IFactsMover
         //************************************************************************
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
-                      
+
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
 
             //*********** Select the facts for a template 
@@ -94,18 +94,14 @@ public class FactsMover : IFactsMover
             //*********** Assign facts to sheets
             AssignFactsToSheet(tableFacts, sheetInfo);
 
-            //*********** update rows for Open tables 
-            UpdateRowsForOpenTables(sheetInfo);
-
-            //*********** Create Y facts             
+            //*********** update rows for Open tables , create Y facts and and udpate foreign keys
             if (table.IsOpenTable)
             {
+                _ = UpdateRowsForOpenTables(sheetInfo);
                 CreateYFactsForOpenTables(sheetInfo);
+                UpdateForeignKeysOfChildTablesNN();
             }
-
-            //*********** update Foreign Keys (S.06.02.01.01)
-            UpdateForeignKeysOfChildTablesNN();
-
+                       
 
         }
 
@@ -140,6 +136,10 @@ public class FactsMover : IFactsMover
     private List<SheetInfoType> CreateSheetForEachZet(MTable? table, List<string> sheetZetCodes)
     {
 
+        if (table == null)
+        {
+            return new List<SheetInfoType>();
+        }
         var sheetInfo = new List<SheetInfoType>();
 
         //create sheets for each template due to zet (more than one)
@@ -153,7 +153,7 @@ public class FactsMover : IFactsMover
 
             //var sheetName = $"{table.TableCode}__{sheetCount:D2}";
             var sheetName = sheetCode;
-            table.IsOpenTable = table.YDimVal.Contains('*');
+            table.IsOpenTable = table.YDimVal?.Contains('*') ?? false;
             //************************************************
             //Create a Sheet
             var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, sheetZetCode, sheetName, table);

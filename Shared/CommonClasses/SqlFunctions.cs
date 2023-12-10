@@ -265,12 +265,12 @@ public class SqlFunctions : ISqlFunctions
             SheetCode = sheetCode,
             SheetCodeZet = sheetCodeZet,
             SheetTabName = sheetTabName,
-            YDimVal = table.YDimVal,
-            ZDimVal = table.ZDimVal,
+            YDimVal = table.YDimVal ?? "",
+            ZDimVal = table.ZDimVal ??"",
             Status = "LD",
             Description = RegexUtils.TruncateString(table.TableLabel, 199),
             XbrlFilingIndicatorCode = table.XbrlFilingIndicatorCode,
-            IsOpenTable = table.IsOpenTable,
+            IsOpenTable = table?.IsOpenTable ??false,
             OpenRowCounter = 0
         };
 
