@@ -78,6 +78,9 @@ public class FactsMover : IFactsMover
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
 
+
+            
+
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
             //*********** Select the facts for a template 
             var tableFacts = SelectFactsForTempateTable(table);
@@ -104,6 +107,8 @@ public class FactsMover : IFactsMover
 
             //*********** update Foreign Keys (S.06.02.01.01)
             UpdateForeignKeysOfChildTablesNN();
+
+
         }
 
         Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
@@ -620,22 +625,22 @@ public class FactsMover : IFactsMover
 
         var sqlKyrTables = @"select * from mTableKyrKeys";
         var kyrTables = connectionEiopa.Query<MTableKyrKeys>(sqlKyrTables);//S.06.02.01.01       
-        kyrTables = kyrTables.Where(kt => kt.TableCode == "S.06.02.01.01");
+        kyrTables = kyrTables.Where(kt => kt.TableCode.Trim() == "S.06.02.01.01");
         foreach (var kyrTable in kyrTables)
         {
             var sqlChild = @"select * from TemplateSheetInstance sheet where sheet.InstanceId= @docId and TableCode=@tableCode ";
-            var childSheet = connectionLocal.QueryFirst<TemplateSheetInstance>(sqlChild, new { docId = _document, tableCode = kyrTable.TableCode });
+            var childSheet = connectionLocal.QueryFirst<TemplateSheetInstance>(sqlChild, new { docId = _documentId, tableCode = kyrTable.TableCode });
             if (childSheet is null) continue;
 
-            var parentSheet = connectionLocal.Query<TemplateSheetInstance>(sqlChild, new { docId = _document, tableCode = kyrTable.FK_TableCode })
+            var parentSheet = connectionLocal.Query<TemplateSheetInstance>(sqlChild, new { docId = _documentId, tableCode = kyrTable.FK_TableCode })
                     .Where(sh => sh.SheetCodeZet == childSheet.SheetCodeZet)
                     .FirstOrDefault();
             if (parentSheet is null) continue;
 
-            var dimLike = $"%:{kyrTable.FK_TableDim}%";
-            var sqlMapping = @"select * from MAPPING where TABLE_VERSION_ID=78  and DIM_CODE like @dimLike";
+            var dimLike = $"%:{kyrTable.FK_TableDim.Trim()}%";
+            var sqlMapping = @"select * from MAPPING where TABLE_VERSION_ID= @tableId  and DIM_CODE like @dimLike";
 
-            var commonCol = connectionEiopa.QueryFirstOrDefault<MAPPING>(dimLike, new { dimLike });
+            var commonCol = connectionEiopa.QueryFirstOrDefault<MAPPING>(sqlMapping, new { parentSheet.TableID, dimLike });
             if (commonCol is null) continue;
 
             UpdateFactsWithMasterRowNN(childSheet.TemplateSheetId, parentSheet.TemplateSheetId, commonCol.DYN_TAB_COLUMN_NAME);

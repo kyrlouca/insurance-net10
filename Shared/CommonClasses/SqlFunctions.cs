@@ -263,6 +263,7 @@ public class SqlFunctions : ISqlFunctions
             TableCode = table.TableCode,
             DateCreated = DateTime.Now,
             SheetCode = sheetCode,
+            SheetCodeZet = sheetCodeZet,
             SheetTabName = sheetTabName,
             YDimVal = table.YDimVal,
             ZDimVal = table.ZDimVal,
