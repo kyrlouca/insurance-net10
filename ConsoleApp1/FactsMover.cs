@@ -151,8 +151,8 @@ public class FactsMover : IFactsMover
                     ? table.TableCode
                     : $"{table.TableCode}__{sheetZetCode}";
 
-            //var sheetName = $"{table.TableCode}__{sheetCount:D2}";
-            var sheetName = sheetCode;
+            var sheetName = $"{table.TableCode}__{sheetCount:D2}";
+            //var sheetName = sheetCode;
             table.IsOpenTable = table.YDimVal?.Contains('*') ?? false;
             //************************************************
             //Create a Sheet
