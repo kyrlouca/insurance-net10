@@ -544,80 +544,9 @@ public class FactsMover : IFactsMover
 
     ///************************
 
-    public void UpdateCellsForeignRow(int documentId)
-    {
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var sqlSelectSheets = @"select sheet.TemplateSheetId,sheet.TableCode from TemplateSheetInstance sheet where sheet.IsOpenTable=1 and  sheet.InstanceId = @documentId";
-        var sheets = connectionInsurance.Query<TemplateSheetInstance>(sqlSelectSheets, new { documentId })?.ToList() ?? new();
-        foreach (var sheet in sheets)
-        {
+    
 
-            Console.WriteLine($"Update Foreign Keys");
-            UpdateSheetFactsWithMasterRow(sheet.TemplateSheetId);
-        }
-
-    }
-
-    void UpdateSheetFactsWithMasterRow(int sheetId)
-    {
-        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-
-        var sqlTable = @"select sheet.TableCode from TemplateSheetInstance sheet where sheet.TemplateSheetId= @sheetId";
-        var table = connectionLocal.QueryFirstOrDefault<TemplateSheetInstance>(sqlTable, new { sheetId });
-
-        var sqlKyr = "select kk.TableCode,kk.TableCodeKeyDim,kk.FK_TableCode, kk.FK_TableDim from mTableKyrKeys kk where kk.TableCode = @tableCode";
-        var kyrRecord = connectionEiopa.QueryFirstOrDefault<MTableKyrKeys>(sqlKyr, new { table.TableCode });
-        if (kyrRecord?.FK_TableCode is null) return;
-
-        var sqlFacts = @"select fact.FactId, fact.InstanceId, fact.TextValue,  fact.Row, fact.RowForeign from TemplateSheetFact fact 
-                where fact.TemplateSheetId= @sheetId 
-                and (fact.FieldOrigin<>'KYR' or fact.FieldOrigin is null)
-            ";
-        var facts = connectionLocal.Query<TemplateSheetFact>(sqlFacts, new { sheetId });
-
-        foreach (var fact in facts)
-        {
-            UpdateFactWithMasterRow(fact, kyrRecord);
-        }
-    }
-
-    int UpdateFactWithMasterRow(TemplateSheetFact fact, MTableKyrKeys kyrRecord)
-    {
-        //update the RowForeign of the main table with the row of a related table.
-        //For example, S.06.02.01.01 has links with S.06.02.01.02 on the "UI" dim. (SEVERAL rows of S.06.02.01.01 may correspond to a row of S.06.02.01.02 ** checked and true)       
-        //  Therefore, each cell of the S.06.02.01 has a rowForeign which points to a cell of S.06.02.01.02
-        //  ---------------------------------------------------------------------------------------------
-        //Actually the main table may be related with more than one related tables.
-        //For example, table S.30.02.01.01 is linked with S.30.02.01.03 with the RF dim and with S.30.02.01.04 with "CA" dim.
-        //We would need a more complex design for this arrangment which was not asked.
-
-
-        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-
-        //select the dim based on the kyrkeys (the kyrKeys will provide the  master fact)
-        var sqlFactDim = @"select fd.Dim,fd.Signature from TemplateSheetFactDim fd where fd.FactId= @factId and fd.Dim= @dim";
-        var dim = connectionLocal.QuerySingleOrDefault<TemplateSheetFactDim>(sqlFactDim, new { fact.FactId, dim = kyrRecord.FK_TableDim });
-        if (dim is null) return 0;
-
-        //find the row of the "first" master fact using the fk dim
-        var sqlMasterFact = @"
-                SELECT TOP 1 fc.row, fc.col, fc.TextValue
-                FROM TemplateSheetFact fc
-                JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId = fc.TemplateSheetId
-                JOIN TemplateSheetFactDim dm ON dm.FactId = fc.FactId
-                WHERE sheet.InstanceId = @InstanceId AND sheet.TableCode = @TableCode AND dm.Signature = @Signature AND IsRowKey = 0
-            ";
-        var masterFact = connectionLocal.QueryFirstOrDefault<TemplateSheetFact>(sqlMasterFact, new { fact.InstanceId, tableCode = kyrRecord.FK_TableCode, dim.Signature });
-        if (masterFact is null) return 0;
-
-        var sqlUpdFact = @"update TemplateSheetFact set RowForeign= @FK_Row where FactId= @factId";
-        _ = connectionLocal.Execute(sqlUpdFact, new { FK_Row = masterFact.Row, fact.FactId });
-
-        return fact.FactId;
-
-    }
     private void UpdateForeignKeysOfChildTablesNN()
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
