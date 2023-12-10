@@ -58,6 +58,14 @@ public class FactsMover : IFactsMover
         _parameterData = _parameterHandler.GetParameterData();
 
         _document = _SqlFunctions.SelectDocInstance(documentId);
+        if(_document is null)
+        {
+            
+                var message = $"Cannot find DocInstance for: docId:{_documentId}, fundId:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
+                Console.WriteLine(message);
+                Log.Error(message);
+                return 1;            
+        }
         _moduleCode = _document.ModuleCode.Trim();
         _moduleId = _document.ModuleId;
 
@@ -124,7 +132,7 @@ public class FactsMover : IFactsMover
             //************************************************
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
-            var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature);
+            var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature ,tableFact.Zet);
             if (cnt == 0)
             {
                 Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
@@ -291,17 +299,17 @@ public class FactsMover : IFactsMover
         return 0;
 
     }
-    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature)
+    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature,string zet)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlInsert = @"
+        var sqlUpdateFact = @"
             UPDATE TemplateSheetFact
             SET 
-              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature
+              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature ,zet=@zet
             WHERE 
               FactId= @FactId AND TemplateSheetId IS NULL 
             ";
-        var x = connectionInsurance.Execute(sqlInsert, new { factId, templateSheetId, row, col, rowSignature });
+        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature ,zet });
         return x;
     }
 
@@ -365,7 +373,7 @@ public class FactsMover : IFactsMover
 
             //******************************************************************************
             //*** find the facts and update there col, row, and ysignature
-            var rowColFacts = SelectFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1);
+            var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1);
             tableFacts.AddRange(rowColFacts);
             Console.Write($"row:{rowColObject?.Row}, {rowColObject?.Col}");
             if (tableFacts.Count() > 0)
@@ -378,7 +386,7 @@ public class FactsMover : IFactsMover
         var res = tableFacts ?? new List<TemplateSheetFact>();
         return res;
     }
-    private List<TemplateSheetFact> SelectFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims)
+    private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
