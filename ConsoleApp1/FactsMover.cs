@@ -77,11 +77,9 @@ public class FactsMover : IFactsMover
         //************************************************************************
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
-
-
-            
-
+                      
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
+
             //*********** Select the facts for a template 
             var tableFacts = SelectFactsForTempateTable(table);
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
@@ -97,7 +95,7 @@ public class FactsMover : IFactsMover
             AssignFactsToSheet(tableFacts, sheetInfo);
 
             //*********** update rows for Open tables 
-            UpdateRowsForOpenTables(sheetInfo, tableFacts);
+            UpdateRowsForOpenTables(sheetInfo);
 
             //*********** Create Y facts             
             if (table.IsOpenTable)
@@ -265,7 +263,7 @@ public class FactsMover : IFactsMover
         return fact;
     }
 
-    private int UpdateRowsForOpenTables(List<SheetInfoType> sheetsInfo, List<TemplateSheetFact> facts)
+    private int UpdateRowsForOpenTables(List<SheetInfoType> sheetsInfo)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlDistinct = @"
@@ -541,12 +539,6 @@ public class FactsMover : IFactsMover
         return validModuleTables;
     }
 
-
-    ///************************
-
-
-    
-
     private void UpdateForeignKeysOfChildTablesNN()
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -582,12 +574,12 @@ public class FactsMover : IFactsMover
     {
         //update the RowForeign of the main table with the row of a related table.
         //For example, S.06.02.01.01 has links with S.06.02.01.02 on the "UI" dim. (SEVERAL rows of S.06.02.01.01 may correspond to a row of S.06.02.01.02 ** checked and true)       
-        //  Therefore, each cell of the S.06.02.01 has a rowForeign which points to a cell of S.06.02.01.02
-        //  ---------------------------------------------------------------------------------------------
-        //Actually the main table may be related with more than one related tables.        
+        //  Therefore, each cell of the S.06.02.01 has a rowForeign which points to a cell of S.06.02.01.02        
+        //  ---------------------------------------------------------------------------------------------        
 
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
 
+        //the sql will update ALL the columns of the child table 
         var sqlUpdate = @"
                 WITH jq AS (
                 SELECT child.Row AS child_row, parent.TextValue AS key_value, parent.Row AS parent_row
@@ -606,17 +598,12 @@ public class FactsMover : IFactsMover
                   JOIN jq ON fact.Row= jq.child_row
                 WHERE InstanceId=@docId
                 AND TemplateSheetId=@child
-                -- all the cols in this row
+                -- ALL the cols in the UPDATE not just the commonCol
             ";
         var count = connectionLocal.Execute(sqlUpdate, new { docId = _documentId, child = childSheetId, parent = parentSheedId, commonCol });
         return count;
 
     }
-
-
-
-    //*******************************
-
 
 
 }
