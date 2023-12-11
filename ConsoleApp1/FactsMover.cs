@@ -97,7 +97,7 @@ public class FactsMover : IFactsMover
             List<string> sheetZetCodes = tableFacts
                     .GroupBy(fact => fact.ZetValues ?? "")
                     .Select(group => group.Key).ToList();
-            List<SheetInfoType> sheetInfo = CreateSheetForEachZet(table, sheetZetCodes);
+            List<SheetInfoType> sheetInfo = CreateSheetForEachZetGroup(table, sheetZetCodes);
 
             //*********** Assign facts to sheets
             AssignFactsToSheet(tableFacts, sheetInfo);
@@ -141,7 +141,7 @@ public class FactsMover : IFactsMover
             }
         }
     }
-    private List<SheetInfoType> CreateSheetForEachZet(MTable? table, List<string> sheetZetCodes)
+    private List<SheetInfoType> CreateSheetForEachZetGroup(MTable? table, List<string> sheetZetCodes)
     {
 
         if (table == null)
@@ -318,7 +318,7 @@ public class FactsMover : IFactsMover
     private List<TemplateSheetFact> SelectFactsForTempateTable(MTable table)
     {
         //Select facts which have all the dims required by the mtable
-        //Also, assign the zdims to each fact, which groups the facts per sheet
+        //Also, ***assign the zdims to each fact, which groups the facts per sheet
         //Ommit currency and country dims from the grouping, because we do not create different sheets for currency or country 
 
         //ZetValues field has the dims for diffent sheet
@@ -338,7 +338,7 @@ public class FactsMover : IFactsMover
 
 
         //*** pagekeys create new sheets. 
-        //*** we do not want to crate separate sheets when currency or country changes so =>take out any currency Or Country dims 
+        //*** we do not want to create separate sheets when currency or country changes so =>take out any currency Or Country dims 
         var currencyAndCountryDims = new[] { "LA", "LR", "LG", "ZK", "OC" };
         var pageDims1 = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)            
             .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
@@ -510,11 +510,7 @@ public class FactsMover : IFactsMover
 
             var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
 
-            //var pageFactDimsAll = factdims
-            //    .Where(dim => pageDims.Contains(dim.Dim))
-            //    .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
-            //    .Select(dim => dim.Replace(":", "_"))
-            //    .Order();
+            
 
             var pageFactDimsAll = factdims
                 .Where(dim => pageDims.Contains(dim.Dim));
@@ -537,12 +533,15 @@ public class FactsMover : IFactsMover
 
 
             var pageZetValues = string.Join("__", pageFactDims);
-            var pageZet = string.Join("__", blDim);
+            var blZet = string.Join("__", blDim);
             
             
+
+            //fact.zet => values of Dim BL (line of business) usefull for merging sheets
+            //fact.ZetVaules => all the values of Zet dims ,used for assigning facts to sheet (country and currency dims NOT included)
             fact.Row = row;//open tables will be updated later based on their y dims
             fact.Col = col;
-            fact.Zet = pageZet;
+            fact.Zet = blZet; 
             fact.ZetValues = pageZetValues;
             fact.RowSignature = yRowSignature;
         }

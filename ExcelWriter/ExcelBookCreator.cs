@@ -90,8 +90,8 @@ public class ExcelBookCreator : IExcelBookWriter
         int START_COL = 1;
         int DATA_ROW_POSITION = 14;
         foreach (var sheet in sheets)
-        {
-            Console.WriteLine("process" + sheet?.SheetTabName + "-" + sheet?.TableCode + sheet?.SheetTabName);
+        {           
+            Console.WriteLine("process" + sheet?.SheetTabName + "-" + sheet?.TableCode + sheet?.SheetTabName);         
 
             var template = GetTableOrTemplate(sheet.TableCode, true);
             if (template is null)

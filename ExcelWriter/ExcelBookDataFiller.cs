@@ -63,17 +63,18 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         _pensionStyles = _customPensionStyler.GetStyles(Workbook);
 
-        ///////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////S.04.01.01.01__s2c_LB_x138
         var dbClosedSheets = _SqlFunctions.SelectTempateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
         foreach (var dbClosedSheet in dbClosedSheets)
         {
-            Console.WriteLine($"Closed:{dbClosedSheet.SheetCode}");
-            //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
-            if(dbClosedSheet.TableCode== "S.04.01.01.02")
+            if (dbClosedSheet.TableCode == "S.04.01.01.01")
             {
                 var x = 2;
             }
+            Console.WriteLine($"Closed:{dbClosedSheet.SheetCode}");
+            //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
+            
             PopulateClosedTable(dbClosedSheet);
 
         }
@@ -115,14 +116,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var topLabelRange = topColumnRange.Offset(-1, 0);
         var zetRange= topLabelRange.Offset(-2, 0);
 
-        var zetList = GetFactPivotZets ().Order().ToList();
-        var isMultiZet = (zetList.Count > 0) && !string.IsNullOrEmpty(zetList.FirstOrDefault()) ;
-        if (isMultiZet)
+        //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
+        //for multi facts, we need to create additional columns and write the currency/country above the column
+        var CurrencyZetList = GetFactCurrencyZets ().Order().ToList();
+        var isMultiCurrency = (CurrencyZetList.Count > 0) && !string.IsNullOrEmpty(CurrencyZetList.FirstOrDefault()) ;
+        if (isMultiCurrency)
         {
-            topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, zetList.Count - 1);        
-            dataRange=  HelperRoutines.ExtendRangeRowCols(dataRange,0,zetList.Count -1);
-            topColumnRange= HelperRoutines.ExtendRangeRowCols(topColumnRange,0,zetList.Count - 1);
-            zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, 0, zetList.Count - 1);
+            topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, CurrencyZetList.Count - 1);        
+            dataRange=  HelperRoutines.ExtendRangeRowCols(dataRange,0,CurrencyZetList.Count -1);
+            topColumnRange= HelperRoutines.ExtendRangeRowCols(topColumnRange,0,CurrencyZetList.Count - 1);
+            zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, 0, CurrencyZetList.Count - 1);
 
             dataRange.CellStyle = _pensionStyles.DataSectionStyle;
             topColumnRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
@@ -130,16 +133,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             var val= topColumnRange.Rows.First().Columns.First().Value;
             topColumnRange.Value = val;
 
-            var zetIndex = 0;
+            var CurrencyIndex = 0;
             var topRows = topLabelRange.Rows.First().Cells;
             foreach (var cell in topRows)
             {
-                var mMember = _SqlFunctions.SelectDomainMember(zetList[zetIndex]);
+                var mMember = _SqlFunctions.SelectDomainMember(CurrencyZetList[CurrencyIndex]);
                 var domainValue = mMember?.MemberLabel;
                 cell.Text = domainValue;
-                cell.Offset(-1,0).Text = zetList[zetIndex];
+                cell.Offset(-1,0).Text = CurrencyZetList[CurrencyIndex];
 
-                zetIndex++;
+                CurrencyIndex++;
             }
             topLabelRange.Offset(-1,0).Clear();
         }
@@ -158,7 +161,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     continue;
                 }
                 
-                var zet = isMultiZet ? zetRange[zetRange.Row, cell.Column].Value :"";
+                var zet = isMultiCurrency ? zetRange[zetRange.Row, cell.Column].Value :"";
                 var factX = FindFactFromRowColZet(dbSheet, rowLabel, colLabel, zet);
                 if(factX is null)
                 {
@@ -170,13 +173,23 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         return false;
 
-        List<string> GetFactPivotZets()
+        List<string> GetFactCurrencyZets()
         {
-            //AND zet.Dim IN ('BL','OC','CR')
-            using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-            var sqlZetValues = @"select distinct fact.Zet from TemplateSheetFact fact where fact.TemplateSheetId = @sheetId order by fact.Zet";
-            var pivotZets = connectionInsurance.Query<string>(sqlZetValues, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
-            return pivotZets;
+            var sqlCurrency = @"
+                SELECT fd.Signature
+                FROM
+                  TemplateSheetFactDim fd
+                  JOIN TemplateSheetFact fact ON fact.FactId=fd.FactId
+                WHERE
+                  1=1
+                  AND fact.TemplateSheetId=@sheetId
+                  AND fd.Dim IN ('LA','LG','LR', 'ZK', 'OC')
+                GROUP BY
+                  fd.Signature
+                ";            
+            using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);            
+            var currencyZets = connectionInsurance.Query<string>(sqlCurrency, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
+            return currencyZets;
         }
     }
 
