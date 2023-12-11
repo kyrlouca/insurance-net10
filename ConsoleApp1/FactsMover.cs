@@ -95,7 +95,7 @@ public class FactsMover : IFactsMover
             //*********** Create one  sheet per zet group 
             //todo check if already exists !!
             List<string> sheetZetCodes = tableFacts
-                    .GroupBy(fact => fact.Zet ?? "")
+                    .GroupBy(fact => fact.ZetValues ?? "")
                     .Select(group => group.Key).ToList();
             List<SheetInfoType> sheetInfo = CreateSheetForEachZet(table, sheetZetCodes);
 
@@ -124,7 +124,7 @@ public class FactsMover : IFactsMover
         //assign the facts to each sheet
         foreach (var tableFact in tableFacts)
         {
-            var sh = sheetInfo.FirstOrDefault(sd => sd.SheetCodeZet == tableFact.Zet);
+            var sh = sheetInfo.FirstOrDefault(sd => sd.SheetCodeZet == tableFact.ZetValues);
             if (sh is null)
             {
                 continue;
@@ -132,7 +132,7 @@ public class FactsMover : IFactsMover
             //************************************************
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
-            var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature ,tableFact.Zet);
+            var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature ,tableFact.ZetValues, tableFact.Zet );
             if (cnt == 0)
             {
                 Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
@@ -299,36 +299,53 @@ public class FactsMover : IFactsMover
         return 0;
 
     }
-    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature,string zet)
+    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature,string zetValues, string zet)
     {
+        //zetvalues has all the zet and zet has the zet for currency or country which do NOT change page
+
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlUpdateFact = @"
             UPDATE TemplateSheetFact
             SET 
-              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature ,zet=@zet
+              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature,zetValues=@zetValues ,zet=@zet
             WHERE 
               FactId= @FactId AND TemplateSheetId IS NULL 
             ";
-        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature ,zet });
+        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature,zetValues ,zet });
         return x;
     }
 
     private List<TemplateSheetFact> SelectFactsForTempateTable(MTable table)
     {
-        //2. if there are no xbrl mappings (as in table 19.01.01.01) which whould have a rowCol then
-        //+ table 19.01.01 has the MET xbrl codes in table ZDimVal and not in the mappings
-        //+ table 19.01.01 has 'F' mappings with RowCol like every other table
+        //Select facts which have all the dims required by the mtable
+        //Also, assign the zdims to each fact, which groups the facts per sheet
+        //Ommit currency and country dims from the grouping, because we do not create different sheets for currency or country 
+
+        //ZetValues field has the dims for diffent sheet
+        //Zet will be used for Merging sheets from the same template 3 parts (S.04.02.01)
+
+        //the xbrl mapping can be used, get the rowcol and then select the rest of the mappings for the rowcol
+        //BUT for  some tables the xbrl cannot be found in the mappings (as in table 19.01.01.01)
+        // For these table (only 19.01.01 i think)
+        //  + table 19.01.01 has the MET xbrl codes in table ZDimVal and not in the mappings
+        //  + table 19.01.01 has 'F' mappings with RowCol like every other table
+        //  + get the Xbrl from ZdimVal
         // --select the rowcols from the page mappings (distinct) and not from the Xbrl mappings (origin 'F' and dim_code starting with MET)
         // --find any other dims from the page mappings (is_InTable=1) and then add the zet mappings 
         // --find the facts
         var tableFacts = new List<TemplateSheetFact>();
         var allTableFieldMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Field)?.ToList() ?? new List<MAPPING>();
 
-        //pagekeys create new sheets (not all zets do that)        
 
-        var pageDims1 = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
+        //*** pagekeys create new sheets. 
+        //*** we do not want to crate separate sheets when currency or country changes so =>take out any currency Or Country dims 
+        var currencyAndCountryDims = new[] { "LA", "LR", "LG", "ZK", "OC" };
+        var pageDims1 = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)            
             .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
+            .Where(dim => !currencyAndCountryDims.Contains(dim))
             .ToList();
+
+        
 
         var rowColDistinctMappings = allTableFieldMappings
             .Where(map => map.ORIGIN == "F")
@@ -386,7 +403,7 @@ public class FactsMover : IFactsMover
         var res = tableFacts ?? new List<TemplateSheetFact>();
         return res;
     }
-    private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims)
+    private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDimsFFF)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
@@ -492,11 +509,25 @@ public class FactsMover : IFactsMover
         {
 
             var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
-            var pageFactDims = factdims
-                .Where(dim => pageDims.Contains(dim.Dim))
+            
+
+
+
+            var sheetGouppingFactDims = factdims
+                .Where(dim => pageDimsFFF.Contains(dim.Dim))
                 .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
                 .Select(dim => dim.Replace(":", "_"))
                 .Order();
+            var sheetGroupingFactZetValues = string.Join("__", sheetGouppingFactDims);
+
+            
+            var pageMergeSheetDims = factdims
+                .Where(dim => pageDimsFFF.Contains(dim.Dim))                
+                
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
+                .Select(dim => dim.Replace(":", "_"))
+                .Order();
+            var pageMergeFactZetValues = string.Join("__", pageMergeSheetDims);
 
 
             var yFactDims = factdims
@@ -504,11 +535,16 @@ public class FactsMover : IFactsMover
                 .Select(dim => DimDom.GetParts(dim.Signature).Signature)
                 .Order();
 
-            var pageZet = string.Join("__", pageFactDims);
+            
+
+
+
             var yRowSignature = string.Join("|", yFactDims);
             fact.Row = row;//open tables will be updated later based on their y dims
             fact.Col = col;
-            fact.Zet = pageZet;
+            fact.ZetValues = sheetGroupingFactZetValues;
+            fact.Zet = pageMergeFactZetValues; 
+            
             fact.RowSignature = yRowSignature;
         }
 

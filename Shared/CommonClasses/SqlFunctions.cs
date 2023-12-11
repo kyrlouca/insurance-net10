@@ -154,6 +154,11 @@ public class SqlFunctions : ISqlFunctions
 
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mappingOrigin)
     {
+
+        
+        //-- and ORIGIN = 'C' and IS_IN_TABLE = 1 and map.IS_PAGE_COLUMN_KEY = 1 (used for selecting a dim)
+        //-- and ORIGIN = 'C' and IS_IN_TABLE = 1 and map.IS_PAGE_COLUMN_KEY = 0 (used for listing the values of the DIM)
+
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var andOriginSQL = "";
 
@@ -163,9 +168,9 @@ public class SqlFunctions : ISqlFunctions
                 andOriginSQL = " AND ORIGIN = 'F' ";
                 break;
             case MappingOrigin.Page:
-                andOriginSQL = " AND IS_PAGE_COLUMN_KEY=1";
+                andOriginSQL = "AND ORIGIN = 'C' and IS_IN_TABLE=1  AND IS_PAGE_COLUMN_KEY=1";
                 break;
-            case MappingOrigin.Column:
+            case MappingOrigin.ColumnGeneral:
                 andOriginSQL = " AND ORIGIN = 'C' ";
                 break;
             default:

@@ -5,7 +5,7 @@ public enum ProgramCode { AG, DO, XB, VA, CX, RX }
 public enum ProgramAction { DEL, INS, UPD }
 public enum MessageType { ERROR, INFO, COMPLETE }
 
-public enum MappingOrigin { Field, Column, Page , All };
+public enum MappingOrigin { Field, ColumnGeneral, Page , All };
 public interface ISqlFunctions
 {
 	DocInstance? SelectDocInstance(int documentId);
