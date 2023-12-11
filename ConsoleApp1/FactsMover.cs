@@ -403,7 +403,7 @@ public class FactsMover : IFactsMover
         var res = tableFacts ?? new List<TemplateSheetFact>();
         return res;
     }
-    private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDimsFFF)
+    private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
@@ -430,48 +430,48 @@ public class FactsMover : IFactsMover
 
 
         string sqlClosed = @$"
-            AND EXISTS (                
-                SELECT COUNT(*) AS cnt
-                  FROM TemplateSheetFactDim fd
-                WHERE 1=1
-                AND fd.FactId=fact.FactId                
-                AND fd.Signature IN ({closedString})
-                GROUP BY fd.FactId
-                HAVING COUNT(*)=@closedCount
-              )
-        ";
+           AND EXISTS (                
+               SELECT COUNT(*) AS cnt
+                 FROM TemplateSheetFactDim fd
+               WHERE 1=1
+               AND fd.FactId=fact.FactId                
+               AND fd.Signature IN ({closedString})
+               GROUP BY fd.FactId
+               HAVING COUNT(*)=@closedCount
+             )
+       ";
 
         var sqlOpenMandatory = $@"
-            AND EXISTS (
-                SELECT COUNT(*) AS cnt
-                  FROM TemplateSheetFactDim fd
-                WHERE 1=1
-                AND fd.FactId=fact.FactId                
-                AND fd.DIM IN ({openMandatoryString})
-                GROUP BY fd.FactId
-                HAVING COUNT(*)=@openMandatoryCount
-                )
-        ";
+           AND EXISTS (
+               SELECT COUNT(*) AS cnt
+                 FROM TemplateSheetFactDim fd
+               WHERE 1=1
+               AND fd.FactId=fact.FactId                
+               AND fd.DIM IN ({openMandatoryString})
+               GROUP BY fd.FactId
+               HAVING COUNT(*)=@openMandatoryCount
+               )
+       ";
 
         var sqlNotExist = $@"
-            AND NOT EXISTS (
-                SELECT 1
-                  FROM TemplateSheetFactDim fd
-                WHERE 1=1
-                    AND fd.FactId=fact.FactId                    
-                    AND fd.DIM NOT IN ({allFactDimsStr})                                
-                ) 
-        ";
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM TemplateSheetFactDim fd
+               WHERE 1=1
+                   AND fd.FactId=fact.FactId                    
+                   AND fd.DIM NOT IN ({allFactDimsStr})                                
+               ) 
+       ";
 
         var andRowSQL = string.IsNullOrWhiteSpace(row) ? "" : "AND fact.Row=@ROW  ";
 
         var basicSQL = @$"
-            SELECT fact.*
-            FROM TemplateSheetFact fact                 
-            WHERE 1=1              
-              AND fact.XBRLCode = @XBRLCode              
-              AND fact.InstanceId=@_documentId
-            ";
+           SELECT fact.*
+           FROM TemplateSheetFact fact                 
+           WHERE 1=1              
+             AND fact.XBRLCode = @XBRLCode              
+             AND fact.InstanceId=@_documentId
+           ";
 
         var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
 
@@ -509,42 +509,41 @@ public class FactsMover : IFactsMover
         {
 
             var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
-            
 
+            //var pageFactDimsAll = factdims
+            //    .Where(dim => pageDims.Contains(dim.Dim))
+            //    .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
+            //    .Select(dim => dim.Replace(":", "_"))
+            //    .Order();
 
-
-            var sheetGouppingFactDims = factdims
-                .Where(dim => pageDimsFFF.Contains(dim.Dim))
-                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
-                .Select(dim => dim.Replace(":", "_"))
-                .Order();
-            var sheetGroupingFactZetValues = string.Join("__", sheetGouppingFactDims);
-
-            
-            var pageMergeSheetDims = factdims
-                .Where(dim => pageDimsFFF.Contains(dim.Dim))                
-                
-                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
-                .Select(dim => dim.Replace(":", "_"))
-                .Order();
-            var pageMergeFactZetValues = string.Join("__", pageMergeSheetDims);
-
+            var pageFactDimsAll = factdims
+                .Where(dim => pageDims.Contains(dim.Dim));
 
             var yFactDims = factdims
                 .Where(dim => yMappingsDims.Contains(dim.Dim))
                 .Select(dim => DimDom.GetParts(dim.Signature).Signature)
                 .Order();
-
-            
-
-
-
             var yRowSignature = string.Join("|", yFactDims);
+
+            var pageFactDims = pageFactDimsAll                
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
+                .Select(dim => dim.Replace(":", "_"))
+                .Order();
+
+            var blDim= factdims
+                .Where(dim => DimDom.GetParts(dim.Signature).Dim=="BL")
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
+                .Select(dim => dim.Replace(":", "_"));
+
+
+            var pageZetValues = string.Join("__", pageFactDims);
+            var pageZet = string.Join("__", blDim);
+            
+            
             fact.Row = row;//open tables will be updated later based on their y dims
             fact.Col = col;
-            fact.ZetValues = sheetGroupingFactZetValues;
-            fact.Zet = pageMergeFactZetValues; 
-            
+            fact.Zet = pageZet;
+            fact.ZetValues = pageZetValues;
             fact.RowSignature = yRowSignature;
         }
 
@@ -552,7 +551,6 @@ public class FactsMover : IFactsMover
         return facts;
 
     }
-
     private List<MTable> GetFiledModuleTables()
     {
 
