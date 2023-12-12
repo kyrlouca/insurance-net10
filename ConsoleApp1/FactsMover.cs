@@ -87,17 +87,24 @@ public class FactsMover : IFactsMover
         {
 
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
-
-            //*********** Select the facts for a template 
+            //***********************************************************************
+            //*********** Select the facts for a template and 
             var tableFacts = SelectFactsForTempateTable(table);
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
+            //***********************************************************************
 
             //*********** Create one  sheet per zet group 
             //todo check if already exists !!
-            List<string> sheetZetCodes = tableFacts
+            //fact.ZetValues is a string concatenating the Facts' zet dims
+            //facts with the same zet values(concatenated as a string) should be assigned to the same sheet (currency and country were excluded)
+            List<string> distinctFactZetStrings = tableFacts
                     .GroupBy(fact => fact.ZetValues ?? "")
                     .Select(group => group.Key).ToList();
-            List<SheetInfoType> sheetInfo = CreateSheetForEachZetGroup(table, sheetZetCodes);
+
+            //"s2c_LB_x138"
+            //var blZet= factZetValuesList.Where(zet=>zet.)
+
+            List<SheetInfoType> sheetInfo = CreateSheetForEachZetGroup(table, distinctFactZetStrings);
 
             //*********** Assign facts to sheets
             AssignFactsToSheet(tableFacts, sheetInfo);
@@ -119,30 +126,10 @@ public class FactsMover : IFactsMover
     }
 
 
-    private void AssignFactsToSheet(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
+    private List<SheetInfoType> CreateSheetForEachZetGroup(MTable? table, List<string> FactZetValuesList)
     {
-        //assign the facts to each sheet
-        foreach (var tableFact in tableFacts)
-        {
-            var sh = sheetInfo.FirstOrDefault(sd => sd.SheetCodeZet == tableFact.ZetValues);
-            if (sh is null)
-            {
-                continue;
-            };
-            //************************************************
-            //******* Assign the facts to the sheet
-            //if the fact is alreate assigned to antoher shhet, create a clone fact
-            var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature ,tableFact.ZetValues, tableFact.Zet );
-            if (cnt == 0)
-            {
-                Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
-                tableFact.TemplateSheetId = sh.TemplateSheetId;
-                var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
-            }
-        }
-    }
-    private List<SheetInfoType> CreateSheetForEachZetGroup(MTable? table, List<string> sheetZetCodes)
-    {
+        //all the facts assigned to the sheet will have the same Zet values (except for county/currency)
+        //concatenate the zets and assign it to SheetZetCode
 
         if (table == null)
         {
@@ -150,23 +137,23 @@ public class FactsMover : IFactsMover
         }
         var sheetInfo = new List<SheetInfoType>();
 
-        //create sheets for each template due to zet (more than one)
-        var sheetCount = 1;
-        foreach (var sheetZetCode in sheetZetCodes)
+        //create sheets for each template due to page zets (more than one)
+        var sheetCount = 1; 
+        foreach (var FactZetValue in FactZetValuesList)
         {
 
-            var sheetCode = string.IsNullOrEmpty(sheetZetCode)
+            var sheetCode = string.IsNullOrEmpty(FactZetValue)
                     ? table.TableCode
-                    : $"{table.TableCode}__{sheetZetCode}";
+                    : $"{table.TableCode}__{FactZetValue}";
 
             var sheetName = $"{table.TableCode}__{sheetCount:D2}";
             //var sheetName = sheetCode;
             table.IsOpenTable = table.YDimVal?.Contains('*') ?? false;
             //************************************************
             //Create a Sheet
-            var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, sheetZetCode, sheetName, table);
+            var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName, table);
             Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
-            sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, sheetZetCode, sheetName, sheet.YDimVal));
+            sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, FactZetValue, sheetName, sheet.YDimVal));
 
             sheetCount++;
         }
@@ -299,7 +286,7 @@ public class FactsMover : IFactsMover
         return 0;
 
     }
-    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature,string zetValues, string zet)
+    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature,string zetValues, string currencyDim)
     {
         //zetvalues has all the zet and zet has the zet for currency or country which do NOT change page
 
@@ -307,11 +294,11 @@ public class FactsMover : IFactsMover
         var sqlUpdateFact = @"
             UPDATE TemplateSheetFact
             SET 
-              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature,zetValues=@zetValues ,zet=@zet
+              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature,zetValues=@zetValues ,CurrencyDim=@CurrencyDim
             WHERE 
               FactId= @FactId AND TemplateSheetId IS NULL 
             ";
-        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature,zetValues ,zet });
+        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature,zetValues ,currencyDim });
         return x;
     }
 
@@ -337,7 +324,7 @@ public class FactsMover : IFactsMover
         var allTableFieldMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Field)?.ToList() ?? new List<MAPPING>();
 
 
-        //*** pagekeys create new sheets. 
+        //*** page Zet dims from mappings (for each table) define when we need to create separate sheet for the same table
         //*** we do not want to create separate sheets when currency or country changes so =>take out any currency Or Country dims 
         var currencyAndCountryDims = new[] { "LA", "LR", "LG", "ZK", "OC" };
         var pageDims1 = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)            
@@ -345,8 +332,13 @@ public class FactsMover : IFactsMover
             .Where(dim => !currencyAndCountryDims.Contains(dim))
             .ToList();
 
-        
+        var pageCurrencyDims = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
+            .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
+            .Where(dim => currencyAndCountryDims.Contains(dim))
+            .ToList();
 
+
+        //find all the rowCols
         var rowColDistinctMappings = allTableFieldMappings
             .Where(map => map.ORIGIN == "F")
             .GroupBy(map => map.DYN_TAB_COLUMN_NAME)
@@ -369,8 +361,9 @@ public class FactsMover : IFactsMover
         var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
         var xbrlTable = DimUtils.ExtractXbrl(xbrlFull);
 
-
-
+        //*********************************************************************************
+        //for each RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
+        //also update the zetValues of each fact
         foreach (var rowColDistinctMapping in rowColDistinctMappings)
         {
             var rowCol = rowColDistinctMapping.DYN_TAB_COLUMN_NAME.Trim();
@@ -390,7 +383,7 @@ public class FactsMover : IFactsMover
 
             //******************************************************************************
             //*** find the facts and update there col, row, and ysignature
-            var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1);
+            var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1,pageCurrencyDims);
             tableFacts.AddRange(rowColFacts);
             Console.Write($"row:{rowColObject?.Row}, {rowColObject?.Col}");
             if (tableFacts.Count() > 0)
@@ -400,11 +393,13 @@ public class FactsMover : IFactsMover
             Console.WriteLine("");
 
         }
-        var res = tableFacts ?? new List<TemplateSheetFact>();
-        return res;
+        var facts = tableFacts ?? new List<TemplateSheetFact>();
+        return facts;
     }
-    private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims)
+    private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims, List<string> pageCurrencyDims)
     {
+        //for the RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
+        //also update the  PAGE zets ( zetValues) of the fact
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
 
@@ -511,28 +506,38 @@ public class FactsMover : IFactsMover
             var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
 
             
-
-            var pageFactDimsAll = factdims
+            //the pageZet dims present in the fact
+            var zPageFactDims = factdims
                 .Where(dim => pageDims.Contains(dim.Dim));
+
+            var zPageFactDimValues = zPageFactDims
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)                
+                .Order();
+            var zPageFactDimStr = string.Join("__", zPageFactDimValues);
+
+
+            var zCurrencyFactDims = factdims
+                .Where(dim => pageCurrencyDims.Contains(dim.Dim));
+
+            var zCurrencyFactDimValues = zCurrencyFactDims
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
+                .Order();
+            var zCurrencyFactDimStr = string.Join("__", zCurrencyFactDimValues);
+
 
             var yFactDims = factdims
                 .Where(dim => yMappingsDims.Contains(dim.Dim))
                 .Select(dim => DimDom.GetParts(dim.Signature).Signature)
                 .Order();
             var yRowSignature = string.Join("|", yFactDims);
+            
 
-            var pageFactDims = pageFactDimsAll                
-                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
-                .Select(dim => dim.Replace(":", "_"))
-                .Order();
+            var blDim = factdims
+                .Where(dim => DimDom.GetParts(dim.Signature).Dim == "BL")
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw);
+                //.Select(dim => dim.Replace(":", "_"));
 
-            var blDim= factdims
-                .Where(dim => DimDom.GetParts(dim.Signature).Dim=="BL")
-                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
-                .Select(dim => dim.Replace(":", "_"));
-
-
-            var pageZetValues = string.Join("__", pageFactDims);
+            
             var blZet = string.Join("__", blDim);
             
             
@@ -542,7 +547,9 @@ public class FactsMover : IFactsMover
             fact.Row = row;//open tables will be updated later based on their y dims
             fact.Col = col;
             fact.Zet = blZet; 
-            fact.ZetValues = pageZetValues;
+            
+            fact.ZetValues = zPageFactDimStr;
+            fact.CurrencyDim = zCurrencyFactDimStr;
             fact.RowSignature = yRowSignature;
         }
 
@@ -550,6 +557,30 @@ public class FactsMover : IFactsMover
         return facts;
 
     }
+
+    private void AssignFactsToSheet(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
+    {
+        //assign the facts to each sheet
+        foreach (var tableFact in tableFacts)
+        {
+            var sh = sheetInfo.FirstOrDefault(sd => sd.SheetCodeZet == tableFact.ZetValues);
+            if (sh is null)
+            {
+                continue;
+            };
+            //************************************************
+            //******* Assign the facts to the sheet
+            //if the fact is alreate assigned to antoher shhet, create a clone fact
+            var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
+            if (cnt == 0)
+            {
+                Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
+                tableFact.TemplateSheetId = sh.TemplateSheetId;
+                var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
+            }
+        }
+    }
+
     private List<MTable> GetFiledModuleTables()
     {
 

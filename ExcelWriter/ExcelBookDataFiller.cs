@@ -72,7 +72,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             {
                 var x = 2;
             }
-            Console.WriteLine($"Closed:{dbClosedSheet.SheetCode}");
+            Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
             //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
             
             PopulateClosedTable(dbClosedSheet);

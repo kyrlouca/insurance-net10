@@ -203,6 +203,8 @@ public class ExcelBookMerger : ITemplateMerger
     }
     private List<string> SelectSpecialZetList(string templateCode)
     {
+
+        //todo *** 'OC' and 'CR' should NOT be here
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         //currency is can be CD,CR,OC but for s.19 is oc
