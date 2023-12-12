@@ -119,13 +119,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
         //for multi facts, we need to create additional columns and write the currency/country above the column
         var CurrencyZetList = GetFactCurrencyZets ().Order().ToList();
-        var isMultiCurrency = (CurrencyZetList.Count > 0) && !string.IsNullOrEmpty(CurrencyZetList.FirstOrDefault()) ;
+        var isMultiCurrency = (CurrencyZetList.Count > 0) && !string.IsNullOrWhiteSpace(CurrencyZetList.FirstOrDefault()) ;
         if (isMultiCurrency)
         {
-            topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, CurrencyZetList.Count - 1);        
-            dataRange=  HelperRoutines.ExtendRangeRowCols(dataRange,0,CurrencyZetList.Count -1);
-            topColumnRange= HelperRoutines.ExtendRangeRowCols(topColumnRange,0,CurrencyZetList.Count - 1);
-            zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, 0, CurrencyZetList.Count - 1);
+            //todo extend number of currencies-1 * number of columns
+            var countCols=topLabelRange.Count();
+            var addCols= countCols *( CurrencyZetList.Count -1);
+            topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, addCols);        
+            dataRange=  HelperRoutines.ExtendRangeRowCols(dataRange,0,addCols);
+            topColumnRange= HelperRoutines.ExtendRangeRowCols(topColumnRange,0,addCols);
+            zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, 0, addCols);
 
             dataRange.CellStyle = _pensionStyles.DataSectionStyle;
             topColumnRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
@@ -176,17 +179,15 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         List<string> GetFactCurrencyZets()
         {
             var sqlCurrency = @"
-                SELECT fd.Signature
+                SELECT fact.CurrencyDim
                 FROM
-                  TemplateSheetFactDim fd
-                  JOIN TemplateSheetFact fact ON fact.FactId=fd.FactId
+                  TemplateSheetFact fact
                 WHERE
-                  1=1
-                  AND fact.TemplateSheetId=@sheetId
-                  AND fd.Dim IN ('LA','LG','LR', 'ZK', 'OC')
+                  fact.TemplateSheetId = @sheetId
                 GROUP BY
-                  fd.Signature
+                  fact.CurrencyDim;
                 ";            
+
             using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);            
             var currencyZets = connectionInsurance.Query<string>(sqlCurrency, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
             return currencyZets;
