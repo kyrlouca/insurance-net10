@@ -144,13 +144,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             var val = topColumnRange.Rows.First().Columns.First().Value;
             topColumnRange.Value = val;
 
-            for (var i = 0; i < countCols; i++)
+            for (var cCur = 0; cCur < CurrencyZetList.Count; cCur++)                
             {
-                for (var j = 0; j < CurrencyZetList.Count; j++)
+                for (var cCol = 0; cCol < countCols; cCol++)
                 {
-                    var newCol = topColumnRange.Column + (i * CurrencyZetList.Count) + j;
-                    topColumnRange[topColumnRange.Row, newCol].Value = originalCols[i];
-                    var mMember = _SqlFunctions.SelectMMember(CurrencyZetList[j]);
+                    var newCol = topColumnRange.Column + (cCur * countCols) + cCol;
+                    topColumnRange[topColumnRange.Row, newCol].Value = originalCols[cCol];
+                    var mMember = _SqlFunctions.SelectMMember(CurrencyZetList[cCur]);
                     var domainValue = mMember?.MemberXBRLCode ?? "";
                     zetRange[zetRange.Row,newCol].Value = domainValue;
                 }
