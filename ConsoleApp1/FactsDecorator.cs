@@ -18,7 +18,7 @@ using Mapster;
 using System.Security.AccessControl;
 using Syncfusion.XlsIO.Parser.Biff_Records;
 
-public class FactsMover : IFactsMover
+public class FactsDecorator : IFactsMover
 {
     //public int TestingTableId { get; set; } = 54;
     private int _testingTableId = 0;
@@ -39,7 +39,7 @@ public class FactsMover : IFactsMover
     public List<MTable> ModuleTablesFiled { get; private set; } = new List<MTable>();
 
 
-    public FactsMover(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
+    public FactsDecorator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
     {
         //process all the tables (S.01.01.01.01, S.01.01.02.01, etc ) related to the filings (S.01.01)
         //for each cell in each table, create a sheet and associate the mathcing facts (or create new facts if a fact should be in two tables)            

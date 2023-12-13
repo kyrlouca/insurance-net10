@@ -33,7 +33,7 @@ public static class SpecialTemplateList
 		{
             new SpecialTemplateLayout("S.06.02.01", "S.06.02.01", new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             new SpecialTemplateLayout("S.02.02.01", "S.02.02.01", new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
-			new SpecialTemplateLayout("S.04.01.01", "S.04.01.01", new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
+			//new SpecialTemplateLayout("S.04.01.01", "S.04.01.01", new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
 			new SpecialTemplateLayout("S.05.02.01", "S.05.02.01", new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
 			new SpecialTemplateLayout("S.19.01.01", "S.19.01.01", new[] {
 				new string[] { "S.19.01.01.01", "S.19.01.01.02", "S.19.01.01.03", "S.19.01.01.04", "S.19.01.01.05" ,"S.19.01.01.06" },

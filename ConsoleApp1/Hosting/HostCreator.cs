@@ -40,7 +40,7 @@ public class HostCreator
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
 			 services.AddScoped<IFactsProcessor, FactsProcessor>();
 			 services.AddScoped<IFactsCreator, FactsCreator>();
-             services.AddScoped<IFactsMover, FactsMover>();
+             services.AddScoped<IFactsMover, FactsDecorator>();
              services.AddScoped<IMyMainApp, MyMainApp>();
 			 
 			 

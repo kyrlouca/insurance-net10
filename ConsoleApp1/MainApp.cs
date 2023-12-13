@@ -37,6 +37,21 @@ public class MyMainApp : IMyMainApp
             "S.04.01",            
         };
 
+        var filingsNew = new List<string>()
+        {
+
+            "S.01.01",
+            "S.01.02",
+            "S.02.01",
+            "S.04.01",
+            "S.05.01",
+            "S.06.02",
+            "S.06.03",
+            "S.17.01",
+            "S.23.01",
+            "S.28.01",
+        };
+
         if (1 == 2)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
@@ -49,7 +64,7 @@ public class MyMainApp : IMyMainApp
 
         if (1 == 1)
         {
-            var res = _factsMover.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
+            var res = _factsMover.DecorateFactsAndAssignToSheets(_documentId, filingsNew);
             if (res != 0)
             {
                 return res;
@@ -57,21 +72,7 @@ public class MyMainApp : IMyMainApp
             return 0;
         }
 
-        
-
-        var filingsUkDefence = new List<string>()
-        {
-
-            "S.01.01",
-            "S.01.02",
-            "S.02.01",
-            "S.05.01",
-            "S.06.02",
-            "S.06.03",
-            "S.17.01",
-            "S.23.01",
-            "S.28.01",
-        };
+          
      
 
         
