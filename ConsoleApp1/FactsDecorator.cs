@@ -18,7 +18,7 @@ using Mapster;
 using System.Security.AccessControl;
 using Syncfusion.XlsIO.Parser.Biff_Records;
 
-public class FactsDecorator : IFactsMover
+public class FactsDecorator : IFactsDecorator
 {
     //public int TestingTableId { get; set; } = 54;
     private int _testingTableId = 0;

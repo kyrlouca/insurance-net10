@@ -2,7 +2,7 @@
 
 namespace XbrlReader
 {
-    public interface IFactsMover
+    public interface IFactsDecorator
     {
         string DefaultCurrency { get; set; }
         List<MTable> ModuleTablesFiled { get; }

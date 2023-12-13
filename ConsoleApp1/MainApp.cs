@@ -10,19 +10,17 @@ public class MyMainApp : IMyMainApp
     private readonly IParameterHandler _parameterHandler;
     private ParameterData _parameterData = new();
     private readonly ILogger _logger;
-    private readonly ISqlFunctions _SqlFunctions;
-    private readonly IFactsProcessor _factsProcessor;
+    private readonly ISqlFunctions _SqlFunctions; 
     private readonly IFactsCreator _factsCreator;
-    private readonly IFactsMover _factsMover;
+    private readonly IFactsDecorator _factsMover;
 
 
     public int id = 12;
-    public MyMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator, IFactsProcessor factsProcessor, IFactsMover factsMover)
+    public MyMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator,  IFactsDecorator factsMover)
     {
         _parameterHandler = getParameters;
         _logger = logger;
-        _SqlFunctions = sqlFunctions;
-        _factsProcessor = factsProcessor;
+        _SqlFunctions = sqlFunctions;        
         _factsCreator = factsCreator;
         _factsMover = factsMover;
 

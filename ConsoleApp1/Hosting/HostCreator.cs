@@ -37,10 +37,9 @@ public class HostCreator
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));
 			 //services.Configure<LoggerFiles>(context.Configuration.GetSection("LoggerFiles"));
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
-			 services.AddScoped<IParameterHandler, ParameterHandler>();
-			 services.AddScoped<IFactsProcessor, FactsProcessor>();
+			 services.AddScoped<IParameterHandler, ParameterHandler>();			 
 			 services.AddScoped<IFactsCreator, FactsCreator>();
-             services.AddScoped<IFactsMover, FactsDecorator>();
+             services.AddScoped<IFactsDecorator, FactsDecorator>();
              services.AddScoped<IMyMainApp, MyMainApp>();
 			 
 			 
