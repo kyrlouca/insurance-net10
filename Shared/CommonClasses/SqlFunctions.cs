@@ -1,14 +1,11 @@
 ﻿namespace Shared.CommonRoutines;
 using Dapper;
 using Microsoft.Data.SqlClient;
+using Serilog;
 using Shared.DataModels;
+using Shared.GeneralUtils;
 using Shared.HostRoutines;
 using Shared.SharedHost;
-using Shared.SpecialRoutines;
-using Shared.GeneralUtils;
-using System.Reflection;
-using Serilog;
-using System.Data;
 
 public class SqlFunctions : ISqlFunctions
 {
@@ -132,11 +129,12 @@ public class SqlFunctions : ISqlFunctions
         var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
     }
 
-    public MMember? SelectDomainMember(string domainString)
+    public MMember? SelectMMember(string xbrlCode)
     {
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var xbrlCode = SpecialRoutines.DimDom.GetParts(domainString).DomAndValRaw;
+        //memberXbrlCode= s2c_AM:x2 => find mMember
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);        
         var sqlMem = @"select * from mMember mem where MemberXBRLCode = @xbrlCode";
+        xbrlCode=xbrlCode.Trim();
         var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { xbrlCode });
         return val;
     }

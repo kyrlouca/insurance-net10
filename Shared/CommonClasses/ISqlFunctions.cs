@@ -15,7 +15,7 @@ public interface ISqlFunctions
     MModule? SelectModuleByCode(string moduleCode);
 	public void CreateTransactionLog(int docInstanceId, MessageType messageType, string message);
 	public void UpdateDocumentStatus(int documentId, string status);
-	public MMember? SelectDomainMember(string domainString);
+	public MMember? SelectMMember(string domainString);
 	public MTable? SelectTable(string tableCode);
 	public List<MAPPING> SelectMappings(int tableId,MappingOrigin mapping);
 	public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
