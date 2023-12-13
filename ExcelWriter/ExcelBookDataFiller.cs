@@ -102,7 +102,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
     private bool PopulateClosedTable(TemplateSheetInstance dbSheet)
     {
-
+        //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
+        //for multi facts, we need to create additional columns and write the currency/country above the column
 
         var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
@@ -114,13 +115,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var leftRowRange = leftRowName.RefersToRange;
 
         var topLabelRange = topColumnRange.Offset(-1, 0);
-        var zetRange = topLabelRange.Offset(-2, 0);
+        var currencyRange = topLabelRange.Offset(-2, 0);
 
-
-
-
-        //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
-        //for multi facts, we need to create additional columns and write the currency/country above the column
         var CurrencyZetList = GetFactCurrencyZets().Order().ToList();
         var isMultiCurrency = (CurrencyZetList.Count > 0) && !string.IsNullOrWhiteSpace(CurrencyZetList.FirstOrDefault());
         if (isMultiCurrency)
@@ -136,23 +132,21 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, addCols);
             dataRange = HelperRoutines.ExtendRangeRowCols(dataRange, 0, addCols);
             topColumnRange = HelperRoutines.ExtendRangeRowCols(topColumnRange, 0, addCols);
-            zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, 0, addCols);
+            currencyRange = HelperRoutines.ExtendRangeRowCols(currencyRange, 0, addCols);
 
             dataRange.CellStyle = _pensionStyles.DataSectionStyle;
             topColumnRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
             var val = topColumnRange.Rows.First().Columns.First().Value;
             topColumnRange.Value = val;
-
-            for (var cCur = 0; cCur < CurrencyZetList.Count; cCur++)                
+            
+            for (var curIdx = 0; curIdx < CurrencyZetList.Count; curIdx++)                
             {
-                for (var cCol = 0; cCol < countCols; cCol++)
+                for (var colIdx = 0; colIdx < countCols; colIdx++)
                 {
-                    var newCol = topColumnRange.Column + (cCur * countCols) + cCol;
-                    topColumnRange[topColumnRange.Row, newCol].Value = originalCols[cCol];
-                    var mMember = _SqlFunctions.SelectMMember(CurrencyZetList[cCur]);
-                    var domainValue = mMember?.MemberXBRLCode ?? "";
-                    zetRange[zetRange.Row,newCol].Value = domainValue;
+                    var newCol = topColumnRange.Column + (curIdx * countCols) + colIdx;
+                    topColumnRange[topColumnRange.Row, newCol].Value = originalCols[colIdx];                    
+                    currencyRange[currencyRange.Row, newCol].Value = CurrencyZetList[curIdx];
                 }
 
             }
@@ -165,6 +159,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             foreach (var cell in dataRow.Cells)
             {
                 var dataCell = HelperRoutines.CreateRowColObject(cell.AddressR1C1Local);
+                if(dataCell is null)
+                {
+                    continue;
+                }
                 var rowLabel = leftRowRange[dataCell.Row, leftRowRange.Column].Value;
                 var colLabel = topColumnRange[topColumnRange.Row, dataCell.Col].Value;
 
@@ -173,13 +171,24 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     continue;
                 }
 
-                var zet = isMultiCurrency ? zetRange[zetRange.Row, cell.Column].Value : "";
-                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colLabel, zet);
+                var currencyDim = isMultiCurrency ? currencyRange[currencyRange.Row, cell.Column].Value : "";
+                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colLabel, currencyDim);
                 if (factX is null)
                 {
                     continue;
                 }
                 SaveCellValue(cell, factX);
+            }
+        }
+
+        if (isMultiCurrency)
+        {
+            foreach(var cell in currencyRange.Cells)
+            {
+                var mMember = _SqlFunctions.SelectMMember(cell.Value);
+                var domainValue = mMember?.MemberLabel ?? "";
+                cell.Value = domainValue;
+
             }
         }
 
