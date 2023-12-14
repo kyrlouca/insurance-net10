@@ -1,8 +1,11 @@
 ﻿namespace ExcelWriter;
+
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Shared.CommonRoutines;
 using Shared.HostRoutines;
 using Shared.SharedHost;
+using Shared.SpecialRoutines;
 
 public class MainApp : IMainApp
 {
@@ -75,31 +78,57 @@ public class MainApp : IMainApp
 
         if (1 == 1)
         {
-            Console.WriteLine($"\n Create Empty File : {EmptyFilename}");
-            var savedFile =_excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);
-            //return 0;
+            Console.WriteLine($"\n Create excel File : {filledFilename}");
+            //****************************************************************************************************
+            var savedFile =_excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);            
             if (string.IsNullOrEmpty(savedFile))
             {
                 var message = $"Can NOT create file: {EmptyFilename} ";
                 _logger.Error(message);
                 _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
                 return 1;
-            }
-            Console.WriteLine($"\n Fill excel File : {filledFilename}");        
+            }            
         }
         if (1 == 1)
         {
+            Console.WriteLine($"\n Create excel File : {filledFilename}");
+            //****************************************************************************************************
             var isFilled = _excelBookDataFiller.FillExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
+            if (!isFilled)
+            {
+                var message = $"Can NOT Fill file: Empty:{EmptyFilename}  - filled:{filledFilename}";
+                _logger.Error(message);
+                _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
+                return 1;
+            }
+            
         }
         if(1==1)
         {
             Console.WriteLine($"\n Merge to File : {mergedFilename}");
-            var x = _templateMerger.MergeTables(doc.InstanceId, filledFilename, mergedFilename);
+            //****************************************************************************************************
+            var isMerged = _templateMerger.MergeTables(doc.InstanceId, filledFilename, mergedFilename);
+            if (!isMerged) { 
+            {
+                var message = $"Can NOT Merge file: Filled:{filledFilename}  - filled:{mergedFilename}";
+                _logger.Error(message);
+                _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
+                return 1;
+            }
         }
-        
 
+            var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
+            if (!isSuccess)
+            {
+                _logger.Error(errorMessage);
+            }
+            var (isFsuccess,sErrorMessage)=FileUtilsKyr.DeleteFile(filledFilename);
+            if (!isFsuccess)
+            {
+                _logger.Error(sErrorMessage);
+            }
 
-        return 0;
+            return 0;
 
     }
 
