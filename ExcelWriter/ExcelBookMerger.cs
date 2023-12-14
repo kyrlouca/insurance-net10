@@ -122,10 +122,13 @@ public class ExcelBookMerger : IExcelBookMerger
         }
         ///////////////////////
 
-
-
-        //var s6Bundle = moduleZetTemplateBundles.FirstOrDefault(zetTemplate => zetTemplate.GroupTableCode == "S.06.02.01");
-        //FixCombinedS6Form(s6Bundle);
+        var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
+        if(s6SpecialTemplateLayout is not null)
+        {
+            var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, "","abc");
+            FixCombinedS6Form(s6ZetTemplateBundle);
+        }
+        
 
         var indexSheet = RenderIndexList(indexList);
 
@@ -234,7 +237,7 @@ public class ExcelBookMerger : IExcelBookMerger
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";
         return new TableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet, TableDescription = tableDesc };
     }
-    private TemplateSheetInstance? SelectDbSheetBySheetCodeZet(string tableCode, string sheetCodeZet )
+    private TemplateSheetInstance? SelectDbSheetBySheetCodeZet(string tableCode, string sheetCodeZet)
     {
         //if zet is null or empty do NOT use it in selection
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -486,11 +489,13 @@ public class ExcelBookMerger : IExcelBookMerger
         }
 
         //the range for the s61 and s62 data is just one row, and we need to expand to the end of the sheet
-        var s61DataLine = DestWorkbook?.Names[$"{s61Code}_data"]?.RefersToRange;
-        var s62DataLine = DestWorkbook?.Names[$"{s62Code}_data"]?.RefersToRange;
+        var s61TabName = $"{s61Worksheet.Name}_data";
+        var s61DataLine = DestWorkbook?.Names[$"{s61Worksheet.Name}_data"]?.RefersToRange;
+        var s62DataLine = DestWorkbook?.Names[$"{s62Worksheet.Name}_data"]?.RefersToRange;
 
-        var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, sCombined.UsedRange.LastColumn];
-        var s62Data = sCombined.Range[s62DataLine.Row, s62DataLine.Column, s62Worksheet.UsedRange.LastRow, sCombined.UsedRange.LastColumn];
+        //expand the range of s61 and s62 to include all the rows until the last Row (UsedRange)
+        var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, s61DataLine.LastColumn];
+        var s62Data = sCombined.Range[s62DataLine.Row, s62DataLine.Column, s62Worksheet.UsedRange.LastRow, s62DataLine.LastColumn];
         var s62KeyColumn = s62Data.Columns[0];
 
 

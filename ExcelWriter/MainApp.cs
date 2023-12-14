@@ -84,11 +84,11 @@ public class MainApp : IMainApp
             }
             Console.WriteLine($"\n Fill excel File : {filledFilename}");        
         }
-        if (1 == 1)
+        if (1 == 2)
         {
             var y = _excelBookDataFiller.FillExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
         }
-        if(1==2)
+        if(1==1)
         {
             Console.WriteLine($"\n Merge to File : {mergedFilename}");
             var x = _templateMerger.MergeTables(doc.InstanceId, filledFilename, mergedFilename);
