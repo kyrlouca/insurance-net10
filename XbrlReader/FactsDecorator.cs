@@ -227,6 +227,7 @@ public class FactsDecorator : IFactsDecorator
             newFact.Col = yMapping.DYN_TAB_COLUMN_NAME;
             //DimDom.GetParts(factDim?.DomValue??"").DomValue;
             newFact.TextValue = factDim.DomValue;
+            newFact.DataTypeUse = "S";
             var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
 
 

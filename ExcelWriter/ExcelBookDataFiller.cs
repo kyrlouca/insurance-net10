@@ -28,7 +28,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     private IWorkbook? Workbook;
     //private IWorkbook? _originWorkbook; //template workbook
     int _documentId = 0;
-    string debugTableCode = "";
+    
     private readonly ICustomPensionStyler _customPensionStyler;
     PensionStyles _pensionStyles;
 
@@ -63,24 +63,37 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         _pensionStyles = _customPensionStyler.GetStyles(Workbook);
 
-        ///////////////////////////////////////////////////////////////////S.04.01.01.01__s2c_LB_x138
+        ///////////////////////////////////////////////////////////////////
+        ///
         var dbClosedSheets = _SqlFunctions.SelectTempateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
+
+        var debugClosedTableCode = "S.06.02.01.01";
+        dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
+             ? dbClosedSheets
+             : dbClosedSheets.Where(tb => tb.TableCode?.Trim()   == debugClosedTableCode);
+
+
         foreach (var dbClosedSheet in dbClosedSheets)
         {
-            if (dbClosedSheet.TableCode == "S.04.01.01.01")
+            if (dbClosedSheet.TableCode == "ab")
             {
                 var x = 2;
             }
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
             //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
-
             FillClosedTable(dbClosedSheet);
-
         }
 
+        
         var dbOpenSheets = _SqlFunctions.SelectTempateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
+
+        var debugOpenTableCode = "S.06.02.01.01";
+        dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
+             ? dbOpenSheets
+             : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
+
         foreach (var dbOpenSheet in dbOpenSheets)
         {
             Console.WriteLine($"open:{dbOpenSheet.SheetCode}");
@@ -239,6 +252,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 {
                     continue;
                 }
+
                 SaveCellValue(cell, fact);
             }
             rowIndex += 1;
