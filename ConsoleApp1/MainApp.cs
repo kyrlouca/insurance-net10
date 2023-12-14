@@ -50,7 +50,7 @@ public class MyMainApp : IMyMainApp
             "S.28.01",
         };
 
-        if (1 == 2)
+        if (1 == 1)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)

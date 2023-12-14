@@ -27,6 +27,7 @@ try
 catch (Exception ex)
 {
 	Console.WriteLine(ex.ToString());
+	return 1;
 }
 
 return 0;
