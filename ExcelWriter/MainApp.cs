@@ -4,7 +4,7 @@ using Shared.CommonRoutines;
 using Shared.HostRoutines;
 using Shared.SharedHost;
 
-public class ExcelWriterMainApp : IExcelWriterMainApp
+public class MainApp : IMainApp
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -13,11 +13,11 @@ public class ExcelWriterMainApp : IExcelWriterMainApp
     private readonly ISqlFunctions _SqlFunctions;
     private readonly IExcelBookWriter _excelBookWriter;
     private readonly IExcelBookDataFiller _excelBookDataFiller;
-    private readonly ITemplateMerger _templateMerger;
+    private readonly IExcelBookMerger _templateMerger;
 
 
     public int id = 12;
-    public ExcelWriterMainApp(IParameterHandler getParameters, ILogger logger, ICustomPensionStyler customPensionStyles, ISqlFunctions sqlFunctions, IExcelBookWriter excelBookWriter, IExcelBookDataFiller excelBookDataFiller, ITemplateMerger templateMerger)
+    public MainApp(IParameterHandler getParameters, ILogger logger, ICustomPensionStyler customPensionStyles, ISqlFunctions sqlFunctions, IExcelBookWriter excelBookWriter, IExcelBookDataFiller excelBookDataFiller, IExcelBookMerger templateMerger)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();

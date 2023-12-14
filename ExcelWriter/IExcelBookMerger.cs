@@ -1,6 +1,6 @@
 ﻿namespace ExcelWriter
 {
-	public interface ITemplateMerger
+	public interface IExcelBookMerger
 	{
 		bool MergeTables(int documentId, string filename,string destFilename);
 	}

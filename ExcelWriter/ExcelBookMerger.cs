@@ -15,7 +15,7 @@ using System.Reflection.Metadata;
 using Syncfusion.XlsIO.Implementation;
 using ExcelWriter.Common;
 
-public class ExcelBookMerger : ITemplateMerger
+public class ExcelBookMerger : IExcelBookMerger
 {
 
     private readonly IParameterHandler _parameterHandler;
