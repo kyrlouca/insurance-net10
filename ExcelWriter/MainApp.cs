@@ -73,7 +73,7 @@ public class MainApp : IMainApp
         var mergedFilename = Path.Combine(dir, $"{fileNoExtension}_merged.xlsx");
 
 
-        if (1 == 1)
+        if (1 == 2)
         {
             Console.WriteLine($"\n Create Empty File : {EmptyFilename}");
             _excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);
@@ -82,11 +82,18 @@ public class MainApp : IMainApp
             {
                 return 1;
             }
-            Console.WriteLine($"\n Fill excel File : {filledFilename}");
-            var y = _excelBookDataFiller.PopulateExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
+            Console.WriteLine($"\n Fill excel File : {filledFilename}");        
         }
-        Console.WriteLine($"\n Merge to File : {mergedFilename}");
-        var x = _templateMerger.MergeTables(doc.InstanceId, filledFilename, mergedFilename);
+        if (1 == 1)
+        {
+            var y = _excelBookDataFiller.FillExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
+        }
+        if(1==2)
+        {
+            Console.WriteLine($"\n Merge to File : {mergedFilename}");
+            var x = _templateMerger.MergeTables(doc.InstanceId, filledFilename, mergedFilename);
+        }
+        
 
 
         return 0;

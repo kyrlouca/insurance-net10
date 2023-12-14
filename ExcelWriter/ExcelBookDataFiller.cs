@@ -40,7 +40,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         _customPensionStyler = customPensionStyles;
     }
 
-    public bool PopulateExcelBook(int documentId, string sourceFilename, string destFileName)
+    public bool FillExcelBook(int documentId, string sourceFilename, string destFileName)
     {
         _documentId = documentId;
         _parameterData = _parameterHandler.GetParameterData();
@@ -75,7 +75,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
             //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
 
-            PopulateClosedTable(dbClosedSheet);
+            FillClosedTable(dbClosedSheet);
 
         }
 
@@ -84,7 +84,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         foreach (var dbOpenSheet in dbOpenSheets)
         {
             Console.WriteLine($"open:{dbOpenSheet.SheetCode}");
-            PopulateOpenTable(dbOpenSheet);
+            FillOpenTable(dbOpenSheet);
         }
 
 
@@ -100,7 +100,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return true;
     }
 
-    private bool PopulateClosedTable(TemplateSheetInstance dbSheet)
+    private bool FillClosedTable(TemplateSheetInstance dbSheet)
     {
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
         //for multi facts, we need to create additional columns and write the currency/country above the column
@@ -213,7 +213,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
-    private bool PopulateOpenTable(TemplateSheetInstance dbSheet)
+    private bool FillOpenTable(TemplateSheetInstance dbSheet)
     {
 
         var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
