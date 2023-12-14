@@ -73,20 +73,23 @@ public class MainApp : IMainApp
         var mergedFilename = Path.Combine(dir, $"{fileNoExtension}_merged.xlsx");
 
 
-        if (1 == 2)
+        if (1 == 1)
         {
             Console.WriteLine($"\n Create Empty File : {EmptyFilename}");
-            _excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);
+            var savedFile =_excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);
             //return 0;
-            if (string.IsNullOrEmpty(EmptyFilename))
+            if (string.IsNullOrEmpty(savedFile))
             {
+                var message = $"Can NOT create file: {EmptyFilename} ";
+                _logger.Error(message);
+                _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
                 return 1;
             }
             Console.WriteLine($"\n Fill excel File : {filledFilename}");        
         }
-        if (1 == 2)
+        if (1 == 1)
         {
-            var y = _excelBookDataFiller.FillExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
+            var isFilled = _excelBookDataFiller.FillExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
         }
         if(1==1)
         {
