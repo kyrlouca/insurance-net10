@@ -121,7 +121,7 @@ public class WriterMainApp : IWriterMainApp
         if (1 == 2)
         {
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
-            if (!isSuccess)
+            if (!isSuccess) 
             {
                 _logger.Error(errorMessage);                
             }
