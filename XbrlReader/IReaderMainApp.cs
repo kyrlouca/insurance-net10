@@ -1,6 +1,6 @@
 ﻿namespace XbrlReader;
 
-public interface IMyMainApp
+public interface IReaderMainApp
 {
 	int Run();
 }

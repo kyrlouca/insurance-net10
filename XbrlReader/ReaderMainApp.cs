@@ -4,7 +4,7 @@ using Shared.CommonRoutines;
 using Shared.HostRoutines;
 using Shared.SharedHost;
 
-public class MyMainApp : IMyMainApp
+public class MyMainApp : IReaderMainApp
 {
 
     private readonly IParameterHandler _parameterHandler;

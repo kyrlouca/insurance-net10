@@ -1,6 +1,6 @@
 ﻿namespace ExcelWriter
 {
-	public interface IMainApp
+	public interface IWriterMainApp
 	{
 		int Run();
 	}

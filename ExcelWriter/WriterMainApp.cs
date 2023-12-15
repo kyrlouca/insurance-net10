@@ -7,7 +7,7 @@ using Shared.HostRoutines;
 using Shared.SharedHost;
 using Shared.SpecialRoutines;
 
-public class MainApp : IMainApp
+public class WriterMainApp : IWriterMainApp
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -20,7 +20,7 @@ public class MainApp : IMainApp
 
 
     public int id = 12;
-    public MainApp(IParameterHandler getParameters, ILogger logger, ICustomPensionStyler customPensionStyles, ISqlFunctions sqlFunctions, IExcelBookWriter excelBookWriter, IExcelBookDataFiller excelBookDataFiller, IExcelBookMerger templateMerger)
+    public WriterMainApp(IParameterHandler getParameters, ILogger logger, ICustomPensionStyler customPensionStyles, ISqlFunctions sqlFunctions, IExcelBookWriter excelBookWriter, IExcelBookDataFiller excelBookDataFiller, IExcelBookMerger templateMerger)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
@@ -70,7 +70,7 @@ public class MainApp : IMainApp
             _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
             return 1;
         }
-       
+
         var EmptyFilename = Path.Combine(dir, $"{fileNoExtension}_empty.xlsx");
         var filledFilename = Path.Combine(dir, $"{fileNoExtension}_filled.xlsx");
         var mergedFilename = Path.Combine(dir, $"{fileNoExtension}_merged.xlsx");
@@ -80,18 +80,18 @@ public class MainApp : IMainApp
         {
             Console.WriteLine($"\n Create excel Fil3e : {filledFilename}");
             //****************************************************************************************************
-            var savedFile =_excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);            
+            var savedFile = _excelBookWriter.CreateExcelBook(doc.InstanceId, EmptyFilename);
             if (string.IsNullOrEmpty(savedFile))
             {
                 var message = $"Can NOT create file: {EmptyFilename} ";
                 _logger.Error(message);
                 _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
                 return 1;
-            }            
+            }
         }
         if (1 == 1)
         {
-            Console.WriteLine($"\n Create excel File : {filledFilename}");
+            Console.WriteLine($"\n Fill Excel : {filledFilename}");
             //****************************************************************************************************
             var isFilled = _excelBookDataFiller.FillExcelBook(doc.InstanceId, EmptyFilename, filledFilename);
             if (!isFilled)
@@ -101,28 +101,29 @@ public class MainApp : IMainApp
                 _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
                 return 1;
             }
-            
+
         }
-        if(1==1)
+        if (1 == 1)
         {
-            Console.WriteLine($"\n Merge to File : {mergedFilename}");
+            Console.WriteLine($"\n Merge TabSheets  : {mergedFilename}");
             //****************************************************************************************************
             var isMerged = _templateMerger.MergeTables(doc.InstanceId, filledFilename, mergedFilename);
-            if (!isMerged) { 
+            if (!isMerged)
             {
-                var message = $"Can NOT Merge file: Filled:{filledFilename}  - filled:{mergedFilename}";
-                _logger.Error(message);
-                _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
-                return 1;
+                {
+                    var message = $"Can NOT Merge file: Filled:{filledFilename}  - filled:{mergedFilename}";
+                    _logger.Error(message);
+                    _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
+                    return 1;
+                }
             }
-        }
 
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
             if (!isSuccess)
             {
                 _logger.Error(errorMessage);
             }
-            var (isFsuccess,sErrorMessage)=FileUtilsKyr.DeleteFile(filledFilename);
+            var (isFsuccess, sErrorMessage) = FileUtilsKyr.DeleteFile(filledFilename);
             if (!isFsuccess)
             {
                 _logger.Error(sErrorMessage);
@@ -130,8 +131,8 @@ public class MainApp : IMainApp
 
             return 0;
 
+        }
+
+
+
     }
-
-
-
-}

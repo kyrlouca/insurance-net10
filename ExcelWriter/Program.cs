@@ -23,7 +23,7 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try 
 {	
-	host.Services.GetService<IMainApp>()?.Run();
+	host.Services.GetService<IWriterMainApp>()?.Run();
 }
 catch (Exception ex)
 {

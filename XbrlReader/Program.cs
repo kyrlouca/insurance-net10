@@ -22,7 +22,7 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try
 {
-	hostFluent.Services.GetService<IMyMainApp>()?.Run();
+	hostFluent.Services.GetService<IReaderMainApp>()?.Run();
 }
 catch (Exception ex)
 {
