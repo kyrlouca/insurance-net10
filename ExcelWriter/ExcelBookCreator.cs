@@ -116,7 +116,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
             ///////////A descritpion which is normally found above column labels
             var _TC = template.TC;
-            var descRange = CopyRangeToFixedPosition(START_ROW + 4, START_COL, originSheet, destSheet, _TC);
+            var descRange = CopyRangeToFixedPosition(START_ROW + 2, START_COL, originSheet, destSheet, _TC);
             
             var descriptionName = $"{destSheet.Name.Trim()}_desc";
             _destinationWorkbook.Names.Remove(descriptionName);
