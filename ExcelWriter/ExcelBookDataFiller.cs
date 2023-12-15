@@ -272,6 +272,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         {
             case "D": //date
                 cell.DateTime = fact.DateTimeValue;
+                cell.NumberFormat = "yyyy-mm-dd";
                 break;
             case "B": //boolean
                 cell.Boolean = fact.BooleanValue;
@@ -285,6 +286,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             case "P": //Percent
                 cell.Number = (double)fact.NumericValue;
                 cell.HorizontalAlignment = ExcelHAlign.HAlignRight;
+                cell.NumberFormat = "0.00%";
                 break;
             case "S": //String
                 cell.Text = fact.TextValue.Trim();
