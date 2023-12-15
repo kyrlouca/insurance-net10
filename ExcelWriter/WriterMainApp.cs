@@ -116,22 +116,23 @@ public class WriterMainApp : IWriterMainApp
                     _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
                     return 1;
                 }
-            }
-
+            }            
+        }
+        if (1 == 2)
+        {
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
             if (!isSuccess)
             {
-                _logger.Error(errorMessage);
+                _logger.Error(errorMessage);                
             }
             var (isFsuccess, sErrorMessage) = FileUtilsKyr.DeleteFile(filledFilename);
             if (!isFsuccess)
             {
                 _logger.Error(sErrorMessage);
             }
-
-            return 0;
-
         }
+        return 0;
+
     }
 }
 
