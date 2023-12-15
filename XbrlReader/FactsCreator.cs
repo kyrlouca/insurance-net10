@@ -51,12 +51,55 @@ public class FactsCreator : IFactsCreator
 	}
 
 
-	public (int, List<string>) CreateLooseFacts()
+
+
+    public (bool success, string message) HandleExistingDocuments()
+    {
+        _parameterData = _parameterHandler.GetParameterData();
+        _mModule = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
+
+        var existingDocs = GetExistingDocuments();
+        //var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "P");
+        var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "X");
+        if (lockedDocument is not null)
+        {
+            var message = $"Cannot create Document. Another Document is currently being processed :{lockedDocument.InstanceId} ";
+            return (false, message);
+        }
+        var sbmittedDocument = existingDocs.FirstOrDefault(doc => doc.IsSubmitted);
+        if (sbmittedDocument is not null)
+        {
+            var message = $"Cannot create Document. It was already been submitted {sbmittedDocument.InstanceId} ";
+            return (false, message);
+        };
+
+        //delete older versions (except from locked or submitted)
+        existingDocs.Where(doc => doc.Status.Trim() != "X" && !doc.IsSubmitted)
+            .ToList()
+            .ForEach(doc => DeleteDocument(doc.InstanceId));
+
+        return (true, "");
+    }
+
+    private List<DocInstance> GetExistingDocuments()
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlExists = @"
+                    select doc.InstanceId, doc.Status, doc.IsSubmitted, EiopaVersion from DocInstance doc  where  
+                    PensionFundId= @FundId and ModuleId=@moduleId
+                    and ApplicableYear = @ApplicableYear and ApplicableQuarter = @ApplicableQuarter"
+                ;
+
+        var docParams = new { _parameterData.FundId, ModuleId = _mModule.ModuleID, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter };
+        var docs = connectionInsurance.Query<DocInstance>(sqlExists, docParams).ToList();
+        return docs;
+    }
+
+    public (int, List<string>) CreateLooseFacts()
 	{
 
 		//Parse an xbrl file and create on object of the class which has the contexts, facts, etc
-		//However, with the new design design, contexts and facts are saved in memory tables and NOT in data structures            
-		_parameterData = _parameterHandler.GetParameterData();
+		//However, with the new design design, contexts and facts are saved in memory tables and NOT in data structures            		
 		var message = "";
 		var (parseValid, parseMessage, parsexmlDoc) = ParseXmlFile();
 		_xmlDoc = parsexmlDoc;
@@ -71,15 +114,13 @@ public class FactsCreator : IFactsCreator
 		var reference = RootNode?.Element(link + "schemaRef")?.Attribute(xlink + "href")?.Value ?? "N?F";
 
 
-		var moduleCodeXbrl = RegexUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);
-		_mModule = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
+		var moduleCodeXbrl = RegexUtils.GetRegexSingleMatch(@"http.*mod\/(\w*)", reference);		
 		Console.WriteLine($"Opened Xblrl=>  Module: {moduleCodeXbrl} ");
 		if (moduleCodeXbrl != _mModule.ModuleCode)
 		{
 			var moduleMessage = @$"The Module Code in the Xbrl file is ""{moduleCodeXbrl}"" instead of ""{_mModule.ModuleCode}""";
-			Log.Error(moduleMessage);
-			Console.WriteLine(moduleMessage);
-
+            _logger.Error(moduleMessage);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, moduleMessage);            
 			return (0, FilingsSubmitted);
 		}
 
@@ -111,8 +152,9 @@ public class FactsCreator : IFactsCreator
 		{
 			message = $"Cannot Create DocInstance for: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
 			Console.WriteLine(message);
-			Log.Error(message);
-			return (0, FilingsSubmitted);
+            _logger.Error(message);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
+            return (0, FilingsSubmitted);
 		}
 
 
@@ -376,9 +418,8 @@ VALUES (
 				}
 				catch (Exception e)
 				{
-					var errMessage = $"{e.Message}===>, fact text:{newFact.TextValue}, xbrl:{newFact.XBRLCode}";
-					Console.WriteLine(errMessage);
-					Log.Error(errMessage);
+					var errMessage = $"{e.Message}===>, fact text:{newFact.TextValue}, xbrl:{newFact.XBRLCode}";					
+					_logger.Error(errMessage);					
 
 				}
 
@@ -440,10 +481,9 @@ VALUES (
 
 			}
 			catch (Exception e)
-			{
-				Log.Error(e.Message);
-				var message = $"XBRL file not valid : {_parameterData.FileName}";
-				return (false, message, null);
+			{				
+				var message = $"XBRL file not valid : {_parameterData.FileName}";                
+                return (false, message, null);
 			}
 		return (true, "", xmlDoc);
 	}
@@ -540,21 +580,6 @@ VALUES (
 		return (true, "");
 	}
 
-	private List<DocInstance> GetExistingDocuments()
-	{
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-		var sqlExists = @"
-                    select doc.InstanceId, doc.Status, doc.IsSubmitted, EiopaVersion from DocInstance doc  where  
-                    PensionFundId= @FundId and ModuleId=@moduleId
-                    and ApplicableYear = @ApplicableYear and ApplicableQuarter = @ApplicableQuarter"
-				;
-
-		var docParams = new { _parameterData.FundId, ModuleId = _mModule.ModuleID, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter };
-		var docs = connectionInsurance.Query<DocInstance>(sqlExists, docParams).ToList();
-		return docs;
-	}
-
-
 	private int DeleteDocument(int documentId)
 	{
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -567,33 +592,8 @@ VALUES (
 		return rows;
 	}
 
-	private (bool success, string message) HandleExistingDocuments()
-	{
 
-		var existingDocs = GetExistingDocuments();
-		var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "P");
-		if (lockedDocument is not null)
-		{
-			var message = $"Cannot create Document. Another Document is currently being processed :{lockedDocument.InstanceId} ";
-			return (false, message);
-		}
-		var sbmittedDocument = existingDocs.FirstOrDefault(doc => doc.IsSubmitted);
-		if (sbmittedDocument is not null)
-		{
-			var message = $"Cannot create Document. It was already been submitted {sbmittedDocument.InstanceId} ";
-			return (false, message);
-		};
-
-		//delete older versions (except from locked or submitted)
-		existingDocs.Where(doc => doc.Status.Trim() != "P" && !doc.IsSubmitted)
-			.ToList()
-			.ForEach(doc => DeleteDocument(doc.InstanceId));
-
-		return (true, "");
-	}
-
-
-	private int CreateDocInstanceInDb()
+    private int CreateDocInstanceInDb()
 	{
 		using var connection = new SqlConnection(_parameterData.SystemConnectionString);
 		using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);

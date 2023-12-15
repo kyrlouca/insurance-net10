@@ -4,7 +4,7 @@ using Shared.CommonRoutines;
 using Shared.HostRoutines;
 using Shared.SharedHost;
 
-public class MyMainApp : IReaderMainApp
+public class ReaderMainApp : IReaderMainApp
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -16,7 +16,7 @@ public class MyMainApp : IReaderMainApp
 
 
     public int id = 12;
-    public MyMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator,  IFactsDecorator factsMover)
+    public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator,  IFactsDecorator factsMover)
     {
         _parameterHandler = getParameters;
         _logger = logger;
@@ -52,12 +52,22 @@ public class MyMainApp : IReaderMainApp
 
         if (1 == 1)
         {
-            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
+            var (isHandleSuccess,handleMessage) = _factsCreator.HandleExistingDocuments();
+            if (!isHandleSuccess)
+            {
+                _logger.Information(handleMessage);
+                _SqlFunctions.CreateTransactionLog(0, MessageType.COMPLETE, handleMessage);
+                return 1;
+            }
+        }
+
+        if (1 == 1)
+        {
+            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
             if (_documentId == 0)
             {
                 return 1;
             }
-
         }
 
         if (1 == 1)
@@ -66,23 +76,14 @@ public class MyMainApp : IReaderMainApp
             if (res != 0)
             {
                 return res;
-            }
-            return 0;
-        }
+            }            
+        }                 
 
-          
-     
-
-        
-
-        //_SqlFunctions.UpdateDocumentStatus(_documentId, "L");
-
-        //var message = $"Xbrl Document Loaded Successfully:DocumentId= {_documentId}";
-        //_logger.Information(message);
-        //_SqlFunctions.CreateTransactionLog(0, MessageType.COMPLETE, message);
+        _SqlFunctions.UpdateDocumentStatus(_documentId, "L");
+        var message = $"Xbrl Document Loaded Successfully:DocumentId= {_documentId}";
+        _logger.Information(message);
+        _SqlFunctions.CreateTransactionLog(0, MessageType.COMPLETE, message);
         return 0;
     }
-
-
 
 }
