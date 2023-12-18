@@ -325,8 +325,8 @@ public class SqlFunctions : ISqlFunctions
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlInsert = @"
-        INSERT INTO[ContextLine]([ContextId], [Dimension], [Domain], [DomainValue], [DomainAndValue], [IsExplicit], [InstanceId])
-                    VALUES(@ContextId, @Dimension, @Domain, @DomainValue, @DomainAndValue, @IsExplicit, @InstanceID);
+        INSERT INTO[ContextLine]([ContextId],signature, [Dimension], [Domain], [DomainValue], [DomainAndValue], [IsExplicit], [InstanceId])
+                    VALUES(@ContextId,@signature, @Dimension, @Domain, @DomainValue, @DomainAndValue, @IsExplicit, @InstanceID);
         SELECT CAST(SCOPE_IDENTITY() as int);            
         ";
 
