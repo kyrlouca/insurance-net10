@@ -6,6 +6,7 @@ using Shared.DataModels;
 using Shared.GeneralUtils;
 using Shared.HostRoutines;
 using Shared.SharedHost;
+using System.Collections.Generic;
 
 public class SqlFunctions : ISqlFunctions
 {
@@ -310,4 +311,53 @@ public class SqlFunctions : ISqlFunctions
         return fact;
     }
 
+
+    public ContextLine? CreateContextLine(ContextLine contextLine)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlInsert = @"
+        INSERT INTO[ContextLine]([ContextId], [Dimension], [Domain], [DomainValue], [DomainAndValue], [IsExplicit], [InstanceId])
+                    VALUES(@ContextId, @Dimension, @Domain, @DomainValue, @DomainAndValue, @IsExplicit, @InstanceID);
+        SELECT CAST(SCOPE_IDENTITY() as int);            
+        ";
+
+        var ctxId = 0;
+        try
+        {
+            ctxId = connectionInsurance.QuerySingleOrDefault<int>(sqlInsert, contextLine);
+            contextLine.ContextId = ctxId;
+            return contextLine;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"error creating ContextLine :{contextLine.ContextId} col:{contextLine.DomainAndValue} - {ex.Message}");
+            return null;
+        }                
+        
+    }
+
+
+    public ContextModel? CreateContext(ContextModel context)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlInsertContext = @"INSERT INTO Context (InstanceId, ContextXbrlId, Signature, TableId) 
+                    VALUES (@InstanceId,@ContextXbrlId, @Signature, @TableId)
+                    SELECT CAST(SCOPE_IDENTITY() as int);
+                ";
+
+        var ctxId = 0;
+        try
+        {
+            ctxId = connectionInsurance.QuerySingleOrDefault<int>(sqlInsertContext, context);
+            var res= context with { ContextId=ctxId };
+            return res;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"error creating Context :{context.Signature} - {ex.Message}");
+            return null;
+        }
+
+    }
 }
+

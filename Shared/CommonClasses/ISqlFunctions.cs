@@ -22,4 +22,7 @@ public interface ISqlFunctions
 
 	public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, MTable table);
 	public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact);
+	public ContextModel? CreateContext(ContextModel context);
+
+    public ContextLine? CreateContextLine(ContextLine contextLine);
 }

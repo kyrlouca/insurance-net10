@@ -65,7 +65,7 @@ public class TemplateSheetFact
         return this;
     }
 
-    private static string BuildFactSignature(string xbrlCode,  List<string> ctxLines)
+    public static string BuildFactSignature(string xbrlCode,  List<string> ctxLines)
     {
         //A signature includes the metric and all the dimensions
         //For explicit dimensions (used in open tables, where user can type the value) we do NOT take the value of the context item (add *)

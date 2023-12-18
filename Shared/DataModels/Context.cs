@@ -24,9 +24,11 @@ public class Context
 	}
 	public string BuildSignature()
 	{
-		Signature = string.Join("|", ContextLinesF1);
+		var ctLines = ContextLinesF1.Order();
+		Signature = string.Join("|", ctLines);
 		return Signature;
 	}
+    
 
 }
 

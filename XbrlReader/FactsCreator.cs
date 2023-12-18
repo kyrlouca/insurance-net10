@@ -16,6 +16,7 @@ using System.Reflection;
 using System.Xml.Linq;
 using XbrlReader;
 using System.Text;
+using Syncfusion.XlsIO;
 
 public class FactsCreator : IFactsCreator
 {
@@ -171,7 +172,7 @@ public class FactsCreator : IFactsCreator
 		Console.WriteLine("\nCreate Facts");
 		AddFacts();
 
-		DeleteContexts();
+		//DeleteContexts();
 		return (_documentId, FilingsSubmitted);
 
 
@@ -215,18 +216,12 @@ public class FactsCreator : IFactsCreator
 			var i = 0;
 			foreach (var contextElement in contextElements)
 			{
+
 				//read the explicit and typed dimensions of each context 
 				i += 1;
+				var contextLines=new List<ContextLine>();
 				var contextXbrlId = contextElement.Attribute("id").Value;
 				var scenario = contextElement.Element(xbrli + "scenario");
-
-
-				var contextDb = new Context(_documentId, contextXbrlId, contextXbrlId, 0);
-				var sqlInsertContext = @"INSERT INTO dbo.Context (InstanceId, ContextXbrlId, Signature, TableId) VALUES (@InstanceId,@ContextXbrlId, @Signature, @TableId)
-                    SELECT CAST(SCOPE_IDENTITY() as int);
-                ";
-
-				var contextId = connectionInsurance.QuerySingleOrDefault<int>(sqlInsertContext, contextDb);
 
 				//Explicit dims //<xbrldi:explicitMember dimension="s2c_dim:AG">s2c_VM:x17</xbrldi:explicitMember>                    
 				var explicitDims = scenario?.Elements(xbrldi + "explicitMember") ?? new List<XElement>();
@@ -236,11 +231,11 @@ public class FactsCreator : IFactsCreator
 					//<xbrldi:explicitMember dimension="s2c_dim:AG">s2c_VM:x17</xbrldi:explicitMember>
 					var dimAndType = explicitDim.Attribute("dimension").Value; //s2c_dim:AG                    
 					var domainAndMember = explicitDim.Value; //s2c_VM:x17
-
-					//************************
-					var dd = $"{dimAndType}({domainAndMember})";
-					contextDb.ContextLinesF1.Add(dd);
-					//****************************                   
+					
+					var ctxSignature = $"{dimAndType}({domainAndMember})";
+					var dimDom = DimDom.GetParts(ctxSignature);                    
+                    var ctxLine = new ContextLine() {ContextId=0, Signature = dimDom.Signature, Dimension =dimDom.Dim,Domain=dimDom.Dom,DomainAndValue=dimDom.DomAndValRaw, DomainValue = dimDom.DomValue,IsExplicit =true};					
+					contextLines.Add(ctxLine);					
 				}
 
 
@@ -255,23 +250,42 @@ public class FactsCreator : IFactsCreator
 					var domNode = typedDim.Elements()?.First(); //<s2c_typ:ID>1</s2c_typ:ID>                    
 					var domain = domNode?.Name?.LocalName ?? ""; //ID
 					var domainMember = domNode.Value; //1                     
-					var domainAndMember = $"{domain}:{domainMember}";  //s2c_typ:ID
+					var domainAndMember = $"{domain}:{domainMember}";  //s2c_typ:ID					
+					var ctxTypedSignature = $"{dimAndType}({domainAndMember})";
+                                        
+                    var dimDom = DimDom.GetParts(ctxTypedSignature);
+                    var ctxTypedLine = new ContextLine() { ContextId = 0,Signature=dimDom.Signature, Dimension = dimDom.Dim, Domain = dimDom.Dom, DomainAndValue = dimDom.DomAndValRaw, DomainValue = dimDom.DomValue, IsExplicit = false };
+                    contextLines.Add(ctxTypedLine);                                        
+                }
 
-					//******************************
-					var dd = $"{dimAndType}({domainAndMember})";
-					contextDb.ContextLinesF1.Add(dd);
-					//*****************************
+				var ctLines = contextLines.Select(cl => cl.Signature).Order();
+                var contexSignature = string.Join("|", ctLines);
+                
+                
+                var context = _SqlFunctions.CreateContext(new ContextModel(InstanceId: _documentId, 0, contextXbrlId, contexSignature, 0));
+                var contextId = context?.ContextId;
+                if (context is null)
+                {
+                    continue;
+                }
 
-				}
-				var sqlUpdateContext = @"update Context set Signature=@Signature where ContextId=@ContextId;";
+				foreach(var ctxLine in contextLines)
+				{
+					ctxLine.ContextId = context.ContextId;					
+                    var x = _SqlFunctions.CreateContextLine(ctxLine);
+                }
+
+                
 
 				//todo We do not need to update the signature since we are finding the facts using fact dims
 				//however, we sould create fact dims directly
-				contextDb.BuildSignature();
-				connectionInsurance.Execute(sqlUpdateContext, new { contextDb.Signature, contextId });
+
+
 				Console.Write($"^");
 			}
-		}
+            
+        }
+
 
 		void DeleteContexts()
 		{
@@ -355,9 +369,11 @@ public class FactsCreator : IFactsCreator
 					RowSignature = "",
 				};
 
-				var ctxLines = GetContextLinesNew(contextId);
+				var contextLines = GetContextLines(contextId);
+				newFact.ContextId= contextId;
+                newFact.DataPointSignature = TemplateSheetFact.BuildFactSignature(xbrlCode, contextLines);
 
-				newFact.UpdateFactDetails(xbrlCode, ctxLines);
+                //newFact.UpdateFactDetails(xbrlCode, contextLines);
 
 				var sqlInsFact = @"
                     
@@ -435,7 +451,7 @@ VALUES (
 
 				//---------------------------
 
-				List<string> GetContextLinesNew(string contextId)
+				List<string> GetContextLines(string contextId)
 				{
 					//using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);                
 					var sqlContext = @"select Signature from Context where ContextXbrlId= @contextId and InstanceId =@_documentId";
