@@ -361,6 +361,7 @@ public class FactsCreator : IFactsCreator
 					//nsPrefix = prefix,
 					XBRLCode = xbrlCode,
 					ContextId = contextXbrlId,
+					ContextNumberId=context?.ContextId??0,
 					Unit = unitRef,
 					Decimals = decimals,
 					IsConversionError = false,
@@ -376,7 +377,6 @@ public class FactsCreator : IFactsCreator
 					RowSignature = "",
 				};
                 
-
                 var contextLines = GetContextLines(contextXbrlId);
 				newFact.ContextId= contextXbrlId;
 
@@ -387,7 +387,13 @@ public class FactsCreator : IFactsCreator
 					var cc = 332;
 				}
 
-                newFact.UpdateFactDetails(xbrlCode, contextLines);
+				//newFact.UpdateFactDetails(xbrlCode, contextLines);
+				var cFact = _SqlFunctions.CreateTemplateSheetFact(newFact);
+				if(cFact is null)
+				{
+					continue;
+				}
+
 
 				var sqlInsFact = @"
                     
@@ -443,8 +449,8 @@ VALUES (
                    ";
 				try
 				{
-					newFact.FactId = connectionInsurance.QuerySingleOrDefault<int>(sqlInsFact, newFact);
-					CreateFactDimsDb(newFact.FactId, newFact.DataPointSignature);
+					//newFact.FactId = connectionInsurance.QuerySingleOrDefault<int>(sqlInsFact, newFact);
+					CreateFactDimsDb(cFact.FactId, cFact.DataPointSignature);
 				}
 				catch (Exception e)
 				{

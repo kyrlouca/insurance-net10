@@ -42,7 +42,9 @@ public class TemplateSheetFact
 
     
     public int MetricID { get; set; }
-    public string ContextId { get; set; }        
+    public string ContextId { get; set; }
+    public int ContextNumberId { get; set; }
+    
     public string Signature { get; set; }
     public string RowSignature { get; set; }        
     public int InstanceId { get; set; }        

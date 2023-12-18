@@ -291,17 +291,26 @@ public class SqlFunctions : ISqlFunctions
         {
             return null;
         }
-        var sqlInsertFact = @"
+        var sqlInsertLooseFact = @"
              INSERT INTO TemplateSheetFact 
-                (InstanceId ,templateSheetId, Row, Col, Zet, CellID, FieldOrigin, TableID, DataPointSignature, Unit, Decimals, NumericValue, BooleanValue, DateTimeValue, TextValue, DPS, IsRowKey, IsShaded, XBRLCode, DataType, DataPointSignatureFilled,  InternalRow, internalCol, DataTypeUse, IsEmpty, IsConversionError, ZetValues, OpenRowSignature, CurrencyDim,  metricId, contextId,  RowSignature  )
+                (InstanceId , Row, Col, Zet, CellID, FieldOrigin, TableID, DataPointSignature, Unit, Decimals, NumericValue, BooleanValue, DateTimeValue, TextValue, DPS, IsRowKey, IsShaded, XBRLCode, DataType, DataPointSignatureFilled,  InternalRow, internalCol, DataTypeUse, IsEmpty, IsConversionError, ZetValues, OpenRowSignature, CurrencyDim,  metricId, contextId,ContextNumberId,  RowSignature  )
              VALUES 
-                (@InstanceId,@templateSheetId,  @Row, @Col, @Zet, @CellID, @FieldOrigin, @TableID, @DataPointSignature, @Unit, @Decimals, @NumericValue, @BooleanValue, @DateTimeValue, @TextValue, @DPS, @IsRowKey, @IsShaded, @XBRLCode, @DataType, @DataPointSignatureFilled,  @InternalRow, @internalCol, @DataTypeUse, @IsEmpty, @IsConversionError, @ZetValues, @OpenRowSignature, @CurrencyDim,  @metricId,  @contextId,  @RowSignature );
+                (@InstanceId,  @Row, @Col, @Zet, @CellID, @FieldOrigin, @TableID, @DataPointSignature, @Unit, @Decimals, @NumericValue, @BooleanValue, @DateTimeValue, @TextValue, @DPS, @IsRowKey, @IsShaded, @XBRLCode, @DataType, @DataPointSignatureFilled,  @InternalRow, @internalCol, @DataTypeUse, @IsEmpty, @IsConversionError, @ZetValues, @OpenRowSignature, @CurrencyDim,  @metricId,  @contextId,@ContextNumberId,  @RowSignature );
+             SELECT CAST(SCOPE_IDENTITY() as int);            
+            ";
+
+        var sqlInsertSheetFact = @"
+             INSERT INTO TemplateSheetFact 
+                (InstanceId ,templateSheetId, Row, Col, Zet, CellID, FieldOrigin, TableID, DataPointSignature, Unit, Decimals, NumericValue, BooleanValue, DateTimeValue, TextValue, DPS, IsRowKey, IsShaded, XBRLCode, DataType, DataPointSignatureFilled,  InternalRow, internalCol, DataTypeUse, IsEmpty, IsConversionError, ZetValues, OpenRowSignature, CurrencyDim,  metricId, contextId,ContextNumberId,  RowSignature  )
+             VALUES 
+                (@InstanceId,@templateSheetId,  @Row, @Col, @Zet, @CellID, @FieldOrigin, @TableID, @DataPointSignature, @Unit, @Decimals, @NumericValue, @BooleanValue, @DateTimeValue, @TextValue, @DPS, @IsRowKey, @IsShaded, @XBRLCode, @DataType, @DataPointSignatureFilled,  @InternalRow, @internalCol, @DataTypeUse, @IsEmpty, @IsConversionError, @ZetValues, @OpenRowSignature, @CurrencyDim,  @metricId,  @contextId,@ContextNumberId,  @RowSignature );
              SELECT CAST(SCOPE_IDENTITY() as int);            
             ";
         int factId = 0;
+        var sqlInsert= fact.TemplateSheetId>0 ? sqlInsertSheetFact : sqlInsertLooseFact;
         try
         {
-            factId = connectionInsurance.QuerySingle<int>(sqlInsertFact,fact);
+            factId = connectionInsurance.QuerySingle<int>(sqlInsert,fact);
         }
         catch( Exception ex ) {
             Log.Error($"error creating Fact :{fact.Row} col:{fact.Col} - {ex.Message}");
