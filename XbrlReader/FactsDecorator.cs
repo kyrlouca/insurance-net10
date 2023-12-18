@@ -680,4 +680,47 @@ public class FactsDecorator : IFactsDecorator
     }
 
 
+    public static string MakeCellSignatureWild(string cellSignature)
+    {
+        //replace selections with sql wildcard s2c_dim:AX(*[8;1;0])=>s2c_dim:AX(%). 
+        //replace optional dims with %
+        //delete wildcard if at the end of line |%$
+
+
+        //@"MET(s2md_met:mi87)|s2c_dim:AF(*?[59])|s2c_dim:AX(*[8;1;0])|s2c_dim:BL(s2c_LB:x9)";
+        //allow optional =>@"MET(s2md_met:mi87)|s2c_dim:AF(%)|s2c_dim:AX(%)|s2c_dim:BL(s2c_LB:x9)"
+        //not allow optional=>@"MET(s2md_met:mi87)|s2c_dim:AX(%)|s2c_dim:BL(s2c_LB:x9)");
+
+
+        var dimListBasic = cellSignature.Split("|").ToList();
+
+        var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
+        var evaluator = new MatchEvaluator(MatchReplacer);
+
+        var dimList = dimListBasic
+            .Select(dim => dim.Contains('?') ? dim.Replace(dim, "%") : dim)
+            .Select(dim => dim.Contains('*') ? rgx.Replace(dim, evaluator) : dim);
+
+
+        var wildSig = string.Join("|", dimList);
+
+        var regExOptional = new Regex(@"\|%", RegexOptions.Compiled);
+        wildSig = regExOptional.Replace(wildSig, "%");
+
+        return wildSig;
+
+        static string MatchReplacer(Match match)
+        {
+            if (!match.Success)
+            {
+                return match.Value;
+            }
+            var newVal = match.Value.Replace(match.Groups[1].Value, "%");
+            return newVal;
+        }
+    }
+
+
+
+
 }

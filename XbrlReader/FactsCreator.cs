@@ -43,16 +43,12 @@ public class FactsCreator : IFactsCreator
 	List<string> FilingsSubmitted = new();
 
 
-
 	public FactsCreator(IParameterHandler parametersHandler, ILogger logger, ISqlFunctions commonRoutines)
 	{
 		_parameterHandler = parametersHandler;
 		_logger = logger;
 		_SqlFunctions = commonRoutines;
 	}
-
-
-
 
     public (bool success, string message) HandleExistingDocuments()
     {
@@ -262,7 +258,7 @@ public class FactsCreator : IFactsCreator
                 var contexSignature = string.Join("|", ctLines);
                 
                 
-                var context = _SqlFunctions.CreateContext(new ContextModel(InstanceId: _documentId, 0, contextXbrlId, contexSignature, 0));
+                var context = _SqlFunctions.CreateContext(new ContextModel() {InstanceId= _documentId, ContextId= 0,ContextXbrlId= contextXbrlId,Signature= contexSignature??"", TableId=0 });
                 var contextId = context?.ContextId;
                 if (context is null)
                 {
@@ -335,11 +331,22 @@ public class FactsCreator : IFactsCreator
 				//var dataTypeUse = CntConstants.SimpleDataTypes[mMetric.DataType]; //N, S,B,E..
 
 				//var unitNN = XbuFact.Units.ContainsKey(unitRef) ? Units[unitRef] : unitRef;
-				var contextId = fe.Attribute("contextRef")?.Value ?? "";
+				var contextXbrlId = fe.Attribute("contextRef")?.Value ?? "";
 
 				//-----------------------                
-
-				var newFact = new TemplateSheetFact
+				var context = _SqlFunctions.SelectContext(_documentId, contextXbrlId);
+				if(context is null)
+				{
+					continue;
+				}
+				var factSignature=  $"MET({xbrlCode.Trim()})" ;
+				if(!string.IsNullOrWhiteSpace(context?.Signature))
+				{
+                    factSignature = $"{factSignature}|{context?.Signature}";
+				}
+				
+                
+                var newFact = new TemplateSheetFact
 				{
 					InstanceId = _documentId,
 					Row = "",
@@ -353,7 +360,7 @@ public class FactsCreator : IFactsCreator
 					MetricID = mMetric?.MetricID ?? 0,
 					//nsPrefix = prefix,
 					XBRLCode = xbrlCode,
-					ContextId = contextId,
+					ContextId = contextXbrlId,
 					Unit = unitRef,
 					Decimals = decimals,
 					IsConversionError = false,
@@ -365,15 +372,22 @@ public class FactsCreator : IFactsCreator
 					DataType = mMetric?.DataType ?? "",
 					DataTypeUse = dataTypeUse,
 					DataPointSignature = "",
-					DataPointSignatureFilled = "",
+					DataPointSignatureFilled = factSignature,
 					RowSignature = "",
 				};
+                
 
-				var contextLines = GetContextLines(contextId);
-				newFact.ContextId= contextId;
+                var contextLines = GetContextLines(contextXbrlId);
+				newFact.ContextId= contextXbrlId;
+
+				
                 newFact.DataPointSignature = TemplateSheetFact.BuildFactSignature(xbrlCode, contextLines);
+				if (factSignature != newFact.DataPointSignature)
+				{
+					var cc = 332;
+				}
 
-                //newFact.UpdateFactDetails(xbrlCode, contextLines);
+                newFact.UpdateFactDetails(xbrlCode, contextLines);
 
 				var sqlInsFact = @"
                     
@@ -461,8 +475,30 @@ VALUES (
 				}
 
 
+                static string BuildFactSignatureSimple(string xbrlCode, List<string> ctxLines)
+                {
+                    //A signature includes the metric and all the dimensions
+                    //For explicit dimensions (used in open tables, where user can type the value) we do NOT take the value of the context item (add *)
 
-			}
+
+                    var metXbrlCode = $"MET({xbrlCode})";
+
+                    //var signatureList = contextLines?.Select(line => $"s2c_dim:{line.Dimension}({line.DomainAndValue})").ToList() ?? new List<string>();            
+                    //signatureList.Sort();
+
+                    //signatureList.Insert(0, metXbrlCode);
+                    //var signature = string.Join("|", signatureList);
+
+                    ctxLines.Sort();
+                    ctxLines.Insert(0, metXbrlCode);
+                    var newSignature = string.Join("|", ctxLines);
+
+
+                    return newSignature;
+                }
+
+
+            }
 
 			MMetric FindFactMetricId(string xbrlCode)
 			{
@@ -483,6 +519,7 @@ VALUES (
 
 
 	}
+
 
 
 	private (bool isParsed, string parseMessage, XDocument?) ParseXmlFile()
@@ -528,7 +565,6 @@ VALUES (
 		return fund;
 	}
 
-
 	private FundModel? GetDbFundById(int fundId)
 	{
 		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -537,7 +573,6 @@ VALUES (
 		var fund = connectionLocal.QuerySingleOrDefault<FundModel>(sqlFund, new { fundId });
 		return fund;
 	}
-
 
 	private SubmissionReferenceDateModel? GetSubmissionReferenceDate(int category, int referenceYear, int quarter)
 	{
@@ -607,7 +642,6 @@ VALUES (
 
 		return rows;
 	}
-
 
     private int CreateDocInstanceInDb()
 	{

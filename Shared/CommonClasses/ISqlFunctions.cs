@@ -25,4 +25,5 @@ public interface ISqlFunctions
 	public ContextModel? CreateContext(ContextModel context);
 
     public ContextLine? CreateContextLine(ContextLine contextLine);
+	public ContextModel? SelectContext(int documentId, string contextXbrlId);
 }

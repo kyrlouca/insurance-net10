@@ -359,5 +359,16 @@ public class SqlFunctions : ISqlFunctions
         }
 
     }
+
+    public ContextModel? SelectContext(int documentId, string contextXbrlId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelectContext = @"select * from Context ctx where ctx.InstanceId=@documentId and  ctx.ContextXbrlId=@ContextXbrlId";
+
+        var ctx = connectionInsurance.QuerySingleOrDefault<ContextModel>(sqlSelectContext, new { documentId, contextXbrlId });
+        return ctx;        
+
+    }
+
 }
 
