@@ -379,5 +379,15 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
+    public List<ContextLine> SelectContextLines(int contextId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelectContext = @"select * from ContextLine cl where cl.ContextId = @ContextId";
+
+        var ctx = connectionInsurance.Query<ContextLine>(sqlSelectContext, new { contextId,  }).ToList();
+        return ctx;
+    }
+
+
 }
 

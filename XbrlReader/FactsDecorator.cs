@@ -58,13 +58,13 @@ public class FactsDecorator : IFactsDecorator
         _parameterData = _parameterHandler.GetParameterData();
 
         _document = _SqlFunctions.SelectDocInstance(documentId);
-        if(_document is null)
+        if (_document is null)
         {
-            
-                var message = $"Cannot find DocInstance for: docId:{_documentId}, fundId:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
-                Console.WriteLine(message);
-                Log.Error(message);
-                return 1;            
+
+            var message = $"Cannot find DocInstance for: docId:{_documentId}, fundId:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
+            Console.WriteLine(message);
+            Log.Error(message);
+            return 1;
         }
         _moduleCode = _document.ModuleCode.Trim();
         _moduleId = _document.ModuleId;
@@ -116,7 +116,7 @@ public class FactsDecorator : IFactsDecorator
                 CreateYFactsForOpenTables(sheetInfo);
                 UpdateForeignKeysOfChildTablesNN();
             }
-                       
+
 
         }
 
@@ -138,7 +138,7 @@ public class FactsDecorator : IFactsDecorator
         var sheetInfo = new List<SheetInfoType>();
 
         //create sheets for each template due to page zets (more than one)
-        var sheetCount = 1; 
+        var sheetCount = 1;
         foreach (var FactZetValue in FactZetValuesList)
         {
 
@@ -287,7 +287,7 @@ public class FactsDecorator : IFactsDecorator
         return 0;
 
     }
-    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature,string zetValues, string currencyDim)
+    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature, string zetValues, string currencyDim)
     {
         //zetvalues has all the zet and zet has the zet for currency or country which do NOT change page
 
@@ -299,7 +299,7 @@ public class FactsDecorator : IFactsDecorator
             WHERE 
               FactId= @FactId AND TemplateSheetId IS NULL 
             ";
-        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature,zetValues ,currencyDim });
+        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature, zetValues, currencyDim });
         return x;
     }
 
@@ -322,13 +322,14 @@ public class FactsDecorator : IFactsDecorator
         // --find any other dims from the page mappings (is_InTable=1) and then add the zet mappings 
         // --find the facts
         var tableFacts = new List<TemplateSheetFact>();
+        var tableFactsFromCtl = new List<TemplateSheetFact>();
         var allTableFieldMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Field)?.ToList() ?? new List<MAPPING>();
 
 
         //*** page Zet dims from mappings (for each table) define when we need to create separate sheet for the same table
         //*** we do not want to create separate sheets when currency or country changes so =>take out any currency Or Country dims 
         var currencyAndCountryDims = new[] { "LA", "LR", "LG", "ZK", "OC" };
-        var pageDims1 = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)            
+        var pageDims1 = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
             .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
             .Where(dim => !currencyAndCountryDims.Contains(dim))
             .ToList();
@@ -384,9 +385,13 @@ public class FactsDecorator : IFactsDecorator
 
             //******************************************************************************
             //*** find the facts and update there col, row, and ysignature
-            var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1,pageCurrencyDims);
+            var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
             tableFacts.AddRange(rowColFacts);
             Console.Write($"row:{rowColObject?.Row}, {rowColObject?.Col}");
+
+            var rowColdFactsFromCtl = SelectAndBuildFactsByContextLines(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
+            tableFactsFromCtl.AddRange(rowColdFactsFromCtl);
+
             if (tableFacts.Count() > 0)
             {
                 Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColFacts?.Count()} ");
@@ -395,8 +400,15 @@ public class FactsDecorator : IFactsDecorator
 
         }
         var facts = tableFacts ?? new List<TemplateSheetFact>();
+        var factscc = tableFactsFromCtl ?? new List<TemplateSheetFact>();
+        if (facts.Count() != factscc.Count())
+        {
+            var cc = 33;
+
+        }
         return facts;
     }
+
     private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims, List<string> pageCurrencyDims)
     {
         //for the RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
@@ -506,13 +518,13 @@ public class FactsDecorator : IFactsDecorator
 
             var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
 
-            
+
             //the pageZet dims present in the fact
             var zPageFactDims = factdims
                 .Where(dim => pageDims.Contains(dim.Dim));
 
             var zPageFactDimValues = zPageFactDims
-                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)                
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
                 .Order();
             var zPageFactDimStr = string.Join("__", zPageFactDimValues);
 
@@ -531,24 +543,24 @@ public class FactsDecorator : IFactsDecorator
                 .Select(dim => DimDom.GetParts(dim.Signature).Signature)
                 .Order();
             var yRowSignature = string.Join("|", yFactDims);
-            
+
 
             var blDim = factdims
                 .Where(dim => DimDom.GetParts(dim.Signature).Dim == "BL")
                 .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw);
-                //.Select(dim => dim.Replace(":", "_"));
+            //.Select(dim => dim.Replace(":", "_"));
 
-            
+
             var blZet = string.Join("__", blDim);
-            
-            
+
+
 
             //fact.zet => values of Dim BL (line of business) usefull for merging sheets
             //fact.ZetVaules => all the values of Zet dims ,used for assigning facts to sheet (country and currency dims NOT included)
             fact.Row = row;//open tables will be updated later based on their y dims
             fact.Col = col;
-            fact.Zet = blZet; 
-            
+            fact.Zet = blZet;
+
             fact.ZetValues = zPageFactDimStr;
             fact.CurrencyDim = zCurrencyFactDimStr;
             fact.RowSignature = yRowSignature;
@@ -558,6 +570,219 @@ public class FactsDecorator : IFactsDecorator
         return facts;
 
     }
+
+
+    private List<TemplateSheetFact> SelectAndBuildFactsByContextLines(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims, List<string> pageCurrencyDims)
+    {
+        //for the RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
+        //also update the  PAGE zets ( zetValues) of the fact
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+
+        var allFactDimsStr = string.Join(",", allMappings.Select(map => $"'{DimDom.GetParts(map).Dim}'"));
+
+        var openAllDims = allMappings.Where(dim => dim.Contains('*'));
+        var openAllStr = string.Join(",", openAllDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
+        var openAllCount = openAllDims.Count();
+
+        var openMandatoryDims = allMappings.Where(dim => dim.Contains('*') && !dim.Contains('?'));
+        var openMandatoryString = string.Join(",", openMandatoryDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
+        var openMandatoryCount = openMandatoryDims.Count();
+
+        var hasOpenOptionalDims = allMappings.Any(dim => dim.Contains('*') && dim.Contains('?'));
+
+
+        var closedDims = allMappings.Where(dim => !dim.Contains('*'));
+        var closedString = string.Join(",", closedDims.Select(dim => $"'{DimDom.GetParts(dim).Signature}'"));
+        var closedCount = closedDims.Count();
+
+
+
+
+
+        string sqlClosedxxxxxxxxxxxxxx = @$"
+           AND EXISTS (                
+               SELECT COUNT(*) AS cnt
+                 FROM TemplateSheetFactDim fd
+               WHERE 1=1
+               AND fd.FactId=fact.FactId                
+               AND fd.Signature IN ({closedString})
+               GROUP BY fd.FactId
+               HAVING COUNT(*)=@closedCount
+             )
+       ";
+
+        string sqlClosed = @$"
+                AND EXISTS (
+                    SELECT COUNT(*) AS cnt
+                      FROM ContextLine cl
+                    WHERE 1=1
+                    AND cl.ContextId=fact.ContextNumberId
+                    AND cl.Signature IN ({closedString})
+                    GROUP BY cl.ContextId
+                    HAVING COUNT(*)=@closedCount
+                )
+
+        ";
+
+        //-------------------------------
+        var sqlOpenMandatoryxxxx = $@"
+           AND EXISTS (
+               SELECT COUNT(*) AS cnt
+                 FROM TemplateSheetFactDim fd
+               WHERE 1=1
+               AND fd.FactId=fact.FactId                
+               AND fd.DIM IN ({openMandatoryString})
+               GROUP BY fd.FactId
+               HAVING COUNT(*)=@openMandatoryCount
+               )
+       ";
+
+        var sqlOpenMandatory = $@"
+           AND EXISTS (                
+                  SELECT COUNT(*) AS cnt
+                    FROM ContextLine cl
+                  WHERE 1=1
+                  AND cl.ContextId=fact.ContextNumberId
+	              AND cl.Dimension in ({openMandatoryString})
+                  GROUP BY cl.ContextId
+                  HAVING COUNT(*)=@openMandatoryCount
+	              )
+       ";
+        //------------------------------------------------------------------------------------------
+
+
+        var sqlNotExistxxxxxxxxxxx = $@"
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM TemplateSheetFactDim fd
+               WHERE 1=1
+                   AND fd.FactId=fact.FactId                    
+                   AND fd.DIM NOT IN ({allFactDimsStr})                                
+               ) 
+       ";
+
+        var sqlNotExist = $@"
+            AND NOT EXISTS (                
+                  SELECT 1
+                    FROM ContextLine cl
+                  WHERE 1=1
+                  AND cl.ContextId=fact.ContextNumberId
+	              AND cl.Dimension NOT in ({allFactDimsStr})                                
+	              )
+            ";
+
+        var andRowSQL = string.IsNullOrWhiteSpace(row) ? "" : "AND fact.Row=@ROW  ";
+
+        var basicSQLxxxxxxxxxxxxxxx = @$"
+           SELECT fact.*
+           FROM TemplateSheetFact fact                 
+           WHERE 1=1              
+             AND fact.XBRLCode = @XBRLCode              
+             AND fact.InstanceId=@_documentId
+           ";
+
+        var basicSQL = @"
+            SELECT fact.*           
+            FROM
+              TemplateSheetFact fact
+            WHERE
+              1=1
+              AND fact.XBRLCode = @XBRLCode
+              AND fact.InstanceId=@_documentId
+            ";
+
+
+        var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
+
+
+        if (!string.IsNullOrEmpty(closedString))
+        {
+            sqlSelect = @$" {sqlSelect} {sqlClosed} {Environment.NewLine}";
+        };
+
+        if (!string.IsNullOrEmpty(openMandatoryString))
+        {
+            sqlSelect = @$" {sqlSelect} {sqlOpenMandatory} {Environment.NewLine}";
+        };
+
+        if (hasOpenOptionalDims)
+        {
+            sqlSelect = @$" {sqlSelect} {sqlNotExist}";
+        };
+        sqlSelect = $"{sqlSelect} order by fact.Row,fact.Col";
+
+        var facts = connectionInsurance!.Query<TemplateSheetFact>(sqlSelect, new
+        {
+            _documentId,
+            xbrlCode,
+            closedCount,
+            openMandatoryCount
+        })?.ToList() ?? new List<TemplateSheetFact>();
+
+        //todo update row and column, 
+        //remove row col from select
+        //what about row ??
+
+        var yMappingsDims = yMappings.Select(map => DimDom.GetParts(map).Dim);
+        foreach (var fact in facts)
+        {
+
+            //var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
+            var contextLineDims = _SqlFunctions.SelectContextLines(fact.ContextNumberId);
+
+            //the pageZet dims present in the fact
+            var zPageFactDims = contextLineDims
+                .Where(dim => pageDims.Contains(dim.Dimension));
+
+            var zPageFactDimValues = zPageFactDims
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
+                .Order();
+            var zPageFactDimStr = string.Join("__", zPageFactDimValues);
+
+
+            var zCurrencyFactDims = contextLineDims
+                .Where(dim => pageCurrencyDims.Contains(dim.Dimension));
+
+            var zCurrencyFactDimValues = zCurrencyFactDims
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
+                .Order();
+            var zCurrencyFactDimStr = string.Join("__", zCurrencyFactDimValues);
+
+
+            var yFactDims = contextLineDims
+                .Where(dim => yMappingsDims.Contains(dim.Dimension))
+                .Select(dim => DimDom.GetParts(dim.Signature).Signature)
+                .Order();
+            var yRowSignature = string.Join("|", yFactDims);
+
+
+            var blDim = contextLineDims
+                .Where(dim => DimDom.GetParts(dim.Signature).Dim == "BL")
+                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw);
+            //.Select(dim => dim.Replace(":", "_"));
+
+
+            var blZet = string.Join("__", blDim);
+
+
+
+            //fact.zet => values of Dim BL (line of business) usefull for merging sheets
+            //fact.ZetVaules => all the values of Zet dims ,used for assigning facts to sheet (country and currency dims NOT included)
+            fact.Row = row;//open tables will be updated later based on their y dims
+            fact.Col = col;
+            fact.Zet = blZet;
+
+            fact.ZetValues = zPageFactDimStr;
+            fact.CurrencyDim = zCurrencyFactDimStr;
+            fact.RowSignature = yRowSignature;
+        }
+
+
+        return facts;
+
+    }
+
 
     private void AssignFactsToSheet(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
     {
@@ -620,9 +845,9 @@ public class FactsDecorator : IFactsDecorator
         var sqlKyrTables = @"select * from mTableKyrKeys";
         var kyrTables = connectionEiopa.Query<MTableKyrKeys>(sqlKyrTables);//S.06.02.01.01       
         kyrTables = kyrTables.Where(kt => kt.TableCode.Trim() == "S.06.02.01.01");
-        
+
         foreach (var kyrTable in kyrTables)
-        {            
+        {
             var sqlChild = @"select * from TemplateSheetInstance sheet where sheet.InstanceId= @docId and TableCode=@tableCode ";
             var childSheet = connectionLocal.QueryFirstOrDefault<TemplateSheetInstance>(sqlChild, new { docId = _documentId, tableCode = kyrTable.TableCode });
             if (childSheet is null) continue;
