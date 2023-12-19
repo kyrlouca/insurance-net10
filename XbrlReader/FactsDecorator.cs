@@ -74,8 +74,8 @@ public class FactsDecorator : IFactsDecorator
 
         ModuleTablesFiled = GetFiledModuleTables();
 
-        //_testingTableId = 130;
-        _testingTableId = 0;
+        
+        //_testingTableId = 173;
         if (_testingTableId > 0)
         {
             ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
@@ -403,7 +403,8 @@ public class FactsDecorator : IFactsDecorator
         var factscc = tableFactsFromCtl ?? new List<TemplateSheetFact>();
         if (facts.Count() != factscc.Count())
         {
-            var cc = 33;
+            //fuck
+            var cc = 69;
 
         }
         return facts;
