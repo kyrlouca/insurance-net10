@@ -378,88 +378,23 @@ public class FactsCreator : IFactsCreator
 				};
                 
                 var contextLines = GetContextLines(_documentId, contextXbrlId);
-				newFact.ContextId= contextXbrlId;
-
-				
+				newFact.ContextId= contextXbrlId;				
                 newFact.DataPointSignature = TemplateSheetFact.BuildFactSignature(xbrlCode, contextLines);
+				newFact=AssignFactValuesFromText(newFact);
+				
 				if (factSignature != newFact.DataPointSignature)
 				{
-					var cc = 332;
+					//to test if my new method works
+					throw new InvalidOperationException($"signature:{factSignature}");
 				}
-
-				//newFact.UpdateFactDetails(xbrlCode, contextLines);
+				
 				var cFact = _SqlFunctions.CreateTemplateSheetFact(newFact);
 				if(cFact is null)
 				{
 					continue;
 				}
 
-
-				var sqlInsFact = @"
-                    
-INSERT INTO dbo.TemplateSheetFact (
-     DataType
-    ,DataTypeUse
-    ,TextValue
-	,NumericValue
-	,DateTimeValue
-	,BooleanValue
-	,XBRLCode
-	,DataPointSignature
-	,DataPointSignatureFilled
-    ,Signature
-	,InstanceId
-	,Row
-	,Col
-	,Zet
-	,CellID
-	,CurrencyDim	
-    ,metricID
-	,contextId
-	,Unit
-	,Decimals
-	
-	
-	)
-VALUES (
-     @DataType
-    ,@DataTypeUse
-	,@TextValue
-	,@NumericValue
-	,@DateTimeValue
-	,@BooleanValue
-	,@XBRLCode
-	,@DataPointSignature
-	,@DataPointSignatureFilled
-    ,@Signature
-	,@InstanceId
-	,@Row
-	,@Col
-	,@Zet
-	,@CellID
-	,@CurrencyDim	
-    ,@metricID
-	,@contextId
-	,@Unit
-	,@Decimals
-	
-	);
-
-                    SELECT CAST(SCOPE_IDENTITY() as int);
-                   ";
-				try
-				{
-
-					//no more, get dims from context
-					//CreateFactDimsDb(cFact.FactId, cFact.DataPointSignature);
-				}
-				catch (Exception e)
-				{
-					var errMessage = $"{e.Message}===>, fact text:{newFact.TextValue}, xbrl:{newFact.XBRLCode}";					
-					_logger.Error(errMessage);					
-
-				}
-
+				
 
 				Console.Write(".");
 
@@ -528,8 +463,68 @@ VALUES (
 	}
 
 
+    public TemplateSheetFact AssignFactValuesFromText(TemplateSheetFact fact)
+    {
+        fact.DateTimeValue = new DateTime(1999, 12, 31);
+        if (string.IsNullOrWhiteSpace(fact.TextValue))
+        {
+            //if spaces it is NOT an error, it was left blank by the user
+            fact.IsEmpty = true;
+			fact.IsConversionError = false;
+            return fact;
+        }
 
-	private (bool isParsed, string parseMessage, XDocument?) ParseXmlFile()
+
+        switch (fact.DataTypeUse)
+        {
+            case "S":
+            case "E":
+                //text value is already in textValue field
+                break;
+            case "B":
+                fact.BooleanValue = fact.TextValue.Trim().ToUpper() == "TRUE";
+                break;
+            case "D":
+                try
+                {
+                    fact.DateTimeValue = DateTime.Parse(fact.TextValue);
+                }
+                catch (System.Exception)
+                {
+                    fact.IsConversionError = true;
+                }
+                break;
+            case "N": //numeric
+            case "M": //money
+            case "P": //this is a percentage
+                try
+                {
+                    var nfi = new CultureInfo("en-US", false).NumberFormat;
+                    fact.NumericValue = Convert.ToDecimal(fact.TextValue, nfi);
+                }
+                catch (System.Exception)
+                {
+                    fact.IsConversionError = true;
+                }
+                break;
+            case "I":
+                try
+                {
+                    fact.NumericValue = Convert.ToInt32(fact.TextValue);
+                }
+                catch (System.Exception)
+                {
+                    fact.IsConversionError = true;
+                }
+                break;
+            default:
+                break;
+        }
+		return fact;
+    }
+
+
+    private (bool isParsed, string parseMessage, XDocument?) ParseXmlFile()
 	{
 		XDocument xmlDoc;
 
@@ -705,42 +700,6 @@ VALUES (
 
 		var result = connection.QuerySingleOrDefault<int>(sqlInsertDoc, doc);
 		return result;
-	}
-
-	private int CreateFactDimsDb(int factId, string signature)
-	{
-
-		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
-		var dims = signature.Split("|").ToList();
-		if (dims.Count > 0)
-		{
-			dims.RemoveAt(0);
-		}
-
-		var count = 0;
-		foreach (var dim in dims)
-		{
-			count++;
-			var dimDom = Shared.SpecialRoutines.DimDom.GetParts(dim);
-			var isExplicit = !dimDom.IsWild;
-			var factDim = new TemplateSheetFactDim()
-			{
-				FactId = factId,
-				Dim = dimDom.Dim,
-				Dom = dimDom.Dom,
-				DomValue = dimDom.DomValue,
-				Signature = dimDom.Signature,
-				IsExplicit = isExplicit
-			};
-			var sqlInsDim = @"
-                    INSERT INTO dbo.TemplateSheetFactDim (FactId, Dim, Dom, DomValue, Signature, IsExplicit)
-                    VALUES(@FactId, @Dim, @Dom, @DomValue, @Signature, @IsExplicit)";
-
-			connectionInsurance.Execute(sqlInsDim, factDim);
-		}
-
-		return count;
 	}
 
 
