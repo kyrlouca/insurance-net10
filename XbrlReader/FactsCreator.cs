@@ -449,8 +449,9 @@ VALUES (
                    ";
 				try
 				{
-					//newFact.FactId = connectionInsurance.QuerySingleOrDefault<int>(sqlInsFact, newFact);
-					CreateFactDimsDb(cFact.FactId, cFact.DataPointSignature);
+
+					//no more, get dims from context
+					//CreateFactDimsDb(cFact.FactId, cFact.DataPointSignature);
 				}
 				catch (Exception e)
 				{

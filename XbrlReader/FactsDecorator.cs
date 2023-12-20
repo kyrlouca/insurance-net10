@@ -332,7 +332,7 @@ public class FactsDecorator : IFactsDecorator
         // --select the rowcols from the page mappings (distinct) and not from the Xbrl mappings (origin 'F' and dim_code starting with MET)
         // --find any other dims from the page mappings (is_InTable=1) and then add the zet mappings 
         // --find the facts
-        var tableFacts = new List<TemplateSheetFact>();
+        //var tableFacts = new List<TemplateSheetFact>();
         var tableFactsFromCtl = new List<TemplateSheetFact>();
         var allTableFieldMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Field)?.ToList() ?? new List<MAPPING>();
 
@@ -396,30 +396,23 @@ public class FactsDecorator : IFactsDecorator
 
             //******************************************************************************
             //*** find the facts and update there col, row, and ysignature
-            //69
-            var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
-            tableFacts.AddRange(rowColFacts);
-            Console.Write($"row:{rowColObject?.Row}, {rowColObject?.Col}");
+            ////69
+            //var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
+            //tableFacts.AddRange(rowColFacts);
+            //Console.Write($"row:{rowColObject?.Row}, {rowColObject?.Col}");
 
             //69
             var rowColdFactsFromCtl = SelectAndBuildFactsByContextLines(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
             tableFactsFromCtl.AddRange(rowColdFactsFromCtl);
 
-            if (tableFacts.Count() > 0)
+            if (tableFactsFromCtl.Count() > 0)
             {
-                Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColFacts?.Count()} ");
+                Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
             }
             Console.WriteLine("");
 
         }
-        var facts = tableFacts ?? new List<TemplateSheetFact>();
-        var factscc = tableFactsFromCtl ?? new List<TemplateSheetFact>();
-        if (facts.Count() != factscc.Count())
-        {
-            //fuck
-            var cc = 69;
-
-        }
+        var facts = tableFactsFromCtl ?? new List<TemplateSheetFact>();        
         return facts;
     }
 
