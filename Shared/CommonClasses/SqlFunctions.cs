@@ -278,10 +278,19 @@ public class SqlFunctions : ISqlFunctions
             OpenRowCounter = 0
         };
 
-        var sheetId = connectionInsurance.QuerySingle<int>(SqlInsertTemplateSheet, sheet);
-        sheet.TemplateSheetId = sheetId;
+        try
+        {
+            var sheetId = connectionInsurance.QuerySingle<int>(SqlInsertTemplateSheet, sheet);
+            sheet.TemplateSheetId = sheetId;
+
+            return sheet;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"error creating Sheet :{sheet.SheetCode}");
+            throw;
+        }
         
-        return sheet;
     }
 
     public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact)

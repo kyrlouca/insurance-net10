@@ -151,7 +151,11 @@ public class FactsDecorator : IFactsDecorator
             table.IsOpenTable = table.YDimVal?.Contains('*') ?? false;
             //************************************************
             //Create a Sheet
-            var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName, table);
+            //To save time when testing I only create a sheet if it does not exist.If it does I will return the existing
+            var sheet = SelectTemplateSheetBySheetCode(table.TableID, sheetCode);
+            sheet ??= _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName, table);
+
+            
             Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
             sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, FactZetValue, sheetName, sheet.YDimVal));
 
@@ -159,6 +163,13 @@ public class FactsDecorator : IFactsDecorator
         }
 
         return sheetInfo;
+    }
+    private TemplateSheetInstance? SelectTemplateSheetBySheetCode(int tableId, string sheetCode)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"select * from TemplateSheetInstance sheet where sheet.InstanceId = @_documentId and sheet.TableID = @tableId and SheetCode = @SheetCode";
+        var sheet = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSelect, new { _documentId, tableId,sheetCode});
+        return sheet;
     }
 
     private int CreateYFactsForOpenTables(List<SheetInfoType> sheetsInfo)
@@ -385,10 +396,12 @@ public class FactsDecorator : IFactsDecorator
 
             //******************************************************************************
             //*** find the facts and update there col, row, and ysignature
+            //69
             var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
             tableFacts.AddRange(rowColFacts);
             Console.Write($"row:{rowColObject?.Row}, {rowColObject?.Col}");
 
+            //69
             var rowColdFactsFromCtl = SelectAndBuildFactsByContextLines(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
             tableFactsFromCtl.AddRange(rowColdFactsFromCtl);
 
@@ -412,8 +425,9 @@ public class FactsDecorator : IFactsDecorator
 
     private List<TemplateSheetFact> SelectAndBuildFactsByDims(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims, List<string> pageCurrencyDims)
     {
+        //match the facts with the same dims  found in MAPPINGS. (plus the Zet)
         //for the RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
-        //also update the  PAGE zets ( zetValues) of the fact
+        //also update the  PAGE zets ( zetValues result in sheet change) of the fact 
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
 
@@ -436,9 +450,16 @@ public class FactsDecorator : IFactsDecorator
 
 
 
+        var basicSQL = @$"
+           SELECT fact.*
+           FROM TemplateSheetFact fact                 
+           WHERE 1=1              
+             AND fact.XBRLCode = @XBRLCode              
+             AND fact.InstanceId=@_documentId
+           ";
+        
 
-
-        string sqlClosed = @$"
+        string sqlClosedxx = @$"
            AND EXISTS (                
                SELECT COUNT(*) AS cnt
                  FROM TemplateSheetFactDim fd
@@ -449,6 +470,24 @@ public class FactsDecorator : IFactsDecorator
                HAVING COUNT(*)=@closedCount
              )
        ";
+
+        string sqlClosed = @$"                
+            AND EXISTS (
+                    SELECT 1 AS cnt
+                      FROM TemplateSheetFactDim fd
+                    WHERE 1=1
+                        AND fd.FactId=fact.FactId                
+                        AND fd.Signature IN ({closedString})
+                )
+				AND NOT EXISTS (
+                    SELECT 1 AS cnt
+                      FROM TemplateSheetFactDim fd
+                    WHERE 1=1
+                        AND fd.FactId=fact.FactId                
+                        AND fd.Signature NOT IN ({closedString})
+                )";
+
+
 
         var sqlOpenMandatory = $@"
            AND EXISTS (
@@ -471,18 +510,11 @@ public class FactsDecorator : IFactsDecorator
                    AND fd.DIM NOT IN ({allFactDimsStr})                                
                ) 
        ";
+                       
+        
+        var sqlSelect = $@"{basicSQL}{Environment.NewLine}";
 
-        var andRowSQL = string.IsNullOrWhiteSpace(row) ? "" : "AND fact.Row=@ROW  ";
-
-        var basicSQL = @$"
-           SELECT fact.*
-           FROM TemplateSheetFact fact                 
-           WHERE 1=1              
-             AND fact.XBRLCode = @XBRLCode              
-             AND fact.InstanceId=@_documentId
-           ";
-
-        var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
+        //var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
 
 
         if (!string.IsNullOrEmpty(closedString))
@@ -599,90 +631,6 @@ public class FactsDecorator : IFactsDecorator
 
 
 
-
-
-        string sqlClosedxxxxxxxxxxxxxx = @$"
-           AND EXISTS (                
-               SELECT COUNT(*) AS cnt
-                 FROM TemplateSheetFactDim fd
-               WHERE 1=1
-               AND fd.FactId=fact.FactId                
-               AND fd.Signature IN ({closedString})
-               GROUP BY fd.FactId
-               HAVING COUNT(*)=@closedCount
-             )
-       ";
-
-        string sqlClosed = @$"
-                AND EXISTS (
-                    SELECT COUNT(*) AS cnt
-                      FROM ContextLine cl
-                    WHERE 1=1
-                    AND cl.ContextId=fact.ContextNumberId
-                    AND cl.Signature IN ({closedString})
-                    GROUP BY cl.ContextId
-                    HAVING COUNT(*)=@closedCount
-                )
-
-        ";
-
-        //-------------------------------
-        var sqlOpenMandatoryxxxx = $@"
-           AND EXISTS (
-               SELECT COUNT(*) AS cnt
-                 FROM TemplateSheetFactDim fd
-               WHERE 1=1
-               AND fd.FactId=fact.FactId                
-               AND fd.DIM IN ({openMandatoryString})
-               GROUP BY fd.FactId
-               HAVING COUNT(*)=@openMandatoryCount
-               )
-       ";
-
-        var sqlOpenMandatory = $@"
-           AND EXISTS (                
-                  SELECT COUNT(*) AS cnt
-                    FROM ContextLine cl
-                  WHERE 1=1
-                  AND cl.ContextId=fact.ContextNumberId
-	              AND cl.Dimension in ({openMandatoryString})
-                  GROUP BY cl.ContextId
-                  HAVING COUNT(*)=@openMandatoryCount
-	              )
-       ";
-        //------------------------------------------------------------------------------------------
-
-
-        var sqlNotExistxxxxxxxxxxx = $@"
-           AND NOT EXISTS (
-               SELECT 1
-                 FROM TemplateSheetFactDim fd
-               WHERE 1=1
-                   AND fd.FactId=fact.FactId                    
-                   AND fd.DIM NOT IN ({allFactDimsStr})                                
-               ) 
-       ";
-
-        var sqlNotExist = $@"
-            AND NOT EXISTS (                
-                  SELECT 1
-                    FROM ContextLine cl
-                  WHERE 1=1
-                  AND cl.ContextId=fact.ContextNumberId
-	              AND cl.Dimension NOT in ({allFactDimsStr})                                
-	              )
-            ";
-
-        var andRowSQL = string.IsNullOrWhiteSpace(row) ? "" : "AND fact.Row=@ROW  ";
-
-        var basicSQLxxxxxxxxxxxxxxx = @$"
-           SELECT fact.*
-           FROM TemplateSheetFact fact                 
-           WHERE 1=1              
-             AND fact.XBRLCode = @XBRLCode              
-             AND fact.InstanceId=@_documentId
-           ";
-
         var basicSQL = @"
             SELECT fact.*           
             FROM
@@ -694,8 +642,47 @@ public class FactsDecorator : IFactsDecorator
             ";
 
 
-        var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
+        string sqlClosed = @$"                
+            AND EXISTS (
+                    SELECT 1 AS cnt
+                      FROM ContextLine cl
+                    WHERE 1=1
+                    AND cl.ContextId=fact.ContextNumberId
+                    AND cl.Signature IN ({closedString})                    
+                )
+				AND NOT EXISTS (
+                    SELECT 1 AS cnt
+                      FROM ContextLine cl
+                    WHERE 1=1
+                    AND cl.ContextId=fact.ContextNumberId
+                    AND cl.Signature NOT IN ({closedString})
+                )
 
+        ";
+      
+        var sqlOpenMandatory = $@"
+           AND EXISTS (                
+                  SELECT COUNT(*) AS cnt
+                    FROM ContextLine cl
+                  WHERE 1=1
+                  AND cl.ContextId=fact.ContextNumberId
+	              AND cl.Dimension in ({openMandatoryString})
+                  GROUP BY cl.ContextId
+                  HAVING COUNT(*)=@openMandatoryCount
+	              )
+       ";
+        
+        var sqlNotExist = $@"
+            AND NOT EXISTS (                
+                  SELECT 1
+                    FROM ContextLine cl
+                  WHERE 1=1
+                  AND cl.ContextId=fact.ContextNumberId
+	              AND cl.Dimension NOT in ({allFactDimsStr})                                
+	              )
+            ";
+             
+        var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
 
         if (!string.IsNullOrEmpty(closedString))
         {
@@ -717,6 +704,7 @@ public class FactsDecorator : IFactsDecorator
         {
             _documentId,
             xbrlCode,
+
             closedCount,
             openMandatoryCount
         })?.ToList() ?? new List<TemplateSheetFact>();

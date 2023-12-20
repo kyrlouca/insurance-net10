@@ -308,7 +308,7 @@ public class FactsCreator : IFactsCreator
 			foreach (var fe in factElements)
 			{
 				// <s2md_met:mi503 contextRef="BLx119" decimals="2" unitRef="u">169866295.22</s2md_met:mi503>
-				var prefix = fe.GetPrefixOfNamespace(metFactNs); //maybe not needed as an attribute
+				 var prefix = fe.GetPrefixOfNamespace(metFactNs); //maybe not needed as an attribute
 
 				var unitRef2 = fe.Attribute("unitRef")?.Value;
 				var decimals = 0;
@@ -377,7 +377,7 @@ public class FactsCreator : IFactsCreator
 					RowSignature = "",
 				};
                 
-                var contextLines = GetContextLines(contextXbrlId);
+                var contextLines = GetContextLines(_documentId, contextXbrlId);
 				newFact.ContextId= contextXbrlId;
 
 				
@@ -471,11 +471,11 @@ VALUES (
 
 				//---------------------------
 
-				List<string> GetContextLines(string contextId)
+				List<string> GetContextLines(int documentId, string contextXbrlId)
 				{
 					//using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);                
-					var sqlContext = @"select Signature from Context where ContextXbrlId= @contextId and InstanceId =@_documentId";
-					var signature = connectionInsurance.QuerySingleOrDefault<string>(sqlContext, new { contextId, _documentId });
+					var sqlContext = @"select Signature from Context where ContextXbrlId= @ContextXbrlId and InstanceId =@documentId";
+					var signature = connectionInsurance.QuerySingleOrDefault<string>(sqlContext, new { contextXbrlId, documentId });
 					return signature.Split("|", StringSplitOptions.RemoveEmptyEntries).ToList();
 
 				}
