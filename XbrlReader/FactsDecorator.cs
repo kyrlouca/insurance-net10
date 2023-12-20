@@ -458,38 +458,34 @@ public class FactsDecorator : IFactsDecorator
              AND fact.InstanceId=@_documentId
            ";
         
-
-        string sqlClosedxx = @$"
+              
+        //check for dim and dom value (signature)
+        string sqlClosed = @$"
            AND EXISTS (                
                SELECT COUNT(*) AS cnt
                  FROM TemplateSheetFactDim fd
                WHERE 1=1
-               AND fd.FactId=fact.FactId                
-               AND fd.Signature IN ({closedString})
+                   AND fd.FactId=fact.FactId                
+                   AND fd.Signature IN ({closedString})
                GROUP BY fd.FactId
                HAVING COUNT(*)=@closedCount
              )
+		     
        ";
 
-        string sqlClosed = @$"                
-            AND EXISTS (
-                    SELECT 1 AS cnt
-                      FROM TemplateSheetFactDim fd
-                    WHERE 1=1
-                        AND fd.FactId=fact.FactId                
-                        AND fd.Signature IN ({closedString})
-                )
-				AND NOT EXISTS (
-                    SELECT 1 AS cnt
-                      FROM TemplateSheetFactDim fd
-                    WHERE 1=1
-                        AND fd.FactId=fact.FactId                
-                        AND fd.Signature NOT IN ({closedString})
-                )";
+        string sqlClosedAndNotOpen = @$"                
+			AND NOT EXISTS (
+               SELECT 1 AS cnt
+                    FROM TemplateSheetFactDim fd
+               WHERE 1=1
+                AND fd.FactId=fact.FactId                
+                AND fd.Signature NOT IN ({closedString})
+            )
+        ";
 
-
-
-        var sqlOpenMandatory = $@"
+        //check only for dim, count mandatory, check if anything not in all
+        
+        var sqlOpen = $@"
            AND EXISTS (
                SELECT COUNT(*) AS cnt
                  FROM TemplateSheetFactDim fd
@@ -499,10 +495,7 @@ public class FactsDecorator : IFactsDecorator
                GROUP BY fd.FactId
                HAVING COUNT(*)=@openMandatoryCount
                )
-       ";
-
-        var sqlNotExist = $@"
-           AND NOT EXISTS (
+         AND NOT EXISTS (
                SELECT 1
                  FROM TemplateSheetFactDim fd
                WHERE 1=1
@@ -510,27 +503,27 @@ public class FactsDecorator : IFactsDecorator
                    AND fd.DIM NOT IN ({allFactDimsStr})                                
                ) 
        ";
-                       
-        
+       
+
+        var hasClosed = !string.IsNullOrEmpty(closedString);
+        var hasOpen = !string.IsNullOrEmpty(openMandatoryString);
+
         var sqlSelect = $@"{basicSQL}{Environment.NewLine}";
 
-        //var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
-
-
-        if (!string.IsNullOrEmpty(closedString))
+        if (hasClosed)
         {
             sqlSelect = @$" {sqlSelect} {sqlClosed} {Environment.NewLine}";
         };
-
-        if (!string.IsNullOrEmpty(openMandatoryString))
+        if (hasClosed && !hasOpen)
         {
-            sqlSelect = @$" {sqlSelect} {sqlOpenMandatory} {Environment.NewLine}";
+            sqlSelect = @$" {sqlSelect} {sqlClosedAndNotOpen} {Environment.NewLine}";
+        }
+
+        if (hasOpen)
+        {
+            sqlSelect = @$" {sqlSelect} {sqlOpen} {Environment.NewLine}";
         };
 
-        if (hasOpenOptionalDims)
-        {
-            sqlSelect = @$" {sqlSelect} {sqlNotExist}";
-        };
         sqlSelect = $"{sqlSelect} order by fact.Row,fact.Col";
 
         var facts = connectionInsurance!.Query<TemplateSheetFact>(sqlSelect, new
@@ -599,7 +592,6 @@ public class FactsDecorator : IFactsDecorator
             fact.RowSignature = yRowSignature;
         }
 
-
         return facts;
 
     }
@@ -642,14 +634,20 @@ public class FactsDecorator : IFactsDecorator
             ";
 
 
+
         string sqlClosed = @$"                
             AND EXISTS (
-                    SELECT 1 AS cnt
-                      FROM ContextLine cl
+                    SELECT COUNT(*) AS cnt
+                    FROM ContextLine cl
                     WHERE 1=1
-                    AND cl.ContextId=fact.ContextNumberId
-                    AND cl.Signature IN ({closedString})                    
+                        AND cl.ContextId=fact.ContextNumberId
+                        AND cl.Signature IN ({closedString})                    
+                    GROUP BY cl.contextId
+                    HAVING COUNT(*) = @closedCount
                 )
+        ";
+
+        string sqlClosedAndNotOpen = @$"                
 				AND NOT EXISTS (
                     SELECT 1 AS cnt
                       FROM ContextLine cl
@@ -657,47 +655,48 @@ public class FactsDecorator : IFactsDecorator
                     AND cl.ContextId=fact.ContextNumberId
                     AND cl.Signature NOT IN ({closedString})
                 )
-
         ";
-      
-        var sqlOpenMandatory = $@"
+
+
+        var sqlOpen = $@"
            AND EXISTS (                
                   SELECT COUNT(*) AS cnt
                     FROM ContextLine cl
                   WHERE 1=1
-                  AND cl.ContextId=fact.ContextNumberId
-	              AND cl.Dimension in ({openMandatoryString})
+                      AND cl.ContextId=fact.ContextNumberId
+	                  AND cl.Dimension in ({openMandatoryString})
                   GROUP BY cl.ContextId
                   HAVING COUNT(*)=@openMandatoryCount
-	              )
-       ";
-        
-        var sqlNotExist = $@"
-            AND NOT EXISTS (                
+	              )             
+           AND NOT EXISTS (                
                   SELECT 1
                     FROM ContextLine cl
                   WHERE 1=1
                   AND cl.ContextId=fact.ContextNumberId
 	              AND cl.Dimension NOT in ({allFactDimsStr})                                
 	              )
-            ";
+       ";
+                
              
         var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
 
-        if (!string.IsNullOrEmpty(closedString))
+        var hasClosed = !string.IsNullOrEmpty(closedString);
+        var  hasOpen = !string.IsNullOrEmpty(openMandatoryString);
+
+        if (hasClosed)
         {
             sqlSelect = @$" {sqlSelect} {sqlClosed} {Environment.NewLine}";
         };
-
-        if (!string.IsNullOrEmpty(openMandatoryString))
+        if(hasClosed && !hasOpen)
         {
-            sqlSelect = @$" {sqlSelect} {sqlOpenMandatory} {Environment.NewLine}";
-        };
-
-        if (hasOpenOptionalDims)
+            sqlSelect = @$" {sqlSelect} {sqlClosedAndNotOpen} {Environment.NewLine}";
+        }
+        
+        if (hasOpen)
         {
-            sqlSelect = @$" {sqlSelect} {sqlNotExist}";
+            sqlSelect = @$" {sqlSelect} {sqlOpen} {Environment.NewLine}";
         };
+        
         sqlSelect = $"{sqlSelect} order by fact.Row,fact.Col";
 
         var facts = connectionInsurance!.Query<TemplateSheetFact>(sqlSelect, new

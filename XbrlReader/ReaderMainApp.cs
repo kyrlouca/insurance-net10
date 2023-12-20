@@ -70,7 +70,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (1 == 2)
+        if (1 == 1)
         {
             var res = _factsMover.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
             if (res != 0)
