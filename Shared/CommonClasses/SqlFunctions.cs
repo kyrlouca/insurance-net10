@@ -102,7 +102,8 @@ public class SqlFunctions : ISqlFunctions
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var tl = new LogTransactionModel()
         {
-            ExternalId = -1,
+            ExternalId = _parameterData.ExternalId,
+            FileName= _parameterData.FileName,
             PensionFundId = _parameterData.FundId,
             ModuleCode = _parameterData.ModuleCode,
             ApplicableYear = _parameterData.ApplicableYear,

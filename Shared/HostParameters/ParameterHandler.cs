@@ -40,7 +40,8 @@ public class ParameterHandler : IParameterHandler
 
 		var parameterData = new ParameterData()
 		{
-			UserId = int.TryParse(_configuration["user-id"], out int userid) ? userid : 0,
+			ExternalId=int.TryParse(_configuration["external-id"], out int externalid) ? externalid : 0,
+            UserId = int.TryParse(_configuration["user-id"], out int userid) ? userid : 0,
 			FundId = int.TryParse(_configuration["fund-id"], out int fundId) ? fundId : 0,
 			CurrencyBatchId = int.TryParse(_configuration["currency-batch-id"], out int currencyBatchId) ? currencyBatchId : 0,
 			EiopaVersion = _configuration["eiopa-version"] ?? "NF",

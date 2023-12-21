@@ -9,7 +9,8 @@ namespace Shared.HostRoutines;
 
 public class ParameterData
 {
-    public string environment { get; set; }
+    public int ExternalId { get; set; }
+    public string Environment { get; set; }
     public string SystemConnectionString { get; set; }
     public string EiopaConnectionString { get; set; }
     public string ExcelTemplateFile { get; set; }
@@ -23,4 +24,5 @@ public class ParameterData
     public string ModuleCode { get; set; }
     public string FileName { get; set; }
 
+ 
 }
