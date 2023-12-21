@@ -237,7 +237,7 @@ public class FactsDecorator : IFactsDecorator
             newFact.TextValue = ctxLine.DomainValue;
             newFact.DataTypeUse = "S";
             var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
-            Console.WriteLine("+");
+            Console.Write("+");
         }        
         return;
     }
@@ -397,8 +397,7 @@ public class FactsDecorator : IFactsDecorator
             if (tableFactsFromCtl.Count() > 0)
             {
                 Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
-            }
-            Console.WriteLine("");
+            }            
 
         }
         var facts = tableFactsFromCtl ?? new List<TemplateSheetFact>();        
