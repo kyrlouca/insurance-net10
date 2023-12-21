@@ -411,8 +411,10 @@ public class FactsDecorator : IFactsDecorator
         //also update the  PAGE zets ( zetValues) of the fact
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-
-        var allFactDimsStr = string.Join(",", allMappings.Select(map => $"'{DimDom.GetParts(map).Dim}'"));
+        //the context includes the currency dim which is NOT included in the table ZdimValues. You can find the currency dim in the mappings Page_columns
+        var allMappingsDims = allMappings.Select(map => $"{DimDom.GetParts(map).Dim}").ToList();
+        var allFactDims = allMappingsDims.Concat(pageCurrencyDims);        
+        var allFactDimsStr = string.Join(",", allFactDims.Select(dim=> $"'{dim}'"));
 
         var openAllDims = allMappings.Where(dim => dim.Contains('*'));
         var openAllStr = string.Join(",", openAllDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
