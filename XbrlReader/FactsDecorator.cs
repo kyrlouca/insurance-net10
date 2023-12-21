@@ -311,22 +311,21 @@ public class FactsDecorator : IFactsDecorator
     private List<TemplateSheetFact> SelectFactsForTempateTable(MTable table)
     {
         //Select facts which have all the dims required by the mtable
-        //Also, ***assign the zdims to each fact, which groups the facts per sheet
-        //Ommit currency and country dims from the grouping, because we do not create different sheets for currency or country 
+        //the dims are located in (mappings origin='F' , zet from m Table,   and now from mappings where map.IS_PAGE_COLUMN_KEY=1      
+        //The IS_PAGE_COLUMN_KEY=1 mappings are used to create different sheets for the same mtable code
+        //However, Ommit currency and country dims from the grouping, because we do not create different sheets for currency or country 
+        //the page column dims are stored in the fact ZetValues field 
+        
 
-        //ZetValues field has the dims for diffent sheet
-        //Zet will be used for Merging sheets from the same template 3 parts (S.04.02.01)
-
-        //the xbrl mapping can be used, get the rowcol and then select the rest of the mappings for the rowcol
-        //BUT for  some tables the xbrl cannot be found in the mappings (as in table 19.01.01.01)
+        //in the past, the xbrl mapping was used to  get the rowcol and then select the rest of the mappings for the rowcol
+        //HOWEVER< for  some tables the xbrl cannot be found in the mappings (as in table 19.01.01.01)
         // For these table (only 19.01.01 i think)
         //  + table 19.01.01 has the MET xbrl codes in table ZDimVal and not in the mappings
         //  + table 19.01.01 has 'F' mappings with RowCol like every other table
         //  + get the Xbrl from ZdimVal
         // --select the rowcols from the page mappings (distinct) and not from the Xbrl mappings (origin 'F' and dim_code starting with MET)
         // --find any other dims from the page mappings (is_InTable=1) and then add the zet mappings 
-        // --find the facts
-        //var tableFacts = new List<TemplateSheetFact>();
+        // --find the facts        
         var tableFactsFromCtl = new List<TemplateSheetFact>();
         var allTableFieldMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Field)?.ToList() ?? new List<MAPPING>();
 
@@ -334,9 +333,10 @@ public class FactsDecorator : IFactsDecorator
         //*** page Zet dims from mappings (for each table) define when we need to create separate sheet for the same table
         //*** we do not want to create separate sheets when currency or country changes so =>take out any currency Or Country dims 
         var currencyAndCountryDims = new[] { "LA", "LR", "LG", "ZK", "OC" };
-        var pageDims1 = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
+        var pageDims = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
             .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
             .Where(dim => !currencyAndCountryDims.Contains(dim))
+            .Order()
             .ToList();
 
         var pageCurrencyDims = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
@@ -386,17 +386,12 @@ public class FactsDecorator : IFactsDecorator
             var xbrl = string.IsNullOrEmpty(xbrlTable) ? DimUtils.ExtractXbrl(xbrlDim) : xbrlTable;
             fieldMappings = fieldMappings.Where(map => !map.Contains("MET"));
 
-            var allCellMappings = fieldMappings.Concat(zetDims).Concat(tableYDims).ToList();
+            var allCellMappings = fieldMappings.Concat(zetDims).Concat(tableYDims).Order().ToList();
 
             //******************************************************************************
-            //*** find the facts and update there col, row, and ysignature
-            ////69
-            //var rowColFacts = SelectAndBuildFactsByDims(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
-            //tableFacts.AddRange(rowColFacts);
-            //Console.Write($"row:{rowColObject?.Row}, {rowColObject?.Col}");
-
-            //69
-            var rowColdFactsFromCtl = SelectFactsByContextLinesAndDecorate(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims1, pageCurrencyDims);
+            //*** 69 find the facts and update there col, row, and ysignature            
+            
+            var rowColdFactsFromCtl = SelectFactsByContextLinesAndDecorate(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims, pageCurrencyDims);
             tableFactsFromCtl.AddRange(rowColdFactsFromCtl);
 
             if (tableFactsFromCtl.Count() > 0)
@@ -568,11 +563,12 @@ public class FactsDecorator : IFactsDecorator
 
 
 
-            //fact.zet => values of Dim BL (line of business) usefull for merging sheets
-            //fact.ZetVaules => all the values of Zet dims ,used for assigning facts to sheet (country and currency dims NOT included)
+            
+            //fact.ZetVaules => ***** all the values of Zet dims such as BL ,used for assigning facts to sheet (country and currency dims NOT included)
             fact.Row = row;//open tables will be updated later based on their y dims
             fact.Col = col;
-            fact.Zet = blZet;
+            fact.Zet = blZet;//not used
+
 
             fact.ZetValues = zPageFactDimStr;
             fact.CurrencyDim = zCurrencyFactDimStr;
