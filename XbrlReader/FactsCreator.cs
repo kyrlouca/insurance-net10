@@ -56,8 +56,8 @@ public class FactsCreator : IFactsCreator
         _mModule = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
 
         var existingDocs = GetExistingDocuments();
-        //var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "P");
-        var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "X");
+        var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "P");
+        //var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "X");
         if (lockedDocument is not null)
         {
             var message = $"Cannot create Document. Another Document is currently being processed :{lockedDocument.InstanceId} ";
@@ -71,7 +71,7 @@ public class FactsCreator : IFactsCreator
         };
 
         //delete older versions (except from locked or submitted)
-        existingDocs.Where(doc => doc.Status.Trim() != "X" && !doc.IsSubmitted)
+        existingDocs.Where(doc => doc.Status.Trim() != "P" && !doc.IsSubmitted)
             .ToList()
             .ForEach(doc => DeleteDocument(doc.InstanceId));
 
