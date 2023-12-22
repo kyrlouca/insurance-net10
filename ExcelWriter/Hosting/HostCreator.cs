@@ -23,7 +23,7 @@ public class HostCreator
 			{
 				//depends on the value of DOTNET_ENVIRONMENT
 			}
-			//the configurations below would be automatically set but I rpofer to have the appsettings as optional
+			//the configurations below would be automatically set but I prefer to have the appsettings as optional
 			config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
 			config.AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: false);
 			config.AddEnvironmentVariables();
@@ -31,7 +31,11 @@ public class HostCreator
 		})
 		 .ConfigureServices((context, services) =>
 		 {
+			 //context provides access to configuration which has all the  command line args,jsonfiles, env variables together
 			 //**!! vr -GetSection will get the values of the section corrsoponding to eiopa-versions (IU270, IU280, etc)
+			 //configure will get the json (typed as VersionData) corresponding to the eiopa version
+			 //ParameterHandler can convert the configuration data to the object ParameterData
+			 //pass ParameterHandler as parameter to any other service. You then execute  function to get parameterData
 			 var vr = context.Configuration["eiopa-version"] ?? "";
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();

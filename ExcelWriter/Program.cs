@@ -12,11 +12,12 @@ if (!string.IsNullOrEmpty(missingParam))
 {
 	Console.WriteLine($"parameter missing:{missingParam}");
 	throw new ArgumentException($"parameter missing:{missingParam}");
-}
+}  
 
 using var host = HostCreator.CreateHostExplicit(args);
 using var scope = host.Services.CreateScope();
 var services = scope.ServiceProvider;
+
 
 ///////////////////////////////////////
 ///Execute the MainApp
