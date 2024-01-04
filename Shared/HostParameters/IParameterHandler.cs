@@ -1,5 +1,5 @@
 ﻿namespace Shared.SharedHost;
-using Shared.HostRoutines;
+using Shared.HostParameters;
 public interface IParameterHandler
 {
 	ParameterData GetParameterData();

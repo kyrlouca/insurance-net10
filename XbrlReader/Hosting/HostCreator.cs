@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using Shared.HostRoutines;
+using Shared.HostParameters;
 using Shared.CommonRoutines;
 using XbrlReader;
 

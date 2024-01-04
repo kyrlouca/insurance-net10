@@ -1,7 +1,7 @@
 ﻿namespace XbrlReader;
 using Serilog;
 using Shared.CommonRoutines;
-using Shared.HostRoutines;
+using Shared.HostParameters;
 using Shared.SharedHost;
 
 public class ReaderMainApp : IReaderMainApp

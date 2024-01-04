@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Validator": {
+      "commandName": "Project",
+      "commandLineArgs": "external-id=1111\r\nuser-id=1\r\nfund-id=177\r\ncurrency-batch-id=1\r\neiopa-version=\"IU270\"\r\nmodule-code=\"ars\"\r\nyear=2022\r\nquarter=0\r\n"
+    }
+  }
+}

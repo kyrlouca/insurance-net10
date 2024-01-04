@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tester", "Tester\Tester.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XbrlRead", "XbrlReader\XbrlRead.csproj", "{A129C016-3859-4B46-B8B1-B2D885DBE931}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validator", "Validator\Validator.csproj", "{2CBCAA6B-908A-4499-9AC6-724296C76531}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +37,10 @@ Global
 		{A129C016-3859-4B46-B8B1-B2D885DBE931}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A129C016-3859-4B46-B8B1-B2D885DBE931}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A129C016-3859-4B46-B8B1-B2D885DBE931}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CBCAA6B-908A-4499-9AC6-724296C76531}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CBCAA6B-908A-4499-9AC6-724296C76531}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CBCAA6B-908A-4499-9AC6-724296C76531}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CBCAA6B-908A-4499-9AC6-724296C76531}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
