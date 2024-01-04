@@ -34,7 +34,7 @@ public class ValMainApp : IValMainApp
     public int Run()
     {
 
-        var smessage = $"Xbrl Reader started  PensionFund:{_parameterData.FundId}  module:{_parameterData.ModuleCode} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter}  File:{_parameterData.FileName}-- ";
+        var smessage = $"Validator started  PensionFund:{_parameterData.FundId}  module:{_parameterData.ModuleCode} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter}  File:{_parameterData.FileName}-- ";
         _logger.Information(smessage);
         _SqlFunctions.CreateTransactionLog(1, MessageType.INFO, smessage);
 
@@ -46,7 +46,7 @@ public class ValMainApp : IValMainApp
         var res = _documentValidator.ValidateDocument();
         if (res == 0)
         {
-            var fmessage = $"\nXbrl Document Created. File:{_parameterData.FileName}";
+            var fmessage = $"\nValidator Finished";
             _logger.Information(fmessage);
             _SqlFunctions.CreateTransactionLog(1, MessageType.COMPLETE, fmessage);
         }
