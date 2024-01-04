@@ -70,6 +70,21 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public IEnumerable<DocInstance> SelectDocInstances(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter)
+    {
+        var sqlGetDocument = @"
+            SELECT * 
+			FROM 
+				DocInstance doc
+			WHERE
+			  doc.PensionFundId =@fundId AND doc.moduleCode=@moduleCode and doc.ApplicableYear=@ApplicableYear AND doc.ApplicableQuarter=@ApplicableQuarter
+			ORDER BY doc.InstanceId DESC
+        ";
+        using var connectionSystem = new SqlConnection(_parameterData.SystemConnectionString);
+        var docs = connectionSystem.Query<DocInstance>(sqlGetDocument, new { fundId, moduleCode, ApplicableYear, ApplicableQuarter });
+        return docs ?? Enumerable.Empty<DocInstance>();
+    }
+
 
     public List<TemplateSheetInstance> SelectTempateSheets(int documentId)
     {

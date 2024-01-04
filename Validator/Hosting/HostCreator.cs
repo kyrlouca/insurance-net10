@@ -8,6 +8,8 @@ using Shared.HostParameters;
 using Shared.CommonRoutines;
 using Shared.SharedHost;
 using Validator;
+using Validations;
+
 public class HostCreator
 {
 
@@ -47,7 +49,7 @@ public class HostCreator
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
-             services.AddScoped<IValidator, Validator>();
+             services.AddScoped<IDocumentValidator, DocumentValidator>();
              services.AddScoped<IValMainApp, ValMainApp>();
              //services.AddScoped<ISignatureMaker,SignatureMaker>();
          })

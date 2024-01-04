@@ -9,7 +9,9 @@ public enum MappingOrigin { Field, ColumnGeneral, Page , All };
 public interface ISqlFunctions
 {
 	DocInstance? SelectDocInstance(int documentId);
-	List<TemplateSheetInstance> SelectTempateSheets(int documentId);
+	public IEnumerable<DocInstance> SelectDocInstances(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
+
+    List<TemplateSheetInstance> SelectTempateSheets(int documentId);
 	public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
     public List<TemplateSheetFactDim> SelectFactDims(int factId);
     MModule? SelectModuleByCode(string moduleCode);

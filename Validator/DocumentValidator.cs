@@ -15,6 +15,7 @@ using Shared.DataModels;
 using System.Reflection.Metadata;
 using Shared.GeneralUtils;
 using Shared.CommonRoutines;
+using System.Reflection;
 namespace Validations;
 
 
@@ -37,7 +38,7 @@ internal class FactDim
 
 }
 
-public class DocumentValidator
+public class DocumentValidator : IDocumentValidator
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -49,19 +50,17 @@ public class DocumentValidator
     //First we create the Rules that apply to the module 
     //and then we creat the rules for the document
     //for the actual validation use ValidateDocument()        
-    
-    public int _documentId { get; private set; }
-    public int _moduleId { get; private set; }
-    public MModule _module { get; private set; }
-    public DocInstance _documentInstance { get; private set; }
-    public bool IsValidDocument { get; private set; } = true;
 
-    //public string SolvencyVersion { get; private set; }
+    private int documentId { get; set; }
+    private int moduleId { get; set; }
+    private MModule _mModule { get; set; }
+    private DocInstance _documentInstance { get; set; }
+    private bool _isValidDocument { get; set; } = true;
 
-    public List<RuleStructure> ModuleRules { get; private set; } = new List<RuleStructure>();
-    public List<RuleStructure> DocumentRules { get; private set; } = new List<RuleStructure>();
-    public int TestingRuleId { get; set; } = 0;
-    public int TestingTechnicalRuleId { get; set; } = 0;
+    private List<RuleStructure> ModuleRules { get; set; } = new List<RuleStructure>();
+    private List<RuleStructure> DocumentRules { get; set; } = new List<RuleStructure>();
+    private int TestingRuleId { get; set; } = 0;
+    private int TestingTechnicalRuleId { get; set; } = 0;
 
 
 
@@ -109,21 +108,29 @@ public class DocumentValidator
 
     public int ValidateDocument()
     {
-        var docInstance = _SqlFunctions.SelectDocInstance(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
-
-        if (docInstance is null)
+        var (success, message, docInstance) = SelectDocumentInstance();
+        if (!success)
         {
-            var message = $"Cannot Find DocInstance for fund:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
             return 1;
         }
+        _documentInstance = docInstance!;
+        documentId = _documentInstance.InstanceId;
 
-        _module = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
-        _moduleId = _documentInstance.ModuleId;
+        var module = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
+        if (module is null)
+        {
+            message = $"Invalid module :{_parameterData.ModuleCode}";
+            _logger.Error(message);
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
+            return 1;
+        }
+        _mModule = module;
+        moduleId = _mModule.ModuleID;
 
 
-        UpdateDocumentStatus("P");
+        //UpdateDocumentStatus("P");
 
         CreateAllRules();
 
@@ -136,8 +143,8 @@ public class DocumentValidator
 
     private void CreateAllRules()
     {
-        var message = $"---Validation started for Document:{_documentId}";
-        Log.Information(message);
+        var message = $"---Validation started for Document:{documentId}";
+        _logger.Information(message);
 
         CreateErrorDocument();
 
@@ -179,7 +186,7 @@ public class DocumentValidator
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @documentId;";
-        var doc = connectionInsurance.Execute(sqlUpdate, new { _documentId, status });
+        var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
     }
 
     private bool ValidateRules()
@@ -190,11 +197,11 @@ public class DocumentValidator
         var warningCounter = 0;
         var rulesCounter = 0;
 
-        if (!IsValidDocument)
+        if (!_isValidDocument)
         {
             return false;
         }
-        Console.WriteLine($"v1.000 : Validate Document doc:{_documentId}");
+        Console.WriteLine($"v1.000 : Validate Document doc:{documentId}");
 
 
         Console.WriteLine($"Check Fact enum values");
@@ -207,7 +214,7 @@ public class DocumentValidator
 
         Console.WriteLine($"Check Unique Keys");
         //var isKeyValuesUnique = (1 == 1) && ValidateOpenTableKeysUnique(DocumentId);
-        if (HasEmptySheets(_documentId))
+        if (HasEmptySheets(documentId))
         {
             //retrun
         }
@@ -266,7 +273,7 @@ public class DocumentValidator
                 var errorRule = new ERROR_Rule
                 {
                     RuleId = rule.ValidationRuleId,
-                    ErrorDocumentId = _documentId,
+                    ErrorDocumentId = documentId,
                     Scope = RegexUtils.TruncateString(rule.ScopeString, 800),
                     TableBaseFormula = RegexUtils.TruncateString(rule.TableBaseFormula, 990),
                     Filter = RegexUtils.TruncateString(rule.FilterFormula, 990),
@@ -302,12 +309,12 @@ public class DocumentValidator
                   where er.ErrorDocumentId=@documentId
                 ";
 
-        (var severeErrors, var warningErrors, var dataErrors) = connectionPension.QuerySingleOrDefault<(int, int, int)>(sqlCountErrors, new { _documentId });
+        (var severeErrors, var warningErrors, var dataErrors) = connectionPension.QuerySingleOrDefault<(int, int, int)>(sqlCountErrors, new { documentId });
         var totalErrors = severeErrors + dataErrors;
         var isDocumentValid = totalErrors == 0;
 
         var sqlUpdate = @"update ERROR_Document set IsDocumentValid=@isDocumentValid, errorCounter=@eCounter, WarningCounter=@wCounter where ErrorDocumentId=@documentId";
-        connectionPension.Execute(sqlUpdate, new { isDocumentValid, eCounter = totalErrors > 0, wCounter = warningErrors > 0, _documentId });
+        connectionPension.Execute(sqlUpdate, new { isDocumentValid, eCounter = totalErrors > 0, wCounter = warningErrors > 0, documentId });
 
         var status = (totalErrors == 0) ? "V" : "E";
         status = DocumentRules.Count > 0 ? status : "E";
@@ -433,7 +440,7 @@ public class DocumentValidator
                 and fact.XBRLCode = @xbrlCode
             ";
 
-        var documentId = _documentId;
+        var documentId = this.documentId;
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlFacts, new { documentId, xbrlCode });
 
 
@@ -507,7 +514,7 @@ public class DocumentValidator
 
             ";
 
-        var documentId = _documentId;
+        var documentId = this.documentId;
         var dimFacts = connectionLocal.Query<FactDim>(sqlDimFacts, new { documentId, dim });
 
         foreach (var dimFact in dimFacts)
@@ -561,7 +568,7 @@ public class DocumentValidator
 	                    and sheet.TableCode like @sheetCode
                     ";
 
-        var sheets = connectionLocal.Query<TemplateSheetInstance>(sqlSelectSheets, new { _documentId, sheetCode });
+        var sheets = connectionLocal.Query<TemplateSheetInstance>(sqlSelectSheets, new { documentId, sheetCode });
 
 
         foreach (var sheet in sheets)
@@ -574,7 +581,7 @@ public class DocumentValidator
             if (rows == "(ALL)")
             {
                 var sqlRows = @"select distinct fact.Row from TemplateSheetFact fact where  fact.TemplateSheetId= @TemplateSheetId";
-                var sheetRows = connectionLocal.Query<string>(sqlRows, new { _documentId, sheet.TemplateSheetId }).ToList();
+                var sheetRows = connectionLocal.Query<string>(sqlRows, new { documentId, sheet.TemplateSheetId }).ToList();
                 rows = string.Join(";", sheetRows);
             }
 
@@ -783,7 +790,7 @@ public class DocumentValidator
             case FunctionTypes.SUM:
                 var termLetterS = RegexValidationFunctions.FunctionTypesRegex.Match(term.TermText).Groups[2]?.Value ?? "";
                 var sumTerm = allTerms.FirstOrDefault(term => term.Letter == termLetterS);
-                var isOpenTableSum = IsOpenTable( sumTerm.TableCode);
+                var isOpenTableSum = IsOpenTable(sumTerm.TableCode);
                 term.NumberOfDecimals = -1;
                 if (!isOpenTableSum || !sumTerm.TermText.ToUpper().Contains("SNNN"))
                 {
@@ -866,14 +873,14 @@ public class DocumentValidator
 
         //use the foreign key for open tables which have different table from the scope table
         var dbValue = plainTerm.TableCode == rule.ScopeTableCode
-            ? GetCellValueFromOneSheetDb( plainTerm.TableCode, rule.SheetId, plainTerm.Row, plainTerm.Col)
-            : GetCellValueFromDbNew(_documentId, plainTerm.TableCode, plainTerm.Row, plainTerm.Col);
+            ? GetCellValueFromOneSheetDb(plainTerm.TableCode, rule.SheetId, plainTerm.Row, plainTerm.Col)
+            : GetCellValueFromDbNew(documentId, plainTerm.TableCode, plainTerm.Row, plainTerm.Col);
         plainTerm.AssignDbValues(dbValue);
         return 0;
     }
 
 
-    public  DbValue GetCellValueFromOneSheetDb( string tableCode, int sheetId, string row, string col)
+    public DbValue GetCellValueFromOneSheetDb(string tableCode, int sheetId, string row, string col)
     {
         using var connectionPension = new SqlConnection(_parameterData.SystemConnectionString);
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -918,7 +925,7 @@ public class DocumentValidator
                     ";
 
 
-            var rowCol = IsOpenTable( tableCode) ? $"{col}" : $"{row}{col}";
+            var rowCol = IsOpenTable(tableCode) ? $"{col}" : $"{row}{col}";
             var dataType = connectionEiopa.QuerySingleOrDefault<string>(sqlMapping, new { tableCode, rowCol }) ?? "";
             var majorType = ConstantsAndUtils.GetMajorDataType(dataType);
             var emptyRes = new DbValue(0, "", 0, 0, new DateTime(2000, 1, 1), false, majorType, true);
@@ -953,7 +960,7 @@ public class DocumentValidator
 
     }
 
-    public  DbValue GetCellValueFromDbNew( int docId, string tableCode, string row, string col)
+    public DbValue GetCellValueFromDbNew(int docId, string tableCode, string row, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -1088,7 +1095,7 @@ public class DocumentValidator
         var sqlModRules = isUseTechnicalRulesExperimental ? sqlSelectModuleRulesTechnical : sqlSelectModuleRules;
 
 
-        var moduleValidationRules = connectionEiopa.Query<C_ValidationRuleExpression>(sqlModRules, new { _moduleId });
+        var moduleValidationRules = connectionEiopa.Query<C_ValidationRuleExpression>(sqlModRules, new { moduleId });
         var validationRules = moduleValidationRules;
 
         //For TESTING  to LIMIT RULES
@@ -1137,7 +1144,7 @@ public class DocumentValidator
 
         //find the actual sheet from the sheetcode of the scope. Required for open tables to go through all of its rows            
         var sqlSelectSheets = @"select sheet.TemplateSheetId, sheet.SheetCode ,sheet.IsOpenTable from TemplateSheetInstance sheet where sheet.InstanceId= @documentId and sheet.TableCode=@TableCode;";
-        var sheetsUsingTheRule = connectionLocal.Query<TemplateSheetInstance>(sqlSelectSheets, new { _documentId, scopeDetails.TableCode }).ToList();
+        var sheetsUsingTheRule = connectionLocal.Query<TemplateSheetInstance>(sqlSelectSheets, new { documentId, scopeDetails.TableCode }).ToList();
         var rowCols = new List<string>();
 
         Console.WriteLine($"\nrule:{rule.ValidationRuleId}");
@@ -1165,7 +1172,7 @@ public class DocumentValidator
                         WHERE  sheet.TemplateSheetId = @sheetId and sheet.InstanceId=@documentId;
                         ";
 
-                    var rows = connectionLocal.Query<string>(sqlDistinctRowsById, new { _documentId, sheetId = sheet.TemplateSheetId }).ToList();
+                    var rows = connectionLocal.Query<string>(sqlDistinctRowsById, new { documentId, sheetId = sheet.TemplateSheetId }).ToList();
                     rowCols = rows;
                 }
             }
@@ -1200,8 +1207,8 @@ public class DocumentValidator
     private void CreateOneDocumentRule(RuleStructure rule, ScopeDetails scopeDetails, TemplateSheetInstance sheet, string rowCol)
     {
         var newRule = rule.Clone();
-        
-        newRule.DocumentId = _documentId;
+
+        newRule.DocumentId = documentId;
         newRule.SheetId = sheet.TemplateSheetId;
 
         newRule.ScopeRowCol = rowCol;
@@ -1245,7 +1252,7 @@ public class DocumentValidator
         }
         else if (scopeAxis == ScopeRangeAxis.Rows)
         {
-            var isOpenTbl = IsOpenTable( term.TableCode);
+            var isOpenTbl = IsOpenTable(term.TableCode);
             if (isOpenTbl)
             {
                 //if it is an open table 
@@ -1289,7 +1296,7 @@ public class DocumentValidator
         {
             var message = $"Cannot find entry in table -mTableKyrKeys- for table code={tableCode}";
             Console.WriteLine(message);
-            _SqlFunctions.CreateTransactionLog(0,MessageType.ERROR,message);            
+            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
             throw new Exception(message);
         }
         return rel;
@@ -1449,10 +1456,10 @@ public class DocumentValidator
 
 
 
-        var facts = connenctionLocal.Query<TemplateSheetFact>(sqlDocumentFacts, new { _documentId }).ToList();
+        var facts = connenctionLocal.Query<TemplateSheetFact>(sqlDocumentFacts, new { documentId }).ToList();
         if (facts is null)
         {
-            Log.Error($"Document : {_documentId} has zero facts");
+            Log.Error($"Document : {documentId} has zero facts");
             return false;
         }
         foreach (var fact in facts)
@@ -1464,7 +1471,7 @@ public class DocumentValidator
                 var errorRule = new ERROR_Rule
                 {
                     RuleId = 10100,
-                    ErrorDocumentId = _documentId,
+                    ErrorDocumentId = documentId,
                     SheetId = fact.TemplateSheetId,
                     SheetCode = fact.SheetCode,
                     Scope = fact.SheetCode,
@@ -1493,7 +1500,7 @@ public class DocumentValidator
                     var errorRule = new ERROR_Rule
                     {
                         RuleId = 10101,
-                        ErrorDocumentId = _documentId,
+                        ErrorDocumentId = documentId,
                         SheetId = fact.TemplateSheetId,
                         SheetCode = fact.SheetCode,
                         Scope = fact.SheetCode,
@@ -1513,7 +1520,7 @@ public class DocumentValidator
         }
 
         var sqlUpdate = @"update ERROR_Document set IsDocumentValid=@isDocumentValid, errorCounter=@errorCounter, WarningCounter=@warningCounter where ErrorDocumentId=@documentId";
-        connenctionLocal.Execute(sqlUpdate, new { isDocumentValid = errorCounter == 0, errorCounter, warningCounter = 0, _documentId });
+        connenctionLocal.Execute(sqlUpdate, new { isDocumentValid = errorCounter == 0, errorCounter, warningCounter = 0, documentId });
 
         Log.Information($"Fact Values Validated. Number of Data Errors:{errorCounter}");
 
@@ -1574,13 +1581,10 @@ public class DocumentValidator
         //var connectionPensionString = Configuration.GetConnectionPensionString();
         using var connectionPension = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var sqlDelete = @"delete from ERROR_Document where ErrorDocumentId = @DocumentId";
-        connectionPension.Execute(sqlDelete, new { _documentId });
-        var sqlInsert = @"INSERT INTO ERROR_Document( OrganisationId,ErrorDocumentId, UserId)VALUES(@PensionFundId, @DocumentId,  @userId)";
-        connectionPension.Execute(sqlInsert, new { _documentInstance.PensionFundId, _documentId, userId = _documentInstance.UserId });
-
-
-
+        var sqlDelete = @"delete from ERROR_Document where ErrorDocumentId = @documentId";
+        connectionPension.Execute(sqlDelete, new { documentId });
+        var sqlInsert = @"INSERT INTO ERROR_Document( OrganisationId,ErrorDocumentId, UserId)VALUES(@PensionFundId, @documentId,  @userId)";
+        connectionPension.Execute(sqlInsert, new { _documentInstance.PensionFundId, documentId, userId = _documentInstance.UserId });
     }
 
     private void CreateRuleError(ERROR_Rule errorRule)
@@ -1705,13 +1709,13 @@ public class DocumentValidator
 
         //Very strange becauese we may have more than one !! Take the first anyway !!!
         //var fact = connectionInsurance.QuerySingleOrDefault<TemplateSheetFact>(sqlKeyFact, new { DocumentId, tableCode, KeyCol, keyFactValue });
-        var fact = connectionInsurance.QueryFirstOrDefault<TemplateSheetFact>(sqlKeyFact, new { _documentId, tableCode, KeyCol, keyFactValue });
+        var fact = connectionInsurance.QueryFirstOrDefault<TemplateSheetFact>(sqlKeyFact, new { documentId, tableCode, KeyCol, keyFactValue });
 
         return fact?.Row ?? "";
     }
 
 
-    private  bool IsOpenTable( string tablecode)
+    private bool IsOpenTable(string tablecode)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlOpenTable = @"select tab.TableCode from mTable tab where  tab.TableCode= @tableCode and  (YDimVal is null or YDimVal='')";
@@ -1732,7 +1736,7 @@ public class DocumentValidator
 	                    AND fact.Col = @col
                         AND fact.Row = @row
                 ";
-        var valueFact = connectionInsurance.QuerySingleOrDefault<TemplateSheetFact>(sqlFact, new { _documentId, sheetCode, row, col });
+        var valueFact = connectionInsurance.QuerySingleOrDefault<TemplateSheetFact>(sqlFact, new { documentId, sheetCode, row, col });
         return valueFact;
     }
 
@@ -1789,7 +1793,7 @@ public class DocumentValidator
             sqlSum += sqlAdd;
 
             var fixedRowCol = sumObj.RangeAxis == VldRangeAxis.Cols ? sumTerm.Row : sumTerm.Col;
-            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, startRowCol = sumObj.StartRowCol, endRowCol = sumObj.EndRowCol, fixedRowCol, _documentId }) ?? 0;
+            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, startRowCol = sumObj.StartRowCol, endRowCol = sumObj.EndRowCol, fixedRowCol, documentId }) ?? 0;
             return sum;
 
         }
@@ -1807,7 +1811,7 @@ public class DocumentValidator
             sqlSum += sqlAdd;
 
             var fixedRowCol = sumObj.RangeAxis == VldRangeAxis.Cols ? sumTerm.Row : sumTerm.Col;
-            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, startRowCol = sumObj.StartRowCol, endRowCol = sumObj.EndRowCol, fixedRowCol, _documentId }) ?? 0;
+            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, startRowCol = sumObj.StartRowCol, endRowCol = sumObj.EndRowCol, fixedRowCol, documentId }) ?? 0;
             return sum;
 
         }
@@ -1826,7 +1830,7 @@ public class DocumentValidator
                 ";
             sqlSum += sqlAdd;
 
-            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { _documentId, sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, sumTerm.Row, sumTerm.Col }) ?? 0;
+            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { documentId, sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, sumTerm.Row, sumTerm.Col }) ?? 0;
             return sum;
         }
         return 0;
@@ -1857,7 +1861,7 @@ public class DocumentValidator
 
         var isOpenTbl = IsOpenTable(sumTerm.TableCode);
 
-        var sumfacts = connectionInsurance.Query<TemplateSheetFact>(sqlSumFacts, new { _documentId, tableCode = sumTerm.TableCode, col = sumTerm.Col });
+        var sumfacts = connectionInsurance.Query<TemplateSheetFact>(sqlSumFacts, new { documentId, tableCode = sumTerm.TableCode, col = sumTerm.Col });
         decimal factSum = 0;
         foreach (var sumFact in sumfacts)
         {
@@ -1940,7 +1944,7 @@ public class DocumentValidator
 
         var keyCol = connectionEiopa.QuerySingleOrDefault<string>(sqlKeyColMapping, new { term.TableCode, dimLike });
 
-        var fValue = GetCellValueFromDbNew( _documentId, term.TableCode, term.Row, keyCol);
+        var fValue = GetCellValueFromDbNew(documentId, term.TableCode, term.Row, keyCol);
 
         return fValue.TextValue;
     }
@@ -2037,18 +2041,41 @@ public class DocumentValidator
 
 
 
-    
+
 
 
     private bool IsTableInDocument(string tableCode)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelectSheet = @"select sheet.TemplateSheetId from TemplateSheetInstance sheet where sheet.InstanceId= @documentId and sheet.TableCode= @tableCode";
-        var sheet = connectionLocal.QueryFirstOrDefault<TemplateSheetInstance>(sqlSelectSheet, new { _documentId, tableCode });
+        var sheet = connectionLocal.QueryFirstOrDefault<TemplateSheetInstance>(sqlSelectSheet, new { documentId, tableCode });
         return sheet is not null;
 
     }
 
+
+    private (bool success, string message, DocInstance? docInstance) SelectDocumentInstance()
+    {
+        _parameterData = _parameterHandler.GetParameterData();
+        var docs = _SqlFunctions.SelectDocInstances(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
+
+        if (!docs.Any())
+        {
+            var message = $"There is NO document with these parameters in the Database.";
+            return (false, message, null);
+        }
+
+        var lockedDocument = docs.FirstOrDefault(doc => doc.Status.Trim() == "P");
+        if (lockedDocument is not null)
+        {
+            var message = $"Cannot create Xbrl Document. Another Document is currently being processed :{lockedDocument.InstanceId} ";
+            return (false, message, null);
+        }
+
+        var document = docs.First();
+
+        return (true, "", document);
+    }
 
 }
 

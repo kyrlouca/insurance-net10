@@ -7,7 +7,7 @@ using Shared.CommonRoutines;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.DataModels;
-
+using Validations;
 
 public class ValMainApp : IValMainApp
 {
@@ -16,18 +16,18 @@ public class ValMainApp : IValMainApp
     private ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
-    private IValidator _validator;
+    private IDocumentValidator _documentValidator;
 
 
 
 
-    public ValMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IValidator eiopaXbrlDocument)
+    public ValMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
-        _validator = eiopaXbrlDocument;
+        _documentValidator = documentValidator;
         //_signatureMaker = signatureMaker;
 
     }
@@ -43,7 +43,7 @@ public class ValMainApp : IValMainApp
         var result = false;
 
 
-        var res = _validator.ValidateDocument();
+        var res = _documentValidator.ValidateDocument();
         if (res == 0)
         {
             var fmessage = $"\nXbrl Document Created. File:{_parameterData.FileName}";
