@@ -30,7 +30,7 @@ public class Validator : IValidator
     }
     public int ValidateDocument()
     {
-        _logger.Information("Validator");
+        _logger.Information("Validator1");
         return 0;
     }
 }
