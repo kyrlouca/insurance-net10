@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Serilog;
 using Shared.CommonRoutines;
 using Shared.DataModels;
 using Shared.HostParameters;
@@ -30,7 +30,7 @@ public class Validator : IValidator
     }
     public int ValidateDocument()
     {
-        _logger.LogInformation("Validator");
+        _logger.Information("Validator");
         return 0;
     }
 }
