@@ -29,7 +29,7 @@ public static class RegexUtils
 
     }
 
-    public static string GetRegexSingleMatch(string RegExpression, string inputString)
+    public static string  GetRegexSingleMatch(string RegExpression, string inputString)
     {
         //you need at least *ONE* capture
         //return just the value of the group capture or space
