@@ -2,6 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Shared.SharedHost;
+using System.Reflection.Metadata;
+using System;
 using Validator;
 
 
@@ -9,7 +11,8 @@ var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
-    var sample = @".\Validator.exe document-id=22323";
+    
+    var sample = @".\Validator.exe external-id=33 eiopa-version=IU270 document-id=22323";
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
     Console.WriteLine(sample);
     throw new ArgumentException($"parameter missing:{missingParam}");
