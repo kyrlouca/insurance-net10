@@ -9,7 +9,7 @@ var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
-    var sample = """.\Validator.exe external-id=12 user-id=1 fund-id=33 eiopa-version=PU270 module-code="qri" year=2022 quarter=1 file-name="C:\Users\kyrlo\soft\dotnet\pension-project\TestingHR\eac.xbr" """;
+    var sample = @".\Validator.exe document-id=22323";
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
     Console.WriteLine(sample);
     throw new ArgumentException($"parameter missing:{missingParam}");
@@ -21,7 +21,7 @@ var services = scope.ServiceProvider;
 
 
 ///////////////////////////////////////
-///Execute the XbrlWriterMainApp
+///Validator
 ///////////////////////////////////////
 try
 {
@@ -37,7 +37,8 @@ return 0;
 
 string? CheckParams(string[] args)
 {
-    var paramNames = new[] { "external-id", "eiopa-version", "user-id", "fund-id", "module-code", "year", "quarter" };
+    //var paramNames = new[] { "external-id", "eiopa-version", "user-id", "fund-id", "module-code", "year", "quarter" };
+    var paramNames = new[] { "external-id","eiopa-version", "document-id"};
     var missingParam = paramNames.FirstOrDefault(par => !args.Any(arg => arg.Contains(par)));
     return missingParam;
 }

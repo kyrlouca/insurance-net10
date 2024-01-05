@@ -3,11 +3,11 @@
 
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using Shared.CommonRoutines;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.DataModels;
 using Validations;
+using Shared.SQLFunctions;
 
 public class ValMainApp : IValMainApp
 {
@@ -27,16 +27,14 @@ public class ValMainApp : IValMainApp
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
-        _documentValidator = documentValidator;
-        //_signatureMaker = signatureMaker;
-
+        _documentValidator = documentValidator;        
     }
     public int Run()
     {
 
-        var smessage = $"Validator started  PensionFund:{_parameterData.FundId}  module:{_parameterData.ModuleCode} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter}  File:{_parameterData.FileName}-- ";
+        var smessage = $"Validator started documentId:{_parameterData.DocumentId} ";
         _logger.Information(smessage);
-        _SqlFunctions.CreateTransactionLog(1, MessageType.INFO, smessage);
+        _SqlFunctions.CreateTransactionLog(MessageType.INFO, smessage);
 
 
         var docId = 5004;
@@ -48,7 +46,7 @@ public class ValMainApp : IValMainApp
         {
             var fmessage = $"\nValidator Finished";
             _logger.Information(fmessage);
-            _SqlFunctions.CreateTransactionLog(1, MessageType.COMPLETE, fmessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.COMPLETE, fmessage);
         }
         return res;
 

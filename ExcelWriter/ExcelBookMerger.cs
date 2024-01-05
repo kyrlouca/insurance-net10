@@ -1,5 +1,4 @@
 ﻿namespace ExcelWriter;
-using Shared.CommonRoutines;
 using Shared.HostParameters;
 using Dapper;
 using Microsoft.Data.SqlClient;
@@ -14,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Metadata;
 using Syncfusion.XlsIO.Implementation;
 using ExcelWriter.Common;
+using Shared.SQLFunctions;
 
 public class ExcelBookMerger : IExcelBookMerger
 {
@@ -59,7 +59,7 @@ public class ExcelBookMerger : IExcelBookMerger
         if (SourceWorkbook is null)
         {
             _logger.Error(originMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, originMessage);
             return false;
         }
 
@@ -68,7 +68,7 @@ public class ExcelBookMerger : IExcelBookMerger
         if (DestWorkbook is null)
         {
             _logger.Error(destMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, destMessage);
+            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, destMessage);
             return false;
         }
 
@@ -138,7 +138,7 @@ public class ExcelBookMerger : IExcelBookMerger
         if (!isValidSave)
         {
             _logger.Error(destSaveMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, destSaveMessage);
+            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, destSaveMessage);
             return false;
         }
 

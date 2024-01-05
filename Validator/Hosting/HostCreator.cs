@@ -5,10 +5,10 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Shared;
 using Shared.HostParameters;
-using Shared.CommonRoutines;
 using Shared.SharedHost;
 using Validator;
 using Validations;
+using Shared.SQLFunctions;
 
 public class HostCreator
 {

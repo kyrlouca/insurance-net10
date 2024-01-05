@@ -17,6 +17,7 @@ using System.Xml.Linq;
 using XbrlReader;
 using System.Text;
 using Syncfusion.XlsIO;
+using Shared.SQLFunctions;
 
 public class FactsCreator : IFactsCreator
 {
@@ -103,7 +104,7 @@ public class FactsCreator : IFactsCreator
 		if (!parseValid)
 		{
 			_logger.Error(parseMessage);
-			_SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, parseMessage);
+			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, parseMessage);
 			return (0, FilingsSubmitted);
 		}
 
@@ -117,7 +118,7 @@ public class FactsCreator : IFactsCreator
 		{
 			var moduleMessage = @$"The Module Code in the Xbrl file is ""{moduleCodeXbrl}"" instead of ""{_mModule.ModuleCode}""";
             _logger.Error(moduleMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, moduleMessage);            
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, moduleMessage);            
 			return (0, FilingsSubmitted);
 		}
 
@@ -125,7 +126,7 @@ public class FactsCreator : IFactsCreator
 		if (!isValidReferenceDate)
 		{
 			_logger.Error(referenceMessage);
-			_SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, referenceMessage);
+			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, referenceMessage);
 			return (0, FilingsSubmitted);
 		}
 
@@ -135,7 +136,7 @@ public class FactsCreator : IFactsCreator
 		{
 			message = $"The license number is incorrect:{fundLei}";
 			_logger.Error(message);
-			_SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
+			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
 			return (0, FilingsSubmitted);
 		}
 
@@ -150,7 +151,7 @@ public class FactsCreator : IFactsCreator
 			message = $"Cannot Create DocInstance for: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
 			Console.WriteLine(message);
             _logger.Error(message);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, message);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return (0, FilingsSubmitted);
 		}
 

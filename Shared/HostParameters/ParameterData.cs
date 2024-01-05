@@ -23,6 +23,6 @@ public class ParameterData
     public int ApplicableQuarter { get; set; }
     public string ModuleCode { get; set; }
     public string FileName { get; set; }
+    public int DocumentId { get; set; }
 
- 
 }

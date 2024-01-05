@@ -1,6 +1,7 @@
 ﻿namespace Shared.SharedHost;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -26,9 +27,20 @@ public class ParameterHandler : IParameterHandler
 	{
 		_configuration = config;
 		_optionsVersionData = optionVersionData;
-		//_optionsLoggerFiles = optionsLoggerFiles;
+        //_optionsLoggerFiles = optionsLoggerFiles;
 
-	}
+        if (optionVersionData.Value.SystemConnectionString is null)
+        {
+            throw new ArgumentException("** Appsettings.SystemConnectionString in appsettings is null");
+        }
+        if (optionVersionData.Value.EiopaConnectionString is null)
+        {
+            throw new ArgumentException("** Appsettings.EiopaConnectionString in appsettings is null");
+        }
+        
+
+
+    }
 	public ParameterData GetParameterData()
 	{
 		//get params from env, appsettings, commandline and build a parameterDataObject 
@@ -40,7 +52,8 @@ public class ParameterHandler : IParameterHandler
 
 		var parameterData = new ParameterData()
 		{
-			ExternalId=int.TryParse(_configuration["external-id"], out int externalid) ? externalid : 0,
+            DocumentId = int.TryParse(_configuration["document-id"], out int documentId) ? documentId : 0,
+            ExternalId =int.TryParse(_configuration["external-id"], out int externalid) ? externalid : 0,
             UserId = int.TryParse(_configuration["user-id"], out int userid) ? userid : 0,
 			FundId = int.TryParse(_configuration["fund-id"], out int fundId) ? fundId : 0,
 			CurrencyBatchId = int.TryParse(_configuration["currency-batch-id"], out int currencyBatchId) ? currencyBatchId : 0,

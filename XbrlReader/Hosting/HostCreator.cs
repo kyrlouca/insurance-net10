@@ -4,9 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Shared.HostParameters;
-using Shared.CommonRoutines;
 using XbrlReader;
-
+using Shared.SQLFunctions;
 
 public class HostCreator
 {

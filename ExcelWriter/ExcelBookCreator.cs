@@ -1,5 +1,4 @@
 ﻿namespace ExcelWriter;
-using Shared.CommonRoutines;
 using Shared.HostParameters;
 using Dapper;
 using Microsoft.Data.SqlClient;
@@ -13,6 +12,7 @@ using Syncfusion.XlsIO.Implementation.Collections;
 using System;
 using System.Drawing;
 using ExcelWriter.Common;
+using Shared.SQLFunctions;
 
 public class ExcelBookCreator : IExcelBookWriter
 {
@@ -56,7 +56,7 @@ public class ExcelBookCreator : IExcelBookWriter
         if (_originWorkbook is null)
         {
             _logger.Error(originMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, originMessage);
             return "";
         }
 
@@ -65,7 +65,7 @@ public class ExcelBookCreator : IExcelBookWriter
         if (_destinationWorkbook is null)
         {
             _logger.Error(errorMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, errorMessage + "--" + xMessage);
+            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, errorMessage + "--" + xMessage);
             return "";
         }
 
@@ -261,7 +261,7 @@ public class ExcelBookCreator : IExcelBookWriter
         if (!isSaveValid)
         {
             _logger.Error(saveMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, saveMessage);
+            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, saveMessage);
             return "";
         }
 

@@ -1,5 +1,4 @@
 ﻿namespace ExcelWriter;
-using Shared.CommonRoutines;
 using Shared.HostParameters;
 using Dapper;
 using Microsoft.Data.SqlClient;
@@ -17,6 +16,7 @@ using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
 using System.Linq.Expressions;
 using ExcelWriter.Common;
+using Shared.SQLFunctions;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -56,7 +56,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (Workbook is null)
         {
             _logger.Error(originMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, originMessage);
             return false;
         }
 
@@ -108,7 +108,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (!isValidSave)
         {
             _logger.Error(destSaveMessage);
-            _SqlFunctions.CreateTransactionLog(0, MessageType.ERROR, destSaveMessage);
+            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, destSaveMessage);
             return false;
         }
 

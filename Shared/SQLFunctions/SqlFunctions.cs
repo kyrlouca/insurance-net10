@@ -1,4 +1,4 @@
-﻿namespace Shared.CommonRoutines;
+﻿namespace Shared.SQLFunctions;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Serilog;
@@ -22,7 +22,7 @@ public class SqlFunctions : ISqlFunctions
 
 
 
-    public void CreateTransactionLog(int docInstanceId, MessageType messageType, string message)
+    public void CreateTransactionLog( MessageType messageType, string message)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var tl = new LogTransactionModel()
@@ -37,7 +37,7 @@ public class SqlFunctions : ISqlFunctions
             UserId = _parameterData.UserId,
             ProgramCode = "EX",
             ProgramAction = ProgramAction.INS.ToString(),
-            InstanceId = docInstanceId,
+            InstanceId = _parameterData.DocumentId,
             MessageType = messageType.ToString()
 
         };
@@ -151,9 +151,9 @@ public class SqlFunctions : ISqlFunctions
     public MMember? SelectMMember(string xbrlCode)
     {
         //memberXbrlCode= s2c_AM:x2 => find mMember
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);        
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlMem = @"select * from mMember mem where MemberXBRLCode = @xbrlCode";
-        xbrlCode=xbrlCode.Trim();
+        xbrlCode = xbrlCode.Trim();
         var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { xbrlCode });
         return val;
     }
@@ -172,7 +172,7 @@ public class SqlFunctions : ISqlFunctions
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mappingOrigin)
     {
 
-        
+
         //-- and ORIGIN = 'C' and IS_IN_TABLE = 1 and map.IS_PAGE_COLUMN_KEY = 1 (used for selecting a dim)
         //-- and ORIGIN = 'C' and IS_IN_TABLE = 1 and map.IS_PAGE_COLUMN_KEY = 0 (used for listing the values of the DIM)
 
@@ -288,11 +288,11 @@ public class SqlFunctions : ISqlFunctions
             SheetCodeZet = sheetCodeZet,
             SheetTabName = sheetTabName,
             YDimVal = table.YDimVal ?? "",
-            ZDimVal = table.ZDimVal ??"",
+            ZDimVal = table.ZDimVal ?? "",
             Status = "LD",
-            Description = RegexUtils.TruncateString(table.TableLabel, 199),
+            Description = table.TableLabel.TruncateString(199),
             XbrlFilingIndicatorCode = table.XbrlFilingIndicatorCode,
-            IsOpenTable = table?.IsOpenTable ??false,
+            IsOpenTable = table?.IsOpenTable ?? false,
             OpenRowCounter = 0
         };
 
@@ -308,13 +308,13 @@ public class SqlFunctions : ISqlFunctions
             Log.Error($"error creating Sheet :{sheet.SheetCode}");
             throw;
         }
-        
+
     }
 
     public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        if(fact is null )
+        if (fact is null)
         {
             return null;
         }
@@ -334,12 +334,13 @@ public class SqlFunctions : ISqlFunctions
              SELECT CAST(SCOPE_IDENTITY() as int);            
             ";
         int factId = 0;
-        var sqlInsert= fact.TemplateSheetId>0 ? sqlInsertSheetFact : sqlInsertLooseFact;
+        var sqlInsert = fact.TemplateSheetId > 0 ? sqlInsertSheetFact : sqlInsertLooseFact;
         try
         {
-            factId = connectionInsurance.QuerySingle<int>(sqlInsert,fact);
+            factId = connectionInsurance.QuerySingle<int>(sqlInsert, fact);
         }
-        catch( Exception ex ) {
+        catch (Exception ex)
+        {
             Log.Error($"error creating Fact :{fact.Row} col:{fact.Col} - {ex.Message}");
             return null;
         }
@@ -368,8 +369,8 @@ public class SqlFunctions : ISqlFunctions
         {
             Log.Error($"error creating ContextLine :{contextLine.ContextId} col:{contextLine.DomainAndValue} - {ex.Message}");
             return null;
-        }                
-        
+        }
+
     }
 
 
@@ -385,7 +386,7 @@ public class SqlFunctions : ISqlFunctions
         try
         {
             ctxId = connectionInsurance.QuerySingleOrDefault<int>(sqlInsertContext, context);
-            var res= context with { ContextId=ctxId };
+            var res = context with { ContextId = ctxId };
             return res;
         }
         catch (Exception ex)
@@ -402,7 +403,7 @@ public class SqlFunctions : ISqlFunctions
         var sqlSelectContext = @"select * from Context ctx where ctx.InstanceId=@documentId and  ctx.ContextXbrlId=@ContextXbrlId";
 
         var ctx = connectionInsurance.QuerySingleOrDefault<ContextModel>(sqlSelectContext, new { documentId, contextXbrlId });
-        return ctx;        
+        return ctx;
 
     }
 
@@ -411,7 +412,7 @@ public class SqlFunctions : ISqlFunctions
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelectContext = @"select * from ContextLine cl where cl.ContextId = @ContextId";
 
-        var ctx = connectionInsurance.Query<ContextLine>(sqlSelectContext, new { contextId,  }).ToList();
+        var ctx = connectionInsurance.Query<ContextLine>(sqlSelectContext, new { contextId, }).ToList();
         return ctx;
     }
 
