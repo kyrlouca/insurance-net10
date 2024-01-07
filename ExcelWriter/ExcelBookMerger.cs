@@ -28,6 +28,7 @@ public class ExcelBookMerger : IExcelBookMerger
     private IWorkbook? SourceWorkbook;
     private IWorkbook? DestWorkbook;
     int _documentId = 0;
+    DocInstance _documentInstance;
 
     //private IStyle? tableCodeStyle;
     //private IStyle? bodyStyle;
@@ -45,8 +46,17 @@ public class ExcelBookMerger : IExcelBookMerger
     public bool MergeTables(int documentId, string sourceFile, string destFile)
     {
         _documentId = documentId;
-        _parameterData = _parameterHandler.GetParameterData();
+        _documentInstance = _SqlFunctions.SelectDocInstance(_documentId)!;
+        if (_documentInstance is null)
+        {
+            var eMessage = "Document not fuound";
+            _logger.Error(eMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, eMessage);
+            return false;
+        }
 
+
+        _parameterData = _parameterHandler.GetParameterData();
 
 
         Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
@@ -82,7 +92,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
 
-        var moduleTemplateBundles = CreateTemplateBundlesForModule(_parameterData.ModuleCode);
+        var moduleTemplateBundles = CreateTemplateBundlesForModule(_documentInstance.ModuleCode);
 
         ///////////////////////
         foreach (var templateBundle in moduleTemplateBundles)
@@ -134,7 +144,9 @@ public class ExcelBookMerger : IExcelBookMerger
 
         indexSheet.Activate();
 
-        (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
+        var ss = DestWorkbook.TabSheets.Count;
+
+         (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
         if (!isValidSave)
         {
             _logger.Error(destSaveMessage);
