@@ -25,4 +25,5 @@ public class ParameterData
     public string FileName { get; set; }
     public int DocumentId { get; set; }
 
+    public bool IsDevelop { get; set; }
 }

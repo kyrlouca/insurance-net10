@@ -102,6 +102,7 @@ public class DimUtils
 
 public class FileUtilsKyr
 {
+
     public static (bool isSuccess, string errorMessage) DeleteFile(string filePath)
     {
         if (!File.Exists(filePath))
@@ -123,4 +124,30 @@ public class FileUtilsKyr
             return (false, ex.Message);
         }
     }
+
+
+    public static (bool isSuccess, string errorMessage) RenameFile(string sourceFile,string destFile)
+    {
+        if (!File.Exists(sourceFile))
+        {
+            var message = $"File:{sourceFile} does not exist.";
+            Console.WriteLine(message);
+            return (false, message);
+        }
+       
+
+        try
+        {
+            File.Move(sourceFile, destFile); // Try to move            
+            var messate = $"File {sourceFile} renamed to {destFile}";
+            return (true, "");
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Error renameing the file:{sourceFile}--{ex.Message}");
+            return (false, ex.Message);
+        }
+    }
+
+
 }

@@ -32,7 +32,7 @@ public class WriterMainApp : IWriterMainApp
     }
     public int Run()
     {
-        Console.WriteLine("started Excle");
+        Console.WriteLine("started Excel Writer");
 
         var doc = _SqlFunctions.SelectDocInstance(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
 
@@ -87,7 +87,7 @@ public class WriterMainApp : IWriterMainApp
                 _logger.Error(message);
                 _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
                 return 1;
-            }
+            //}
         }
         if (1 == 1)
         {
@@ -118,7 +118,7 @@ public class WriterMainApp : IWriterMainApp
                 }
             }            
         }
-        if (1 == 2)
+        if (!_parameterData.IsDevelop || 1==1)
         {
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
             if (!isSuccess) 
@@ -129,6 +129,11 @@ public class WriterMainApp : IWriterMainApp
             if (!isFsuccess)
             {
                 _logger.Error(sErrorMessage);
+            }
+            var (isRsuccess,rMessage)=FileUtilsKyr.RenameFile(mergedFilename,fileName);
+            if (!isRsuccess)
+            {
+                _logger.Error(rMessage);
             }
         }
         return 0;
