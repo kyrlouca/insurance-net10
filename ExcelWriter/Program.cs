@@ -38,7 +38,7 @@ return 0;
 
 string? CheckParams(string[] args)
 {
-	var paramNames = new[] { "external-id","eiopa-version", "fund-id", "module-code", "year", "quarter", "file-name" };
+	var paramNames = new[] { "external-id","eiopa-version", "document-id" };
 	var missingParam = paramNames.FirstOrDefault(par => !args.Any(arg => arg.Contains(par)));
 	return missingParam;
 }

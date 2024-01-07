@@ -4,7 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Shared.HostParameters;
 using Shared.SharedHost;
-using Shared.SpecialRoutines;
+using Shared.CommonRoutines;
 using Shared.SQLFunctions;
 
 public class WriterMainApp : IWriterMainApp
@@ -34,13 +34,13 @@ public class WriterMainApp : IWriterMainApp
     {
         Console.WriteLine("started Excel Writer");
 
-        var doc = _SqlFunctions.SelectDocInstance(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
-
+        var doc = _SqlFunctions.SelectDocInstance(_parameterData.DocumentId);        
+        
         if (doc is null)
         {
             var message = $"Cannot Find DocInstance for fund:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
             _logger.Error(message);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
         }
 
@@ -48,7 +48,7 @@ public class WriterMainApp : IWriterMainApp
         {
             var message = $"Document currently being Processed by another User. Document Id:{doc.InstanceId}";
             _logger.Error(message);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
         }
 
@@ -56,7 +56,7 @@ public class WriterMainApp : IWriterMainApp
         {
             var message = $"Eiopa Version Submitted :{_parameterData.EiopaVersion} different than Document eiopa version: {_parameterData.EiopaVersion} ";
             _logger.Error(message);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
         }
 
@@ -67,7 +67,7 @@ public class WriterMainApp : IWriterMainApp
         {
             var message = $"Cannot find Directory for path {fileName} :FundId: {_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
             _logger.Error(message);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
         }
 
@@ -85,9 +85,9 @@ public class WriterMainApp : IWriterMainApp
             {
                 var message = $"Can NOT create file: {EmptyFilename} ";
                 _logger.Error(message);
-                _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
+                _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
                 return 1;
-            //}
+            }
         }
         if (1 == 1)
         {
@@ -98,7 +98,7 @@ public class WriterMainApp : IWriterMainApp
             {
                 var message = $"Can NOT Fill file: Empty:{EmptyFilename}  - filled:{filledFilename}";
                 _logger.Error(message);
-                _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
+                _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
                 return 1;
             }
 
@@ -113,24 +113,24 @@ public class WriterMainApp : IWriterMainApp
                 {
                     var message = $"Can NOT Merge file: Filled:{filledFilename}  - filled:{mergedFilename}";
                     _logger.Error(message);
-                    _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
+                    _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
                     return 1;
                 }
-            }            
+            }
         }
-        if (!_parameterData.IsDevelop || 1==1)
+        if (!_parameterData.IsDevelop )
         {
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
-            if (!isSuccess) 
+            if (!isSuccess)
             {
-                _logger.Error(errorMessage);                
+                _logger.Error(errorMessage);
             }
             var (isFsuccess, sErrorMessage) = FileUtilsKyr.DeleteFile(filledFilename);
             if (!isFsuccess)
             {
                 _logger.Error(sErrorMessage);
             }
-            var (isRsuccess,rMessage)=FileUtilsKyr.RenameFile(mergedFilename,fileName);
+            var (isRsuccess, rMessage) = FileUtilsKyr.MoveFile(mergedFilename, fileName);
             if (!isRsuccess)
             {
                 _logger.Error(rMessage);
@@ -140,6 +140,8 @@ public class WriterMainApp : IWriterMainApp
 
     }
 }
+
+
 
 
 

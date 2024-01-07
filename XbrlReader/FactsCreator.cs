@@ -55,8 +55,8 @@ public class FactsCreator : IFactsCreator
     {
         _parameterData = _parameterHandler.GetParameterData();
         _mModule = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
-
-        var existingDocs = GetExistingDocuments();
+		
+		var existingDocs = _SqlFunctions.SelectDocInstances(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
         var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "P");
         //var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "X");
         if (lockedDocument is not null)
@@ -79,20 +79,7 @@ public class FactsCreator : IFactsCreator
         return (true, "");
     }
 
-    private List<DocInstance> GetExistingDocuments()
-    {
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlExists = @"
-                    select doc.InstanceId, doc.Status, doc.IsSubmitted, EiopaVersion from DocInstance doc  where  
-                    PensionFundId= @FundId and ModuleId=@moduleId
-                    and ApplicableYear = @ApplicableYear and ApplicableQuarter = @ApplicableQuarter"
-                ;
-
-        var docParams = new { _parameterData.FundId, ModuleId = _mModule.ModuleID, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter };
-        var docs = connectionInsurance.Query<DocInstance>(sqlExists, docParams).ToList();
-        return docs;
-    }
-
+    
     public (int, List<string>) CreateLooseFacts()
 	{
 

@@ -2,7 +2,7 @@
   "profiles": {
     "ExcelWriter": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=1111\r\nuser-id=1\r\nfund-id=183\r\ncurrency-batch-id=1\r\neiopa-version=\"IU270\"\r\nmodule-code=\"qrs\"\r\nyear=2021\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\testingXbrl280\\london.xlsx\"",
+      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU270\"\r\ndocument-id=13130\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\testingXbrl280\\london.xlsx\"",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }

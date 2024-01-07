@@ -52,15 +52,7 @@ public class SqlFunctions : ISqlFunctions
     {
         var sqlGetDocument = @"
                     SELECT
-                      doc.InstanceId
-                     ,doc.PensionFundId
-                     ,doc.ModuleId
-                     ,doc.Status
-                     ,doc.ModuleCode
-                     ,doc.ApplicableYear
-                     ,doc.ApplicableQuarter
-                     ,doc.EntityCurrency
-                     ,doc.UserId
+                      *
                     FROM dbo.DocInstance doc
                     WHERE doc.InstanceId = @documentId
                     ";

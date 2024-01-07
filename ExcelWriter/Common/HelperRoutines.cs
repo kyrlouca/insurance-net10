@@ -89,22 +89,7 @@ internal class HelperRoutines
         return (true, "");
     }
 
-    public static (bool isValid, string message) CopyFile(string originFileName, string destFileName)
-    {
-
-        try
-        {
-            File.Copy(originFileName, destFileName, true);
-            return (true, "");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            return (false, ex.Message);
-            throw;
-        }
-
-    }
+    
 
     public static string JoinRowCells(IRange? row)
     {
