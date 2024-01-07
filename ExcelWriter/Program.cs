@@ -11,7 +11,7 @@ var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
 	//todo may need to change this
-    var sample = @".\ExcelWriter.exe external-id=12  eiopa-version=PU270  document-id=13130";
+    var sample = @".\ExcelWriter.exe external-id=12  eiopa-version=PU270  document-id=13130 file-name=""C:\Users\kyrlo\soft\dotnet\insurance-project\testingXbrl280\london-2023-q3.xlsx""  ";
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
     Console.WriteLine(sample);
     throw new ArgumentException($"parameter missing:{missingParam}");
@@ -38,7 +38,7 @@ return 0;
 
 string? CheckParams(string[] args)
 {
-	var paramNames = new[] { "external-id","eiopa-version", "document-id" };
+	var paramNames = new[] { "external-id","eiopa-version", "document-id", "file-name" };
 	var missingParam = paramNames.FirstOrDefault(par => !args.Any(arg => arg.Contains(par)));
 	return missingParam;
 }
