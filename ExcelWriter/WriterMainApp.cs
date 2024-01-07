@@ -44,7 +44,7 @@ public class WriterMainApp : IWriterMainApp
             return 1;
         }
 
-        if (doc.Status == "P")
+        if (doc.Status.Trim() == "P")
         {
             var message = $"Document currently being Processed by another User. Document Id:{doc.InstanceId}";
             _logger.Error(message);

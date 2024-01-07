@@ -10,8 +10,11 @@ var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
-	Console.WriteLine($"parameter missing:{missingParam}");
-	throw new ArgumentException($"parameter missing:{missingParam}");
+	//todo may need to change this
+    var sample = @".\ExcelWriter.exe external-id=12  eiopa-version=PU270  document-id=13130";
+    Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
+    Console.WriteLine(sample);
+    throw new ArgumentException($"parameter missing:{missingParam}");
 }  
 
 using var host = HostCreator.CreateHostExplicit(args);

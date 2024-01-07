@@ -49,7 +49,16 @@ public class ExcelBookCreator : IExcelBookWriter
         //return true;
 
         using var excelEngine = new ExcelEngine();
+        var errorMessage = "";
 
+        var sheets = SelectTempateSheetInstances().OrderBy(sh => sh.TableCode);
+        if (!sheets.Any())
+        {
+            errorMessage = "Document contains ZERO sheets";
+            _logger.Error(errorMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorMessage + "--" + errorMessage);
+            return "";
+        }
 
 
         (_originWorkbook, var originMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, _parameterData.ExcelTemplateFile);
@@ -60,11 +69,12 @@ public class ExcelBookCreator : IExcelBookWriter
             return "";
         }
 
-        (_destinationWorkbook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);
-        var errorMessage = "Cannot create excel Workbook syncfusion file";
+        
+        (_destinationWorkbook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);        
         if (_destinationWorkbook is null)
         {
-            _logger.Error(errorMessage);
+            errorMessage=$"Cannot create excel Workbook syncfusion file";
+            _logger.Error(xMessage);
             _SqlFunctions.CreateTransactionLog( MessageType.ERROR, errorMessage + "--" + xMessage);
             return "";
         }
@@ -75,8 +85,6 @@ public class ExcelBookCreator : IExcelBookWriter
 
         //////////////////////////////////////////////////////////////////
         //Start processing
-
-        var sheets = SelectTempateSheetInstances().OrderBy(sh => sh.TableCode);
 
 
         int START_ROW = 1;
