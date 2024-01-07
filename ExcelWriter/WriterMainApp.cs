@@ -118,7 +118,7 @@ public class WriterMainApp : IWriterMainApp
                 }
             }
         }
-        if (!_parameterData.IsDevelop )
+        if (!_parameterData.IsDevelop && 1==2 )
         {
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
             if (!isSuccess)
