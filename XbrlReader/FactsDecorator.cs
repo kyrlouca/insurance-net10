@@ -396,7 +396,8 @@ public class FactsDecorator : IFactsDecorator
 
             if (tableFactsFromCtl.Count() > 0)
             {
-                Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
+                Console.Write(".");
+                //Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
             }            
 
         }
