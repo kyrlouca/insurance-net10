@@ -514,21 +514,26 @@ public class FactsCreator : IFactsCreator
 
     private (bool isParsed, string parseMessage, XDocument?) ParseXmlFile()
 	{
-		XDocument xmlDoc;
-
-		using (TextReader sr = File.OpenText(_parameterData.FileName))  //utf-8 stream
-
-			try
-			{
-				xmlDoc = XDocument.Load(sr);
-
-			}
-			catch (Exception e)
-			{				
-				var message = $"XBRL file not valid : {_parameterData.FileName}";                
-                return (false, message, null);
-			}
-		return (true, "", xmlDoc);
+        try
+        {
+            using TextReader sr = File.OpenText(_parameterData.FileName);
+            XDocument xmlDoc = XDocument.Load(sr);
+            return (true, "", xmlDoc);
+        }
+        catch (FileNotFoundException ex)
+        {
+			// Handle the case where the file does not exist
+			var message1 = $"Cannot Find File {_parameterData.FileName}--{ex.Message}";
+            return (false, message1, null);
+        }
+        catch (Exception ex)
+        {
+			// Handle other exceptions
+			var message2 = $"An unexpected error occurred opening the file:{_parameterData.FileName} -- {ex.Message}";
+            return (false, message2, null);
+        }
+                
+		
 	}
 
 	static string GetXmlElementFromXbrl(XDocument xDoc, string xbrlCode)
