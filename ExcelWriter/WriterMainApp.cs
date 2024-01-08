@@ -135,6 +135,9 @@ public class WriterMainApp : IWriterMainApp
             {
                 _logger.Error(rMessage);
             }
+
+            var message = $"Excel File Created:{_parameterData.FileName}";
+            _logger.Information(message);            
         }
         return 0;
 
