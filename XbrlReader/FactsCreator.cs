@@ -29,7 +29,7 @@ public class FactsCreator : IFactsCreator
 
 
 	MModule _mModule = new();
-	XDocument? _xmlDoc;
+	XDocument _xmlDoc;
 	private readonly DocInstance? _docInstance;
 	private int _documentId = 0;
 
@@ -86,16 +86,16 @@ public class FactsCreator : IFactsCreator
 		//Parse an xbrl file and create on object of the class which has the contexts, facts, etc
 		//However, with the new design design, contexts and facts are saved in memory tables and NOT in data structures            		
 		var message = "";
-		var (parseValid, parseMessage, parsexmlDoc) = ParseXmlFile();
-		_xmlDoc = parsexmlDoc;
+		var (parseValid, parseMessage, parsexmlDoc) = ParseXmlFile();		
 		if (!parseValid)
 		{
 			_logger.Error(parseMessage);
 			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, parseMessage);
 			return (0, FilingsSubmitted);
 		}
+        _xmlDoc = parsexmlDoc!;
 
-		var RootNode = _xmlDoc?.Root;		
+        var RootNode = _xmlDoc.Root;		
 		var reference = RootNode?.Element(link + "schemaRef")?.Attribute(xlink + "href")?.Value ?? "N?F";
 
 
