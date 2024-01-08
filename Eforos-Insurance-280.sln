@@ -11,9 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelWriter", "ExcelWriter\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tester", "Tester\Tester.csproj", "{CEEC281E-A24F-484F-9A47-03271CA47C9D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XbrlRead", "XbrlReader\XbrlRead.csproj", "{A129C016-3859-4B46-B8B1-B2D885DBE931}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XbrlReader", "XbrlReader\XbrlReader.csproj", "{A129C016-3859-4B46-B8B1-B2D885DBE931}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validator", "Validator\Validator.csproj", "{2CBCAA6B-908A-4499-9AC6-724296C76531}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Validator", "Validator\Validator.csproj", "{2CBCAA6B-908A-4499-9AC6-724296C76531}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
