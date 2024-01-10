@@ -76,17 +76,17 @@ public class DocumentValidator : IDocumentValidator
     public int ValidateDocument()
     {
         var (success, message, docInstance) = SelectDocumentInstance();
-        
+
         DocumentId = docInstance?.InstanceId ?? -1;//DocumentId is used in createTransactionLog
-        _parameterData.DocumentId= DocumentId;
+        _parameterData.DocumentId = DocumentId;
         if (!success)
         {
             _logger.Error(message);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, message);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
         }
         _documentInstance = docInstance!;
-        
+
         var module = _SqlFunctions.SelectModuleByCode(_documentInstance.ModuleCode);
         if (module is null)
         {
@@ -119,9 +119,13 @@ public class DocumentValidator : IDocumentValidator
 
         //**********************************************
         //Technical rules which are written in eiopa excel file EIOPA_SolvencyII_Validations_2.6.0_PWD
-        var (techDocumentRules, techModuleRules) = CreateTechnicalRulesNew();
-        DocumentRules.AddRange(techDocumentRules);
-        ModuleRules.AddRange(techModuleRules);
+        if (!_parameterData.EiopaVersion.StartsWith("P"))
+        {
+            var (techDocumentRules, techModuleRules) = CreateTechnicalRulesNew();
+            DocumentRules.AddRange(techDocumentRules);
+            ModuleRules.AddRange(techModuleRules);
+        }
+        
 
 
         //**********************************************
@@ -324,6 +328,9 @@ public class DocumentValidator : IDocumentValidator
         var technicalDocumentRules = new List<RuleStructure>();
         var technicalModuleRules = new List<RuleStructure>();
 
+
+
+
         var techRulesAll = connectionEiopa.Query<KyrTechnicalValidationRules>(sqlTechRules);
 
         if (TestingTechnicalRuleId > 0)
@@ -333,8 +340,9 @@ public class DocumentValidator : IDocumentValidator
 
 
         //*******************************************************************************
-        //create the xbrl *Document* rules
+        //create the xbrl *technical* rules
         Console.WriteLine("\nCreate Technical Xbrl Rules");
+
         var techXbrlRules = techRulesAll
             .Where(rule => rule.CheckType.Trim() == "Xbrl");
         foreach (var techXbrlRule in techXbrlRules)
@@ -342,6 +350,8 @@ public class DocumentValidator : IDocumentValidator
             var rules = CreateKyrTechnicalXbrlDocumentRules(techXbrlRule);
             technicalDocumentRules.AddRange(rules);
         }
+
+
 
         //*******************************************************************************
         //create the dim *Document* rules
@@ -751,7 +761,7 @@ public class DocumentValidator : IDocumentValidator
 
                 var termLetterM = termParts[1];
                 var valueTerm = allTerms.FirstOrDefault(term => term.Letter == termLetterM);
-                if (valueTerm is null || valueTerm.TextValue is null)
+                if ((valueTerm is null || valueTerm.TextValue is null) && 1 == 2)
                 {
                     term.IsMissing = true;
                     term.DataTypeOfTerm = DataTypeMajorUU.BooleanDtm;
@@ -2043,11 +2053,11 @@ public class DocumentValidator : IDocumentValidator
 
         var isLockedDocument = doc.Status.Trim() == "P";
         if (isLockedDocument)
-        {            
+        {
             var message = $" Another Document is currently being processed :{doc.InstanceId} ";
             return (false, message, doc);
         }
-        
+
 
         return (true, "", doc);
     }
