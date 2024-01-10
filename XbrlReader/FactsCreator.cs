@@ -32,6 +32,7 @@ public class FactsCreator : IFactsCreator
 	XDocument _xmlDoc;
 	private readonly DocInstance? _docInstance;
 	private int _documentId = 0;
+	private FundModel _fund;
 
 	public XElement? RootNode { get; private set; }
 	readonly XNamespace xbrli = "http://www.xbrl.org/2003/instance";
@@ -83,9 +84,21 @@ public class FactsCreator : IFactsCreator
     public (int, List<string>) CreateLooseFacts()
 	{
 
-		//Parse an xbrl file and create on object of the class which has the contexts, facts, etc
-		//However, with the new design design, contexts and facts are saved in memory tables and NOT in data structures            		
-		var message = "";
+
+        var fund = _SqlFunctions.SelectFund(_parameterData.FundId);
+        if (fund is null)
+        {
+            var messagex = $"fund {_parameterData.FundId} NOT found";
+            _logger.Error(messagex);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, messagex);
+            return (0, FilingsSubmitted);
+        }
+		_fund = fund;
+
+
+        //Parse an xbrl file and create on object of the class which has the contexts, facts, etc
+        //However, with the new design design, contexts and facts are saved in memory tables and NOT in data structures            		
+        var message = "";
 		var (parseValid, parseMessage, parsexmlDoc) = ParseXmlFile();		
 		if (!parseValid)
 		{
@@ -560,14 +573,7 @@ public class FactsCreator : IFactsCreator
 		return fund;
 	}
 
-	private FundModel? GetDbFundById(int fundId)
-	{
-		using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
 
-		var sqlFund = "Select * from fund fnd where fnd.FundId= @FundId";
-		var fund = connectionLocal.QuerySingleOrDefault<FundModel>(sqlFund, new { fundId });
-		return fund;
-	}
 
 	private SubmissionReferenceDateModel? GetSubmissionReferenceDate(int category, int referenceYear, int quarter)
 	{
@@ -596,7 +602,8 @@ public class FactsCreator : IFactsCreator
 
 	private (bool isValid, string message) IsValidReferenceDate()
 	{
-		var dbReferenceDate = GetSubmissionReferenceDate(_parameterData.CurrencyBatchId, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
+		var wave = _fund.Wave;
+		var dbReferenceDate = GetSubmissionReferenceDate(wave, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
 		if (dbReferenceDate == null)
 		{
 			var message = $"Reference Date not defined in Database for:{_parameterData.ApplicableYear},{_parameterData.ApplicableQuarter},{_parameterData.CurrencyBatchId}";

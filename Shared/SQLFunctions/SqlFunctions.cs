@@ -409,5 +409,15 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public FundModel? SelectFund(int fundId)
+    {        
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlFund = "Select * from fund fnd where fnd.FundId= @FundId";
+        var fund = connectionLocal.QuerySingleOrDefault<FundModel>(sqlFund, new { fundId });
+        return fund;
+    }
+
+
 }
 

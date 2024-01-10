@@ -751,6 +751,13 @@ public class DocumentValidator : IDocumentValidator
 
                 var termLetterM = termParts[1];
                 var valueTerm = allTerms.FirstOrDefault(term => term.Letter == termLetterM);
+                if (valueTerm is null || valueTerm.TextValue is null)
+                {
+                    term.IsMissing = true;
+                    term.DataTypeOfTerm = DataTypeMajorUU.BooleanDtm;
+                    term.BooleanValue = true;
+                    break;
+                }
                 var val = valueTerm.TextValue.Trim();
                 term.IsMissing = valueTerm.IsMissing;
                 term.DataTypeOfTerm = DataTypeMajorUU.BooleanDtm;
