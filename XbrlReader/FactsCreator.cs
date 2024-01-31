@@ -578,7 +578,7 @@ public class FactsCreator : IFactsCreator
 	private SubmissionReferenceDateModel? GetSubmissionReferenceDate(int category, int referenceYear, int quarter)
 	{
 		using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
+		Console.WriteLine("systemString"+_parameterData.SystemConnectionString);
 		var sqlSubDate = @"
                 SELECT
                   srd.SubmissionReferenceDateId
@@ -587,7 +587,7 @@ public class FactsCreator : IFactsCreator
                  ,srd.ReferenceDate
                  ,srd.SubmissionDate
                  ,srd.Quarter
-                FROM dbo.SubmissionReferenceDate srd
+                FROM SubmissionReferenceDate srd
                 WHERE srd.Category = @category
                 AND srd.ReferenceYear = @referenceYear
                 AND srd.Quarter = @quarter
