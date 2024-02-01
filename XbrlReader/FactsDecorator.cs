@@ -375,13 +375,12 @@ public class FactsDecorator : IFactsDecorator
         {
             var rowCol = rowColDistinctMapping.DYN_TAB_COLUMN_NAME.Trim();
             var rowColObject = DimUtils.CreateRowCol(rowCol);
-            //get the 'f' minus the met
 
+            //get the 'F' minus the met
             var fieldMappings = _SqlFunctions.SelectRowColMappings(table.TableID, rowCol)
                 .Where(map => map.ORIGIN == "F")
                 .Select(map => map.DIM_CODE);
-
-
+            
             var xbrlDim = fieldMappings?.FirstOrDefault(map => map.StartsWith("MET")) ?? "";
             var xbrl = string.IsNullOrEmpty(xbrlTable) ? DimUtils.ExtractXbrl(xbrlDim) : xbrlTable;
             fieldMappings = fieldMappings.Where(map => !map.Contains("MET"));
