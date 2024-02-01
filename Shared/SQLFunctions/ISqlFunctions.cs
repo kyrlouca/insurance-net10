@@ -28,7 +28,11 @@ public interface ISqlFunctions
     public ContextModel? CreateContext(ContextModel context);
 
     public ContextLine? CreateContextLine(ContextLine contextLine);
+    public ContextModel? SelectContextBySignature(int documentId, string contextSignature);
     public ContextModel? SelectContext(int documentId, string contextXbrlId);
     public List<ContextLine> SelectContextLines(int contextId);
     public FundModel? SelectFund(int fundId);
+
+    public List<MTableCell> SelectTableCells(int tableId);
+    public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
 }

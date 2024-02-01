@@ -74,7 +74,7 @@ public class FactsDecorator : IFactsDecorator
 
         ModuleTablesFiled = GetFiledModuleTables();
 
-        
+
         //_testingTableId = 173;
         if (_testingTableId > 0)
         {
@@ -89,7 +89,8 @@ public class FactsDecorator : IFactsDecorator
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
             //***********************************************************************
             //*********** Select the facts for a template and 
-            var tableFacts = SelectFactsForTempateTable(table);
+            //var tableFacts = SelectFactsForTempateTable(table);
+            var tableFacts = SelectFactsForTempateTable280(table);
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
             //***********************************************************************
 
@@ -155,7 +156,7 @@ public class FactsDecorator : IFactsDecorator
             var sheet = SelectTemplateSheetBySheetCode(table.TableID, sheetCode);
             sheet ??= _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName, table);
 
-            
+
             Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
             sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, FactZetValue, sheetName, sheet.YDimVal));
 
@@ -168,7 +169,7 @@ public class FactsDecorator : IFactsDecorator
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelect = @"select * from TemplateSheetInstance sheet where sheet.InstanceId = @_documentId and sheet.TableID = @tableId and SheetCode = @SheetCode";
-        var sheet = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSelect, new { _documentId, tableId,sheetCode});
+        var sheet = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSelect, new { _documentId, tableId, sheetCode });
         return sheet;
     }
 
@@ -186,7 +187,7 @@ public class FactsDecorator : IFactsDecorator
             List<string> tableYDims = sheetInfo.YDims?
             .Split("|", StringSplitOptions.RemoveEmptyEntries)
             .ToList() ?? new List<string>();
-                        
+
 
             var yTableMappings1 = tableYDims
                         .Select(ydim => SelectMapping(sheetInfo.TableId, ydim));
@@ -223,11 +224,11 @@ public class FactsDecorator : IFactsDecorator
         }
         var context = rowFact.ContextNumberId;
         var contextLines = _SqlFunctions.SelectContextLines(rowFact.ContextNumberId);
-            
+
         foreach (var yMapping in yTableMappings)
         {
             var mp = DimDom.GetParts(yMapping.DIM_CODE);
-            var ctxLine= contextLines.FirstOrDefault(cl=> cl.Dimension== DimDom.GetParts(yMapping.DIM_CODE).Dim);
+            var ctxLine = contextLines.FirstOrDefault(cl => cl.Dimension == DimDom.GetParts(yMapping.DIM_CODE).Dim);
             if (ctxLine is null)
             {
                 continue;
@@ -238,7 +239,7 @@ public class FactsDecorator : IFactsDecorator
             newFact.DataTypeUse = "S";
             var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
             Console.Write("+");
-        }        
+        }
         return;
     }
 
@@ -308,6 +309,58 @@ public class FactsDecorator : IFactsDecorator
         return x;
     }
 
+
+    private List<TemplateSheetFact> SelectFactsForTempateTable280(MTable table)
+    {
+
+        var tableFacts = new List<TemplateSheetFact>();
+
+        //*** page Zet dims from mappings (for each table) define when we need to create separate sheet for the same table
+        //*** we do not want to create separate sheets when currency or country changes so =>take out any currency Or Country dims 
+        var currencyAndCountryDims = new[] { "LA", "LR", "LG", "ZK", "OC" };
+
+        IEnumerable<string> tableZetDims = table.ZDimVal?
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)
+            ?? Enumerable.Empty<string>();
+
+        List<string> tableYDims = table.YDimVal?
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)
+            .ToList() ?? new List<string>();
+
+
+
+        var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
+        var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
+        var xbrlTable = DimUtils.ExtractXbrl(xbrlFull);
+
+        var tableCells = _SqlFunctions.SelectTableCells(table.TableID);
+
+
+        //*********************************************************************************
+        //for each RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
+        //also update the zetValues of each fact
+        foreach (var tableCell in tableCells)
+        {
+
+            var cellSignature = tableCell.DatapointSignature;
+
+
+            //var rowColdFactsFromCtl = SelectFactsByContextLinesAndDecorate(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims, pageCurrencyDims);
+            var cellFacts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);
+            tableFacts.AddRange(cellFacts);
+
+            if (tableFacts.Count() > 0)
+            {
+                Console.Write(".");
+                //Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
+            }
+
+        }        
+        return tableFacts;
+    }
+
+
+
     private List<TemplateSheetFact> SelectFactsForTempateTable(MTable table)
     {
         //Select facts which have all the dims required by the mtable
@@ -315,7 +368,7 @@ public class FactsDecorator : IFactsDecorator
         //The IS_PAGE_COLUMN_KEY=1 mappings are used to create different sheets for the same mtable code
         //However, Ommit currency and country dims from the grouping, because we do not create different sheets for currency or country 
         //the page column dims are stored in the fact ZetValues field 
-        
+
 
         //in the past, the xbrl mapping was used to  get the rowcol and then select the rest of the mappings for the rowcol
         //HOWEVER< for  some tables the xbrl cannot be found in the mappings (as in table 19.01.01.01)
@@ -380,7 +433,7 @@ public class FactsDecorator : IFactsDecorator
             var fieldMappings = _SqlFunctions.SelectRowColMappings(table.TableID, rowCol)
                 .Where(map => map.ORIGIN == "F")
                 .Select(map => map.DIM_CODE);
-            
+
             var xbrlDim = fieldMappings?.FirstOrDefault(map => map.StartsWith("MET")) ?? "";
             var xbrl = string.IsNullOrEmpty(xbrlTable) ? DimUtils.ExtractXbrl(xbrlDim) : xbrlTable;
             fieldMappings = fieldMappings.Where(map => !map.Contains("MET"));
@@ -389,7 +442,7 @@ public class FactsDecorator : IFactsDecorator
 
             //******************************************************************************
             //*** 69 find the facts and update there col, row, and ysignature            
-            
+
             var rowColdFactsFromCtl = SelectFactsByContextLinesAndDecorate(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims, pageCurrencyDims);
             tableFactsFromCtl.AddRange(rowColdFactsFromCtl);
 
@@ -397,10 +450,10 @@ public class FactsDecorator : IFactsDecorator
             {
                 Console.Write(".");
                 //Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
-            }            
+            }
 
         }
-        var facts = tableFactsFromCtl ?? new List<TemplateSheetFact>();        
+        var facts = tableFactsFromCtl ?? new List<TemplateSheetFact>();
         return facts;
     }
 
@@ -412,8 +465,8 @@ public class FactsDecorator : IFactsDecorator
 
         //the context includes the currency dim which is NOT included in the table ZdimValues. You can find the currency dim in the mappings Page_columns
         var allMappingsDims = allMappings.Select(map => $"{DimDom.GetParts(map).Dim}").ToList();
-        var allFactDims = allMappingsDims.Concat(pageCurrencyDims);        
-        var allFactDimsStr = string.Join(",", allFactDims.Select(dim=> $"'{dim}'"));
+        var allFactDims = allMappingsDims.Concat(pageCurrencyDims);
+        var allFactDimsStr = string.Join(",", allFactDims.Select(dim => $"'{dim}'"));
 
         var openAllDims = allMappings.Where(dim => dim.Contains('*'));
         var openAllStr = string.Join(",", openAllDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
@@ -485,27 +538,27 @@ public class FactsDecorator : IFactsDecorator
 	              AND cl.Dimension NOT in ({allFactDimsStr})                                
 	              )
        ";
-                
-             
+
+
         var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
 
         var hasClosed = !string.IsNullOrEmpty(closedString);
-        var  hasOpen = !string.IsNullOrEmpty(openMandatoryString);
+        var hasOpen = !string.IsNullOrEmpty(openMandatoryString);
 
         if (hasClosed)
         {
             sqlSelect = @$" {sqlSelect} {sqlClosed} {Environment.NewLine}";
         };
-        if(hasClosed && !hasOpen)
+        if (hasClosed && !hasOpen)
         {
             sqlSelect = @$" {sqlSelect} {sqlClosedAndNotOpen} {Environment.NewLine}";
         }
-        
+
         if (hasOpen)
         {
             sqlSelect = @$" {sqlSelect} {sqlOpen} {Environment.NewLine}";
         };
-        
+
         sqlSelect = $"{sqlSelect} order by fact.Row,fact.Col";
 
         var facts = connectionInsurance!.Query<TemplateSheetFact>(sqlSelect, new
@@ -564,7 +617,7 @@ public class FactsDecorator : IFactsDecorator
 
 
 
-            
+
             //fact.ZetVaules => ***** all the values of Zet dims such as BL ,used for assigning facts to sheet (country and currency dims NOT included)
             fact.Row = row;//open tables will be updated later based on their y dims
             fact.Col = col;
@@ -580,7 +633,7 @@ public class FactsDecorator : IFactsDecorator
         return facts;
 
     }
-
+     
 
     private void AssignFactsToSheet(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
     {

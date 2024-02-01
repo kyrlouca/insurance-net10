@@ -389,6 +389,16 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
+    public ContextModel? SelectContextBySignature(int documentId, string contextSignature)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelectContext = @"select * from ContextLine ctx where ctx.InstanceId= @documentId and ctx.Signature=@contextSignature";
+
+        var ctx = connectionInsurance.QuerySingleOrDefault<ContextModel>(sqlSelectContext, new { documentId, contextSignature });
+        return ctx;
+
+    }
+
     public ContextModel? SelectContext(int documentId, string contextXbrlId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -416,6 +426,26 @@ public class SqlFunctions : ISqlFunctions
         var sqlFund = "Select * from fund fnd where fnd.FundId= @FundId";
         var fund = connectionLocal.QuerySingleOrDefault<FundModel>(sqlFund, new { fundId });
         return fund;
+    }
+
+
+    public List<MTableCell> SelectTableCells(int tableId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelectContext = @"select * from mTableCell cell where cell.TableID =@TableID";
+
+        var ctx = connectionInsurance.Query<MTableCell>(sqlSelectContext, new { tableId, }).ToList();
+        return ctx;
+    }
+
+
+    public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelectContext = @"select * from TemplateSheetFact fact where InstanceId=@DocumentId and fact.DataPointSignature = @signature;	";
+
+        var ctx = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId,signature }).ToList();
+        return ctx;
     }
 
 
