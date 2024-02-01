@@ -63,6 +63,8 @@ public class DimDom
 }
 
 public record RowColRecord(string rowcol, string Row, string Col, bool IsValid, bool HasOnlyCol);
+
+public record CellRowColRecord(string businessCode, string TableCode,  string Row, string Col, bool IsValid, bool HasOnlyCol);
 public class DimUtils
 {
     public static RowColRecord CreateRowCol(string RowCol)
@@ -97,5 +99,25 @@ public class DimUtils
         return match.Groups[1].Value;
     }
 
+    public static CellRowColRecord CellRowCol(string businessCode)
+    {
+        //{S.01.01.02.01,R0010,C0010} => tableCode=S.01.01.02.01 row=R00010 col=C0010        
+        //{S.01.01.02.01,R0010} => tableCode=S.01.01.02.01 row=R00010 col=undefined        
+        var rg = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(R\d{4}))(?:,(C\d{4}))?\}");
+        var match = rg.Match(businessCode.Trim());
+        if (!match.Success)
+        {
+            return new CellRowColRecord(  businessCode,"", "", "", false, false);
+        }
+        var   = match.Groups[0].Value;
+        var row = match.Groups[1].Value;
+        var col = match.Groups[2].Value;
+
+        var hasOnlyCol = string.IsNullOrEmpty(match.Groups[1].Value);
+        var rowColRecord = new CellRowColRecord("",rowcol, row, col, true, hasOnlyCol);
+
+        return rowColRecord;
+
+    }
 
 }

@@ -343,18 +343,34 @@ public class FactsDecorator : IFactsDecorator
         {
 
             var cellSignature = tableCell.DatapointSignature;
+            if (cellSignature is null)
+            {
+                continue;
+            }
 
+            var xx = DimDom.GetParts(tableCell.BusinessCode);
 
             //var rowColdFactsFromCtl = SelectFactsByContextLinesAndDecorate(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims, pageCurrencyDims);
-            var cellFacts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);
-            tableFacts.AddRange(cellFacts);
+            var cellFacts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);            
+
+            foreach (var cellFact in cellFacts)
+            {
+                //fact.Row = row;//open tables will be updated later based on their y dims
+                //fact.Col = col;
+                //fact.Zet = blZet;//not used
+
+
+                //fact.ZetValues = zPageFactDimStr;
+                //fact.CurrencyDim = zCurrencyFactDimStr;
+                //fact.RowSignature = yRowSignature;
+            }
 
             if (tableFacts.Count() > 0)
             {
                 Console.Write(".");
                 //Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
             }
-
+            tableFacts.AddRange(cellFacts);
         }        
         return tableFacts;
     }

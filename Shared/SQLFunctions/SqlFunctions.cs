@@ -450,7 +450,7 @@ public class SqlFunctions : ISqlFunctions
 
     public List<MTable> SelectTablesInModule280(int moduleId)
     {
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        using var connectionInsurance = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlSelect = @"
             SELECT tab.*
             FROM
