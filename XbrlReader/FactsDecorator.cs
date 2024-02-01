@@ -72,8 +72,8 @@ public class FactsDecorator : IFactsDecorator
         ////////////////////////////////////////////////////////////////////
         Console.WriteLine($"\n Facts processing Started");
 
-        ModuleTablesFiled = GetFiledModuleTables();
-
+        //ModuleTablesFiled = GetFiledModuleTables();
+        ModuleTablesFiled = _SqlFunctions.SelectTablesInModule280(_moduleId);
 
         //_testingTableId = 173;
         if (_testingTableId > 0)

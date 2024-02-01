@@ -448,6 +448,26 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
+    public List<MTable> SelectTablesInModule280(int moduleId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+            SELECT tab.*
+            FROM
+              mTemplateOrTable child
+              JOIN mTemplateOrTable par ON par.TemplateOrTableID = child.ParentTemplateOrTableID
+              JOIN mModuleBusinessTemplate mb ON mb.BusinessTemplateID=par.TemplateOrTableID
+              JOIN mTaxonomyTable taxo ON taxo.AnnotatedTableID= child.TemplateOrTableID
+              JOIN mTable tab ON tab.TableID=taxo.TableID
+            WHERE
+              mb.ModuleID= @ModuleID
+            ORDER BY par.TemplateOrTableCode
+            ";
+
+
+        var ctx = connectionInsurance.Query<MTable>(sqlSelect, new { moduleId }).ToList();
+        return ctx;
+    }
 
 }
 
