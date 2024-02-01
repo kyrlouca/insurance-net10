@@ -73,7 +73,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (1 == 1)
+        if (1 == 2)
         {
             var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
             if (res != 0)
