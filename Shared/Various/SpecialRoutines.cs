@@ -103,32 +103,44 @@ public class DimUtils
     {
         //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
         //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
+        //businessCode = "{S.01.02.01.02,C0070}";
 
-        var isOpen = Regex.IsMatch(businessCode, @"Z\d{4}");
+        var tableCode = "";
+        var isOpen = false;
+        var row = "";
+        var col = "";
+        var zet = "";
+        var isValid = true;
+        Match match;
+
+
+        var rgIsOpen = Regex.IsMatch(businessCode, @"Z\d{4}");
+
+        //{S.01.01.02.01,R0010,C0010}
         var rgRow = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(R\d{4}))(?:,(C\d{4}))\}");
-        var rgZet = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(C\d{4}))(?:,(Z\d{4}))\}");
-        var rg = isOpen ? rgZet: rgRow;
-
-        var match = rg.Match(businessCode.Trim());
-        if (!match.Success)
+        match = rgRow.Match(businessCode.Trim());
+        if (match.Success)
         {
-            throw (new Exception($"invalid businessCode-{businessCode}"));
-            return new CellRowColRecord(  businessCode,"","", "", "", false, false);
+            return new CellRowColRecord(businessCode, match.Groups[1].Value, "", match.Groups[2].Value, match.Groups[3].Value, false, true);
         }
-        var  wholeMatch = match.Groups[0].Value;
-        var tableCode = match.Groups[1].Value;
-        var firstItem = match.Groups[2].Value;
-        var secondItem = match.Groups[3].Value;
-        var zet = isOpen ? secondItem : "";
-        var row = isOpen ? "" : firstItem;
-        var col = isOpen ? firstItem : secondItem;
-        
 
+        //{S.06.02.01.01,C0100,Z0001}        
+        var rgZet = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(C\d{4}))(?:,(Z\d{4}))\}");
+        match = rgZet.Match(businessCode.Trim());
+        if (match.Success)
+        {
+            return new CellRowColRecord(businessCode, "", match.Groups[3].Value, "", match.Groups[2].Value, true, true);
+        }
 
+        //"{S.01.02.01.02,C0070}"
+        var rgOnlyCol = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(C\d{4}))\}");
+        match = rgOnlyCol.Match(businessCode.Trim());
+        if (match.Success)
+        {
+            return new CellRowColRecord(businessCode, match.Groups[1].Value, "", "", match.Groups[1].Value, true, false);
+        }
+        throw (new Exception($"invalid businessCode-{businessCode}"));
 
-        var rowColRecord = new CellRowColRecord(wholeMatch,tableCode,zet, row, col, true, isOpen);
-
-        return rowColRecord;
 
     }
 
