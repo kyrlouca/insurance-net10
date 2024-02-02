@@ -74,7 +74,11 @@ public class FactsDecorator : IFactsDecorator
         Console.WriteLine($"\n Facts processing Started");
 
         //ModuleTablesFiled = GetFiledModuleTables();
-        ModuleTablesFiled = _SqlFunctions.SelectTablesInModule280(_moduleId);
+        ModuleTablesFiled = _SqlFunctions.SelectTablesInModule280(_moduleId)
+            .Where(tab => tab.TableCode.StartsWith("S"))
+            .OrderBy(tab => tab.TableCode)
+            .ToList();
+            
 
         //_testingTableId = 173;
         if (_testingTableId > 0)
@@ -84,7 +88,8 @@ public class FactsDecorator : IFactsDecorator
 
 
         //************************************************************************
-        foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
+        
+        foreach (var table in ModuleTablesFiled)
         {
             if (table.TableCode == "S.06.02.01.01")
             {
@@ -335,14 +340,18 @@ public class FactsDecorator : IFactsDecorator
             }
 
             var cellRowCol = DimUtils.ParseCellRowCol(tableCell.BusinessCode);
+            if (!cellRowCol.IsValid)
+            {
+                continue;
+            }
 
             //var rowColdFactsFromCtl = SelectFactsByContextLinesAndDecorate(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims, pageCurrencyDims);
             //var cellFacts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);            
             var cellFacts = SelectFactsFromCellSignature(cellSignature);
-
+            var count = 0;
             foreach (var cellFact in cellFacts)
             {
-                cellFact.Row = cellRowCol.Row;//open tables will be updated later based on their y dims
+                cellFact.Row = cellRowCol.IsOpen? $"R{++count:d4}": cellRowCol.Row;//open tables will be updated later based on their y dims
                 cellFact.Col = cellRowCol.Col;
 
                 //todo assign them
