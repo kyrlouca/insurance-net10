@@ -64,7 +64,7 @@ public class DimDom
 
 public record RowColRecord(string rowcol, string Row, string Col, bool IsValid, bool HasOnlyCol);
 
-public record CellRowColRecord(string businessCode, string TableCode,  string Row, string Col, bool IsValid, bool HasOnlyCol);
+public record CellRowColRecord(string businessCode, string TableCode, string Zet, string Row, string Col, bool IsValid, bool isOpen);
 public class DimUtils
 {
     public static RowColRecord CreateRowCol(string RowCol)
@@ -99,22 +99,34 @@ public class DimUtils
         return match.Groups[1].Value;
     }
 
-    public static CellRowColRecord CellRowCol(string businessCode)
+    public static CellRowColRecord ParseCellRowCol(string businessCode)
     {
-        //{S.01.01.02.01,R0010,C0010} => tableCode=S.01.01.02.01 row=R00010 col=C0010        
-        //{S.01.01.02.01,R0010} => tableCode=S.01.01.02.01 row=R00010 col=undefined        
-        var rg = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(R\d{4}))(?:,(C\d{4}))?\}");
+        //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
+        //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
+
+        var isOpen = Regex.IsMatch(businessCode, @"Z\d{4}");
+        var rgRow = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(R\d{4}))(?:,(C\d{4}))\}");
+        var rgZet = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(C\d{4}))(?:,(Z\d{4}))\}");
+        var rg = isOpen ? rgZet: rgRow;
+
         var match = rg.Match(businessCode.Trim());
         if (!match.Success)
         {
-            return new CellRowColRecord(  businessCode,"", "", "", false, false);
+            throw (new Exception($"invalid businessCode-{businessCode}"));
+            return new CellRowColRecord(  businessCode,"","", "", "", false, false);
         }
-        var   = match.Groups[0].Value;
-        var row = match.Groups[1].Value;
-        var col = match.Groups[2].Value;
+        var  wholeMatch = match.Groups[0].Value;
+        var tableCode = match.Groups[1].Value;
+        var firstItem = match.Groups[2].Value;
+        var secondItem = match.Groups[3].Value;
+        var zet = isOpen ? secondItem : "";
+        var row = isOpen ? "" : firstItem;
+        var col = isOpen ? firstItem : secondItem;
+        
 
-        var hasOnlyCol = string.IsNullOrEmpty(match.Groups[1].Value);
-        var rowColRecord = new CellRowColRecord("",rowcol, row, col, true, hasOnlyCol);
+
+
+        var rowColRecord = new CellRowColRecord(wholeMatch,tableCode,zet, row, col, true, isOpen);
 
         return rowColRecord;
 

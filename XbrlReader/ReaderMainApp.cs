@@ -29,13 +29,14 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 14140;
+        var _documentId = 14141;
         var filingsSubmitted = new List<string>()
         {
             "S.01.01",
             "S.01.02",
             "S.02.01",
             "S.05.01",
+            "S.06.01",
             "S.06.02",
             "S.06.03",
             "S.08.01",

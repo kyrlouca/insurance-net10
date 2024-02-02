@@ -17,6 +17,7 @@ using Mapster;
 using System.Security.AccessControl;
 using Syncfusion.XlsIO.Parser.Biff_Records;
 using Shared.SQLFunctions;
+using System.Reflection.Metadata;
 
 public class FactsDecorator : IFactsDecorator
 {
@@ -85,14 +86,17 @@ public class FactsDecorator : IFactsDecorator
         //************************************************************************
         foreach (var table in ModuleTablesFiled.OrderBy(tab => tab.TableID))
         {
+            if (table.TableCode == "S.06.02.01.01")
+            {
+                var y = "stop";
+            }
 
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
-            //***********************************************************************
             //*********** Select the facts for a template and 
             //var tableFacts = SelectFactsForTempateTable(table);
             var tableFacts = SelectFactsForTempateTable280(table);
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
-            //***********************************************************************
+
 
             //*********** Create one  sheet per zet group 
             //todo check if already exists !!
@@ -101,9 +105,6 @@ public class FactsDecorator : IFactsDecorator
             List<string> distinctFactZetStrings = tableFacts
                     .GroupBy(fact => fact.ZetValues ?? "")
                     .Select(group => group.Key).ToList();
-
-            //"s2c_LB_x138"
-            //var blZet= factZetValuesList.Where(zet=>zet.)
 
             List<SheetInfoType> sheetInfo = CreateSheetForEachZetGroup(table, distinctFactZetStrings);
 
@@ -312,69 +313,118 @@ public class FactsDecorator : IFactsDecorator
 
     private List<TemplateSheetFact> SelectFactsForTempateTable280(MTable table)
     {
+        //****there are NO zet and Y dims on the table. Everything is on the cell
 
         var tableFacts = new List<TemplateSheetFact>();
-
-        //*** page Zet dims from mappings (for each table) define when we need to create separate sheet for the same table
-        //*** we do not want to create separate sheets when currency or country changes so =>take out any currency Or Country dims 
-        var currencyAndCountryDims = new[] { "LA", "LR", "LG", "ZK", "OC" };
-
-        IEnumerable<string> tableZetDims = table.ZDimVal?
-            .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            ?? Enumerable.Empty<string>();
-
-        List<string> tableYDims = table.YDimVal?
-            .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            .ToList() ?? new List<string>();
-
-
-
-        var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
-        var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
-        var xbrlTable = DimUtils.ExtractXbrl(xbrlFull);
-
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);
-
+        if (table.TableID == 68)
+        {
+            var xxx = 3;
+        }
 
         //*********************************************************************************
         //for each RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
+        //a rowcol position may contain more than one fact (currency and country)
         //also update the zetValues of each fact
         foreach (var tableCell in tableCells)
         {
-
             var cellSignature = tableCell.DatapointSignature;
             if (cellSignature is null)
             {
                 continue;
             }
 
-            var xx = DimDom.GetParts(tableCell.BusinessCode);
+            var cellRowCol = DimUtils.ParseCellRowCol(tableCell.BusinessCode);
 
             //var rowColdFactsFromCtl = SelectFactsByContextLinesAndDecorate(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims, pageCurrencyDims);
-            var cellFacts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);            
+            //var cellFacts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);            
+            var cellFacts = SelectFactsFromCellSignature(cellSignature);
 
             foreach (var cellFact in cellFacts)
             {
-                //fact.Row = row;//open tables will be updated later based on their y dims
-                //fact.Col = col;
-                //fact.Zet = blZet;//not used
+                cellFact.Row = cellRowCol.Row;//open tables will be updated later based on their y dims
+                cellFact.Col = cellRowCol.Col;
 
-
-                //fact.ZetValues = zPageFactDimStr;
-                //fact.CurrencyDim = zCurrencyFactDimStr;
-                //fact.RowSignature = yRowSignature;
+                //todo assign them
+                //cellFact.ZetValues = zPageFactDimStr;
+                //cellFact.CurrencyDim = zCurrencyFactDimStr;
+                //cellFact.RowSignature = yRowSignature;
             }
 
-            if (tableFacts.Count() > 0)
+            if (tableFacts.Count > 0)
             {
                 Console.Write(".");
-                //Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
             }
             tableFacts.AddRange(cellFacts);
-        }        
+        }
         return tableFacts;
     }
 
+
+    private List<TemplateSheetFact> SelectFactsFromCellSignature(string cellSignature)
+    {
+        var facts= new List<TemplateSheetFact>();
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
+        //MET(s2md_met:ei2426)|s2c_dim:MP(ID:)|s2c_dim:NF(ID:SH)|s2c_dim:PX(ID:)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/XT72-PIRAEUS BANK S.A.-EUR-Shareholders' funds-SH-Neither unit-linked nor index-linked)|s2c_dim:XA(NB:13)
+
+
+        if(!cellSignature.Contains("(*") && !cellSignature.Contains("(*?"))
+        {
+            facts=_SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);
+            return facts;
+        }
+
+
+        List<string> cellDims = cellSignature
+            .Split("|").ToList();
+
+        var mandatoryDims = cellDims.Where(cd => !cd.Contains('?')).ToList();        
+        
+        //always add "" because signature without the optional is also valid 
+        var optionalDims = cellDims.Where(cd => cd.Contains('?')).ToList();
+        optionalDims.Add("");
+                
+
+        var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
+        var evaluator = new MatchEvaluator(MatchReplacer);
+
+        foreach (var optionalDim in optionalDims)
+        {
+            var dims = new List<string>(mandatoryDims)
+            {
+                optionalDim
+            };
+            var x = dims
+                .Where(dim => !string.IsNullOrEmpty(dim))
+                .Select(dim => dim.Contains('*') ? rgx.Replace(dim, evaluator) : dim)
+                .Select(dim => dim.Contains('?') ? rgx.Replace(dim, evaluator) : dim)
+                .OrderBy(dim => dim).ToList();
+            var sig = string.Join("|", x);
+            var sqlSelectContext = @"select * from TemplateSheetFact fact where InstanceId=@DocumentId and fact.DataPointSignature like @signature;	";
+            facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId=_documentId,signature=sig}).ToList();
+            if (facts.Any())
+            {
+                break;
+            }
+        }
+
+
+        
+        
+                
+
+        return facts;
+        static string MatchReplacer(Match match)
+        {
+            if (!match.Success)
+            {
+                return match.Value;
+            }
+            var newVal = match.Value.Replace(match.Groups[1].Value, "%");
+            return newVal;
+        }
+    }
 
 
     private List<TemplateSheetFact> SelectFactsForTempateTable(MTable table)
@@ -649,14 +699,14 @@ public class FactsDecorator : IFactsDecorator
         return facts;
 
     }
-     
+
 
     private void AssignFactsToSheet(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
     {
         //assign the facts to each sheet
         foreach (var tableFact in tableFacts)
         {
-            var sh = sheetInfo.FirstOrDefault(sd => sd.SheetCodeZet == tableFact.ZetValues);
+            var sh = sheetInfo.FirstOrDefault(shi => shi.SheetCodeZet == (tableFact.ZetValues ?? ""));
             if (sh is null)
             {
                 continue;
@@ -669,7 +719,8 @@ public class FactsDecorator : IFactsDecorator
             {
                 Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
                 tableFact.TemplateSheetId = sh.TemplateSheetId;
-                var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
+                //todo put it back !!!!
+               // var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
             }
         }
     }
