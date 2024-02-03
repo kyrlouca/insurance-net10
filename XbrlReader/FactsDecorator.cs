@@ -116,10 +116,9 @@ public class FactsDecorator : IFactsDecorator
             //*********** Assign facts to sheets
             AssignFactsToSheet(tableFacts, sheetInfo);
 
-            //*********** update rows for Open tables , create Y facts and and udpate foreign keys
+            //*********** create Y facts and and udpate foreign keys
             if (table.IsOpenTable)
-            {
-                _ = UpdateRowsForOpenTables(sheetInfo);
+            {                
                 CreateYFactsForOpenTables(sheetInfo);
                 UpdateForeignKeysOfChildTablesNN();
             }

@@ -469,5 +469,27 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
+
+    public List<MAxisOrdinate> MaxisOrdinates(int tableId,string axisOrientation)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelect = @"
+            SELECT ao.*
+            FROM
+              mAxisOrdinate ao
+              JOIN mTableAxis ta ON ta.AxisID= ao.AxisID
+              JOIN MAXIS mmm ON mmm.AxisID=ta.AxisID
+              JOIN mTable tab ON tab.TableID= ta.TableID
+            WHERE
+              tab.TableID= @TableID
+              AND AxisOrientation= @AxisOrientation
+            ORDER BY ao.OrdinateCode;
+            ";
+
+        var ctx = connectionEiopa.Query<MAxisOrdinate>(sqlSelect, new { tableId,axisOrientation }).ToList();
+        return ctx;
+    }
+
+
 }
 
