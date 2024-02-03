@@ -491,5 +491,14 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public mOrdinateCategorisationDataModel? SelectAxisOrdinateSignature(int ordinateId)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelect = @"select * from mOrdinateCategorisation where OrdinateID = @OrdinateID";            
+        var ctx = connectionEiopa.QuerySingleOrDefault<mOrdinateCategorisationDataModel>(sqlSelect, new { ordinateId });
+        return ctx;
+    }
+
+
 }
 

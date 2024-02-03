@@ -115,8 +115,9 @@ public class FactsDecorator : IFactsDecorator
 
             //*********** Assign facts to sheets
             AssignFactsToSheet(tableFacts, sheetInfo);
+            CreateYFactsForOpenTables280(sheetInfo);
 
-            //*********** create Y facts and and udpate foreign keys
+            //***********  create Y facts and and udpate foreign keys
             if (table.IsOpenTable)
             {                
                 CreateYFactsForOpenTables(sheetInfo);
@@ -218,6 +219,55 @@ public class FactsDecorator : IFactsDecorator
         }
         return 1;
     }
+
+    private int CreateYFactsForOpenTables280(List<SheetInfoType> sheetsInfo)
+    {
+        //create facts for each y dim of a table (for each row)
+        //for each row, use the first non-null fact as a clone
+        //each ydim fact will get its value from the corresponding dim of the clone fact.
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        sheetsInfo.OrderBy(si => si.SheetCode);
+        foreach (var sheetInfo in sheetsInfo)
+        {
+
+            var yOrdinates = _SqlFunctions.SelectAxisOrdinates(sheetInfo.TableId, "Y");
+            var axisxx = yOrdinates.Select(ord => _SqlFunctions.SelectAxisOrdinateSignature(ord.OrdinateID))
+                .Where(ax => ax is not null);
+
+            var xxx = 233;
+            continue;
+
+            List<string> tableYDims = sheetInfo.YDims?
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)
+            .ToList() ?? new List<string>();
+
+
+            var yTableMappings1 = tableYDims
+                        .Select(ydim => SelectMapping(sheetInfo.TableId, ydim));
+
+            var yTableMappings = tableYDims
+                        .Select(ydim => SelectMapping(sheetInfo.TableId, ydim))
+                        .Where(mappping => mappping != null) ?? new List<MAPPING>();
+
+
+            var sqlDistinct = @"select min(fact.Row)as minRow, max(fact.Row)as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
+            var sheetRows = connectionInsurance.QueryFirstOrDefault<(string minRow, string maxRow)>(sqlDistinct, new { _documentId, sheetInfo.TemplateSheetId });
+
+            var minRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.minRow ?? "0"));
+            var maxRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.maxRow ?? "0"));
+            if (minRow == 0 || maxRow == 0)
+            {
+                return 0;
+            }
+            foreach (var rowInt in Enumerable.Range(minRow, maxRow))
+            {
+                CreateYFactsForRow(sheetInfo, rowInt, yTableMappings);
+            }
+        }
+        return 1;
+    }
+
 
     private void CreateYFactsForRow(SheetInfoType sheetInfo, int rowInt, IEnumerable<MAPPING> yTableMappings)
     {
