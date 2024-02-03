@@ -36,4 +36,5 @@ public interface ISqlFunctions
     public List<MTableCell> SelectTableCells(int tableId);
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public List<MTable> SelectTablesInModule280(int moduleId);
+    public List<MAxisOrdinate> SelectAxisOrdinates(int tableId, string axisOrientation);
 }

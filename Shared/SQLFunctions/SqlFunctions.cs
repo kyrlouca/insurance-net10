@@ -470,7 +470,7 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public List<MAxisOrdinate> MaxisOrdinates(int tableId,string axisOrientation)
+    public List<MAxisOrdinate> SelectAxisOrdinates(int tableId,string axisOrientation)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlSelect = @"
