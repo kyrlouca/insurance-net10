@@ -41,6 +41,7 @@ public class FactsCreator : IFactsCreator
 	readonly XNamespace link = "http://www.xbrl.org/2003/linkbase";
 	//readonly XNamespace typedDimNs = "http://eiopa.europa.eu/xbrl/s2c/dict/typ";
 	readonly XNamespace findNs = "http://www.eurofiling.info/xbrl/ext/filing-indicators";
+	readonly XNamespace xsiNs = "http://www.w3.org/2001/XMLSchema-instance";
 
 	List<string> FilingsSubmitted = new();
 
@@ -239,19 +240,23 @@ public class FactsCreator : IFactsCreator
 				var typedDims = scenario?.Elements(xbrldi + "typedMember") ?? new List<XElement>();
 				foreach (var typedDim in typedDims)
 				{
-					//<xbrldi:typedMember dimension="s2c_dim:FN"><s2c_typ:ID>1</s2c_typ:ID></xbrldi:typedMember>
-					//get the domNodeValue from  the typed element(ID) -- 1 in the case above
+                    //<xbrldi:typedMember dimension="s2c_dim:FN"><s2c_typ:ID>1</s2c_typ:ID></xbrldi:typedMember>
+                    //get the domNodeValue from  the typed element(ID) -- 1 in the case above
 
-					var dimAndType = typedDim.Attribute("dimension").Value; //s2c_dim:AG 
+                    
+
+                    var dimAndType = typedDim.Attribute("dimension").Value; //s2c_dim:AG 
 
 					var domNode = typedDim.Elements()?.First(); //<s2c_typ:ID>1</s2c_typ:ID>                    
 					var domain = domNode?.Name?.LocalName ?? ""; //ID
 					var domainMember = domNode.Value; //1                     
 					var domainAndMember = $"{domain}:{domainMember}";  //s2c_typ:ID					
 					var ctxTypedSignature = $"{dimAndType}({domainAndMember})";
-                                        
+
+                    var isNil = domNode?.Attribute(xsiNs+"nil")?.Value ??""; //true 
+
                     var dimDom = DimDom.GetParts(ctxTypedSignature);
-                    var ctxTypedLine = new ContextLine() { ContextId = 0,Signature=dimDom.Signature, Dimension = dimDom.Dim, Domain = dimDom.Dom, DomainAndValue = dimDom.DomAndValRaw, DomainValue = dimDom.DomValue, IsExplicit = false };
+                    var ctxTypedLine = new ContextLine() { ContextId = 0, IsNil= isNil=="true",  Signature=dimDom.Signature, Dimension = dimDom.Dim, Domain = dimDom.Dom, DomainAndValue = dimDom.DomAndValRaw, DomainValue = dimDom.DomValue, IsExplicit = false };
                     contextLines.Add(ctxTypedLine);                                        
                 }
 

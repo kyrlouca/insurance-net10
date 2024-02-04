@@ -231,27 +231,15 @@ public class FactsDecorator : IFactsDecorator
         foreach (var sheetInfo in sheetsInfo)
         {
 
-            var yOrdinates = _SqlFunctions.SelectAxisOrdinates(sheetInfo.TableId, "Y");
-            var axisxx = yOrdinates.Select(ord => _SqlFunctions.SelectAxisOrdinateSignature(ord.OrdinateID))
-                .Where(ax => ax is not null);
+            var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(sheetInfo.TableId)
+                .Where(ord=>ord.AxisOrientation=="Y" && ord.IsRowKey && ord.IsOpenAxis);
 
-            var xxx = 233;
-            continue;
-
-            List<string> tableYDims = sheetInfo.YDims?
-            .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            .ToList() ?? new List<string>();
-
-
-            var yTableMappings1 = tableYDims
-                        .Select(ydim => SelectMapping(sheetInfo.TableId, ydim));
-
-            var yTableMappings = tableYDims
-                        .Select(ydim => SelectMapping(sheetInfo.TableId, ydim))
-                        .Where(mappping => mappping != null) ?? new List<MAPPING>();
-
-
-            var sqlDistinct = @"select min(fact.Row)as minRow, max(fact.Row)as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
+            if (!yOrdinatesForKeys.Any())
+            {
+                continue;
+            }
+            
+            var sqlDistinct = @"select min(fact.Row)as minRow, max(fact.Rofw)as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
             var sheetRows = connectionInsurance.QueryFirstOrDefault<(string minRow, string maxRow)>(sqlDistinct, new { _documentId, sheetInfo.TemplateSheetId });
 
             var minRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.minRow ?? "0"));
@@ -262,10 +250,52 @@ public class FactsDecorator : IFactsDecorator
             }
             foreach (var rowInt in Enumerable.Range(minRow, maxRow))
             {
-                CreateYFactsForRow(sheetInfo, rowInt, yTableMappings);
+                var xxx323 = minRow;
+                CreateYFactsForRow280(sheetInfo, rowInt, yOrdinatesForKeys);
             }
+
+
+            var xxx = 233;
+            continue;
+
         }
         return 1;
+    }
+
+
+
+    private void CreateYFactsForRow280(SheetInfoType sheetInfo, int rowInt, IEnumerable<TableAxisOrdinateInfoModel> yOrdinateKeys)
+    {
+        var row = $"R{rowInt:D4}";
+        var rowFact = SelectRowFirstFact(sheetInfo.TemplateSheetId, row);
+        if (rowFact is null)
+        {
+            return;
+        }
+        var context = rowFact.ContextNumberId;
+        var contextLines = _SqlFunctions.SelectContextLines(rowFact.ContextNumberId);
+
+        foreach (var ordinateKey in yOrdinateKeys)
+        {
+            var mp = DimDom.GetParts(ordinateKey.Signature);
+            var ctxLine = contextLines.FirstOrDefault(cl => cl.Dimension == mp.Dim);
+            if (ctxLine is null)
+            {
+                continue;
+            }
+            var newFact = rowFact.Adapt<TemplateSheetFact>();
+            newFact.Col = ordinateKey.Col;
+
+            var textValue = ctxLine.IsNil ? ""
+                : ctxLine.IsExplicit ? ctxLine.Signature
+                : ctxLine.DomainValue;
+
+            newFact.TextValue = textValue;
+            newFact.DataTypeUse = "S";
+            var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
+            Console.Write("+");
+        }
+        return;
     }
 
 

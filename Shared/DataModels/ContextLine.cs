@@ -11,5 +11,6 @@ public record ContextLine
     public string DomainValue { get; set; } = "";
     public string DomainAndValue { get; set; } = "";
     public bool IsExplicit { get; set; }
+    public bool IsNil { get; set; }
     public int InstanceId { get; set; }
 }

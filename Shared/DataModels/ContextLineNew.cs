@@ -12,4 +12,5 @@ public record ContextLineNew
     public string DomainAndValue { get; set; } = "";
     public bool IsExplicit { get; set; }
     public int InstanceId { get; set; }
+    public bool IsNil { get; set; }
 }

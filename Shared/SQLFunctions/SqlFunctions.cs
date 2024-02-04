@@ -22,7 +22,7 @@ public class SqlFunctions : ISqlFunctions
 
 
 
-    public void CreateTransactionLog( MessageType messageType, string message)
+    public void CreateTransactionLog(MessageType messageType, string message)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var tl = new LogTransactionModel()
@@ -345,8 +345,8 @@ public class SqlFunctions : ISqlFunctions
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlInsert = @"
-        INSERT INTO[ContextLine]([ContextId],signature, [Dimension], [Domain], [DomainValue], [DomainAndValue], [IsExplicit], [InstanceId])
-                    VALUES(@ContextId,@signature, @Dimension, @Domain, @DomainValue, @DomainAndValue, @IsExplicit, @InstanceID);
+        INSERT INTO[ContextLine]([ContextId],signature, [Dimension], [Domain], [DomainValue], [DomainAndValue], [IsExplicit], [InstanceId] , [isNil])
+                    VALUES(@ContextId,@signature, @Dimension, @Domain, @DomainValue, @DomainAndValue, @IsExplicit, @InstanceID, @isNil);
         SELECT CAST(SCOPE_IDENTITY() as int);            
         ";
 
@@ -420,7 +420,7 @@ public class SqlFunctions : ISqlFunctions
 
 
     public FundModel? SelectFund(int fundId)
-    {        
+    {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
 
         var sqlFund = "Select * from fund fnd where fnd.FundId= @FundId";
@@ -444,7 +444,7 @@ public class SqlFunctions : ISqlFunctions
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelectContext = @"select * from TemplateSheetFact fact where InstanceId=@DocumentId and fact.DataPointSignature = @signature;	";
 
-        var ctx = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId,signature }).ToList();
+        var ctx = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId, signature }).ToList();
         return ctx;
     }
 
@@ -469,36 +469,24 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
-
-    public List<MAxisOrdinate> SelectAxisOrdinates(int tableId,string axisOrientation)
+    public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlSelect = @"
-            SELECT ao.*
+            SELECT ao.OrdinateID, ao.OrdinateCode as Col, ao.IsRowKey, mmm.AxisOrientation, mmm.IsOpenAxis, mmm.OptionalKey, mmm.AxisLabel, oc.DimensionMemberSignature as Signature
             FROM
               mAxisOrdinate ao
               JOIN mTableAxis ta ON ta.AxisID= ao.AxisID
               JOIN MAXIS mmm ON mmm.AxisID=ta.AxisID
-              JOIN mTable tab ON tab.TableID= ta.TableID
+              JOIN mOrdinateCategorisation oc ON oc.OrdinateID= ao.OrdinateID
             WHERE
-              tab.TableID= @TableID
-              AND AxisOrientation= @AxisOrientation
+              1=1
+              AND ta.TableID= @TableID              
             ORDER BY ao.OrdinateCode;
-            ";
-
-        var ctx = connectionEiopa.Query<MAxisOrdinate>(sqlSelect, new { tableId,axisOrientation }).ToList();
+        ";
+        var ctx = connectionEiopa.Query<TableAxisOrdinateInfoModel>(sqlSelect, new { tableId }).ToList();
         return ctx;
     }
-
-
-    public mOrdinateCategorisationDataModel? SelectAxisOrdinateSignature(int ordinateId)
-    {
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var sqlSelect = @"select * from mOrdinateCategorisation where OrdinateID = @OrdinateID";            
-        var ctx = connectionEiopa.QuerySingleOrDefault<mOrdinateCategorisationDataModel>(sqlSelect, new { ordinateId });
-        return ctx;
-    }
-
 
 }
 
