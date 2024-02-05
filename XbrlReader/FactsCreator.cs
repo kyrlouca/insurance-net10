@@ -383,7 +383,7 @@ public class FactsCreator : IFactsCreator
 					RowSignature = "",
 				};
                 
-                var contextLines = GetContextLines(_documentId, contextXbrlId);
+                var contextLines = ParseContextLinesFromContext(_documentId, contextXbrlId);
 				newFact.ContextId= contextXbrlId;				
                 newFact.DataPointSignature = TemplateSheetFact.BuildFactSignature(xbrlCode, contextLines);
 				newFact=AssignFactValuesFromText(newFact);
@@ -413,12 +413,12 @@ public class FactsCreator : IFactsCreator
 
 				//---------------------------
 
-				List<string> GetContextLines(int documentId, string contextXbrlId)
+				List<string> ParseContextLinesFromContext(int documentId, string contextXbrlId)
 				{
 					//using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);                
 					var sqlContext = @"select Signature from Context where ContextXbrlId= @ContextXbrlId and InstanceId =@documentId";
 					var signature = connectionInsurance.QuerySingleOrDefault<string>(sqlContext, new { contextXbrlId, documentId });
-					return signature.Split("|", StringSplitOptions.RemoveEmptyEntries).ToList();
+					return signature?.Split("|", StringSplitOptions.RemoveEmptyEntries)?.ToList()??new();
 
 				}
 

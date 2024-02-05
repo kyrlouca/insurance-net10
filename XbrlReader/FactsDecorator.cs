@@ -75,7 +75,7 @@ public class FactsDecorator : IFactsDecorator
 
         ////////// Cleanup
         var deletedSheets = DeleteExistingSheets();
-        
+
 
         //ModuleTablesFiled = GetFiledModuleTables();
         ModuleTablesFiled = _SqlFunctions.SelectTablesInModule280(_moduleId)
@@ -84,7 +84,7 @@ public class FactsDecorator : IFactsDecorator
             .ToList();
 
 
-        //_testingTableId = 173;
+        _testingTableId = 68;
         if (_testingTableId > 0)
         {
             ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
@@ -115,11 +115,18 @@ public class FactsDecorator : IFactsDecorator
                     .GroupBy(fact => fact.ZetValues ?? "")
                     .Select(group => group.Key).ToList();
 
-            List<SheetInfoType> sheetInfo = CreateSheetForEachZetGroup(table, distinctFactZetStrings);
+            List<SheetInfoType> sheetsInfo = CreateSheetForEachZetGroup(table, distinctFactZetStrings);
 
             //*********** Assign facts to sheets
-            AssignFactsToSheet280(tableFacts, sheetInfo);
-            CreateYFactsForOpenTables280(sheetInfo);
+            AssignFactsToSheet280(tableFacts, sheetsInfo);
+            foreach(var sheetinfo in sheetsInfo)
+            {
+                var tableContextRows = GetTableContexts(sheetinfo.TemplateSheetId);
+                UpdateTableFactRow(sheetinfo.TemplateSheetId, tableContextRows);
+            }
+            
+
+            CreateYFactsForOpenTables280(sheetsInfo);
 
             //***********  todo update foreing keys
             if (table.IsOpenTable)
@@ -133,6 +140,24 @@ public class FactsDecorator : IFactsDecorator
 
         Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
         return 0;
+
+    }
+
+    private List<string> GetTableContexts( int sheetId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@documentId and fact.TemplateSheetId = @sheetId";
+        var sheetRows = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId });
+        return new List<string>();
+
+    }
+
+    private List<string> UpdateTableFactRow(int sheetId,List<string> rowContexts)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@documentId and fact.TemplateSheetId = @sheetId";
+        var sheetRows = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId });
+        return new List<string>();
 
     }
 
@@ -193,7 +218,7 @@ public class FactsDecorator : IFactsDecorator
         var sheet = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSelect, new { _documentId, tableId, sheetCode });
         return sheet;
     }
-   
+
     private int CreateYFactsForOpenTables280(List<SheetInfoType> sheetsInfo)
     {
         //create facts for each y dim of a table (for each row)
@@ -270,16 +295,6 @@ public class FactsDecorator : IFactsDecorator
         return;
     }
 
-    private MAPPING? SelectMapping(int tableId, string dimCode)
-    {
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var dimx = DimDom.GetParts(dimCode).Dim;
-        var dimCodeLike = $"s2c_dim:{dimx}%";
-        var sqlDim = "select * from MAPPING map where map.TABLE_VERSION_ID= @tableId and map.DIM_CODE like @dimCodeLike";
-        var dimMapping = connectionEiopa.QueryFirstOrDefault<MAPPING>(sqlDim, new { tableId, dimCodeLike });
-        return dimMapping;
-    }
-
     private TemplateSheetFact? SelectRowFirstFact(int templateSheetId, string row)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -320,23 +335,8 @@ public class FactsDecorator : IFactsDecorator
         return 0;
 
     }
-    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature, string zetValues, string currencyDim)
-    {
-        //zetvalues has all the zet and zet has the zet for currency or country which do NOT change page
 
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlUpdateFact = @"
-            UPDATE TemplateSheetFact
-            SET 
-              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature,zetValues=@zetValues ,CurrencyDim=@CurrencyDim
-            WHERE 
-              FactId= @FactId AND TemplateSheetId IS NULL 
-            ";
-        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature, zetValues, currencyDim });
-        return x;
-    }
-
-        private List<TemplateSheetFact> SelectFactsForTempateTable280(MTable table)
+    private List<TemplateSheetFact> SelectFactsForTempateTable280(MTable table)
     {
         //****there are NO zet and Y dims on the table. Everything is on the cell
 
@@ -346,6 +346,13 @@ public class FactsDecorator : IFactsDecorator
         {
             var xxx = 3;
         }
+
+
+        var yDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
+            .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
+            .Select(dd=> DimDom.GetParts(dd.Signature).Dim);
+
+        
 
         //*********************************************************************************
         //for each RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
@@ -369,7 +376,11 @@ public class FactsDecorator : IFactsDecorator
             var count = 0;
             foreach (var cellFact in cellFacts)
             {
-                cellFact.Row = cellRowCol.IsOpen ? $"R{++count:d4}" : cellRowCol.Row;//open tables will be updated later based on their y dims
+
+                //update the RowSignature NOT the row !!!!!
+                //cellFact.Row = cellRowCol.IsOpen ? $"R{++count:d4}" : cellRowCol.Row;//open tables will be updated later based on their y dims
+                var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims) ;
+                cellFact.RowSignature = rowSignature;
                 cellFact.Col = cellRowCol.Col;
 
                 //todo assign them
@@ -378,7 +389,7 @@ public class FactsDecorator : IFactsDecorator
                 //cellFact.RowSignature = yRowSignature;
             }
 
-            if (tableFacts.Count > 0)
+            if (cellFacts.Count > 0)
             {
                 Console.Write(".");
             }
@@ -387,7 +398,15 @@ public class FactsDecorator : IFactsDecorator
         return tableFacts;
     }
 
-        private List<TemplateSheetFact> SelectFactsFromCellSignature280(string cellSignature)
+    private static string BuildRowSignature(string signature,IEnumerable<string> yDims)
+    {
+        var dims = signature.Split("|", StringSplitOptions.RemoveEmptyEntries)
+            .Where(dim => yDims.Contains(DimDom.GetParts(dim).Dim))
+            .Order();
+        var ySignature = string.Join("|", dims);
+        return ySignature;
+    }
+    private List<TemplateSheetFact> SelectFactsFromCellSignature280(string cellSignature)
     {
         var facts = new List<TemplateSheetFact>();
         //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
@@ -415,7 +434,7 @@ public class FactsDecorator : IFactsDecorator
 
         //check mandatory dims and add one by one the optional dims
         //start with no optional and therefore always add "" as a dim
-        var mandatoryDims = cellDims.Where(cd => !cd.Contains('?')).ToList();        
+        var mandatoryDims = cellDims.Where(cd => !cd.Contains('?')).ToList();
         var optionalDims = cellDims.Where(cd => cd.Contains('?')).ToList();
         optionalDims.Add("");
 
@@ -472,18 +491,35 @@ public class FactsDecorator : IFactsDecorator
                 throw new Exception($"No sheet was found for fact {tableFact.FactId}, Zvalues :{tableFact.ZetValues}");
                 continue;
             };
-            
+
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
             if (cnt == 0)
             {
                 Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
-                tableFact.TemplateSheetId = sh.TemplateSheetId;                
+                tableFact.TemplateSheetId = sh.TemplateSheetId;
                 var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
             }
         }
     }
+
+    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature, string zetValues, string currencyDim)
+    {
+        //zetvalues has all the zet and zet has the zet for currency or country which do NOT change page
+
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlUpdateFact = @"
+            UPDATE TemplateSheetFact
+            SET 
+              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature,zetValues=@zetValues ,CurrencyDim=@CurrencyDim
+            WHERE 
+              FactId= @FactId AND TemplateSheetId IS NULL 
+            ";
+        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature, zetValues, currencyDim });
+        return x;
+    }
+
 
     private void UpdateForeignKeysOfChildTablesNN()
     {
@@ -553,46 +589,7 @@ public class FactsDecorator : IFactsDecorator
     }
 
 
-    public static string MakeCellSignatureWild(string cellSignature)
-    {
-        //replace selections with sql wildcard s2c_dim:AX(*[8;1;0])=>s2c_dim:AX(%). 
-        //replace optional dims with %
-        //delete wildcard if at the end of line |%$
-
-
-        //@"MET(s2md_met:mi87)|s2c_dim:AF(*?[59])|s2c_dim:AX(*[8;1;0])|s2c_dim:BL(s2c_LB:x9)";
-        //allow optional =>@"MET(s2md_met:mi87)|s2c_dim:AF(%)|s2c_dim:AX(%)|s2c_dim:BL(s2c_LB:x9)"
-        //not allow optional=>@"MET(s2md_met:mi87)|s2c_dim:AX(%)|s2c_dim:BL(s2c_LB:x9)");
-
-
-        var dimListBasic = cellSignature.Split("|").ToList();
-
-        var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
-        var evaluator = new MatchEvaluator(MatchReplacer);
-
-        var dimList = dimListBasic
-            .Select(dim => dim.Contains('?') ? dim.Replace(dim, "%") : dim)
-            .Select(dim => dim.Contains('*') ? rgx.Replace(dim, evaluator) : dim);
-
-
-        var wildSig = string.Join("|", dimList);
-
-        var regExOptional = new Regex(@"\|%", RegexOptions.Compiled);
-        wildSig = regExOptional.Replace(wildSig, "%");
-
-        return wildSig;
-
-        static string MatchReplacer(Match match)
-        {
-            if (!match.Success)
-            {
-                return match.Value;
-            }
-            var newVal = match.Value.Replace(match.Groups[1].Value, "%");
-            return newVal;
-        }
-    }
-
+   
 
 
 
