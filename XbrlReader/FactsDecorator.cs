@@ -73,6 +73,10 @@ public class FactsDecorator : IFactsDecorator
         ////////////////////////////////////////////////////////////////////
         Console.WriteLine($"\n Facts processing Started");
 
+        ////////// Cleanup
+        var deletedSheets = DeleteExistingSheets();
+        
+
         //ModuleTablesFiled = GetFiledModuleTables();
         ModuleTablesFiled = _SqlFunctions.SelectTablesInModule280(_moduleId)
             .Where(tab => tab.TableCode.StartsWith("S"))
@@ -114,13 +118,13 @@ public class FactsDecorator : IFactsDecorator
             List<SheetInfoType> sheetInfo = CreateSheetForEachZetGroup(table, distinctFactZetStrings);
 
             //*********** Assign facts to sheets
-            AssignFactsToSheet(tableFacts, sheetInfo);
+            AssignFactsToSheet280(tableFacts, sheetInfo);
             CreateYFactsForOpenTables280(sheetInfo);
 
-            //***********  create Y facts and and udpate foreign keys
+            //***********  todo update foreing keys
             if (table.IsOpenTable)
             {
-                CreateYFactsForOpenTables(sheetInfo);
+                //CreateYFactsForOpenTables(sheetInfo);
                 UpdateForeignKeysOfChildTablesNN();
             }
 
@@ -132,6 +136,17 @@ public class FactsDecorator : IFactsDecorator
 
     }
 
+    private int DeleteExistingSheets()
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlFacts = @"update TemplateSheetFact set TemplateSheetId=null where InstanceId =@_documentId";
+        var sqlSheets = @"delete  from TemplateSheetInstance where InstanceId = @_documentId";
+
+        var xx = connectionInsurance.Execute(sqlFacts, new { _documentId });
+        var sheets = connectionInsurance.Execute(sqlSheets, new { _documentId });
+        return sheets;
+    }
 
     private List<SheetInfoType> CreateSheetForEachZetGroup(MTable? table, List<string> FactZetValuesList)
     {
@@ -178,48 +193,7 @@ public class FactsDecorator : IFactsDecorator
         var sheet = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSelect, new { _documentId, tableId, sheetCode });
         return sheet;
     }
-
-    private int CreateYFactsForOpenTables(List<SheetInfoType> sheetsInfo)
-    {
-        //create facts for each y dim of a table (for each row)
-        //for each row, use the first non-null fact as a clone
-        //each ydim fact will get its value from the corresponding dim of the clone fact.
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
-        sheetsInfo.OrderBy(si => si.SheetCode);
-        foreach (var sheetInfo in sheetsInfo)
-        {
-
-            List<string> tableYDims = sheetInfo.YDims?
-            .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            .ToList() ?? new List<string>();
-
-
-            var yTableMappings1 = tableYDims
-                        .Select(ydim => SelectMapping(sheetInfo.TableId, ydim));
-
-            var yTableMappings = tableYDims
-                        .Select(ydim => SelectMapping(sheetInfo.TableId, ydim))
-                        .Where(mappping => mappping != null) ?? new List<MAPPING>();
-
-
-            var sqlDistinct = @"select min(fact.Row)as minRow, max(fact.Row)as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
-            var sheetRows = connectionInsurance.QueryFirstOrDefault<(string minRow, string maxRow)>(sqlDistinct, new { _documentId, sheetInfo.TemplateSheetId });
-
-            var minRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.minRow ?? "0"));
-            var maxRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.maxRow ?? "0"));
-            if (minRow == 0 || maxRow == 0)
-            {
-                return 0;
-            }
-            foreach (var rowInt in Enumerable.Range(minRow, maxRow))
-            {
-                CreateYFactsForRow(sheetInfo, rowInt, yTableMappings);
-            }
-        }
-        return 1;
-    }
-
+   
     private int CreateYFactsForOpenTables280(List<SheetInfoType> sheetsInfo)
     {
         //create facts for each y dim of a table (for each row)
@@ -239,7 +213,7 @@ public class FactsDecorator : IFactsDecorator
                 continue;
             }
 
-            var sqlDistinct = @"select min(fact.Row)as minRow, max(fact.Rofw)as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
+            var sqlDistinct = @"select min(fact.Row)as minRow, max(fact.Row)as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
             var sheetRows = connectionInsurance.QueryFirstOrDefault<(string minRow, string maxRow)>(sqlDistinct, new { _documentId, sheetInfo.TemplateSheetId });
 
             var minRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.minRow ?? "0"));
@@ -261,8 +235,6 @@ public class FactsDecorator : IFactsDecorator
         }
         return 1;
     }
-
-
 
     private void CreateYFactsForRow280(SheetInfoType sheetInfo, int rowInt, IEnumerable<TableAxisOrdinateInfoModel> yOrdinateKeys)
     {
@@ -291,36 +263,6 @@ public class FactsDecorator : IFactsDecorator
                 : ctxLine.DomainValue;
 
             newFact.TextValue = textValue;
-            newFact.DataTypeUse = "S";
-            var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
-            Console.Write("+");
-        }
-        return;
-    }
-
-
-    private void CreateYFactsForRow(SheetInfoType sheetInfo, int rowInt, IEnumerable<MAPPING> yTableMappings)
-    {
-        var row = $"R{rowInt:D4}";
-        var rowFact = SelectRowFirstFact(sheetInfo.TemplateSheetId, row);
-        if (rowFact is null)
-        {
-            return;
-        }
-        var context = rowFact.ContextNumberId;
-        var contextLines = _SqlFunctions.SelectContextLines(rowFact.ContextNumberId);
-
-        foreach (var yMapping in yTableMappings)
-        {
-            var mp = DimDom.GetParts(yMapping.DIM_CODE);
-            var ctxLine = contextLines.FirstOrDefault(cl => cl.Dimension == DimDom.GetParts(yMapping.DIM_CODE).Dim);
-            if (ctxLine is null)
-            {
-                continue;
-            }
-            var newFact = rowFact.Adapt<TemplateSheetFact>();
-            newFact.Col = yMapping.DYN_TAB_COLUMN_NAME;
-            newFact.TextValue = ctxLine.DomainValue;
             newFact.DataTypeUse = "S";
             var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
             Console.Write("+");
@@ -394,8 +336,7 @@ public class FactsDecorator : IFactsDecorator
         return x;
     }
 
-
-    private List<TemplateSheetFact> SelectFactsForTempateTable280(MTable table)
+        private List<TemplateSheetFact> SelectFactsForTempateTable280(MTable table)
     {
         //****there are NO zet and Y dims on the table. Everything is on the cell
 
@@ -446,8 +387,7 @@ public class FactsDecorator : IFactsDecorator
         return tableFacts;
     }
 
-
-    private List<TemplateSheetFact> SelectFactsFromCellSignature280(string cellSignature)
+        private List<TemplateSheetFact> SelectFactsFromCellSignature280(string cellSignature)
     {
         var facts = new List<TemplateSheetFact>();
         //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
@@ -461,19 +401,23 @@ public class FactsDecorator : IFactsDecorator
         }
 
         //serach for facts with optional dims
-        //there are maximum TWO optional dims as I check, so start with all maximum
+        //there are maximum TWO optional dims(checked), so start with all maximum
         //start with No optional dims and try one by one
-
-
         List<string> cellDims = cellSignature
             .Split("|").ToList();
 
-        var mandatoryDims = cellDims.Where(cd => !cd.Contains('?')).ToList();
+        //check all dims (mandatory and optional)
+        facts = FindFactsFromDims(cellDims);
+        if (facts.Any())
+        {
+            return facts;
+        }
 
-        //always add "" because signature without the optional is also valid 
+        //check mandatory dims and add one by one the optional dims
+        //start with no optional and therefore always add "" as a dim
+        var mandatoryDims = cellDims.Where(cd => !cd.Contains('?')).ToList();        
         var optionalDims = cellDims.Where(cd => cd.Contains('?')).ToList();
         optionalDims.Add("");
-
 
         foreach (var optionalDim in optionalDims)
         {
@@ -487,365 +431,58 @@ public class FactsDecorator : IFactsDecorator
                 break;
             }
         }
-
-        return facts;
-        List<TemplateSheetFact> FindFactsFromDims(List<string> dims)
-        {
-            using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-            var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
-            var evaluator = new MatchEvaluator(MatchReplacer);
-
-            List<TemplateSheetFact> facts;
-            var dimsToCheck = dims
-                            .Where(dim => !string.IsNullOrEmpty(dim))
-                            .Select(dim => dim.Contains('*') ? rgx.Replace(dim, evaluator) : dim)
-                            .Select(dim => dim.Contains('?') ? rgx.Replace(dim, evaluator) : dim)
-                            .OrderBy(dim => dim).ToList();
-            var sig = string.Join("|", dimsToCheck);
-            var sqlSelectContext = @"select * from TemplateSheetFact fact where InstanceId=@DocumentId and fact.DataPointSignature like @signature;	";
-            facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId = _documentId, signature = sig }).ToList();
-            return facts;
-        }
-        static string MatchReplacer(Match match)
-        {
-            if (!match.Success)
-            {
-                return match.Value;
-            }
-            var newVal = match.Value.Replace(match.Groups[1].Value, "%");
-            return newVal;
-        }
-
-
-    }
-
-
-    private List<TemplateSheetFact> SelectFactsForTempateTable(MTable table)
-    {
-        //Select facts which have all the dims required by the mtable
-        //the dims are located in (mappings origin='F' , zet from m Table,   and now from mappings where map.IS_PAGE_COLUMN_KEY=1      
-        //The IS_PAGE_COLUMN_KEY=1 mappings are used to create different sheets for the same mtable code
-        //However, Ommit currency and country dims from the grouping, because we do not create different sheets for currency or country 
-        //the page column dims are stored in the fact ZetValues field 
-
-
-        //in the past, the xbrl mapping was used to  get the rowcol and then select the rest of the mappings for the rowcol
-        //HOWEVER< for  some tables the xbrl cannot be found in the mappings (as in table 19.01.01.01)
-        // For these table (only 19.01.01 i think)
-        //  + table 19.01.01 has the MET xbrl codes in table ZDimVal and not in the mappings
-        //  + table 19.01.01 has 'F' mappings with RowCol like every other table
-        //  + get the Xbrl from ZdimVal
-        // --select the rowcols from the page mappings (distinct) and not from the Xbrl mappings (origin 'F' and dim_code starting with MET)
-        // --find any other dims from the page mappings (is_InTable=1) and then add the zet mappings 
-        // --find the facts        
-        var tableFactsFromCtl = new List<TemplateSheetFact>();
-        var allTableFieldMappings = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Field)?.ToList() ?? new List<MAPPING>();
-
-
-        //*** page Zet dims from mappings (for each table) define when we need to create separate sheet for the same table
-        //*** we do not want to create separate sheets when currency or country changes so =>take out any currency Or Country dims 
-        var currencyAndCountryDims = new[] { "LA", "LR", "LG", "ZK", "OC" };
-        var pageDims = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
-            .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
-            .Where(dim => !currencyAndCountryDims.Contains(dim))
-            .Order()
-            .ToList();
-
-        var pageCurrencyDims = _SqlFunctions.SelectMappings(table.TableID, MappingOrigin.Page)
-            .Select(dim => DimDom.GetParts(dim.DIM_CODE).Dim)
-            .Where(dim => currencyAndCountryDims.Contains(dim))
-            .ToList();
-
-
-        //find all the rowCols
-        var rowColDistinctMappings = allTableFieldMappings
-            .Where(map => map.ORIGIN == "F")
-            .GroupBy(map => map.DYN_TAB_COLUMN_NAME)
-            .Select(map => map.First())
-            .OrderBy(map => map.DYN_TAB_COLUMN_NAME)
-            .ToList();
-
-
-        IEnumerable<string> tableZetDims = table.ZDimVal?
-            .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            ?? Enumerable.Empty<string>();
-
-        List<string> tableYDims = table.YDimVal?
-            .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            .ToList() ?? new List<string>();
-
-
-
-        var zetDims = tableZetDims.Where(dim => !dim.StartsWith("MET"));
-        var xbrlFull = tableZetDims.Where(dim => dim.StartsWith("MET")).FirstOrDefault() ?? "";
-        var xbrlTable = DimUtils.ExtractXbrl(xbrlFull);
-
-        //*********************************************************************************
-        //for each RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
-        //also update the zetValues of each fact
-        foreach (var rowColDistinctMapping in rowColDistinctMappings)
-        {
-            var rowCol = rowColDistinctMapping.DYN_TAB_COLUMN_NAME.Trim();
-            var rowColObject = DimUtils.CreateRowCol(rowCol);
-
-            //get the 'F' minus the met
-            var fieldMappings = _SqlFunctions.SelectRowColMappings(table.TableID, rowCol)
-                .Where(map => map.ORIGIN == "F")
-                .Select(map => map.DIM_CODE);
-
-            var xbrlDim = fieldMappings?.FirstOrDefault(map => map.StartsWith("MET")) ?? "";
-            var xbrl = string.IsNullOrEmpty(xbrlTable) ? DimUtils.ExtractXbrl(xbrlDim) : xbrlTable;
-            fieldMappings = fieldMappings.Where(map => !map.Contains("MET"));
-
-            var allCellMappings = fieldMappings.Concat(zetDims).Concat(tableYDims).Order().ToList();
-
-            //******************************************************************************
-            //*** 69 find the facts and update there col, row, and ysignature            
-
-            var rowColdFactsFromCtl = SelectFactsByContextLinesAndDecorate(xbrl, rowColObject.Row, rowColObject.Col, allCellMappings, tableYDims, pageDims, pageCurrencyDims);
-            tableFactsFromCtl.AddRange(rowColdFactsFromCtl);
-
-            if (tableFactsFromCtl.Count() > 0)
-            {
-                Console.Write(".");
-                //Console.Write($"-row:{rowColObject?.Row}, {rowColObject?.Col}, count: {rowColdFactsFromCtl?.Count()} ");
-            }
-
-        }
-        var facts = tableFactsFromCtl ?? new List<TemplateSheetFact>();
         return facts;
     }
 
-    private List<TemplateSheetFact> SelectFactsByContextLinesAndDecorate(string xbrlCode, string row, string col, List<string> allMappings, List<string> yMappings, List<string> pageDims, List<string> pageCurrencyDims)
+    private List<TemplateSheetFact> FindFactsFromDims(List<string> dims)
     {
-        //for the RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
-        //also update the  PAGE zets ( zetValues) of the fact
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
+        var evaluator = new MatchEvaluator(MatchReplacer);
 
-        //the context includes the currency dim which is NOT included in the table ZdimValues. You can find the currency dim in the mappings Page_columns
-        var allMappingsDims = allMappings.Select(map => $"{DimDom.GetParts(map).Dim}").ToList();
-        var allFactDims = allMappingsDims.Concat(pageCurrencyDims);
-        var allFactDimsStr = string.Join(",", allFactDims.Select(dim => $"'{dim}'"));
-
-        var openAllDims = allMappings.Where(dim => dim.Contains('*'));
-        var openAllStr = string.Join(",", openAllDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
-        var openAllCount = openAllDims.Count();
-
-        var openMandatoryDims = allMappings.Where(dim => dim.Contains('*') && !dim.Contains('?'));
-        var openMandatoryString = string.Join(",", openMandatoryDims.Select(dim => $"'{DimDom.GetParts(dim).Dim}'"));
-        var openMandatoryCount = openMandatoryDims.Count();
-
-        var hasOpenOptionalDims = allMappings.Any(dim => dim.Contains('*') && dim.Contains('?'));
-
-
-        var closedDims = allMappings.Where(dim => !dim.Contains('*'));
-        var closedString = string.Join(",", closedDims.Select(dim => $"'{DimDom.GetParts(dim).Signature}'"));
-        var closedCount = closedDims.Count();
-
-
-
-        var basicSQL = @"
-            SELECT fact.*           
-            FROM
-              TemplateSheetFact fact
-            WHERE
-              1=1
-              AND fact.XBRLCode = @XBRLCode
-              AND fact.InstanceId=@_documentId
-            ";
-
-
-
-        string sqlClosed = @$"                
-            AND EXISTS (
-                    SELECT COUNT(*) AS cnt
-                    FROM ContextLine cl
-                    WHERE 1=1
-                        AND cl.ContextId=fact.ContextNumberId
-                        AND cl.Signature IN ({closedString})                    
-                    GROUP BY cl.contextId
-                    HAVING COUNT(*) = @closedCount
-                )
-        ";
-
-        string sqlClosedAndNotOpen = @$"                
-				AND NOT EXISTS (
-                    SELECT 1 AS cnt
-                      FROM ContextLine cl
-                    WHERE 1=1
-                    AND cl.ContextId=fact.ContextNumberId
-                    AND cl.Signature NOT IN ({closedString})
-                )
-        ";
-
-
-        var sqlOpen = $@"
-           AND EXISTS (                
-                  SELECT COUNT(*) AS cnt
-                    FROM ContextLine cl
-                  WHERE 1=1
-                      AND cl.ContextId=fact.ContextNumberId
-	                  AND cl.Dimension in ({openMandatoryString})
-                  GROUP BY cl.ContextId
-                  HAVING COUNT(*)=@openMandatoryCount
-	              )             
-           AND NOT EXISTS (                
-                  SELECT 1
-                    FROM ContextLine cl
-                  WHERE 1=1
-                  AND cl.ContextId=fact.ContextNumberId
-	              AND cl.Dimension NOT in ({allFactDimsStr})                                
-	              )
-       ";
-
-
-        var sqlSelect = $@"{basicSQL} {Environment.NewLine}";
-
-        var hasClosed = !string.IsNullOrEmpty(closedString);
-        var hasOpen = !string.IsNullOrEmpty(openMandatoryString);
-
-        if (hasClosed)
-        {
-            sqlSelect = @$" {sqlSelect} {sqlClosed} {Environment.NewLine}";
-        };
-        if (hasClosed && !hasOpen)
-        {
-            sqlSelect = @$" {sqlSelect} {sqlClosedAndNotOpen} {Environment.NewLine}";
-        }
-
-        if (hasOpen)
-        {
-            sqlSelect = @$" {sqlSelect} {sqlOpen} {Environment.NewLine}";
-        };
-
-        sqlSelect = $"{sqlSelect} order by fact.Row,fact.Col";
-
-        var facts = connectionInsurance!.Query<TemplateSheetFact>(sqlSelect, new
-        {
-            _documentId,
-            xbrlCode,
-
-            closedCount,
-            openMandatoryCount
-        })?.ToList() ?? new List<TemplateSheetFact>();
-
-        //todo update row and column, 
-        //remove row col from select
-        //what about row ??
-
-        var yMappingsDims = yMappings.Select(map => DimDom.GetParts(map).Dim);
-        foreach (var fact in facts)
-        {
-
-            //var factdims = _SqlFunctions.SelectFactDims(fact.FactId);
-            var contextLineDims = _SqlFunctions.SelectContextLines(fact.ContextNumberId);
-
-            //the pageZet dims present in the fact
-            var zPageFactDims = contextLineDims
-                .Where(dim => pageDims.Contains(dim.Dimension));
-
-            var zPageFactDimValues = zPageFactDims
-                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
-                .Order();
-            var zPageFactDimStr = string.Join("__", zPageFactDimValues);
-
-
-            var zCurrencyFactDims = contextLineDims
-                .Where(dim => pageCurrencyDims.Contains(dim.Dimension));
-
-            var zCurrencyFactDimValues = zCurrencyFactDims
-                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw)
-                .Order();
-            var zCurrencyFactDimStr = string.Join("__", zCurrencyFactDimValues);
-
-
-            var yFactDims = contextLineDims
-                .Where(dim => yMappingsDims.Contains(dim.Dimension))
-                .Select(dim => DimDom.GetParts(dim.Signature).Signature)
-                .Order();
-            var yRowSignature = string.Join("|", yFactDims);
-
-
-            var blDim = contextLineDims
-                .Where(dim => DimDom.GetParts(dim.Signature).Dim == "BL")
-                .Select(dim => DimDom.GetParts(dim.Signature).DomAndValRaw);
-            //.Select(dim => dim.Replace(":", "_"));
-
-
-            var blZet = string.Join("__", blDim);
-
-
-
-
-            //fact.ZetVaules => ***** all the values of Zet dims such as BL ,used for assigning facts to sheet (country and currency dims NOT included)
-            fact.Row = row;//open tables will be updated later based on their y dims
-            fact.Col = col;
-            fact.Zet = blZet;//not used
-
-
-            fact.ZetValues = zPageFactDimStr;
-            fact.CurrencyDim = zCurrencyFactDimStr;
-            fact.RowSignature = yRowSignature;
-        }
-
-
+        List<TemplateSheetFact> facts;
+        var dimsToCheck = dims
+                        .Where(dim => !string.IsNullOrEmpty(dim))
+                        .Select(dim => dim.Contains('*') ? rgx.Replace(dim, evaluator) : dim)
+                        .Select(dim => dim.Contains('?') ? rgx.Replace(dim, evaluator) : dim)
+                        .OrderBy(dim => dim).ToList();
+        var sig = string.Join("|", dimsToCheck);
+        var sqlSelectContext = @"select * from TemplateSheetFact fact where InstanceId=@DocumentId and fact.DataPointSignature like @signature;	";
+        facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId = _documentId, signature = sig }).ToList();
         return facts;
-
+    }
+    static string MatchReplacer(Match match)
+    {
+        if (!match.Success)
+        {
+            return match.Value;
+        }
+        var newVal = match.Value.Replace(match.Groups[1].Value, "%");
+        return newVal;
     }
 
-
-    private void AssignFactsToSheet(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
+    private void AssignFactsToSheet280(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
     {
-        //assign the facts to each sheet
+        //***** Assign each fact to ist sheet depending on the zet 
         foreach (var tableFact in tableFacts)
         {
             var sh = sheetInfo.FirstOrDefault(shi => shi.SheetCodeZet == (tableFact.ZetValues ?? ""));
             if (sh is null)
             {
+                throw new Exception($"No sheet was found for fact {tableFact.FactId}, Zvalues :{tableFact.ZetValues}");
                 continue;
             };
-            //************************************************
+            
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
             if (cnt == 0)
             {
                 Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
-                tableFact.TemplateSheetId = sh.TemplateSheetId;
-                //todo put it back !!!!
-                // var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
+                tableFact.TemplateSheetId = sh.TemplateSheetId;                
+                var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
             }
         }
-    }
-
-    private List<MTable> GetFiledModuleTables()
-    {
-
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
-        var sqlTables = @"
-              SELECT 	  
-                    tab.TableID,
-                    tab.TableCode,                    
-                    tab.XbrlFilingIndicatorCode,
-                    tab.XbrlTableCode,
-                    tab.YDimVal,
-                    tab.ZDimVal,
-                    tab.TableLabel
-                  FROM mModuleBusinessTemplate mbt
-                  left outer join mTemplateOrTable  va on va.TemplateOrTableID =mbt.BusinessTemplateID
-                  left outer join mTemplateOrTable bu on bu.ParentTemplateOrTableID = va.TemplateOrTableID
-                  left outer join mTemplateOrTable anno on anno.ParentTemplateOrTableID = bu.TemplateOrTableID
-                  left outer join mTaxonomyTable taxo on taxo.AnnotatedTableID=anno.TemplateOrTableID
-                  left outer join mTable tab on tab.TableID = taxo.TableID
-                  where mbt.ModuleID = @_moduleId";
-        var moduleTables = connectionEiopa.Query<MTable>(sqlTables, new { _moduleId }).ToList();
-
-        var validModuleTables = moduleTables.Where(mtable => _filings.Any(filing => mtable.TableCode.Contains(filing))).ToList();
-
-
-        return validModuleTables;
     }
 
     private void UpdateForeignKeysOfChildTablesNN()
