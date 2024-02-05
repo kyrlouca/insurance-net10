@@ -163,7 +163,7 @@ public class FactsDecorator : IFactsDecorator
         {
             rowInt++;
             var row = $"R{rowInt:D4}";
-            var rowFacts = connectionInsurance.Query<string>(sqlUpdate, new { _documentId, sheetId, rowSignature,row });
+            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId, sheetId, rowSignature,row });
             var xx = 33;
         }
 
@@ -379,8 +379,7 @@ public class FactsDecorator : IFactsDecorator
             foreach (var cellFact in cellFacts)
             {
 
-                //update the RowSignature NOT the row !!!!!
-                //cellFact.Row = cellRowCol.IsOpen ? $"R{++count:d4}" : cellRowCol.Row;//open tables will be updated later based on their y dims
+                
                 var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims);
                 cellFact.RowSignature = rowSignature;
                 cellFact.Col = cellRowCol.Col;
