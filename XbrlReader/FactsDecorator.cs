@@ -119,12 +119,12 @@ public class FactsDecorator : IFactsDecorator
 
             //*********** Assign facts to sheets
             AssignFactsToSheet280(tableFacts, sheetsInfo);
-            foreach(var sheetinfo in sheetsInfo)
+            foreach (var sheetinfo in sheetsInfo)
             {
-                var tableContextRows = GetTableContexts(sheetinfo.TemplateSheetId);
-                UpdateTableFactRow(sheetinfo.TemplateSheetId, tableContextRows);
+                var contextRows = GetRowSignatures(sheetinfo.TemplateSheetId);
+                UpdateFactsInContextRow(sheetinfo.TemplateSheetId, contextRows);
             }
-            
+
 
             CreateYFactsForOpenTables280(sheetsInfo);
 
@@ -143,20 +143,30 @@ public class FactsDecorator : IFactsDecorator
 
     }
 
-    private List<string> GetTableContexts( int sheetId)
+    private List<string> GetRowSignatures(int sheetId)
     {
+        //a row signature has all the y dims (from ordinates)
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@documentId and fact.TemplateSheetId = @sheetId";
-        var sheetRows = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId });
-        return new List<string>();
+        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@_documentId and fact.TemplateSheetId = @sheetId";
+        var sheetRows = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId }).ToList();
+        return sheetRows;
 
     }
 
-    private List<string> UpdateTableFactRow(int sheetId,List<string> rowContexts)
+    private List<string> UpdateFactsInContextRow(int sheetId, List<string> rowSignatures)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@documentId and fact.TemplateSheetId = @sheetId";
-        var sheetRows = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId });
+        //var sqlSelect = "select * from TemplateSheetFact fact where fact.InstanceId=@_documentId and fact.TemplateSheetId=@sheetId and fact.RowSignature=@rowSignature";
+        var sqlUpdate = "update TemplateSheetFact set row= @row where InstanceId=@_documentId and TemplateSheetId=@sheetId and RowSignature=@rowSignature";
+        var rowInt = 0;
+        foreach (var rowSignature in rowSignatures)
+        {
+            rowInt++;
+            var row = $"R{rowInt:D4}";
+            var rowFacts = connectionInsurance.Query<string>(sqlUpdate, new { _documentId, sheetId, rowSignature,row });
+            var xx = 33;
+        }
+
         return new List<string>();
 
     }
@@ -194,18 +204,10 @@ public class FactsDecorator : IFactsDecorator
                     : $"{table.TableCode}__{FactZetValue}";
 
             var sheetName = $"{table.TableCode}__{sheetCount:D2}";
-            //var sheetName = sheetCode;
-            table.IsOpenTable = table.YDimVal?.Contains('*') ?? false;
-            //************************************************
-            //Create a Sheet
-            //To save time when testing I only create a sheet if it does not exist.If it does I will return the existing
-            var sheet = SelectTemplateSheetBySheetCode(table.TableID, sheetCode);
-            sheet ??= _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName, table);
 
-
+            var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName, table);
             Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
             sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, FactZetValue, sheetName, sheet.YDimVal));
-
             sheetCount++;
         }
 
@@ -350,9 +352,9 @@ public class FactsDecorator : IFactsDecorator
 
         var yDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
-            .Select(dd=> DimDom.GetParts(dd.Signature).Dim);
+            .Select(dd => DimDom.GetParts(dd.Signature).Dim);
 
-        
+
 
         //*********************************************************************************
         //for each RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
@@ -379,7 +381,7 @@ public class FactsDecorator : IFactsDecorator
 
                 //update the RowSignature NOT the row !!!!!
                 //cellFact.Row = cellRowCol.IsOpen ? $"R{++count:d4}" : cellRowCol.Row;//open tables will be updated later based on their y dims
-                var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims) ;
+                var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims);
                 cellFact.RowSignature = rowSignature;
                 cellFact.Col = cellRowCol.Col;
 
@@ -398,7 +400,7 @@ public class FactsDecorator : IFactsDecorator
         return tableFacts;
     }
 
-    private static string BuildRowSignature(string signature,IEnumerable<string> yDims)
+    private static string BuildRowSignature(string signature, IEnumerable<string> yDims)
     {
         var dims = signature.Split("|", StringSplitOptions.RemoveEmptyEntries)
             .Where(dim => yDims.Contains(DimDom.GetParts(dim).Dim))
@@ -589,7 +591,7 @@ public class FactsDecorator : IFactsDecorator
     }
 
 
-   
+
 
 
 
