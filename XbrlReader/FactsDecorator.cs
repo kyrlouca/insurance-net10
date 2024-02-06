@@ -87,30 +87,26 @@ public partial class FactsDecorator : IFactsDecorator
             .ToList();
 
 
-        _testingTableId = 68;
+        _testingTableId = 68; //"S.06.02.01.01"
+        //_testingTableId = 69;
         if (_testingTableId > 0)
         {
             ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
         }
 
 
-        //************************************************************************
-
         foreach (var table in ModuleTablesFiled)
-        {
-            if (table.TableCode == "S.06.02.01.01")
-            {
-                var y = "stop";
-            }
-
+        {            
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
+
+            table.IsOpenTable = IsOpenTable(table.TableID);
+
             //*********** Select the facts for a template and             
             var tableFacts = SelectFactsForTempateTable280(table);
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
 
 
-            //*********** Create one  sheet per zet group 
-            //todo check if already exists !!
+            //*********** Create one  sheet per zet group             
             //fact.ZetValues is a string concatenating the Facts' zet dims
             //facts with the same zet values(concatenated as a string) should be assigned to the same sheet (currency and country were excluded)
             List<string> distinctFactZetStrings = tableFacts
@@ -118,28 +114,23 @@ public partial class FactsDecorator : IFactsDecorator
                     .Select(group => group.Key).ToList();
 
             List<SheetInfoType> sheetsInfo = CreateSheetForEachZetGroup(table, distinctFactZetStrings);
-
-            //*********** Assign facts to sheets
+            
+            //*********** Assign facts to sheets and update fact row, col, etc
             AssignFactsToSheet280(tableFacts, sheetsInfo);
+            
+            //**********  if the table is open, update the rows
             foreach (var sheetinfo in sheetsInfo)
-            {
-                //merge the two below into one
-                var contextRows = GetRowSignatures(sheetinfo.TemplateSheetId);
-                //todo put it back fuck
-                //UpdateFactsInContextRow(sheetinfo.TemplateSheetId, contextRows);
+            {                                
+                UpdateRowForOpenTables(sheetinfo.TemplateSheetId);
             }
-
 
             CreateYFactsForOpenTables280(sheetsInfo);
 
             //***********  todo update foreing keys
             if (table.IsOpenTable)
-            {
-                //CreateYFactsForOpenTables(sheetInfo);
+            {             
                 UpdateForeignKeysOfChildTablesNN();
             }
-
-
         }
 
         Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
@@ -147,20 +138,23 @@ public partial class FactsDecorator : IFactsDecorator
 
     }
 
-    private List<string> GetRowSignatures(int sheetId)
-    {
-        //a row signature has all the y dims (from ordinates)
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@_documentId and fact.TemplateSheetId = @sheetId";
-        var sheetRows = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId }).ToList();
-        return sheetRows;
+    private bool IsOpenTable(int tableId)
+    {        
+        var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(tableId)
+            .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
 
+        return yOrdinatesForKeys.Any();
     }
-
-    private List<string> UpdateFactsInContextRow(int sheetId, List<string> rowSignatures)
+    private List<string> UpdateRowForOpenTables(int sheetId)
     {
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        //var sqlSelect = "select * from TemplateSheetFact fact where fact.InstanceId=@_documentId and fact.TemplateSheetId=@sheetId and fact.RowSignature=@rowSignature";
+        //only open tables have row signatures
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);        
+
+        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@_documentId and fact.TemplateSheetId = @sheetId";
+        var rowSignatures = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId })
+            .Where(sig=>!string.IsNullOrEmpty(sig)); 
+
+
         var sqlUpdate = "update TemplateSheetFact set row= @row where InstanceId=@_documentId and TemplateSheetId=@sheetId and RowSignature=@rowSignature";
         var rowInt = 0;
         foreach (var rowSignature in rowSignatures)
@@ -238,25 +232,17 @@ public partial class FactsDecorator : IFactsDecorator
                 continue;
             }
 
-            var sqlDistinct = @"select min(fact.Row)as minRow, max(fact.Row)as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
+            //var sqlDistinct = @"select COALESCE(MIN(fact.Row), 'R0') as minRow, COALESCE(Max(fact.Row), 'R0') as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
+            var sqlDistinct = @"select MIN(fact.Row) as minRow, MAX(fact.Row)  as maxRow from TemplateSheetFact fact where fact.TemplateSheetId= @TemplateSheetId";
             var sheetRows = connectionInsurance.QueryFirstOrDefault<(string minRow, string maxRow)>(sqlDistinct, new { _documentId, sheetInfo.TemplateSheetId });
 
-            var minRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.minRow ?? "0"));
-            var maxRow = Convert.ToInt32(RegexUtils.GetRegexSingleMatch(new Regex(@"R(\d{4})"), sheetRows.maxRow ?? "0"));
-            if (minRow == 0 || maxRow == 0)
-            {
-                return 0;
-            }
+            var minRow = string.IsNullOrEmpty(sheetRows.minRow) ? 0 : int.Parse(Regex.Match(sheetRows.minRow, @"\d+").Value);
+            var maxRow = string.IsNullOrEmpty(sheetRows.maxRow) ? 0 : int.Parse(Regex.Match(sheetRows.maxRow, @"\d+").Value);
+
             foreach (var rowInt in Enumerable.Range(minRow, maxRow))
-            {
-                var xxx323 = minRow;
+            {                
                 CreateYFactsForRow280(sheetInfo, rowInt, yOrdinatesForKeys);
-            }
-
-
-            var xxx = 233;
-            continue;
-
+            }                        
         }
         return 1;
     }
@@ -289,6 +275,8 @@ public partial class FactsDecorator : IFactsDecorator
 
             newFact.TextValue = textValue;
             newFact.DataTypeUse = "S";
+            newFact.FieldOrigin = "K";
+            newFact.CellID = 0;
             var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
             Console.Write("+");
         }
@@ -341,12 +329,7 @@ public partial class FactsDecorator : IFactsDecorator
         //****there are NO zet and Y dims on the table. Everything is on the cell
 
         var tableFacts = new List<TemplateSheetFact>();
-        var tableCells = _SqlFunctions.SelectTableCells(table.TableID);
-        if (table.TableID == 68)
-        {
-            var xxx = 3;
-        }
-
+        var tableCells = _SqlFunctions.SelectTableCells(table.TableID);        
 
         var yDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
@@ -379,12 +362,14 @@ public partial class FactsDecorator : IFactsDecorator
             foreach (var cellFact in cellFacts)
             {
                 
-                Console.Write("@");                
+                Console.Write(".");                
                 var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims);
 
 
                 cellFact.RowSignature = rowSignature;
                 cellFact.Col = cellRowCol.Col;
+                cellFact.Row = cellRowCol.Row;
+                cellFact.CellID= tableCell.CellID;
 
                 //todo assign them
                 //cellFact.ZetValues = zPageFactDimStr;
@@ -403,11 +388,16 @@ public partial class FactsDecorator : IFactsDecorator
 
     private static string BuildRowSignature(string signature, IEnumerable<string> yDims)
     {
-        //string result = rgx.IsMatch("s2c_dim:NF(ID:SH)") ? rgx.Match("s2c_dim:NF(ID:SH)").Groups[1].Value : "";
-        var dims = signature.Split("|")
+        //build the row signature using only the ydims
+        var dims = signature.Split("|",StringSplitOptions.RemoveEmptyEntries)
             .Where(dim => yDims.Contains(GetDimValue(dim)))
             .Order()
             .ToList();
+        
+        if (!dims.Any())
+        {
+            return "";
+        }
 
         IReadOnlyList<string> readOnlyList = dims.AsReadOnly();
         //var ySignature = string.Join("|", dims); DO NOT use this is very slow
@@ -517,7 +507,7 @@ public partial class FactsDecorator : IFactsDecorator
 
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
-            var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
+            var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId,tableFact.CellID,tableFact.Zet,  tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
             if (cnt == 0)
             {
                 Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
@@ -527,7 +517,7 @@ public partial class FactsDecorator : IFactsDecorator
         }
     }
 
-    private int AssignFactToSheet(int factId, int templateSheetId, string row, string col, string rowSignature, string zetValues, string currencyDim)
+    private int AssignFactToSheet(int factId, int templateSheetId, int cellId, string zet, string row, string col, string rowSignature, string zetValues, string currencyDim)
     {
         //zetvalues has all the zet and zet has the zet for currency or country which do NOT change page
 
@@ -535,11 +525,11 @@ public partial class FactsDecorator : IFactsDecorator
         var sqlUpdateFact = @"
             UPDATE TemplateSheetFact
             SET 
-              TemplateSheetId=@TemplateSheetId, Row= @row, Col=@col, RowSignature= @rowSignature,zetValues=@zetValues ,CurrencyDim=@CurrencyDim
+              TemplateSheetId=@TemplateSheetId, cellId=@cellId, Zet=@zet, Row= @row, Col=@col, RowSignature= @rowSignature,zetValues=@zetValues ,CurrencyDim=@CurrencyDim
             WHERE 
               FactId= @FactId AND TemplateSheetId IS NULL 
             ";
-        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId, row, col, rowSignature, zetValues, currencyDim });
+        var x = connectionInsurance.Execute(sqlUpdateFact, new { factId, templateSheetId,cellId, zet, row, col, rowSignature, zetValues, currencyDim });
         return x;
     }
 
