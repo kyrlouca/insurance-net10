@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using Serilog;
 using System.ComponentModel;
 using Shared.GeneralUtils;
+using Shared.Various;
 using Shared.SharedHost;
 
 using Shared.SpecialRoutines;
@@ -18,8 +19,10 @@ using System.Security.AccessControl;
 using Syncfusion.XlsIO.Parser.Biff_Records;
 using Shared.SQLFunctions;
 using System.Reflection.Metadata;
+using System.Text;
 
-public class FactsDecorator : IFactsDecorator
+
+public partial class FactsDecorator : IFactsDecorator
 {
     //public int TestingTableId { get; set; } = 54;
     private int _testingTableId = 0;
@@ -101,8 +104,7 @@ public class FactsDecorator : IFactsDecorator
             }
 
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
-            //*********** Select the facts for a template and 
-            //var tableFacts = SelectFactsForTempateTable(table);
+            //*********** Select the facts for a template and             
             var tableFacts = SelectFactsForTempateTable280(table);
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
 
@@ -121,8 +123,10 @@ public class FactsDecorator : IFactsDecorator
             AssignFactsToSheet280(tableFacts, sheetsInfo);
             foreach (var sheetinfo in sheetsInfo)
             {
+                //merge the two below into one
                 var contextRows = GetRowSignatures(sheetinfo.TemplateSheetId);
-                UpdateFactsInContextRow(sheetinfo.TemplateSheetId, contextRows);
+                //todo put it back fuck
+                //UpdateFactsInContextRow(sheetinfo.TemplateSheetId, contextRows);
             }
 
 
@@ -163,7 +167,7 @@ public class FactsDecorator : IFactsDecorator
         {
             rowInt++;
             var row = $"R{rowInt:D4}";
-            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId, sheetId, rowSignature,row });
+            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId, sheetId, rowSignature, row });
             var xx = 33;
         }
 
@@ -213,13 +217,7 @@ public class FactsDecorator : IFactsDecorator
 
         return sheetInfo;
     }
-    private TemplateSheetInstance? SelectTemplateSheetBySheetCode(int tableId, string sheetCode)
-    {
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlSelect = @"select * from TemplateSheetInstance sheet where sheet.InstanceId = @_documentId and sheet.TableID = @tableId and SheetCode = @SheetCode";
-        var sheet = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSelect, new { _documentId, tableId, sheetCode });
-        return sheet;
-    }
+
 
     private int CreateYFactsForOpenTables280(List<SheetInfoType> sheetsInfo)
     {
@@ -352,7 +350,8 @@ public class FactsDecorator : IFactsDecorator
 
         var yDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
-            .Select(dd => DimDom.GetParts(dd.Signature).Dim);
+            .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
+
 
 
 
@@ -363,6 +362,7 @@ public class FactsDecorator : IFactsDecorator
         foreach (var tableCell in tableCells)
         {
             var cellSignature = tableCell.DatapointSignature;
+
             if (cellSignature is null)
             {
                 continue;
@@ -378,9 +378,11 @@ public class FactsDecorator : IFactsDecorator
             var count = 0;
             foreach (var cellFact in cellFacts)
             {
-
                 
+                Console.Write("@");                
                 var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims);
+
+
                 cellFact.RowSignature = rowSignature;
                 cellFact.Col = cellRowCol.Col;
 
@@ -390,9 +392,9 @@ public class FactsDecorator : IFactsDecorator
                 //cellFact.RowSignature = yRowSignature;
             }
 
-            if (cellFacts.Count > 0)
+            if (cellFacts.Any())
             {
-                Console.Write(".");
+                Console.Write("#");
             }
             tableFacts.AddRange(cellFacts);
         }
@@ -401,14 +403,30 @@ public class FactsDecorator : IFactsDecorator
 
     private static string BuildRowSignature(string signature, IEnumerable<string> yDims)
     {
-        var dims = signature.Split("|", StringSplitOptions.RemoveEmptyEntries)
-            .Where(dim => yDims.Contains(DimDom.GetParts(dim).Dim))
-            .Order();
-        var ySignature = string.Join("|", dims);
+        //string result = rgx.IsMatch("s2c_dim:NF(ID:SH)") ? rgx.Match("s2c_dim:NF(ID:SH)").Groups[1].Value : "";
+        var dims = signature.Split("|")
+            .Where(dim => yDims.Contains(GetDimValue(dim)))
+            .Order()
+            .ToList();
+
+        IReadOnlyList<string> readOnlyList = dims.AsReadOnly();
+        //var ySignature = string.Join("|", dims); DO NOT use this is very slow
+        var ySignature = StringRoutines.JoinStringCreate(readOnlyList, "|");
         return ySignature;
+
+        static string GetDimValue(string input)
+        {
+            var rgx = new Regex(@"^s2c_dim:(\w\w)\(");
+            Match match = rgx.Match(input);
+            return match.Success ? match.Groups[1].Value : "";
+        }
     }
+
+    
     private List<TemplateSheetFact> SelectFactsFromCellSignature280(string cellSignature)
     {
+        //match any facts with cell signature 
+        //try without optional dims, optional dims one by one, all optional dims at once (max 2 optional dims)
         var facts = new List<TemplateSheetFact>();
         //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
         //MET(s2md_met:ei2426)|s2c_dim:MP(ID:)|s2c_dim:NF(ID:SH)|s2c_dim:PX(ID:)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/XT72-PIRAEUS BANK S.A.-EUR-Shareholders' funds-SH-Neither unit-linked nor index-linked)|s2c_dim:XA(NB:13)
@@ -427,7 +445,7 @@ public class FactsDecorator : IFactsDecorator
             .Split("|").ToList();
 
         //check all dims (mandatory and optional)
-        facts = FindFactsFromDims(cellDims);
+        facts = FindFactsByLikeSignature(cellDims);
         if (facts.Any())
         {
             return facts;
@@ -445,7 +463,7 @@ public class FactsDecorator : IFactsDecorator
             {
                 optionalDim
             };
-            facts = FindFactsFromDims(dims);
+            facts = FindFactsByLikeSignature(dims);
             if (facts.Any())
             {
                 break;
@@ -454,8 +472,11 @@ public class FactsDecorator : IFactsDecorator
         return facts;
     }
 
-    private List<TemplateSheetFact> FindFactsFromDims(List<string> dims)
+    private List<TemplateSheetFact> FindFactsByLikeSignature(List<string> dims)
     {
+        //select the facts using signature 
+        //Replace * or ? with % 
+
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
         var evaluator = new MatchEvaluator(MatchReplacer);
@@ -467,6 +488,7 @@ public class FactsDecorator : IFactsDecorator
                         .Select(dim => dim.Contains('?') ? rgx.Replace(dim, evaluator) : dim)
                         .OrderBy(dim => dim).ToList();
         var sig = string.Join("|", dimsToCheck);
+
         var sqlSelectContext = @"select * from TemplateSheetFact fact where InstanceId=@DocumentId and fact.DataPointSignature like @signature;	";
         facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId = _documentId, signature = sig }).ToList();
         return facts;
@@ -588,10 +610,6 @@ public class FactsDecorator : IFactsDecorator
         return count;
 
     }
-
-
-
-
 
 
 }
