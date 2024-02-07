@@ -59,7 +59,7 @@ internal class HelperRoutines
 
         try
         {
-            IWorkbook workbook = application.Workbooks.Create(0);            
+            IWorkbook workbook = application.Workbooks.Create(0);
             return (workbook, "");
         }
         catch (Exception ex)
@@ -89,7 +89,7 @@ internal class HelperRoutines
         return (true, "");
     }
 
-    
+
 
     public static string JoinRowCells(IRange? row)
     {
@@ -110,12 +110,40 @@ internal class HelperRoutines
     public static IRange ExtendRangeRowCols(IRange range, int rowInc, int colInc)
     {
         //works with negative numbers as well
+        //extends to the right (colInc) 
         var lastRow = Math.Max(0, range.LastRow + rowInc);
         var lastCol = Math.Max(0, range.LastColumn + colInc);
 
         var newRange = range.Worksheet.Range[range.Row, range.Column, lastRow, lastCol];
         return newRange;
     }
+
+    public enum HorizontalDirection
+    {
+        Left, Right
+    };
+
+    public enum VerticalDirection
+    {
+        Up, Down
+    };
+
+    public static IRange ExtendRangeRowColsDirectional(IRange range, int rowInc, int colInc, HorizontalDirection horizontalDirection, VerticalDirection verticalDirection)
+    {
+        //works with negative numbers as well
+        //extends horizontally colInc (right or left) and vertically (up or down) (rowInc) 
+
+        var startRow = verticalDirection == VerticalDirection.Up ? Math.Max(0, range.Row - rowInc) : range.Row;
+        var endRow = verticalDirection == VerticalDirection.Up ? range.LastRow : Math.Max(0, range.LastRow + rowInc);
+
+        var startCol = horizontalDirection == HorizontalDirection.Left ? Math.Max(0, range.Column - colInc) : range.Column;
+        var endCol = horizontalDirection == HorizontalDirection.Left ? range.LastColumn : Math.Max(0, range.LastColumn + colInc);
+
+
+        var newRange = range.Worksheet.Range[startRow, startCol, endRow, endCol];
+        return newRange;
+    }
+
 
     public record RowColObject(string AddressR1C1, int Row, int Col, int LastRow, int LastCol);
     public static RowColObject? CreateRowColObject(string addreessR1C1)
@@ -136,6 +164,6 @@ internal class HelperRoutines
             _ => null
         };
         return rowcolObject;
-        
+
     }
 }

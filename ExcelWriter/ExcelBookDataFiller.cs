@@ -129,6 +129,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         dataRange.ColumnWidth = 30;
         dataRange.WrapText = false;
 
+
+        var columnRow =  dataRange.Rows.First();
+        var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow,0,-1,HelperRoutines.HorizontalDirection.Left,HelperRoutines.VerticalDirection.Up);
+        exactColumnRow.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
 
         foreach (var dataRow in dataRange.Rows)
@@ -204,6 +209,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 SaveCellValue(cell, factX);
             }
             rowIndex++;
+            Console.Write(".");
         }
 
 
