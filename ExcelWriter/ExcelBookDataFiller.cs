@@ -88,8 +88,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         var dbOpenSheets = _SqlFunctions.SelectTempateSheets(_documentId)
-            .Where(sheet => sheet.IsOpenTable)
-            .Where(sheet => sheet.SheetCode == "ABC");
+            .Where(sheet => sheet.IsOpenTable);
 
         //var debugOpenTableCode = "S.06.02.01.01";
         var debugOpenTableCode = "";
@@ -100,7 +99,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         foreach (var dbOpenSheet in dbOpenSheets)
         {
             Console.WriteLine($"open:{dbOpenSheet.SheetCode}");
-            FillOpenTable(dbOpenSheet);
+            FillOpenTable280(dbOpenSheet);
         }
 
 
@@ -126,11 +125,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
 
+        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+        dataRange.ColumnWidth = 30;
+        dataRange.WrapText = false;
 
-        var columnCells = dataRange.Rows.First()
-            .Cells.Skip(1);
-            //.Select(cell => HelperRoutines.CreateRowColObject(cell.AddressR1C1Local))
-            //.Where(obj => obj is not null);
+        var columnCells = dataRange.Rows.First().Cells.Skip(1);
+
         foreach (var dataRow in dataRange.Rows)
         {
             var rowLabelCell = dataRow.First();
@@ -141,14 +141,69 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
             foreach (var colCell in columnCells)
             {
-                var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, "");                
+                var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, "");
                 if (factX is null)
                 {
                     continue;
                 }
-                //dataRange[rowLabelCell.Row, colCell.Col].Value;                
-                //SaveCellValue(cell, factX);
+                var cell = dataRange[rowLabelCell.Row, colCell.Column];
+                SaveCellValue(cell, factX);
             }
+        }
+
+
+
+        return false;
+
+        List<string> GetFactCurrencyZets()
+        {
+            var sqlCurrency = @"
+                SELECT fact.CurrencyDim
+                FROM
+                  TemplateSheetFact fact
+                WHERE
+                  fact.TemplateSheetId = @sheetId
+                GROUP BY
+                  fact.CurrencyDim;
+                ";
+
+            using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+            var currencyZets = connectionInsurance.Query<string>(sqlCurrency, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
+            return currencyZets;
+        }
+    }
+
+
+
+    private bool FillOpenTable280(TemplateSheetInstance dbSheet)
+    {
+
+
+        var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
+        var dataRange = dataName.RefersToRange;
+
+        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+        dataRange.ColumnWidth = 30;
+        dataRange.WrapText = false;
+
+        var columnCells = dataRange.Rows.First().Cells.Skip(1);
+
+        var rowLabels = SelectOpenRowLabels(dbSheet.TemplateSheetId);
+
+        var rowIndex = dataRange.Row + 1;
+        foreach (var rowLabel in rowLabels)
+        {            
+            foreach (var colCell in columnCells)
+            {
+                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colCell.Value, "");
+                if (factX is null)
+                {
+                    continue;
+                }
+                var cell = dataRange[rowIndex, colCell.Column];
+                SaveCellValue(cell, factX);
+            }
+            rowIndex++;
         }
 
 
@@ -285,6 +340,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             return currencyZets;
         }
     }
+
+
 
 
 
