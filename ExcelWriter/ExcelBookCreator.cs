@@ -13,6 +13,8 @@ using System;
 using System.Drawing;
 using ExcelWriter.Common;
 using Shared.SQLFunctions;
+using System.Text.RegularExpressions;
+using Microsoft.IdentityModel.Tokens;
 
 public class ExcelBookCreator : IExcelBookWriter
 {
@@ -65,17 +67,17 @@ public class ExcelBookCreator : IExcelBookWriter
         if (_originWorkbook is null)
         {
             _logger.Error(originMessage);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, originMessage);
             return "";
         }
 
-        
-        (_destinationWorkbook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);        
+
+        (_destinationWorkbook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);
         if (_destinationWorkbook is null)
         {
-            errorMessage=$"Cannot create excel Workbook syncfusion file";
+            errorMessage = $"Cannot create excel Workbook syncfusion file";
             _logger.Error(xMessage);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, errorMessage + "--" + xMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorMessage + "--" + xMessage);
             return "";
         }
 
@@ -87,16 +89,49 @@ public class ExcelBookCreator : IExcelBookWriter
         //Start processing
 
 
+
+
+        ///////////////////////////////////////////////
         int START_ROW = 1;
         int START_COL = 1;
         int DATA_ROW_POSITION = 14;
-        foreach (var sheet in sheets)
-        {           
-            Console.WriteLine("process" + sheet?.SheetTabName + "-" + sheet?.TableCode + sheet?.SheetTabName);         
 
-            var template = GetTableOrTemplate(sheet.TableCode, true);
+        foreach (var sheet in sheets)
+        {
+            Console.WriteLine("process" + sheet?.SheetTabName + "-" + sheet?.TableCode + sheet?.SheetTabName);
+
+            var template = GetTableOrTemplate(sheet.TableCode);
             if (template is null)
                 continue;
+            var xoriginSheet = _originWorkbook.Worksheets[template.TemplateOrTableCode];
+            if (xoriginSheet is null) continue;
+            var xrangexx = xoriginSheet.UsedCells;
+            var usedRange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
+            var dataRange280 = FindDataRange(xoriginSheet);
+            var wholeRange280 = xoriginSheet[1, 1, dataRange280.LastRow, dataRange280.LastColumn];
+
+
+
+            var xsheetName = sheet.SheetTabName.Trim();
+            var xdestSheet = _destinationWorkbook.Worksheets.Create(xsheetName);
+            xdestSheet.Zoom = 80;
+
+
+            var xsavedFile = filename;
+            var (xisSaveValid, xsaveMessage) = HelperRoutines.SaveWorkbook(_destinationWorkbook, xsavedFile);
+            if (!xisSaveValid)
+            {
+                _logger.Error(xsaveMessage);
+                _SqlFunctions.CreateTransactionLog(MessageType.ERROR, xsaveMessage);
+                return "";
+            }
+
+        }
+
+
+        sheets = sheets.Where(sh => sh.InstanceId == -1).OrderBy(sh => sh.TableID);
+        foreach (var sheet in sheets)
+        {
 
 
             //the template has only 4 parts (S.04.01.01 )
@@ -104,10 +139,10 @@ public class ExcelBookCreator : IExcelBookWriter
             var originSheet = _originWorkbook.Worksheets[filingSheetCode];
             if (originSheet is null) continue;
 
-            var sheetName = sheet.SheetTabName.Trim();            
+            var sheetName = sheet.SheetTabName.Trim();
             var destSheet = _destinationWorkbook.Worksheets.Create(sheetName);
             destSheet.Zoom = 80;
-            
+
 
             /////Table code
             var tableCode = destSheet.Range["A1"];
@@ -115,7 +150,7 @@ public class ExcelBookCreator : IExcelBookWriter
             tableCode.CellStyle = _pensionStyles.TableCodeStyle;
 
             //template code
-            var parentTemplate = GetTableOrTemplate(filingSheetCode, false);
+            var parentTemplate = GetTableOrTemplate(filingSheetCode);
             var tblLabel = destSheet.Range["A2"];
             tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
             tblLabel.CellStyle = _pensionStyles.HeaderStyle;
@@ -123,9 +158,9 @@ public class ExcelBookCreator : IExcelBookWriter
 
 
             ///////////A descritpion which is normally found above column labels
-            var _TC = template.TC;
+            var _TC = $"A1";
             var descRange = CopyRangeToFixedPosition(START_ROW + 2, START_COL, originSheet, destSheet, _TC);
-            
+
             var descriptionName = $"{destSheet.Name.Trim()}_desc";
             _destinationWorkbook.Names.Remove(descriptionName);
             var descNamedObject = _destinationWorkbook.Names.Add(descriptionName);
@@ -200,7 +235,7 @@ public class ExcelBookCreator : IExcelBookWriter
                 var orignColumnNames = lfr.Columns[0];
                 var leftRowNumRange = CopyRangeToFixedPosition(dataRowPos, dataColPos - 1, originSheet, destSheet, orignColumnNames.Address);
 
-                leftRowNumRange.CellStyle = _pensionStyles.LeftRowNumbersSectionStyle;                
+                leftRowNumRange.CellStyle = _pensionStyles.LeftRowNumbersSectionStyle;
 
                 var leftNamed = $"{destSheet.Name.Trim()}_left";
                 _destinationWorkbook.Names.Remove(leftNamed);
@@ -269,7 +304,7 @@ public class ExcelBookCreator : IExcelBookWriter
         if (!isSaveValid)
         {
             _logger.Error(saveMessage);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, saveMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, saveMessage);
             return "";
         }
 
@@ -339,7 +374,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
     }
 
-    private MTemplateOrTable? GetTableOrTemplate(string tableCode, bool isAnnotaed)
+    private MTemplateOrTable? GetTableOrTemplate(string tableCode)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlTemplate = @"
@@ -348,11 +383,8 @@ public class ExcelBookCreator : IExcelBookWriter
 				WHERE 
 				  1=1				  
 				  AND tt.TemplateOrTableCode = @tableCode
+                    AND TemplateOrTableType = 'BusinessTable' 
 				";
-        if (isAnnotaed)
-        {
-            sqlTemplate += @" AND TemplateOrTableType = 'AnnotatedTable' ";
-        }
         var template = connectionEiopa.QueryFirstOrDefault<MTemplateOrTable>(sqlTemplate, new { tableCode });
         return template;
 
@@ -385,4 +417,72 @@ public class ExcelBookCreator : IExcelBookWriter
             stream.Dispose();
         }
     }
+
+    private IRange FindDataRange(IWorksheet xoriginSheet)
+    {
+        var xyrange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
+        //var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, s61DataLine.LastColumn];
+
+        var rowRgx = new Regex(@"^R\d\d\d\d");
+        var colRgx = new Regex(@"^C\d\d\d\d");
+
+        IRange xx;
+        IRange startRow, endRow = xoriginSheet["A1"], startCol = xoriginSheet["A1"], endCol = xoriginSheet["A1"];
+        var isFirstRow = true;
+        var isFirstCol = true;
+        foreach (IRange cell in xyrange)
+        {
+            string cellValue = cell.Value.ToString();
+            var rowMatch = rowRgx.Match(cellValue);
+
+
+            if (rowMatch.Success)
+            {
+                if (isFirstRow)
+                {
+                    startRow = cell;
+                    endRow = cell;
+                    isFirstRow = false;
+                }
+                else
+                {
+                    endRow = cell;
+                }
+            }
+            var colMatch = colRgx.Match(cellValue);
+            if (colMatch.Success)
+            {
+                if (isFirstCol)
+                {
+                    startCol = cell;
+                    endCol = cell;
+                    isFirstCol = false;
+                }
+                else
+                {
+                    endCol = cell;
+                }
+            }
+        }
+        if (endRow.AddressLocal == "A1")
+        {
+            var x = 3;
+        }
+
+        if (startCol.AddressLocal == "A1")
+        {
+            throw new Exception($"sheet:{xoriginSheet.Name} missing column labels");
+        }
+
+        var endRowPos = (endRow.AddressLocal == "A1") ? startCol.Row + 1 : endRow.LastRow;
+
+
+        var range = xoriginSheet[startCol!.Row, startCol.Column - 1, endRowPos, endCol.LastColumn];
+        //var range = xoriginSheet[5, 3, 4, 4];
+
+        return range;
+
+    }
+
+
 }

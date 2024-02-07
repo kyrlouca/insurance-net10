@@ -87,7 +87,7 @@ public partial class FactsDecorator : IFactsDecorator
             .ToList();
 
 
-        _testingTableId = 68; //"S.06.02.01.01"
+        //_testingTableId = 68; //"S.06.02.01.01"
         //_testingTableId = 69;
         if (_testingTableId > 0)
         {
@@ -554,13 +554,13 @@ public partial class FactsDecorator : IFactsDecorator
                     .FirstOrDefault();
             if (parentSheet is null) continue;
 
-            var dimLike = $"%:{kyrTable.FK_TableDim.Trim()}%";
-            var sqlMapping = @"select * from MAPPING where TABLE_VERSION_ID= @tableId  and DIM_CODE like @dimLike";
+            //var dimLike = $"%:{kyrTable.FK_TableDim.Trim()}%";
+            //var sqlMapping = @"select * from MAPPING where TABLE_VERSION_ID= @tableId  and DIM_CODE like @dimLike";
 
-            var commonCol = connectionEiopa.QueryFirstOrDefault<MAPPING>(sqlMapping, new { parentSheet.TableID, dimLike });
-            if (commonCol is null) continue;
+            //var commonCol = connectionEiopa.QueryFirstOrDefault<MAPPING>(sqlMapping, new { parentSheet.TableID, dimLike });
+            //if (commonCol is null) continue;
 
-            UpdateFactsWithMasterRowNN(childSheet.TemplateSheetId, parentSheet.TemplateSheetId, commonCol.DYN_TAB_COLUMN_NAME);
+            UpdateFactsWithMasterRowNN(childSheet.TemplateSheetId, parentSheet.TemplateSheetId, "UI");
 
 
         }
