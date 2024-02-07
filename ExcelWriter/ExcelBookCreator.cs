@@ -112,8 +112,8 @@ public class ExcelBookCreator : IExcelBookWriter
                  if (xoriginSheet is null) continue;
                 var xrangexx = xoriginSheet.UsedCells;
                 var usedRange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
-                var dataRange280 = FindDataRange(xoriginSheet);
-                var wholeRange280 = xoriginSheet[1, 1, dataRange280.LastRow, dataRange280.LastColumn];
+                var orgDataRange280 = FindDataRange(xoriginSheet);
+                var orgWholeRange280 = xoriginSheet[1, 1, orgDataRange280.LastRow, orgDataRange280.LastColumn];
 
 
 
@@ -122,13 +122,19 @@ public class ExcelBookCreator : IExcelBookWriter
                 xdestSheet.Zoom = 80;
 
 
-                var _XALL = wholeRange280.AddressLocal;
-                var descRange = CopyRangeToFixedPosition(START_ROW, START_COL, xoriginSheet, xdestSheet, _XALL);
+                var wholeAddress = orgWholeRange280.AddressLocal;
+                var wholeRange = CopyRangeToFixedPosition(START_ROW, START_COL, xoriginSheet, xdestSheet, wholeAddress);
 
-                var descriptionName = $"{xdestSheet.Name.Trim()}_desc";
-                _destinationWorkbook.Names.Remove(descriptionName);
-                var descNamedObject = _destinationWorkbook.Names.Add(descriptionName);
-                descNamedObject.RefersToRange = descRange;
+                var wholeRangeName = $"{xdestSheet.Name.Trim()}_whole";
+                _destinationWorkbook.Names.Remove(wholeRangeName);
+                var wholeNameObject = _destinationWorkbook.Names.Add(wholeRangeName);
+                wholeNameObject.RefersToRange = wholeRange;
+
+                var destData280Range = xdestSheet.Range[orgDataRange280.AddressLocal];
+                var dataRangeName = $"{xdestSheet.Name.Trim()}_data";
+                _destinationWorkbook.Names.Remove(dataRangeName);
+                var dataNamedObject = _destinationWorkbook.Names.Add(dataRangeName);
+                dataNamedObject.RefersToRange = destData280Range;
 
             }
 

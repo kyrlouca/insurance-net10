@@ -88,7 +88,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         
         var dbOpenSheets = _SqlFunctions.SelectTempateSheets(_documentId)
-            .Where(sheet => sheet.IsOpenTable);
+            .Where(sheet => sheet.IsOpenTable)
+            .Where(sheet=>sheet.SheetCode=="ABC");
 
         //var debugOpenTableCode = "S.06.02.01.01";
         var debugOpenTableCode = "";
@@ -114,6 +115,129 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         return true;
     }
+
+
+
+    private bool FillClosedTable280(TemplateSheetInstance dbSheet)
+    {
+        //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
+        //for multi facts, we need to create additional columns and write the currency/country above the column
+
+        var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
+        var dataRange = dataName.RefersToRange;
+
+        var topColName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
+        var topColumnRange = topColName.RefersToRange;
+
+        var leftRowName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
+        var leftRowRange = leftRowName.RefersToRange;
+
+        var topLabelRange = topColumnRange.Offset(-1, 0);
+        var currencyRange = topLabelRange.Offset(-2, 0);
+
+        var CurrencyZetList = GetFactCurrencyZets().Order().ToList();
+        var isMultiCurrency = (CurrencyZetList.Count > 0) && !string.IsNullOrWhiteSpace(CurrencyZetList.FirstOrDefault());
+        if (isMultiCurrency)
+        {
+            var originalCols = topColumnRange.Cells.Select(cl => cl.Text).ToList();
+
+            //Each column must be repeated for every currency
+            //C0080=> C0080 for "GREECE", "ROMANIA", "CYPRUS"
+            //therefore, the extra columns will be  columns.Count * zet.count-1 
+            //populate the extra columns with cols, and zetvalues 
+            var countCols = topLabelRange.Count();
+            var addCols = countCols * (CurrencyZetList.Count - 1);
+            topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, addCols);
+            dataRange = HelperRoutines.ExtendRangeRowCols(dataRange, 0, addCols);
+            topColumnRange = HelperRoutines.ExtendRangeRowCols(topColumnRange, 0, addCols);
+            currencyRange = HelperRoutines.ExtendRangeRowCols(currencyRange, 0, addCols);
+
+            dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+            topColumnRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+
+            var val = topColumnRange.Rows.First().Columns.First().Value;
+            topColumnRange.Value = val;
+
+            for (var curIdx = 0; curIdx < CurrencyZetList.Count; curIdx++)
+            {
+                for (var colIdx = 0; colIdx < countCols; colIdx++)
+                {
+                    var newCol = topColumnRange.Column + (curIdx * countCols) + colIdx;
+                    topColumnRange[topColumnRange.Row, newCol].Value = originalCols[colIdx];
+                    currencyRange[currencyRange.Row, newCol].Value = CurrencyZetList[curIdx];
+                }
+
+            }
+        }
+
+
+
+        var columnLabels = dataRange.Rows.First().Cells.Skip(1);
+        var xx=columnLabels.Select(cl=>cl.Value).ToList();
+        foreach (var dataRow in dataRange.Rows)
+        {
+            var rowLabelCell = dataRow.First();
+            if (string.IsNullOrEmpty(rowLabelCell.Value))
+            {
+                continue;
+            }
+            var rowLabelCellObj= HelperRoutines.CreateRowColObject(rowLabelCell.Value);
+            foreach (var cell in dataRow.Cells)
+            {
+                var dataCell = HelperRoutines.CreateRowColObject(cell.AddressR1C1Local);
+                if (dataCell is null)
+                {
+                    continue;
+                }
+                var rowLabel = leftRowRange[dataCell.Row, leftRowRange.Column].Value;
+                var colLabel = topColumnRange[topColumnRange.Row, dataCell.Col].Value;
+
+                if (string.IsNullOrEmpty(rowLabel) || string.IsNullOrEmpty(colLabel))
+                {
+                    continue;
+                }
+
+                var currencyDim = isMultiCurrency ? currencyRange[currencyRange.Row, cell.Column].Value : "";
+                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colLabel, currencyDim);
+                if (factX is null)
+                {
+                    continue;
+                }
+                SaveCellValue(cell, factX);
+            }
+        }
+
+        if (isMultiCurrency)
+        {
+            foreach (var cell in currencyRange.Cells)
+            {
+                var mMember = _SqlFunctions.SelectMMember(cell.Value);
+                var domainValue = mMember?.MemberLabel ?? "";
+                cell.Value = domainValue;
+
+            }
+        }
+
+        return false;
+
+        List<string> GetFactCurrencyZets()
+        {
+            var sqlCurrency = @"
+                SELECT fact.CurrencyDim
+                FROM
+                  TemplateSheetFact fact
+                WHERE
+                  fact.TemplateSheetId = @sheetId
+                GROUP BY
+                  fact.CurrencyDim;
+                ";
+
+            using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+            var currencyZets = connectionInsurance.Query<string>(sqlCurrency, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
+            return currencyZets;
+        }
+    }
+
 
     private bool FillClosedTable(TemplateSheetInstance dbSheet)
     {
@@ -226,6 +350,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             return currencyZets;
         }
     }
+
+
 
 
     private bool FillOpenTable(TemplateSheetInstance dbSheet)
