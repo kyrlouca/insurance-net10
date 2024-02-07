@@ -81,6 +81,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             {
                 var x = 2;
             }
+            
+
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
             //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
             FillClosedTable280(dbClosedSheet);
@@ -125,9 +127,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
 
-        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-        dataRange.ColumnWidth = 30;
-        dataRange.WrapText = false;
+        var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
+        var wholeRange = wholeRangeName.RefersToRange;
+
+        ClearLinks(wholeRange);
 
 
         var columnRow = dataRange.Rows.First();
@@ -157,6 +160,37 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
 
 
+        //table code
+        var tableCodeRange = wholeRange[1, 1];
+        tableCodeRange.CellStyle = _pensionStyles.TableCodeStyle;
+        //tableCodeRange.
+
+
+        //data
+        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+        dataRange.ColumnWidth = 30;
+        dataRange.WrapText = false;
+
+        //style columns        
+        var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
+        columnsRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+
+        //style row numbers
+        var rowsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Columns.First(), -1, 0, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
+        rowsRange.CellStyle = _pensionStyles.LeftRowNumbersSectionStyle;
+        rowsRange.ColumnWidth = 10;
+
+        //row descriptions
+        var rowDescriptionRange = wholeRange.Worksheet[dataRange.Row + 1, 1, dataRange.LastRow, dataRange.Column - 1];
+        var xx = rowDescriptionRange.CellStyle;
+        rowDescriptionRange.CellStyle.ColorIndex = ExcelKnownColors.Custom18;
+        rowDescriptionRange.CellStyle.Font.Size = 11;
+
+        
+        //rowDescriptionRange.CellStyle = _pensionStyles.LeftLabelStyle;
+        //rowDescriptionRange.AutofitColumns();
+        rowDescriptionRange.ColumnWidth = 40;
+
 
         return false;
 
@@ -178,6 +212,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
     }
 
+
+    private void ClearLinks(IRange range)
+    {        
+        
+        if (range.Hyperlinks.Count > 0)
+            for (int i = range.Hyperlinks.Count; i >= 1; i--)
+            {
+                range.Hyperlinks.RemoveAt(i - 1);
+            }        
+    }
 
 
     private bool FillOpenTable280(TemplateSheetInstance dbSheet)
@@ -207,7 +251,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             Console.Write(".");
         }
         Console.WriteLine();
-        
+
         //style data
         dataRange.CellStyle = _pensionStyles.DataSectionStyle;
         dataRange.ColumnWidth = 30;
@@ -216,6 +260,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //style columns        
         var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
         columnsRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+
+
+
 
         return false;
 

@@ -38,7 +38,14 @@ public class CustomPensionStyler : ICustomPensionStyler
 
         style.BeginUpdate();
         style.Font.FontName = "Calibri";
-        style.WrapText = false;
+        style.Font.Size = 11;
+        style.ColorIndex = ExcelKnownColors.Custom18;
+        style.WrapText = false;        
+        style.Borders.LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
+        style.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
+        
+
         style.EndUpdate();
         return style;
     }
@@ -77,7 +84,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
         style.Font.FontName = "Calibri";
-        //style.Font.Size = 10;
+        
         style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
@@ -97,7 +104,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
         style.Font.FontName = "Calibri";
-        style.Font.Size = 10;
+        style.Font.Size = 11;
         style.WrapText = false;
         style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
@@ -105,7 +112,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thick;
         style.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
-
+        style.ColorIndex = ExcelKnownColors.Custom36;
         style.EndUpdate();
         return style;
     }
@@ -118,8 +125,7 @@ public class CustomPensionStyler : ICustomPensionStyler
 
         style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
-        style.Font.FontName = "Calibri";
-        //style.Font.Size = 10;
+        style.Font.FontName = "Calibri";        
         style.WrapText = false;
         style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thick;        
         style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thick;
@@ -127,7 +133,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
-        
+        style.ColorIndex = ExcelKnownColors.Custom36;
 
         style.EndUpdate();
         return style;
