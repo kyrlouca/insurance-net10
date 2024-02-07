@@ -28,7 +28,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     private IWorkbook? Workbook;
     //private IWorkbook? _originWorkbook; //template workbook
     int _documentId = 0;
-    
+
     private readonly ICustomPensionStyler _customPensionStyler;
     PensionStyles _pensionStyles;
 
@@ -56,7 +56,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (Workbook is null)
         {
             _logger.Error(originMessage);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, originMessage);
             return false;
         }
 
@@ -72,7 +72,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var debugClosedTableCode = "";
         dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
-             : dbClosedSheets.Where(tb => tb.TableCode?.Trim()   == debugClosedTableCode);
+             : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
 
 
         foreach (var dbClosedSheet in dbClosedSheets)
@@ -83,13 +83,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
             //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
-            FillClosedTable(dbClosedSheet);
+            FillClosedTable280(dbClosedSheet);
         }
 
-        
+
         var dbOpenSheets = _SqlFunctions.SelectTempateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable)
-            .Where(sheet=>sheet.SheetCode=="ABC");
+            .Where(sheet => sheet.SheetCode == "ABC");
 
         //var debugOpenTableCode = "S.06.02.01.01";
         var debugOpenTableCode = "";
@@ -109,7 +109,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (!isValidSave)
         {
             _logger.Error(destSaveMessage);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, destSaveMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, destSaveMessage);
             return false;
         }
 
@@ -126,54 +126,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
 
-        var topColName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_top"];
-        var topColumnRange = topColName.RefersToRange;
 
-        var leftRowName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_left"];
-        var leftRowRange = leftRowName.RefersToRange;
-
-        var topLabelRange = topColumnRange.Offset(-1, 0);
-        var currencyRange = topLabelRange.Offset(-2, 0);
-
-        var CurrencyZetList = GetFactCurrencyZets().Order().ToList();
-        var isMultiCurrency = (CurrencyZetList.Count > 0) && !string.IsNullOrWhiteSpace(CurrencyZetList.FirstOrDefault());
-        if (isMultiCurrency)
-        {
-            var originalCols = topColumnRange.Cells.Select(cl => cl.Text).ToList();
-
-            //Each column must be repeated for every currency
-            //C0080=> C0080 for "GREECE", "ROMANIA", "CYPRUS"
-            //therefore, the extra columns will be  columns.Count * zet.count-1 
-            //populate the extra columns with cols, and zetvalues 
-            var countCols = topLabelRange.Count();
-            var addCols = countCols * (CurrencyZetList.Count - 1);
-            topLabelRange = HelperRoutines.ExtendRangeRowCols(topLabelRange, 0, addCols);
-            dataRange = HelperRoutines.ExtendRangeRowCols(dataRange, 0, addCols);
-            topColumnRange = HelperRoutines.ExtendRangeRowCols(topColumnRange, 0, addCols);
-            currencyRange = HelperRoutines.ExtendRangeRowCols(currencyRange, 0, addCols);
-
-            dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-            topColumnRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
-
-            var val = topColumnRange.Rows.First().Columns.First().Value;
-            topColumnRange.Value = val;
-
-            for (var curIdx = 0; curIdx < CurrencyZetList.Count; curIdx++)
-            {
-                for (var colIdx = 0; colIdx < countCols; colIdx++)
-                {
-                    var newCol = topColumnRange.Column + (curIdx * countCols) + colIdx;
-                    topColumnRange[topColumnRange.Row, newCol].Value = originalCols[colIdx];
-                    currencyRange[currencyRange.Row, newCol].Value = CurrencyZetList[curIdx];
-                }
-
-            }
-        }
-
-
-
-        var columnLabels = dataRange.Rows.First().Cells.Skip(1);
-        var xx=columnLabels.Select(cl=>cl.Value).ToList();
+        var columnCells = dataRange.Rows.First()
+            .Cells.Skip(1);
+            //.Select(cell => HelperRoutines.CreateRowColObject(cell.AddressR1C1Local))
+            //.Where(obj => obj is not null);
         foreach (var dataRow in dataRange.Rows)
         {
             var rowLabelCell = dataRow.First();
@@ -181,42 +138,20 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             {
                 continue;
             }
-            var rowLabelCellObj= HelperRoutines.CreateRowColObject(rowLabelCell.Value);
-            foreach (var cell in dataRow.Cells)
+            var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
+            foreach (var colCell in columnCells)
             {
-                var dataCell = HelperRoutines.CreateRowColObject(cell.AddressR1C1Local);
-                if (dataCell is null)
-                {
-                    continue;
-                }
-                var rowLabel = leftRowRange[dataCell.Row, leftRowRange.Column].Value;
-                var colLabel = topColumnRange[topColumnRange.Row, dataCell.Col].Value;
-
-                if (string.IsNullOrEmpty(rowLabel) || string.IsNullOrEmpty(colLabel))
-                {
-                    continue;
-                }
-
-                var currencyDim = isMultiCurrency ? currencyRange[currencyRange.Row, cell.Column].Value : "";
-                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colLabel, currencyDim);
+                var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, "");                
                 if (factX is null)
                 {
                     continue;
                 }
-                SaveCellValue(cell, factX);
+                //dataRange[rowLabelCell.Row, colCell.Col].Value;                
+                //SaveCellValue(cell, factX);
             }
         }
 
-        if (isMultiCurrency)
-        {
-            foreach (var cell in currencyRange.Cells)
-            {
-                var mMember = _SqlFunctions.SelectMMember(cell.Value);
-                var domainValue = mMember?.MemberLabel ?? "";
-                cell.Value = domainValue;
 
-            }
-        }
 
         return false;
 
@@ -278,19 +213,19 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
             var val = topColumnRange.Rows.First().Columns.First().Value;
             topColumnRange.Value = val;
-            
-            for (var curIdx = 0; curIdx < CurrencyZetList.Count; curIdx++)                
+
+            for (var curIdx = 0; curIdx < CurrencyZetList.Count; curIdx++)
             {
                 for (var colIdx = 0; colIdx < countCols; colIdx++)
                 {
                     var newCol = topColumnRange.Column + (curIdx * countCols) + colIdx;
-                    topColumnRange[topColumnRange.Row, newCol].Value = originalCols[colIdx];                    
+                    topColumnRange[topColumnRange.Row, newCol].Value = originalCols[colIdx];
                     currencyRange[currencyRange.Row, newCol].Value = CurrencyZetList[curIdx];
                 }
 
             }
         }
-            
+
 
 
         foreach (var dataRow in dataRange.Rows)
@@ -298,7 +233,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             foreach (var cell in dataRow.Cells)
             {
                 var dataCell = HelperRoutines.CreateRowColObject(cell.AddressR1C1Local);
-                if(dataCell is null)
+                if (dataCell is null)
                 {
                     continue;
                 }
@@ -322,7 +257,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         if (isMultiCurrency)
         {
-            foreach(var cell in currencyRange.Cells)
+            foreach (var cell in currencyRange.Cells)
             {
                 var mMember = _SqlFunctions.SelectMMember(cell.Value);
                 var domainValue = mMember?.MemberLabel ?? "";
