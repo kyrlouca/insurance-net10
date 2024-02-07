@@ -130,8 +130,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         dataRange.WrapText = false;
 
 
-        var columnRow =  dataRange.Rows.First();
-        var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow,0,-1,HelperRoutines.HorizontalDirection.Left,HelperRoutines.VerticalDirection.Up);
+        var columnRow = dataRange.Rows.First();
+        var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
         exactColumnRow.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
@@ -187,17 +187,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
 
-        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-        dataRange.ColumnWidth = 30;
-        dataRange.WrapText = false;
-
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
-
         var rowLabels = SelectOpenRowLabels(dbSheet.TemplateSheetId);
 
         var rowIndex = dataRange.Row + 1;
         foreach (var rowLabel in rowLabels)
-        {            
+        {
             foreach (var colCell in columnCells)
             {
                 var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colCell.Value, "");
@@ -211,8 +206,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             rowIndex++;
             Console.Write(".");
         }
+        Console.WriteLine();
+        
+        //style data
+        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+        dataRange.ColumnWidth = 30;
+        dataRange.WrapText = false;
 
-
+        //style columns        
+        var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
+        columnsRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
         return false;
 
