@@ -95,6 +95,15 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
+
+    public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId,int tableId)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSheets = @"Select * from TemplateSheetInstance sheet where sheet.InstanceId= @documentId and sheet.TableID= @tableId";			
+        var sheets = connectionLocal.Query<TemplateSheetInstance>(sqlSheets, new { documentId,tableId });        
+        return sheets.ToList();
+    }
+
     public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter)
     {
         var sqlGetDocument = @"

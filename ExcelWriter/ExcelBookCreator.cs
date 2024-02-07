@@ -96,43 +96,54 @@ public class ExcelBookCreator : IExcelBookWriter
         int START_COL = 1;
         int DATA_ROW_POSITION = 14;
 
+        var shnames = sheets.Select(sh => sh.SheetTabName).ToList();
         foreach (var sheet in sheets)
         {
             Console.WriteLine("process" + sheet?.SheetTabName + "-" + sheet?.TableCode + sheet?.SheetTabName);
 
-            var template = GetTableOrTemplate(sheet.TableCode);
-            if (template is null)
+            var table = _SqlFunctions.SelectTable(sheet?.TableCode ?? "");
+            
+            if (table is null)
                 continue;
-            var xoriginSheet = _originWorkbook.Worksheets[template.TemplateOrTableCode];
-            if (xoriginSheet is null) continue;
-            var xrangexx = xoriginSheet.UsedCells;
-            var usedRange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
-            var dataRange280 = FindDataRange(xoriginSheet);
-            var wholeRange280 = xoriginSheet[1, 1, dataRange280.LastRow, dataRange280.LastColumn];
-
-
-
-            var xsheetName = sheet.SheetTabName.Trim();
-            var xdestSheet = _destinationWorkbook.Worksheets.Create(xsheetName);
-            xdestSheet.Zoom = 80;
-
-
-            var xsavedFile = filename;
-            var (xisSaveValid, xsaveMessage) = HelperRoutines.SaveWorkbook(_destinationWorkbook, xsavedFile);
-            if (!xisSaveValid)
+            var sheetsIndb = _SqlFunctions.SelectTempateSheetsByTableId(_documentId, table.TableID);
+            foreach (var sheetDb in sheetsIndb)
             {
-                _logger.Error(xsaveMessage);
-                _SqlFunctions.CreateTransactionLog(MessageType.ERROR, xsaveMessage);
-                return "";
+                var xoriginSheet = _originWorkbook.Worksheets[table.TableCode.Trim()];
+                 if (xoriginSheet is null) continue;
+                var xrangexx = xoriginSheet.UsedCells;
+                var usedRange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
+                var dataRange280 = FindDataRange(xoriginSheet);
+                var wholeRange280 = xoriginSheet[1, 1, dataRange280.LastRow, dataRange280.LastColumn];
+
+
+
+                var xsheetName = sheet.SheetTabName.Trim();
+                var xdestSheet = _destinationWorkbook.Worksheets.Create(xsheetName);
+                xdestSheet.Zoom = 80;
+
+
+                var _XALL = wholeRange280.AddressLocal;
+                var descRange = CopyRangeToFixedPosition(START_ROW, START_COL, xoriginSheet, xdestSheet, _XALL);
+
+                var descriptionName = $"{xdestSheet.Name.Trim()}_desc";
+                _destinationWorkbook.Names.Remove(descriptionName);
+                var descNamedObject = _destinationWorkbook.Names.Add(descriptionName);
+                descNamedObject.RefersToRange = descRange;
+
             }
+
+
 
         }
 
-
+        ////////////////////////////////////////////////////////
         sheets = sheets.Where(sh => sh.InstanceId == -1).OrderBy(sh => sh.TableID);
         foreach (var sheet in sheets)
         {
 
+            var template = GetTableOrTemplate(sheet.TableCode);
+            if (template is null)
+                continue;
 
             //the template has only 4 parts (S.04.01.01 )
             var filingSheetCode = string.Join(".", sheet.TableCode.Split(".").ToList().GetRange(0, 4));

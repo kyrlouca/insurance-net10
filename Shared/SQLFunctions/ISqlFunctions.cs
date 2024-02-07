@@ -13,6 +13,7 @@ public interface ISqlFunctions
     public IEnumerable<DocInstance> SelectDocInstances(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
 
     List<TemplateSheetInstance> SelectTempateSheets(int documentId);
+    public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId, int tableId);
     public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
     public List<TemplateSheetFactDim> SelectFactDims(int factId);
     MModule? SelectModuleByCode(string moduleCode);
