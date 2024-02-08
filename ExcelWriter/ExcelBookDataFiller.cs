@@ -238,6 +238,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
+        AssignColumnsToYKeys(dbSheet, dataRange);
 
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
         var rowLabels = SelectOpenRowLabels(dbSheet.TemplateSheetId);
@@ -265,6 +266,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         dataRange.ColumnWidth = 30;
         dataRange.WrapText = false;
 
+        ///////////////////////fill keys
+
+
+
+
         //style columns        
         var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
         columnsRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
@@ -289,6 +295,26 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
             var currencyZets = connectionInsurance.Query<string>(sqlCurrency, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
             return currencyZets;
+        }
+
+        void AssignColumnsToYKeys(TemplateSheetInstance dbSheet, IRange dataRange)
+        {            
+            var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
+                  .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
+                  .OrderByDescending(ykey => ykey.OrdinateID);
+
+            var offsetCol = 0;
+            var firstCell = dataRange.Rows.First().First();
+            foreach (var yKey in yOrdinatesForKeys)
+            {
+                var keyPos = firstCell.Offset(0, offsetCol);
+                keyPos.Text = yKey.Col;
+                keyPos.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                var keyLabel = firstCell.Offset(-1, offsetCol);
+                keyLabel.Text = yKey.AxisLabel;
+                keyLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                offsetCol -= 1;
+            }            
         }
     }
 
