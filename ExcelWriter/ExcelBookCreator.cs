@@ -437,6 +437,10 @@ public class ExcelBookCreator : IExcelBookWriter
 
     private IRange FindDataRange(IWorksheet xoriginSheet)
     {
+        //find the first row with "Rxxxx" and the first col with "Cxxxx"
+        //the startRow is always the same row of the Column lables, the endRow is the last row found
+        //for open tables there is no Rxxxx and the last row remains to "A1". therefore, make it the rows of the the column labels Plus 1
+
         var xyrange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
         //var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, s61DataLine.LastColumn];
 
@@ -481,10 +485,7 @@ public class ExcelBookCreator : IExcelBookWriter
                 }
             }
         }
-        if (endRow.AddressLocal == "A1")
-        {
-            var x = 3;
-        }
+        
 
         if (startCol.AddressLocal == "A1")
         {

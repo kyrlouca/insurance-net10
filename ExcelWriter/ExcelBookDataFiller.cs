@@ -229,18 +229,34 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     private bool FillOpenTable280(TemplateSheetInstance dbSheet)
     {
 
-
-        var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
-        var dataRange = dataName.RefersToRange;
+        var dataRangeName = $"{dbSheet.SheetTabName.Trim()}_data";
+        var dataRangeNameObject = Workbook!.Names[dataRangeName];
+        var dataRange = dataRangeNameObject.RefersToRange;
 
 
         var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
-        AssignColumnsToYKeys(dbSheet, dataRange);
 
-        var columnCells = dataRange.Rows.First().Cells.Skip(1);
+        var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
+              .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
+              .OrderByDescending(ykey => ykey.OrdinateID);
+
+
+        
+        
+        //expand the data range to include the keys
+        var dataRangeWithKeys = HelperRoutines.ExtendRangeRowColsDirectional(dataRange, 0, yOrdinatesForKeys.Count()-1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.None);                
+        Workbook.Names.Remove(dataRangeName);
+        var dataNamedObject = Workbook.Names.Add(dataRangeName);
+        dataNamedObject.RefersToRange = dataRangeWithKeys;
+        dataRange= dataNamedObject.RefersToRange;
+
+        var numberOfKeys = AssignColumnsToYKeys(dbSheet, dataRange);
+
+
+        var columnCells = dataRange.Rows.First().Cells;
         var rowLabels = SelectOpenRowLabels(dbSheet.TemplateSheetId);
 
         var rowIndex = dataRange.Row + 1;
@@ -272,7 +288,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //style columns        
-        var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
+        var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRangeWithKeys.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
         columnsRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
 
@@ -297,11 +313,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             return currencyZets;
         }
 
-        void AssignColumnsToYKeys(TemplateSheetInstance dbSheet, IRange dataRange)
+        int AssignColumnsToYKeys(TemplateSheetInstance dbSheet, IRange dataRange)
         {            
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
                   .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
-                  .OrderByDescending(ykey => ykey.OrdinateID);
+                  .OrderBy(ykey => ykey.OrdinateID);
 
             var offsetCol = 0;
             var firstCell = dataRange.Rows.First().First();
@@ -313,8 +329,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 var keyLabel = firstCell.Offset(-1, offsetCol);
                 keyLabel.Text = yKey.AxisLabel;
                 keyLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
-                offsetCol -= 1;
-            }            
+                offsetCol += 1;
+            }
+            return yOrdinatesForKeys.Count();
         }
     }
 

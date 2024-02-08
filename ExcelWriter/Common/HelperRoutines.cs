@@ -120,12 +120,12 @@ internal class HelperRoutines
 
     public enum HorizontalDirection
     {
-        Left, Right
+        Left, Right,None
     };
 
     public enum VerticalDirection
     {
-        Up, Down
+        Up, Down,None
     };
 
     public static IRange ExtendRangeRowColsDirectional(IRange range, int rowInc, int colInc, HorizontalDirection horizontalDirection, VerticalDirection verticalDirection)
@@ -133,11 +133,11 @@ internal class HelperRoutines
         //works with negative numbers as well
         //extends horizontally colInc (right or left) and vertically (up or down) (rowInc) 
 
-        var startRow = verticalDirection == VerticalDirection.Up ? Math.Max(0, range.Row - rowInc) : range.Row;
-        var endRow = verticalDirection == VerticalDirection.Up ? range.LastRow : Math.Max(0, range.LastRow + rowInc);
+        var startRow = verticalDirection == VerticalDirection.Up ? Math.Max(0, range.Row - rowInc) : range.Row;        
+        var endRow = verticalDirection == VerticalDirection.Down ?  Math.Max(0, range.LastRow + rowInc): range.LastRow;
 
         var startCol = horizontalDirection == HorizontalDirection.Left ? Math.Max(0, range.Column - colInc) : range.Column;
-        var endCol = horizontalDirection == HorizontalDirection.Left ? range.LastColumn : Math.Max(0, range.LastColumn + colInc);
+        var endCol = horizontalDirection == HorizontalDirection.Right ?  Math.Max(0, range.LastColumn + colInc): range.LastColumn ;
 
 
         var newRange = range.Worksheet.Range[startRow, startCol, endRow, endCol];
