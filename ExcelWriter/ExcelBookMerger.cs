@@ -92,16 +92,11 @@ public class ExcelBookMerger : IExcelBookMerger
 
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
 
-        var moduleTemplateBundles = CreateTemplateBundlesForModule(_documentInstance.ModuleCode);
+        var moduleTemplateBundles = CreateTemplateBundlesForModule(_documentInstance.ModuleCode,_documentInstance.ModuleId);
 
         ///////////////////////
         foreach (var templateBundle in moduleTemplateBundles)
-        {
-            //var sheetZetCodes=             
-            if (templateBundle.TemplateCode == "S.04.01.01")
-            {
-                var fsdf = 3;
-            }
+        {            
 
             var distinctSheetCodeZets = templateBundle.TableCodes
                 .SelectMany(tc => SelectSheetCodeZets(tc))
@@ -116,6 +111,7 @@ public class ExcelBookMerger : IExcelBookMerger
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(templateBundle.TemplateCode);
             foreach (var sheetCodeZet in distinctSheetCodeZets)
             {
+                //if a specialTemplateLayout was found in the static list, then use it, otherwise create one using the tables in the module
                 var zBundle = specialTemplateLayout is null
                     ? ToZetTemplateBundle(templateBundle, sheetCodeZet)
                     : ToZetTemplateBundleSpecial(specialTemplateLayout, sheetCodeZet, templateBundle.TemplateDescription);
@@ -136,7 +132,7 @@ public class ExcelBookMerger : IExcelBookMerger
         if(s6SpecialTemplateLayout is not null)
         {
             var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, "","abc");
-            FixCombinedS6Form(s6ZetTemplateBundle);
+            //FixCombinedS6Form(s6ZetTemplateBundle);
         }
         
 
@@ -400,16 +396,16 @@ public class ExcelBookMerger : IExcelBookMerger
             }
         }
     }
-    private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode)
+    private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode , int moduleId)
     {
         //templateCode="", tableCode=""
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
         var templateTableBundles = new List<TemplateBundle>();
-
+        //find the grouptables
         var sqlTables = @"
-                SELECT va.TemplateOrTableCode,va.TemplateOrTableLabel
+                SELECT va.TemplateOrTableID, va.TemplateOrTableCode,va.TemplateOrTableLabel
                 FROM mModuleBusinessTemplate mbt
                 LEFT OUTER JOIN mTemplateOrTable va ON va.TemplateOrTableID = mbt.BusinessTemplateID
                 LEFT OUTER JOIN mModule mod ON mbt.ModuleID = mod.ModuleID
@@ -419,23 +415,20 @@ public class ExcelBookMerger : IExcelBookMerger
                 ORDER BY va.TemplateOrTableCode                       ";
         var templateOrTables = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleCode });
 
-
-
+       
         foreach (var tot in templateOrTables)
         {
             var sqlTableCodes = @"
-                SELECT  tab.TableCode
-                FROM mTemplateOrTable va
-                LEFT OUTER JOIN mTemplateOrTable bu ON bu.ParentTemplateOrTableID = va.TemplateOrTableID
-                LEFT OUTER JOIN mTemplateOrTable anno ON anno.ParentTemplateOrTableID = bu.TemplateOrTableID
-                LEFT OUTER JOIN mTaxonomyTable taxo ON taxo.AnnotatedTableID = anno.TemplateOrTableID
-                LEFT OUTER JOIN mTable tab ON tab.TableID = taxo.TableID
-                WHERE 1 = 1
-                    AND va.TemplateOrTableCode = @templateOrTableCode
-                ORDER BY tab.TableCode
-
+                       select  tab.TableCode
+                from mTemplateOrTable child 
+                join mTemplateOrTable par on par.TemplateOrTableID = child.ParentTemplateOrTableID
+                join mTaxonomyTable taxo on taxo.AnnotatedTableID= child.TemplateOrTableID
+                join mTable tab on tab.TableID=taxo.TableID
+                where 1=1
+                and par.TemplateOrTableID= @TemplateOrTableID
+                order by par.TemplateOrTableCode;
                 ";
-            var tableCodes = connectionEiopa.Query<string>(sqlTableCodes, new { tot.TemplateOrTableCode })?.ToList() ?? new List<string>();
+            var tableCodes = connectionEiopa.Query<string>(sqlTableCodes, new { tot.TemplateOrTableID })?.ToList() ?? new List<string>();
             templateTableBundles.Add(new TemplateBundle(tot.TemplateOrTableCode, tot.TemplateOrTableLabel, tableCodes));
 
 

@@ -6,6 +6,7 @@ using Shared.DataModels;
 using Shared.GeneralUtils;
 using Shared.HostParameters;
 using Shared.SharedHost;
+using Syncfusion.XlsIO.Implementation.Collections;
 using System.Collections.Generic;
 
 public class SqlFunctions : ISqlFunctions
@@ -168,7 +169,7 @@ public class SqlFunctions : ISqlFunctions
         return result;
     }
 
-
+    
 
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mappingOrigin)
     {

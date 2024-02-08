@@ -171,6 +171,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         dataRange.ColumnWidth = 30;
         dataRange.WrapText = false;
 
+
+
         //style columns        
         var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
         columnsRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
@@ -230,6 +232,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
+
+
+        var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
+        var wholeRange = wholeRangeName.RefersToRange;
+
+        ClearLinks(wholeRange);
 
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
         var rowLabels = SelectOpenRowLabels(dbSheet.TemplateSheetId);
