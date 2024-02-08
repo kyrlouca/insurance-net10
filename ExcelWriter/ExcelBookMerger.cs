@@ -14,6 +14,7 @@ using System.Reflection.Metadata;
 using Syncfusion.XlsIO.Implementation;
 using ExcelWriter.Common;
 using Shared.SQLFunctions;
+using System.Text.RegularExpressions;
 
 public class ExcelBookMerger : IExcelBookMerger
 {
@@ -327,7 +328,10 @@ public class ExcelBookMerger : IExcelBookMerger
                 var dRow = offsetVERTICAL + sheetLastRow;
                 var destRange = destSheet.Range[offsetVERTICAL, OffesetHORIZONTAL, offsetVERTICAL + sheetLastRow - 1, OffesetHORIZONTAL + sheetLastCol - 1];
 
+                
                 copyRange.CopyTo(destRange);
+                //copyRange.CopyTo(destRange, ExcelCopyRangeOptions.CopyValueAndSourceFormatting);
+
 
                 //save the ranges of the dest
                 SaveDestDataName(destSheet, offsetVERTICAL, OffesetHORIZONTAL, srcWorksheet);
@@ -352,6 +356,12 @@ public class ExcelBookMerger : IExcelBookMerger
             destRange.ColumnWidth = 30;
             if (!isOpenTable)
             {
+
+                var dataName = worksheet!.Workbook.Names[$"{worksheet.Name.Trim()}_data"];
+                var dataRange = dataName.RefersToRange;
+                var rowWithLabels = dataRange.Rows.Skip(1).First();
+                var rowRgx = new Regex(@"^R\d{4}");
+                var row = rowWithLabels.Cells.Where(cell => rowRgx.IsMatch(cell.Value));
 
                 if ((destRange.LastColumn - destRange.Column) > 1)
                 {

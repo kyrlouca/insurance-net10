@@ -253,7 +253,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         dataNamedObject.RefersToRange = dataRangeWithKeys;
         dataRange= dataNamedObject.RefersToRange;
 
-        var numberOfKeys = AssignColumnsToYKeys(dbSheet, dataRange);
+        var numberOfKeys = AssignYKeysToColumns(dbSheet, dataRange);
 
 
         var columnCells = dataRange.Rows.First().Cells;
@@ -313,7 +313,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             return currencyZets;
         }
 
-        int AssignColumnsToYKeys(TemplateSheetInstance dbSheet, IRange dataRange)
+        int AssignYKeysToColumns(TemplateSheetInstance dbSheet, IRange dataRange)
         {            
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
                   .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
