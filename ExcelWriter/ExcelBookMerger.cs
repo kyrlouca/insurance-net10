@@ -69,7 +69,7 @@ public class ExcelBookMerger : IExcelBookMerger
         if (SourceWorkbook is null)
         {
             _logger.Error(originMessage);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, originMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, originMessage);
             return false;
         }
 
@@ -78,7 +78,7 @@ public class ExcelBookMerger : IExcelBookMerger
         if (DestWorkbook is null)
         {
             _logger.Error(destMessage);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, destMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, destMessage);
             return false;
         }
 
@@ -92,11 +92,11 @@ public class ExcelBookMerger : IExcelBookMerger
 
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
 
-        var moduleTemplateBundles = CreateTemplateBundlesForModule(_documentInstance.ModuleCode,_documentInstance.ModuleId);
+        var moduleTemplateBundles = CreateTemplateBundlesForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
 
         ///////////////////////
         foreach (var templateBundle in moduleTemplateBundles)
-        {            
+        {
 
             var distinctSheetCodeZets = templateBundle.TableCodes
                 .SelectMany(tc => SelectSheetCodeZets(tc))
@@ -129,12 +129,12 @@ public class ExcelBookMerger : IExcelBookMerger
         ///////////////////////
 
         var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
-        if(s6SpecialTemplateLayout is not null)
+        if (s6SpecialTemplateLayout is not null)
         {
-            var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, "","abc");
+            var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, "", "abc");
             //FixCombinedS6Form(s6ZetTemplateBundle);
         }
-        
+
 
         var indexSheet = RenderIndexList(indexList);
 
@@ -142,11 +142,11 @@ public class ExcelBookMerger : IExcelBookMerger
 
         var ss = DestWorkbook.TabSheets.Count;
 
-         (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
+        (var isValidSave, var destSaveMessage) = HelperRoutines.SaveWorkbook(DestWorkbook, destFile);
         if (!isValidSave)
         {
             _logger.Error(destSaveMessage);
-            _SqlFunctions.CreateTransactionLog( MessageType.ERROR, destSaveMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, destSaveMessage);
             return false;
         }
 
@@ -300,8 +300,15 @@ public class ExcelBookMerger : IExcelBookMerger
                 var isOpenTable = ztbSheet.DbSheet?.IsOpenTable ?? false;
 
                 var srcWorksheet = ztbSheet.WorkSheet;
+
                 if (srcWorksheet is null)
                 {
+                    //they do not want the empty anymr
+                    continue;
+                }
+                if (srcWorksheet is null)
+                {
+
                     //noramlly you write the description of the empty table
                     var emptyTableCode = destSheet[offsetVERTICAL, OffesetHORIZONTAL];
                     emptyTableCode.Text = $"{ztbSheet.TableCode} - empty table";
@@ -396,7 +403,7 @@ public class ExcelBookMerger : IExcelBookMerger
             }
         }
     }
-    private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode , int moduleId)
+    private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode, int moduleId)
     {
         //templateCode="", tableCode=""
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -415,7 +422,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 ORDER BY va.TemplateOrTableCode                       ";
         var templateOrTables = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleCode });
 
-       
+
         foreach (var tot in templateOrTables)
         {
             var sqlTableCodes = @"
