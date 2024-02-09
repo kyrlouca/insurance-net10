@@ -351,32 +351,39 @@ public class ExcelBookMerger : IExcelBookMerger
         return true;
         /////////////////////////////////////////////////////////////////////        
 
-        static void FormatColumnsWidth(bool isOpenTable, IWorksheet? worksheet, IRange destRange)
+        static void FormatColumnsWidth(bool isOpenTable, IWorksheet worksheet, IRange destRange)
         {
             destRange.ColumnWidth = 30;
+            destRange.WrapText = false;
             if (!isOpenTable)
             {
 
-                var dataName = worksheet!.Workbook.Names[$"{worksheet.Name.Trim()}_data"];
-                var dataRange = dataName.RefersToRange;
-                var rowWithLabels = dataRange.Rows.Skip(1).First();
-                var rowRgx = new Regex(@"^R\d{4}");
-                var row = rowWithLabels.Cells.Where(cell => rowRgx.IsMatch(cell.Value));
+                //var dataName = worksheet!.Workbook.Names[$"{worksheet.Name.Trim()}_data"];
+                //var dataRange = dataName.RefersToRange;
 
-                if ((destRange.LastColumn - destRange.Column) > 1)
+                //destRange.Columns[0].ColumnWidth = 40;               
+
+                var rowWithLabels = destRange.Rows.Skip(1).First();
+                var rowRgx = new Regex(@"^R\d{4}");
+                try
                 {
-                    destRange.Columns[0].ColumnWidth = 50;
-                    destRange.Columns[0].WrapText = false;
-                    destRange.Columns[1].ColumnWidth = 10;
-                }
-                if (destRange.LastColumn - destRange.Column == 3)
-                {
-                    WorksheetImpl.TRangeValueType cellType = (worksheet as WorksheetImpl).GetCellType(destRange.LastRow - 1, 3, false);
+                    IRange cellWithRowlabel = rowWithLabels.Cells.First(cell => rowRgx.IsMatch(cell.Value));                    
+                    destRange.Columns[cellWithRowlabel.Column].ColumnWidth = 10;
+
+                    var firstDataCell = cellWithRowlabel.Offset(0, 1);
+                    WorksheetImpl.TRangeValueType cellType = ((WorksheetImpl)worksheet).GetCellType(firstDataCell.Row,firstDataCell.Column, false);
                     if (cellType.ToString() != "Number")
                     {
-                        destRange.Columns[2].ColumnWidth = 80;
+                        //firstDataCell.ColumnWidth = 60;
                     }
+
                 }
+                catch
+                {
+                    var xx3 = 3;
+                }                                
+                                                
+                
             }
         }
 
