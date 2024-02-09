@@ -288,11 +288,13 @@ public class ExcelBookMerger : IExcelBookMerger
 
         destSheet.Zoom = 80;
 
+        var countVerticals = 0;
         var offsetVERTICAL = 1;
         foreach (var vertical in zetTemplateBundle.TableMatrix)
         {
             //check if there is at least one sheet which is not null in tableMatrix 
-            var hasTable = zetTemplateBundle.TableMatrix.Any(line => line.HorizontalTables.Any(ht => ht.WorkSheet is not null));
+            var hasTablexx = zetTemplateBundle.TableMatrix.Any(line => line.HorizontalTables.Any(ht => ht.WorkSheet is not null));
+            countVerticals++;
 
             var maxTableHeight = 0;
             var OffesetHORIZONTAL = 1;
@@ -328,7 +330,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 var dRow = offsetVERTICAL + sheetLastRow;
                 var destRange = destSheet.Range[offsetVERTICAL, OffesetHORIZONTAL, offsetVERTICAL + sheetLastRow - 1, OffesetHORIZONTAL + sheetLastCol - 1];
 
-                
+
                 copyRange.CopyTo(destRange);
                 //copyRange.CopyTo(destRange, ExcelCopyRangeOptions.CopyValueAndSourceFormatting);
 
@@ -339,6 +341,8 @@ public class ExcelBookMerger : IExcelBookMerger
 
                 CreateLinkToHomePage(destSheet);
                 FormatColumnsWidth(isOpenTable, srcWorksheet, destRange);
+
+
 
                 maxTableHeight = Math.Max(maxTableHeight, sheetLastRow);
 
@@ -355,35 +359,43 @@ public class ExcelBookMerger : IExcelBookMerger
         {
             destRange.ColumnWidth = 30;
             destRange.WrapText = false;
+            IRange labelCell = destRange["A1"];
+            var rowRgxN = new Regex(@"^R\d{4}");
+            var colRgxN = new Regex(@"^C\d{4}");
             if (!isOpenTable)
             {
-
-                //var dataName = worksheet!.Workbook.Names[$"{worksheet.Name.Trim()}_data"];
-                //var dataRange = dataName.RefersToRange;
-
-                //destRange.Columns[0].ColumnWidth = 40;               
-
-                var rowWithLabels = destRange.Rows.Skip(1).First();
-                var rowRgx = new Regex(@"^R\d{4}");
-                try
+                var rowCounter = 0;
+                foreach (var row in destRange.Rows)
                 {
-                    IRange cellWithRowlabel = rowWithLabels.Cells.First(cell => rowRgx.IsMatch(cell.Value));                    
-                    destRange.Columns[cellWithRowlabel.Column].ColumnWidth = 10;
-
-                    var firstDataCell = cellWithRowlabel.Offset(0, 1);
-                    WorksheetImpl.TRangeValueType cellType = ((WorksheetImpl)worksheet).GetCellType(firstDataCell.Row,firstDataCell.Column, false);
-                    if (cellType.ToString() != "Number")
+                    rowCounter++;
+                    if (rowCounter > 10)
                     {
-                        //firstDataCell.ColumnWidth = 60;
+                        break;
                     }
+                    try
+                    {
+                        labelCell = row.Cells.First(cell => rowRgxN.IsMatch(cell.Value));
+                        labelCell.ColumnWidth = 10;
 
+
+                        var secondDataCell = labelCell.Offset(-1, 2);                        
+                        var firstDataCell = labelCell.Offset(0, 1);
+
+                        WorksheetImpl.TRangeValueType firstDatacellType = ((WorksheetImpl)worksheet).GetCellType(firstDataCell.Row, firstDataCell.Column, false);
+                        if (colRgxN.IsMatch(secondDataCell.Text) && firstDatacellType.ToString() != "Number")
+                        {
+                            firstDataCell.ColumnWidth = 60;
+                        }
+                        break;
+                    }
+                    catch
+                    {
+                        var xxs = 3;
+                    }
+                    
                 }
-                catch
-                {
-                    var xx3 = 3;
-                }                                
-                                                
-                
+
+
             }
         }
 
