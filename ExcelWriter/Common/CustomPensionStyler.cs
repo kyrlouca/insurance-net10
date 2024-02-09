@@ -54,8 +54,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         
         var styleName = "HeaderStyle";
         IStyle style = GetOrCreateStyle(styleName);
-
-
+        style.Font.Size = 15;
         style.Font.Bold = true;
 
         return style;

@@ -171,6 +171,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
 
         var titles = FindTopLabelsRange(wholeRange, dataRange);
+        if(titles is not null)
+        {
+            titles.CellStyle.Font.Size = 11;
+        }
+        
 
         //table code
         var tableCodeRange = wholeRange[1, 1];
@@ -227,23 +232,31 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
-    private IRange FindTopLabelsRange(IRange wholeRange, IRange dataRange)
+    private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange)
     {
-        var counter = 0;
-        var startingRow = dataRange.Row - 1;
-        foreach (var count in Enumerable.Range(startingRow, 1))
-        {
-            var row = wholeRange.Rows[count];
-            var isEmptyRow = row.IsNullOrEmpty();
+        IRange aboveRange = null; ;
+        var rowsTocheck = wholeRange[1, dataRange.Column + 1, dataRange.Row - 1, dataRange.LastColumn];
+        var xx = 33;
 
-            if (isEmptyRow)
+
+
+
+        foreach (var row in rowsTocheck.Rows.Reverse()) 
+        {            
+            var cells=row.Cells.Select(cel=>cel.Text).ToList();
+            var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
+            if (!hasValue)
             {
-                counter = count;
+                aboveRange = row;
                 break;
             }
+        }     
+        if (aboveRange == null)
+        {
+            return null;
         }
-        var xx = counter;
-        return wholeRange[startingRow, dataRange.Column + 1, counter + 1, dataRange.LastColumn]; ;
+        var titleRange = wholeRange[aboveRange.Row + 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
+        return titleRange;
     }
 
     private bool FillOpenTable280(TemplateSheetInstance dbSheet)
@@ -296,6 +309,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             Console.Write(".");
         }
         Console.WriteLine();
+
+        var titles = FindTopLabelsRange(wholeRange, dataRange);
+        if (titles is not null)
+        {
+            titles.CellStyle.Font.Size = 11;
+            titles.CellStyle.ColorIndex = ExcelKnownColors.Custom18;
+        }
+
 
         //style data
         dataRange.CellStyle = _pensionStyles.DataSectionStyle;
