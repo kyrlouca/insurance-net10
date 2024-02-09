@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using System.Linq.Expressions;
 using ExcelWriter.Common;
 using Shared.SQLFunctions;
+using Microsoft.IdentityModel.Tokens;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -119,6 +120,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
 
+    private static void ClearLinks(IRange range)
+    {
+
+        if (range.Hyperlinks.Count > 0)
+            for (int i = range.Hyperlinks.Count; i >= 1; i--)
+            {
+                range.Hyperlinks.RemoveAt(i - 1);
+            }
+    }
+
     private bool FillClosedTable280(TemplateSheetInstance dbSheet)
     {
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
@@ -159,6 +170,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
         }
 
+        var titles = FindTopLabelsRange(wholeRange, dataRange);
 
         //table code
         var tableCodeRange = wholeRange[1, 1];
@@ -215,16 +227,24 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
-    private void ClearLinks(IRange range)
-    {        
-        
-        if (range.Hyperlinks.Count > 0)
-            for (int i = range.Hyperlinks.Count; i >= 1; i--)
-            {
-                range.Hyperlinks.RemoveAt(i - 1);
-            }        
-    }
+    private IRange FindTopLabelsRange(IRange wholeRange, IRange dataRange)
+    {
+        var counter = 0;
+        var startingRow = dataRange.Row - 1;
+        foreach (var count in Enumerable.Range(startingRow, 1))
+        {
+            var row = wholeRange.Rows[count];
+            var isEmptyRow = row.IsNullOrEmpty();
 
+            if (isEmptyRow)
+            {
+                counter = count;
+                break;
+            }
+        }
+        var xx = counter;
+        return wholeRange[startingRow, dataRange.Column + 1, counter + 1, dataRange.LastColumn]; ;
+    }
 
     private bool FillOpenTable280(TemplateSheetInstance dbSheet)
     {
@@ -288,8 +308,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //style columns        
-        var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRangeWithKeys.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
-        columnsRange.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+        //var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRangeWithKeys.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
+        var columnLabels = dataRangeWithKeys.Rows.First();
+        columnLabels.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
 
 
@@ -313,6 +334,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             return currencyZets;
         }
 
+
         int AssignYKeysToColumns(TemplateSheetInstance dbSheet, IRange dataRange)
         {            
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
@@ -325,10 +347,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             {
                 var keyPos = firstCell.Offset(0, offsetCol);
                 keyPos.Text = yKey.Col;
-                keyPos.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                //keyPos.CellStyle = _pensionStyles.TopColumnNumbersStyle;
                 var keyLabel = firstCell.Offset(-1, offsetCol);
                 keyLabel.Text = yKey.AxisLabel;
-                keyLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                //keyLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
                 offsetCol += 1;
             }
             return yOrdinatesForKeys.Count();

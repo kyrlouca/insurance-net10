@@ -359,7 +359,7 @@ public class ExcelBookMerger : IExcelBookMerger
         {
             destRange.ColumnWidth = 30;
             destRange.WrapText = false;
-            IRange labelCell = destRange["A1"];
+            IRange rowLabelCell = destRange["A1"];
             var rowRgxN = new Regex(@"^R\d{4}");
             var colRgxN = new Regex(@"^C\d{4}");
             if (!isOpenTable)
@@ -367,6 +367,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 var rowCounter = 0;
                 foreach (var row in destRange.Rows)
                 {
+                    var cells = row.Cells;
                     rowCounter++;
                     if (rowCounter > 10)
                     {
@@ -374,15 +375,16 @@ public class ExcelBookMerger : IExcelBookMerger
                     }
                     try
                     {
-                        labelCell = row.Cells.First(cell => rowRgxN.IsMatch(cell.Value));
-                        labelCell.ColumnWidth = 10;
+                        rowLabelCell = row.Cells.First(cell => rowRgxN.IsMatch(cell.Value));
+                        rowLabelCell.ColumnWidth = 10;
 
 
-                        var secondDataCell = labelCell.Offset(-1, 2);                        
-                        var firstDataCell = labelCell.Offset(0, 1);
-
+                        var secondColCell = rowLabelCell.Offset(-1, 2);                        
+                        var firstDataCell = rowLabelCell.Offset(0, 1);
+                        var type = ((WorksheetImpl)worksheet).GetCellType(firstDataCell.Row, firstDataCell.Column, false);
                         WorksheetImpl.TRangeValueType firstDatacellType = ((WorksheetImpl)worksheet).GetCellType(firstDataCell.Row, firstDataCell.Column, false);
-                        if (colRgxN.IsMatch(secondDataCell.Text) && firstDatacellType.ToString() != "Number")
+                        var isColumn = colRgxN.IsMatch(secondColCell.Text??"");
+                        if (!isColumn && firstDatacellType.ToString() == "String")
                         {
                             firstDataCell.ColumnWidth = 60;
                         }
