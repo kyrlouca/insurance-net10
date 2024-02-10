@@ -113,7 +113,7 @@ public partial class FactsDecorator : IFactsDecorator
             List<string> distinctFactZetStrings = tableFacts
                     .GroupBy(fact => fact.ZetValues ?? "")
                     .Select(group => group.Key).ToList();
-
+            Console.WriteLine($"\n---Grouping table facts by Zet");
             List<SheetInfoType> sheetsInfo = CreateSheetForEachZetGroup(table, distinctFactZetStrings);
             
             //*********** Assign facts to sheets and update fact row, col, etc
@@ -341,7 +341,7 @@ public partial class FactsDecorator : IFactsDecorator
             .Where(ord => ord.AxisOrientation == "Z")
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
-        var currenciesAndCountryDims = new List<string>() { "OC", "CU","VG" };
+        var currenciesAndCountryDims = new List<string>() { "OC", "CU" };
         var currencyDims = zDims.Where(zd => currenciesAndCountryDims.Contains(zd)).ToList();
         var xxx = 2;    
 
