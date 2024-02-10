@@ -82,7 +82,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             {
                 var x = 2;
             }
-            
+
 
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
             //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
@@ -171,11 +171,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
 
         var titles = FindTopLabelsRange(wholeRange, dataRange);
-        if(titles is not null)
+        if (titles is not null)
         {
             titles.CellStyle.Font.Size = 11;
         }
-        
+
 
         //table code
         var tableCodeRange = wholeRange[1, 1];
@@ -184,10 +184,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //data
-        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+        //dataRange.CellStyle = _pensionStyles.DataSectionStyle;
         dataRange.ColumnWidth = 30;
         dataRange.WrapText = false;
 
+         FormatDataSectionColors(dataRange);
 
 
         //style columns        
@@ -205,7 +206,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         rowDescriptionRange.CellStyle.ColorIndex = ExcelKnownColors.Custom18;
         rowDescriptionRange.CellStyle.Font.Size = 11;
 
-        
+
         //rowDescriptionRange.CellStyle = _pensionStyles.LeftLabelStyle;
         //rowDescriptionRange.AutofitColumns();
         rowDescriptionRange.ColumnWidth = 40;
@@ -232,25 +233,41 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
+
+    private static void FormatDataSectionColors(IRange dataRange)
+    {
+        foreach (var cell in dataRange.Cells)
+        {
+            var diagonal = cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle;
+            if (diagonal == ExcelLineStyle.Thin)
+            {
+                cell.CellStyle.ColorIndex = ExcelKnownColors.Grey_50_percent;
+                cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
+                cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
+            }
+
+        }
+    }
+
     private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange)
     {
         IRange aboveRange = null; ;
-        var rowsTocheck = wholeRange[1, dataRange.Column + 1, dataRange.Row - 1, dataRange.LastColumn];
+        var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
         var xx = 33;
 
 
 
 
-        foreach (var row in rowsTocheck.Rows.Reverse()) 
-        {            
-            var cells=row.Cells.Select(cel=>cel.Text).ToList();
+        foreach (var row in rowsTocheck.Rows.Reverse())
+        {
+            var cells = row.Cells.Select(cel => cel.Text).ToList();
             var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
             if (!hasValue)
             {
                 aboveRange = row;
                 break;
             }
-        }     
+        }
         if (aboveRange == null)
         {
             return null;
@@ -277,14 +294,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
               .OrderByDescending(ykey => ykey.OrdinateID);
 
 
-        
-        
+
+
         //expand the data range to include the keys
-        var dataRangeWithKeys = HelperRoutines.ExtendRangeRowColsDirectional(dataRange, 0, yOrdinatesForKeys.Count()-1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.None);                
+        var dataRangeWithKeys = HelperRoutines.ExtendRangeRowColsDirectional(dataRange, 0, yOrdinatesForKeys.Count() - 1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.None);
         Workbook.Names.Remove(dataRangeName);
         var dataNamedObject = Workbook.Names.Add(dataRangeName);
         dataNamedObject.RefersToRange = dataRangeWithKeys;
-        dataRange= dataNamedObject.RefersToRange;
+        dataRange = dataNamedObject.RefersToRange;
 
         var numberOfKeys = AssignYKeysToColumns(dbSheet, dataRange);
 
@@ -314,13 +331,18 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (titles is not null)
         {
             titles.CellStyle.Font.Size = 11;
-            titles.CellStyle.ColorIndex = ExcelKnownColors.Custom18;
+            titles.CellStyle.ColorIndex = ExcelKnownColors.Custom14;
+            titles.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+            titles.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+            titles.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+            titles.CellStyle.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
+
         }
 
 
         //style data
         dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-        dataRange.ColumnWidth = 30;
+        dataRange.ColumnWidth = 20;
         dataRange.WrapText = false;
 
         ///////////////////////fill keys
@@ -357,7 +379,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         int AssignYKeysToColumns(TemplateSheetInstance dbSheet, IRange dataRange)
-        {            
+        {
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
                   .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
                   .OrderBy(ykey => ykey.OrdinateID);

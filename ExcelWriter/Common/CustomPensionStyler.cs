@@ -69,6 +69,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         //style.Color = Syncfusion.Drawing.Color.Red;
         style.Font.Color = ExcelKnownColors.Red;
         style.Font.Underline = ExcelUnderline.Single;
+        style.Font.Size = 12;
         //style.FillPattern = ExcelPattern.DarkUpwardDiagonal;
         style.Font.Bold = true;
         return style;

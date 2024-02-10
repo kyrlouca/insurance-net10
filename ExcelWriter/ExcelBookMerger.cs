@@ -357,13 +357,15 @@ public class ExcelBookMerger : IExcelBookMerger
 
         static void FormatColumnsWidth(bool isOpenTable, IWorksheet worksheet, IRange destRange)
         {
-            destRange.ColumnWidth = 30;
+            destRange.ColumnWidth = isOpenTable? 30 : 20;
             destRange.WrapText = false;
             IRange rowLabelCell = destRange["A1"];
             var rowRgxN = new Regex(@"^R\d{4}");
             var colRgxN = new Regex(@"^C\d{4}");
+            
             if (!isOpenTable)
             {
+                
                 var rowCounter = 0;
                 foreach (var row in destRange.Rows)
                 {
