@@ -28,7 +28,7 @@ public interface ISqlFunctions
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mapping);
     public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
-    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, MTable table);
+    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, string zDimVal, MTable table);    
     public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact);
     public ContextModel? CreateContext(ContextModel context);
 

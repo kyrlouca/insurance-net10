@@ -197,14 +197,14 @@ public partial class FactsDecorator : IFactsDecorator
         var sheetCount = 1;
         foreach (var FactZetValue in FactZetValuesList)
         {
-
+            
             var sheetCode = string.IsNullOrEmpty(FactZetValue)
                     ? table.TableCode
                     : $"{table.TableCode}__{FactZetValue}";
 
             var sheetName = $"{table.TableCode}__{sheetCount:D2}";
-
-            var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName, table);
+            
+            var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName,FactZetValue, table);
             Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
             sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, FactZetValue, sheetName, sheet.YDimVal));
             sheetCount++;

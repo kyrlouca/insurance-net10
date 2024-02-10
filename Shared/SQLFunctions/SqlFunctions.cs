@@ -236,7 +236,7 @@ public class SqlFunctions : ISqlFunctions
 
 
 
-    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, MTable table)
+    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, string zDimVal, MTable table)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var SqlInsertTemplateSheet = @"
@@ -289,8 +289,8 @@ public class SqlFunctions : ISqlFunctions
             SheetCode = sheetCode,
             SheetCodeZet = sheetCodeZet,
             SheetTabName = sheetTabName,
-            YDimVal = table.YDimVal ?? "",
-            ZDimVal = table.ZDimVal ?? "",
+            YDimVal = "xx",
+            ZDimVal = zDimVal,
             Status = "LD",
             Description = table.TableLabel.TruncateString(199),
             XbrlFilingIndicatorCode = table.XbrlFilingIndicatorCode,

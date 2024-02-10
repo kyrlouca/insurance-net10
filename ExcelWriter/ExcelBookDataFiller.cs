@@ -145,7 +145,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ClearLinks(wholeRange);
 
         var zetDescription = SelectZetValues(dbSheet);
-        wholeRange["A3"].Text = zetDescription;
+        var ZetRange = wholeRange["A3:B3"];
+        ZetRange.Text = zetDescription;
+        ZetRange.CellStyle.Font.Size = 11;
 
 
         var columnRow = dataRange.Rows.First();
@@ -217,89 +219,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         return false;
-
-        List<string> GetFactCurrencyZets()
-        {
-            var sqlCurrency = @"
-                SELECT fact.CurrencyDim
-                FROM
-                  TemplateSheetFact fact
-                WHERE
-                  fact.TemplateSheetId = @sheetId
-                GROUP BY
-                  fact.CurrencyDim;
-                ";
-
-            using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-            var currencyZets = connectionInsurance.Query<string>(sqlCurrency, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
-            return currencyZets;
-        }
-
-        
-    }
-
-    string SelectZetValues(TemplateSheetInstance dbSheet)
-    {
-        var zDimsxx = dbSheet.ZDimVal;
-
-        var zDims = dbSheet.ZDimVal
-            .Split("|")
-            .Select(zdim =>
-            {
-                var dim = DimDom.GetParts(zdim);
-                var dimObj= _SqlFunctions.SelectDimensionByCode(dim.Dom, dim.Dim);
-                return $"{zdim}--{dimObj?.DimensionLabel}";
-            })
-            .Where(dim=> dim is not null);
-        var res = string.Join("--", zDims);
-        return res??"";
-    }
-
-    private static void FormatDataSectionColors(IRange dataRange)
-    {
-        foreach (var cell in dataRange.Cells)
-        {
-            var diagonal = cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle;
-            if (diagonal == ExcelLineStyle.Thin)
-            {
-                cell.CellStyle.ColorIndex = ExcelKnownColors.Grey_50_percent;
-                cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
-                cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
-            }
-
-        }
-    }
-
-    private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange)
-    {
-        IRange aboveRange = null; ;
-        var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
-        var xx = 33;
-
-
-
-
-        foreach (var row in rowsTocheck.Rows.Reverse())
-        {
-            var cells = row.Cells.Select(cel => cel.Text).ToList();
-            var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
-            if (!hasValue)
-            {
-                aboveRange = row;
-                break;
-            }
-        }
-        if (aboveRange == null)
-        {
-            return null;
-        }
-        var titleRange = wholeRange[aboveRange.Row + 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
-        return titleRange;
     }
 
     private bool FillOpenTable280(TemplateSheetInstance dbSheet)
     {
-
+        
         var dataRangeName = $"{dbSheet.SheetTabName.Trim()}_data";
         var dataRangeNameObject = Workbook!.Names[dataRangeName];
         var dataRange = dataRangeNameObject.RefersToRange;
@@ -310,11 +234,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         ClearLinks(wholeRange);
 
+        var zetDescription = SelectZetValues(dbSheet);
+        var ZetRange = wholeRange["A3"];
+        ZetRange.Text = zetDescription;
+        ZetRange.CellStyle.Font.Size = 11;
+
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
               .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
               .OrderByDescending(ykey => ykey.OrdinateID);
-
-
 
 
         //expand the data range to include the keys
@@ -381,23 +308,6 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         return false;
 
-        List<string> GetFactCurrencyZets()
-        {
-            var sqlCurrency = @"
-                SELECT fact.CurrencyDim
-                FROM
-                  TemplateSheetFact fact
-                WHERE
-                  fact.TemplateSheetId = @sheetId
-                GROUP BY
-                  fact.CurrencyDim;
-                ";
-
-            using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-            var currencyZets = connectionInsurance.Query<string>(sqlCurrency, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
-            return currencyZets;
-        }
-
 
         int AssignYKeysToColumns(TemplateSheetInstance dbSheet, IRange dataRange)
         {
@@ -419,6 +329,63 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
             return yOrdinatesForKeys.Count();
         }
+    }
+
+    string SelectZetValues(TemplateSheetInstance dbSheet)
+    {
+        var zDims = dbSheet.ZDimVal
+            .Split("|")
+            .Select(zdim =>
+            {
+                var dim = DimDom.GetParts(zdim);
+                var dimObj = _SqlFunctions.SelectDimensionByCode(dim.Dom, dim.Dim);
+                return $"{dim.Dim}-{dimObj?.DimensionLabel}";
+            })
+            .Where(dim => dim is not null);
+        var res = string.Join("|", zDims);
+        return res ?? "";
+    }
+
+    private static void FormatDataSectionColors(IRange dataRange)
+    {
+        foreach (var cell in dataRange.Cells)
+        {
+            var diagonal = cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle;
+            if (diagonal == ExcelLineStyle.Thin)
+            {
+                cell.CellStyle.ColorIndex = ExcelKnownColors.Grey_50_percent;
+                cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
+                cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
+            }
+
+        }
+    }
+
+    private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange)
+    {
+        IRange aboveRange = null; ;
+        var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
+        var xx = 33;
+
+
+
+
+        foreach (var row in rowsTocheck.Rows.Reverse())
+        {
+            var cells = row.Cells.Select(cel => cel.Text).ToList();
+            var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
+            if (!hasValue)
+            {
+                aboveRange = row;
+                break;
+            }
+        }
+        if (aboveRange == null)
+        {
+            return null;
+        }
+        var titleRange = wholeRange[aboveRange.Row + 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
+        return titleRange;
     }
 
 
