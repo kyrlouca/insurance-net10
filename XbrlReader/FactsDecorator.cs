@@ -340,7 +340,9 @@ public partial class FactsDecorator : IFactsDecorator
             .Where(ord => ord.AxisOrientation == "Z")
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
-
+        var currenciesAndCountryDims = new List<string>() { "OC", "CU" };
+        var currencyDims = zDims.Where(zd => currenciesAndCountryDims.Contains(zd)).ToList();
+            
 
         //*********************************************************************************
         //for each RowCol of this table, select the facts which have the exact dims (open or close) 
@@ -369,7 +371,7 @@ public partial class FactsDecorator : IFactsDecorator
                 Console.Write(".");                
                 var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims);                
                 var zetValues = BuildFactZetValues(cellFact.DataPointSignature,zDims);
-                var currencyValues = BuildCurrencyValues(cellFact.DataPointSignature, currencyDims);
+                var currencyValues = BuildFactCurrencyDims(cellFact.DataPointSignature, currencyDims);
 
                 cellFact.RowSignature = rowSignature;
                 cellFact.ZetValues = zetValues;
@@ -445,7 +447,7 @@ public partial class FactsDecorator : IFactsDecorator
     }
 
 
-    private static string BuildCurrencyValues(string signature, IEnumerable<string> zDims)
+    private static string BuildFactCurrencyDims(string signature, IEnumerable<string> zDims)
     {
         //build the row signature using only the ydims
         var dims = signature.Split("|", StringSplitOptions.RemoveEmptyEntries)
