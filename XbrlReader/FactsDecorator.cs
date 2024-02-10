@@ -335,6 +335,9 @@ public partial class FactsDecorator : IFactsDecorator
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
+        var ZDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
+            .Where(ord => ord.AxisOrientation == "Z")
+            .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
 
 
@@ -495,6 +498,8 @@ public partial class FactsDecorator : IFactsDecorator
 
     private void AssignFactsToSheet280(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
     {
+
+        
         //***** Assign each fact to ist sheet depending on the zet 
         foreach (var tableFact in tableFacts)
         {

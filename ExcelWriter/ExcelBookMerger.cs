@@ -357,15 +357,18 @@ public class ExcelBookMerger : IExcelBookMerger
 
         static void FormatColumnsWidth(bool isOpenTable, IWorksheet worksheet, IRange destRange)
         {
-            destRange.ColumnWidth = isOpenTable? 30 : 20;
+            //destRange.ColumnWidth = isOpenTable? 30 : 20;
             destRange.WrapText = false;
             IRange rowLabelCell = destRange["A1"];
             var rowRgxN = new Regex(@"^R\d{4}");
             var colRgxN = new Regex(@"^C\d{4}");
-            
+            if (isOpenTable)
+            {
+                destRange.ColumnWidth = 20;
+            }
             if (!isOpenTable)
             {
-                
+                destRange.ColumnWidth = 30;
                 var rowCounter = 0;
                 foreach (var row in destRange.Rows)
                 {
@@ -381,11 +384,11 @@ public class ExcelBookMerger : IExcelBookMerger
                         rowLabelCell.ColumnWidth = 10;
 
 
-                        var secondColCell = rowLabelCell.Offset(-1, 2);                        
+                        var secondColCell = rowLabelCell.Offset(-1, 2);
                         var firstDataCell = rowLabelCell.Offset(0, 1);
                         var type = ((WorksheetImpl)worksheet).GetCellType(firstDataCell.Row, firstDataCell.Column, false);
                         WorksheetImpl.TRangeValueType firstDatacellType = ((WorksheetImpl)worksheet).GetCellType(firstDataCell.Row, firstDataCell.Column, false);
-                        var isColumn = colRgxN.IsMatch(secondColCell.Text??"");
+                        var isColumn = colRgxN.IsMatch(secondColCell.Text ?? "");
                         if (!isColumn && firstDatacellType.ToString() == "String")
                         {
                             firstDataCell.ColumnWidth = 60;
@@ -396,7 +399,7 @@ public class ExcelBookMerger : IExcelBookMerger
                     {
                         var xxs = 3;
                     }
-                    
+
                 }
 
 

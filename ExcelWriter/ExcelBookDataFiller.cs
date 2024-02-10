@@ -232,8 +232,6 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
     }
 
-
-
     private static void FormatDataSectionColors(IRange dataRange)
     {
         foreach (var cell in dataRange.Cells)
@@ -512,10 +510,6 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             return currencyZets;
         }
     }
-
-
-
-
 
 
     private bool FillOpenTable(TemplateSheetInstance dbSheet)
