@@ -101,14 +101,15 @@ public partial class FactsDecorator : IFactsDecorator
 
             table.IsOpenTable = IsOpenTable(table.TableID);
 
-            //*********** Select the facts for a template and             
+            //*********** Select the facts for a template and update their zetvalues, RowSignatures and currencyDimValue            
             var tableFacts = SelectFactsForTempateTable280(table);
             Console.WriteLine($"\n---facts:{tableFacts.Count}");
 
 
-            //*********** Create one  sheet per zet group             
+            //*********** Create one  sheet per zet group
+            //** alternatively we could update each fact with zet and then do the grouping in sql
             //fact.ZetValues is a string concatenating the Facts' zet dims
-            //facts with the same zet values(concatenated as a string) should be assigned to the same sheet (currency and country were excluded)
+            //facts with the same zet values(concatenated as a string) should be assigned to the same sheet
             List<string> distinctFactZetStrings = tableFacts
                     .GroupBy(fact => fact.ZetValues ?? "")
                     .Select(group => group.Key).ToList();
@@ -340,9 +341,9 @@ public partial class FactsDecorator : IFactsDecorator
             .Where(ord => ord.AxisOrientation == "Z")
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
-        var currenciesAndCountryDims = new List<string>() { "OC", "CU" };
+        var currenciesAndCountryDims = new List<string>() { "OC", "CU","VG" };
         var currencyDims = zDims.Where(zd => currenciesAndCountryDims.Contains(zd)).ToList();
-            
+        var xxx = 2;    
 
         //*********************************************************************************
         //for each RowCol of this table, select the facts which have the exact dims (open or close) 
@@ -375,12 +376,11 @@ public partial class FactsDecorator : IFactsDecorator
 
                 cellFact.RowSignature = rowSignature;
                 cellFact.ZetValues = zetValues;
+                cellFact.CurrencyDim = currencyValues;
                 cellFact.Col = cellRowCol.Col;
                 cellFact.Row = cellRowCol.Row;
                 cellFact.CellID= tableCell.CellID;
-
-                //todo assign them                
-                //cellFact.CurrencyDim = zCurrencyFactDimStr;
+                               
                 
             }
 
