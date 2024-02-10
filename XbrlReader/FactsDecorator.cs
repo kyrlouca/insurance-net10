@@ -40,7 +40,7 @@ public partial class FactsDecorator : IFactsDecorator
     public string DefaultCurrency { get; set; } = "EUR";
     public int _moduleId = 0;
     public string _moduleCode = "";
-    public List<MTable> ModuleTablesFiled { get; private set; } = new List<MTable>();
+    public List<MTable> ModuleTables { get; private set; } = new List<MTable>();
 
 
     public FactsDecorator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
@@ -81,7 +81,7 @@ public partial class FactsDecorator : IFactsDecorator
 
 
         //ModuleTablesFiled = GetFiledModuleTables();
-        ModuleTablesFiled = _SqlFunctions.SelectTablesInModule280(_moduleId)
+        ModuleTables = _SqlFunctions.SelectTablesInModule280(_moduleId)
             .Where(tab => tab.TableCode.StartsWith("S"))
             .OrderBy(tab => tab.TableCode)
             .ToList();
@@ -91,11 +91,11 @@ public partial class FactsDecorator : IFactsDecorator
         //_testingTableId = 69;
         if (_testingTableId > 0)
         {
-            ModuleTablesFiled = ModuleTablesFiled.Where(table => table.TableID == _testingTableId).ToList();
+            ModuleTables = ModuleTables.Where(table => table.TableID == _testingTableId).ToList();
         }
 
 
-        foreach (var table in ModuleTablesFiled)
+        foreach (var table in ModuleTables)
         {            
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
 
@@ -326,7 +326,8 @@ public partial class FactsDecorator : IFactsDecorator
 
     private List<TemplateSheetFact> SelectFactsForTempateTable280(MTable table)
     {
-        //****there are NO zet and Y dims on the table. Everything is on the cell
+        //****there are NO zet and Y dims on the table. They can be foun in Ordinates table
+        //zet and y are included is in the cell signature
 
         var tableFacts = new List<TemplateSheetFact>();
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);        
@@ -335,14 +336,14 @@ public partial class FactsDecorator : IFactsDecorator
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
-        var ZDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
+        var zDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
             .Where(ord => ord.AxisOrientation == "Z")
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
 
 
         //*********************************************************************************
-        //for each RowCol of this table, select the facts which have the exact dims (open or close) found from  field mappings, Y dims, Zet dims
+        //for each RowCol of this table, select the facts which have the exact dims (open or close) 
         //a rowcol position may contain more than one fact (currency and country)
         //also update the zetValues of each fact
         foreach (var tableCell in tableCells)
@@ -366,18 +367,19 @@ public partial class FactsDecorator : IFactsDecorator
             {
                 
                 Console.Write(".");                
-                var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims);
-
+                var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims);                
+                var zetValues = BuildFactZetValues(cellFact.DataPointSignature,zDims);
+                var currencyValues = BuildCurrencyValues(cellFact.DataPointSignature, currencyDims);
 
                 cellFact.RowSignature = rowSignature;
+                cellFact.ZetValues = zetValues;
                 cellFact.Col = cellRowCol.Col;
                 cellFact.Row = cellRowCol.Row;
                 cellFact.CellID= tableCell.CellID;
 
-                //todo assign them
-                //cellFact.ZetValues = zPageFactDimStr;
+                //todo assign them                
                 //cellFact.CurrencyDim = zCurrencyFactDimStr;
-                //cellFact.RowSignature = yRowSignature;
+                
             }
 
             if (cellFacts.Any())
@@ -415,7 +417,61 @@ public partial class FactsDecorator : IFactsDecorator
         }
     }
 
-    
+
+    private static string BuildFactZetValues(string signature, IEnumerable<string> zDims)
+    {
+        //build the row signature using only the ydims
+        var dims = signature.Split("|", StringSplitOptions.RemoveEmptyEntries)
+            .Where(dim => zDims.Contains(GetDimValue(dim)))
+            .Order()
+            .ToList();
+
+        if (!dims.Any())
+        {
+            return "";
+        }
+
+        IReadOnlyList<string> readOnlyList = dims.AsReadOnly();
+        //var ySignature = string.Join("|", dims); DO NOT use this is very slow
+        var zValues = StringRoutines.JoinStringCreate(readOnlyList, "|");
+        return zValues;
+
+        static string GetDimValue(string input)
+        {
+            var rgx = new Regex(@"^s2c_dim:(\w\w)\(");
+            Match match = rgx.Match(input);
+            return match.Success ? match.Groups[1].Value : "";
+        }
+    }
+
+
+    private static string BuildCurrencyValues(string signature, IEnumerable<string> zDims)
+    {
+        //build the row signature using only the ydims
+        var dims = signature.Split("|", StringSplitOptions.RemoveEmptyEntries)
+            .Where(dim => zDims.Contains(GetDimValue(dim)))
+            .Order()
+            .ToList();
+
+        if (!dims.Any())
+        {
+            return "";
+        }
+
+        IReadOnlyList<string> readOnlyList = dims.AsReadOnly();
+        //var ySignature = string.Join("|", dims); DO NOT use this is very slow
+        var zValues = StringRoutines.JoinStringCreate(readOnlyList, "|");
+        return zValues;
+
+        static string GetDimValue(string input)
+        {
+            var rgx = new Regex(@"^s2c_dim:(\w\w)\(");
+            Match match = rgx.Match(input);
+            return match.Success ? match.Groups[1].Value : "";
+        }
+    }
+
+
     private List<TemplateSheetFact> SelectFactsFromCellSignature280(string cellSignature)
     {
         //match any facts with cell signature 

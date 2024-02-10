@@ -5,7 +5,7 @@ namespace XbrlReader
     public interface IFactsDecorator
     {
         string DefaultCurrency { get; set; }
-        List<MTable> ModuleTablesFiled { get; }
+        List<MTable> ModuleTables { get; }
 
         int DecorateFactsAndAssignToSheets(int documentId, List<string> filings);        
         
