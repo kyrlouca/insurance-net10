@@ -498,5 +498,22 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
+    public MDimensionModel? SelectDimensionByCode(string DomainCode, string DimensionCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelect = @"
+            select 
+	            dim.*
+            from 
+	            mDimension dim	
+	            join mDomain dom  on dim.DomainID=dom.DomainID
+            where 
+                dom.DomainCode= @DomainCode
+	            and dim.DimensionCode= @DimensionCode
+        ";
+        var res = connectionEiopa.QuerySingleOrDefault<MDimensionModel>(sqlSelect, new { DomainCode, DimensionCode });
+        return res;
+    }
+
 }
 

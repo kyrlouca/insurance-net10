@@ -42,4 +42,5 @@ public interface ISqlFunctions
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public List<MTable> SelectTablesInModule280(int moduleId);
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId);
+    public MDimensionModel? SelectDimensionByCode(string DomainCode, string DimensionCode);
 }

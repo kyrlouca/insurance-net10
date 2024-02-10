@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using ExcelWriter.Common;
 using Shared.SQLFunctions;
 using Microsoft.IdentityModel.Tokens;
+using Shared.SpecialRoutines;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -143,6 +144,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         ClearLinks(wholeRange);
 
+        var zetDescription = SelectZetValues(dbSheet);
+        wholeRange["A3"].Text = zetDescription;
+
 
         var columnRow = dataRange.Rows.First();
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
@@ -230,6 +234,25 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             var currencyZets = connectionInsurance.Query<string>(sqlCurrency, new { sheetId = dbSheet.TemplateSheetId }).ToList() ?? new List<string>();
             return currencyZets;
         }
+
+        
+    }
+
+    string SelectZetValues(TemplateSheetInstance dbSheet)
+    {
+        var zDimsxx = dbSheet.ZDimVal;
+
+        var zDims = dbSheet.ZDimVal
+            .Split("|")
+            .Select(zdim =>
+            {
+                var dim = DimDom.GetParts(zdim);
+                var dimObj= _SqlFunctions.SelectDimensionByCode(dim.Dom, dim.Dim);
+                return $"{zdim}--{dimObj?.DimensionLabel}";
+            })
+            .Where(dim=> dim is not null);
+        var res = string.Join("--", zDims);
+        return res??"";
     }
 
     private static void FormatDataSectionColors(IRange dataRange)
