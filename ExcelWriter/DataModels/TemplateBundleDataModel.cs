@@ -8,27 +8,14 @@ using System.Threading.Tasks;
 
 namespace ExcelWriter.DataModels;
 
-
-public readonly record struct TemplateBundle(string TemplateCode, string TemplateDescription, List<string> TableCodes); 
-
-///////////
-public record struct SheetExtensiveInfo(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet,string TableDescription);
-public record struct HorizontalLine(List<SheetExtensiveInfo> HorizontalSheetInfo);
+public record struct xxZetTemplateBundleListxx(List<ZetTemplateLayout> ZetBundleList);
 
 //ZetTemplateBundle contains list of lists to accomodate a list of horizontal tables layout
 //Each outer vertical list contains a horizontal line of tables
-public record struct xxZetTemplateBundleListxx(List<ZetTemplateBundle> ZetBundleList);
-public record struct ZetTemplateBundle(string GroupTableCode, string Zet, string SheetName, string TemplateDescription, List<HorizontalLine> TableMatrix);
 
-public static class SPT
-{
-    public static List<SheetExtensiveInfo> Records { get; }
+public readonly record struct TableGroup(string TemplateCode, string TemplateDescription, List<string> TableCodes); 
 
-    static SPT()
-    {
-        Records = new List<SheetExtensiveInfo>()
-        {
-            //new SheetDbAndWorksheet("S.02.02.01","zet", "S.02.02.01", new List<List<SheetDbAndWorksheet>>() { new List<SheetDbAndWorksheet>() { new SheetDbAndWorksheet() { "S.02.02.01.01" ,null,null} }),
-        };
-    }
-}
+public record struct SheetExtensiveInfo(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet,string TableDescription);
+public record struct HorizontalLine(List<SheetExtensiveInfo> HorizontalSheetInfo);
+
+public record struct ZetTemplateLayout(string GroupTableCode, string SheetCodeZet, string SheetName, string TemplateDescription, List<HorizontalLine> TableMatrix);

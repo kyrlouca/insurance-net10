@@ -78,7 +78,7 @@ public class SqlFunctions : ISqlFunctions
         return docs ?? Enumerable.Empty<DocInstance>();
     }
 
-    public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId,  string sheetCodeZet)
+    public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId, string tableCode,  string sheetCodeZet)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"
@@ -87,9 +87,10 @@ public class SqlFunctions : ISqlFunctions
             FROM TemplateSheetInstance sheet    
             WHERE 
                 sheet.InstanceId = @documentId        
+                and sheet.TableCode = @tableCode        
                 and SheetCodeZet = @sheetCodeZet
              ";
-        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode, sheetCodeZet });
+        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId,tableCode, sheetCodeZet });
         return sheet;
     }
 

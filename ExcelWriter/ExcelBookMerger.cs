@@ -86,21 +86,21 @@ public class ExcelBookMerger : IExcelBookMerger
         _pensionStyles = _customPensionStyles.GetStyles(DestWorkbook);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //Merge sheets for each template Code (3 parts) based on Zet dims.
-        //Each zetbundle groups the sheets with the same zet dims 
+        //Merge sheets for each Table group ( template Code with 3 parts) based on Zet.
+        //Each TableGroup groups the sheets with the same zetCode
         //"S.01.01.02=>"S.01.01.02.01","S.01.01.02.02","S.01.01.02.03"        
-        //A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
-        //using TemplateBundle, the Merged sheet can render tables horizontally and vertically.
+        //A TableGroup contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
+        //
 
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
 
-        var moduleTemplateBundles = CreateTemplateBundlesForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
+        var TableGroupsList = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
 
         ///////////////////////
-        foreach (var templateBundle in moduleTemplateBundles)
+        foreach (var tableGroup in TableGroupsList)
         {
 
-            var distinctSheetCodeZets = templateBundle.TableCodes
+            var distinctSheetCodeZets = tableGroup.TableCodes
                 .SelectMany(tc => SelectSheetCodeZets(tc))
                 .Distinct()
                 .ToList();
@@ -110,22 +110,22 @@ public class ExcelBookMerger : IExcelBookMerger
                 distinctSheetCodeZets.Add("");
             }
 
-            var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(templateBundle.TemplateCode);
-            var counter = 0;
+            var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(tableGroup.TemplateCode);
+            var line = 0;
             foreach (var sheetCodeZet in distinctSheetCodeZets)
             {
-                //if a specialTemplateLayout was found in the static list, then use it, otherwise create one using the tables in the module
-                var zBundle = specialTemplateLayout is null
-                    ? ToZetTemplateBundle(templateBundle, sheetCodeZet)
-                    : ToZetTemplateBundleSpecial(specialTemplateLayout, sheetCodeZet, templateBundle.TemplateDescription);
+                line++;
+                //use the specialTemplateLayout if is  found in the static list, otherwise create one using the tables in the table group
+                var zetTemplateLayout = specialTemplateLayout is null
+                    ? ToZetTemplateLayout(tableGroup, sheetCodeZet)
+                    : ToZetTemplateBundleSpecial(specialTemplateLayout, sheetCodeZet, tableGroup.TemplateDescription);
 
-                var nma = distinctSheetCodeZets.Count > 1 ? $"{zBundle.GroupTableCode}_{counter:D2}": $"{zBundle.GroupTableCode}"; 
-                zBundle.SheetName = BuildMergedTabName(zBundle);
-                zBundle.TemplateDescription = BuildMergedTableDescription(zBundle);
-                var isRendered = RenderOneZetSheet(zBundle);
+                zetTemplateLayout.SheetName = distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}": $"{zetTemplateLayout.GroupTableCode}";                 
+                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(zetTemplateLayout);
+                var isRendered = RenderOneZetSheet(zetTemplateLayout);
                 if (isRendered)
                 {
-                    var indexItem = new IndexSheetListItem(zBundle.SheetName, zBundle.SheetName, zBundle.TemplateDescription);
+                    var indexItem = new IndexSheetListItem(zetTemplateLayout.SheetName, zetTemplateLayout.SheetName, zetTemplateLayout.TemplateDescription);
                     indexList.ListItems.Add(indexItem);
                 }
             }
@@ -156,19 +156,12 @@ public class ExcelBookMerger : IExcelBookMerger
 
         return true;
 
-        static string BuildMergedTabName(ZetTemplateBundle zetTemplateBundle)
-        {
-            var mergedTabName = string.IsNullOrEmpty(zetTemplateBundle.Zet)
-                ? zetTemplateBundle.GroupTableCode
-                : zetTemplateBundle.GroupTableCode + "__" + zetTemplateBundle.Zet;
-            mergedTabName = mergedTabName.Replace(":", "_");
-            return mergedTabName;
-        }
-        string BuildMergedTableDescription(ZetTemplateBundle zetTemplateBundle)
+        
+        string BuildMergedTableDescription(ZetTemplateLayout zetTemplateBundle)
         {
             using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
             var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
-            var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.Zet });
+            var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.SheetCodeZet });
             var templateDesciption = string.IsNullOrEmpty(zetLabel)
                 ? $"{zetTemplateBundle.TemplateDescription.Trim()}"
                 : $"{zetTemplateBundle.TemplateDescription.Trim()} -- {zetLabel}";
@@ -178,27 +171,22 @@ public class ExcelBookMerger : IExcelBookMerger
     }
 
 
-    private ZetTemplateBundle ToZetTemplateBundle(TemplateBundle templateBundle, string sheetCodeZet)
+    private ZetTemplateLayout ToZetTemplateLayout(TableGroup templateBundle, string sheetCodeZet)
     {
 
         //A template has many tables S.23.01.01=>  S.23.01.01.01, S.23.01.01.02         
-        //A template bundle groups the tables codes without considering a zet value
-        // A ZetTemplate contains the table info for a specific special Zet (for business line or currency 'BL','OC','CR'),
-        // For the  templatedBundbundle cle return a list of ZetTemplatebundles (one for each zet)
-        // If they have no special zet, just return one ZetTemplatebundle             
-
-
-        //each table in a horizontal list of the matrix is rendered one next to each other
-        // each horizontal list of tables in the matrix are rendered one under the other             
-        //the matrix has one row for each tablecode and each row has just one table (basically all tables will be rendered vertically this way) 
-
-        var tableMatrix = templateBundle.TableCodes
+        //A template bundle defines a layout ( a list of horizontal lines where each line contains many sheets)
+        //populate the special template layout with the sheets of the specified sheetCodeZet
+        
+            var tableMatrix = templateBundle.TableCodes
                 .Select(tableCode => new HorizontalLine(new List<SheetExtensiveInfo>() { CreateSheetExtensiveInfo(tableCode, sheetCodeZet) }))
                 .ToList();
 
-        var ztb = new ZetTemplateBundle()
+        
+
+        var ztb = new ZetTemplateLayout()
         {
-            Zet = sheetCodeZet,
+            SheetCodeZet = sheetCodeZet,
             GroupTableCode = templateBundle.TemplateCode,
             TemplateDescription = templateBundle.TemplateDescription,
             TableMatrix = tableMatrix
@@ -206,18 +194,20 @@ public class ExcelBookMerger : IExcelBookMerger
         return ztb;
 
     }
-    private ZetTemplateBundle ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout, string zet, string templateDescription)
+    private ZetTemplateLayout ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout, string sheetCodeZet, string templateDescription)
     {
-
+        
+        //populate the special template layout with the seets of the specified sheetCodeZet
+        //each horizontalLine contains a set of sheets to be rendered next to each other 
+        //some sheets may be null
         var tableMatrix = specialTemplateLayout.TableCodesMatrix
-            .Select(line =>    
-                new HorizontalLine(line.Select(code => CreateSheetExtensiveInfo(code, zet))                
-                .ToList()) )
-        .ToList();
+            //.Select(line =>line.Where(tableCode => _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, sheetCodeZet) is not null))
+            .Select(line => new HorizontalLine(line.Select(code => CreateSheetExtensiveInfo(code, sheetCodeZet)).ToList()))
+            .ToList();
 
-        var ztb = new ZetTemplateBundle()
+        var ztb = new ZetTemplateLayout()
         {
-            Zet = zet,
+            SheetCodeZet = sheetCodeZet,
             SheetName = specialTemplateLayout.TemplateSheetName,
             GroupTableCode = specialTemplateLayout.TemplateCode,
             TemplateDescription = templateDescription,
@@ -244,7 +234,7 @@ public class ExcelBookMerger : IExcelBookMerger
     }
     private SheetExtensiveInfo CreateSheetExtensiveInfo(string tableCode, string sheetCodeZet)
     {
-        var dbSheet = _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, sheetCodeZet);
+        var dbSheet = _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, tableCode,sheetCodeZet);
         //var dbSheet = SelectDbSheetBySheetCodeZet(tableCode, sheetCodeZet);
         var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";
@@ -276,33 +266,39 @@ public class ExcelBookMerger : IExcelBookMerger
         var result = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSheets, new { _documentId, tableCode, sheetCodeZet });
         return result;
     }
-    private bool RenderOneZetSheet(ZetTemplateBundle zetTemplateBundle)
+    private bool RenderOneZetSheet(ZetTemplateLayout zetTemplateLayout)
     {
 
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var hasElements = zetTemplateBundle.TableMatrix.Any(row => row.HorizontalTables.Any(sh => sh.WorkSheet is not null));
+        var hasElements = zetTemplateLayout.TableMatrix.Any(row => row.HorizontalSheetInfo.Any(sh => sh.WorkSheet is not null));
         if (!hasElements)
         {
             return false;
         }
 
-        var destSheet = DestWorkbook.Worksheets.Create(zetTemplateBundle.SheetName);
+        var destSheet = DestWorkbook.Worksheets.Create(zetTemplateLayout.SheetName);
 
         destSheet.Zoom = 80;
 
         var countVerticals = 0;
         var offsetVERTICAL = 1;
-        foreach (var vertical in zetTemplateBundle.TableMatrix)
+
+        
+        foreach (var horizontalLine in zetTemplateLayout.TableMatrix)
         {
-            //check if there is at least one sheet which is not null in tableMatrix 
-            var hasTablexx = zetTemplateBundle.TableMatrix.Any(line => line.HorizontalTables.Any(ht => ht.WorkSheet is not null));
+            //var hasSheet = vertical.HorizontalSheetInfo.   
+            var isHorizontalLineValid = horizontalLine.HorizontalSheetInfo.Any(sheetInfo => sheetInfo.DbSheet is not null);
+            if(!isHorizontalLineValid)
+            {
+                continue;
+            }
             countVerticals++;
 
             var maxTableHeight = 0;
             var OffesetHORIZONTAL = 1;
-            foreach (var ztbSheet in vertical.HorizontalTables)
+            foreach (var ztbSheet in horizontalLine.HorizontalSheetInfo)
             {
                 var isOpenTable = ztbSheet.DbSheet?.IsOpenTable ?? false;
 
@@ -443,13 +439,13 @@ public class ExcelBookMerger : IExcelBookMerger
             }
         }
     }
-    private List<TemplateBundle> CreateTemplateBundlesForModule(string moduleCode, int moduleId)
+    private List<TableGroup> CreateTableGroupsForModule(string moduleCode, int moduleId)
     {
         //templateCode="", tableCode=""
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var templateTableBundles = new List<TemplateBundle>();
+        var templateTableBundles = new List<TableGroup>();
         //find the grouptables
         var sqlTables = @"
                 SELECT va.TemplateOrTableID, va.TemplateOrTableCode,va.TemplateOrTableLabel
@@ -476,7 +472,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 order by par.TemplateOrTableCode;
                 ";
             var tableCodes = connectionEiopa.Query<string>(sqlTableCodes, new { tot.TemplateOrTableID })?.ToList() ?? new List<string>();
-            templateTableBundles.Add(new TemplateBundle(tot.TemplateOrTableCode, tot.TemplateOrTableLabel, tableCodes));
+            templateTableBundles.Add(new TableGroup(tot.TemplateOrTableCode, tot.TemplateOrTableLabel, tableCodes));
 
 
         }
@@ -518,7 +514,7 @@ public class ExcelBookMerger : IExcelBookMerger
         return indexSheet;
     }
 
-    private bool FixCombinedS6Form(ZetTemplateBundle zetTemplateBundle)
+    private bool FixCombinedS6Form(ZetTemplateLayout zetTemplateBundle)
     {
 
         var s61Code = "S.06.02.01.01";
@@ -526,12 +522,12 @@ public class ExcelBookMerger : IExcelBookMerger
 
 
         var s61Line = zetTemplateBundle.TableMatrix
-            .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.01"));
-        var s61Worksheet = s61Line.HorizontalTables.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.01").WorkSheet;
+            .FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.01"));
+        var s61Worksheet = s61Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.01").WorkSheet;
 
         var s62Line = zetTemplateBundle.TableMatrix
-            .FirstOrDefault(line => line.HorizontalTables.Any(htbl => htbl.TableCode == "S.06.02.01.02"));
-        var s62Worksheet = s62Line.HorizontalTables.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.02").WorkSheet;
+            .FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.02"));
+        var s62Worksheet = s62Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.02").WorkSheet;
 
         var sCombined = DestWorkbook.Worksheets["S.06.02.01"];
 
