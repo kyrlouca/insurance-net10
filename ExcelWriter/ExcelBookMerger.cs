@@ -110,6 +110,7 @@ public class ExcelBookMerger : IExcelBookMerger
             }
 
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(templateBundle.TemplateCode);
+            var counter = 0;
             foreach (var sheetCodeZet in distinctSheetCodeZets)
             {
                 //if a specialTemplateLayout was found in the static list, then use it, otherwise create one using the tables in the module
@@ -117,6 +118,7 @@ public class ExcelBookMerger : IExcelBookMerger
                     ? ToZetTemplateBundle(templateBundle, sheetCodeZet)
                     : ToZetTemplateBundleSpecial(specialTemplateLayout, sheetCodeZet, templateBundle.TemplateDescription);
 
+                var nma = distinctSheetCodeZets.Count > 1 ? $"{zBundle.GroupTableCode}_{counter:D2}": $"{zBundle.GroupTableCode}"; 
                 zBundle.SheetName = BuildMergedTabName(zBundle);
                 zBundle.TemplateDescription = BuildMergedTableDescription(zBundle);
                 var isRendered = RenderOneZetSheet(zBundle);

@@ -86,10 +86,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
 
         //////////////////////////////////////////////////////////////////
-        //Start processing
-
-
-
+        //for each sheet in the workbook find the corrsponding dbSheets (may have more than one because of Zet)
 
         ///////////////////////////////////////////////
         int START_ROW = 1;
@@ -108,30 +105,29 @@ public class ExcelBookCreator : IExcelBookWriter
             var sheetsIndb = _SqlFunctions.SelectTempateSheetsByTableId(_documentId, table.TableID);
             foreach (var sheetDb in sheetsIndb)
             {
-                var xoriginSheet = _originWorkbook.Worksheets[table.TableCode.Trim()];
-                 if (xoriginSheet is null) continue;
-                var xrangexx = xoriginSheet.UsedCells;
-                var usedRange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
-                var orgDataRange280 = FindDataRange(xoriginSheet);
-                var orgWholeRange280 = xoriginSheet[1, 1, orgDataRange280.LastRow, orgDataRange280.LastColumn];
+                var originSheet = _originWorkbook.Worksheets[table.TableCode.Trim()];
+                 if (originSheet is null) continue;
+                
+                var usedRange = originSheet[originSheet.UsedRange.Row, originSheet.UsedRange.Column, originSheet.UsedRange.LastRow, originSheet.UsedRange.LastColumn];
+                var orgDataRange280 = FindDataRange(originSheet);
+                var orgWholeRange280 = originSheet[1, 1, orgDataRange280.LastRow, orgDataRange280.LastColumn];
 
 
-
-                var xsheetName = sheet.SheetTabName.Trim();
-                var xdestSheet = _destinationWorkbook.Worksheets.Create(xsheetName);
-                xdestSheet.Zoom = 80;
+                var sheetName = sheet.SheetTabName.Trim();
+                var destSheet = _destinationWorkbook.Worksheets.Create(sheetName);
+                destSheet.Zoom = 80;
 
 
                 var wholeAddress = orgWholeRange280.AddressLocal;
-                var wholeRange = CopyRangeToFixedPosition(START_ROW, START_COL, xoriginSheet, xdestSheet, wholeAddress);
+                var wholeRange = CopyRangeToFixedPosition(START_ROW, START_COL, originSheet, destSheet, wholeAddress);
 
-                var wholeRangeName = $"{xdestSheet.Name.Trim()}_whole";
+                var wholeRangeName = $"{destSheet.Name.Trim()}_whole";
                 _destinationWorkbook.Names.Remove(wholeRangeName);
                 var wholeNameObject = _destinationWorkbook.Names.Add(wholeRangeName);
                 wholeNameObject.RefersToRange = wholeRange;
 
-                var destData280Range = xdestSheet.Range[orgDataRange280.AddressLocal];
-                var dataRangeName = $"{xdestSheet.Name.Trim()}_data";
+                var destData280Range = destSheet.Range[orgDataRange280.AddressLocal];
+                var dataRangeName = $"{destSheet.Name.Trim()}_data";
                 _destinationWorkbook.Names.Remove(dataRangeName);
                 var dataNamedObject = _destinationWorkbook.Names.Add(dataRangeName);
                 dataNamedObject.RefersToRange = destData280Range;

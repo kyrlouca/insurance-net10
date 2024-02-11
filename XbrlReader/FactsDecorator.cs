@@ -202,7 +202,7 @@ public partial class FactsDecorator : IFactsDecorator
                     ? table.TableCode
                     : $"{table.TableCode}__{FactZetValue}";
 
-            var sheetName = $"{table.TableCode}__{sheetCount:D2}";
+            var sheetName = $"{table.TableCode}__{FactZetValue}";
             
             var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName,FactZetValue, table);
             Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
