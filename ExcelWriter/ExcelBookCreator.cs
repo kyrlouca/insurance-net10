@@ -96,7 +96,7 @@ public class ExcelBookCreator : IExcelBookWriter
         var shnames = sheets.Select(sh => sh.SheetTabName).ToList();
         foreach (var sheet in sheets)
         {
-            Console.WriteLine("process" + sheet?.SheetTabName + "-" + sheet?.TableCode + sheet?.SheetTabName);
+            Console.WriteLine("process" + sheet?.SheetTabName + "-" + sheet?.TableCode.Trim() + sheet?.SheetTabName.Trim());
 
             var table = _SqlFunctions.SelectTable(sheet?.TableCode ?? "");
             

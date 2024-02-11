@@ -86,7 +86,8 @@ public class ExcelBookMerger : IExcelBookMerger
         _pensionStyles = _customPensionStyles.GetStyles(DestWorkbook);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //Merge sheets for each template Code (3 parts) based on dimension.(line of business BL but not currency OC or country)
+        //Merge sheets for each template Code (3 parts) based on Zet dims.
+        //Each zetbundle groups the sheets with the same zet dims 
         //"S.01.01.02=>"S.01.01.02.01","S.01.01.02.02","S.01.01.02.03"        
         //A bundle contains the template code and a list of horizontal tableCodes lists like {S.19.01.01, {S.19.01.01.01,19.01.01.02,etc},{19.01.01.08}}
         //using TemplateBundle, the Merged sheet can render tables horizontally and vertically.
@@ -192,7 +193,7 @@ public class ExcelBookMerger : IExcelBookMerger
         //the matrix has one row for each tablecode and each row has just one table (basically all tables will be rendered vertically this way) 
 
         var tableMatrix = templateBundle.TableCodes
-                .Select(tableCode => new HorizontalLine(new List<TableExtensiveInfo>() { CreateTableInfo(tableCode, sheetCodeZet) }))
+                .Select(tableCode => new HorizontalLine(new List<SheetExtensiveInfo>() { CreateSheetExtensiveInfo(tableCode, sheetCodeZet) }))
                 .ToList();
 
         var ztb = new ZetTemplateBundle()
@@ -209,9 +210,9 @@ public class ExcelBookMerger : IExcelBookMerger
     {
 
         var tableMatrix = specialTemplateLayout.TableCodesMatrix
-            .Select(line =>
-            new HorizontalLine(line.Select(code => CreateTableInfo(code, zet)).ToList())
-        )
+            .Select(line =>    
+                new HorizontalLine(line.Select(code => CreateSheetExtensiveInfo(code, zet))                
+                .ToList()) )
         .ToList();
 
         var ztb = new ZetTemplateBundle()
@@ -241,12 +242,13 @@ public class ExcelBookMerger : IExcelBookMerger
         return distinctList;
 
     }
-    private TableExtensiveInfo CreateTableInfo(string tableCode, string sheetCodeZet)
+    private SheetExtensiveInfo CreateSheetExtensiveInfo(string tableCode, string sheetCodeZet)
     {
-        var dbSheet = SelectDbSheetBySheetCodeZet(tableCode, sheetCodeZet);
+        var dbSheet = _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, sheetCodeZet);
+        //var dbSheet = SelectDbSheetBySheetCodeZet(tableCode, sheetCodeZet);
         var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";
-        return new TableExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet, TableDescription = tableDesc };
+        return new SheetExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet, TableDescription = tableDesc };
     }
     private TemplateSheetInstance? SelectDbSheetBySheetCodeZet(string tableCode, string sheetCodeZet)
     {

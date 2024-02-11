@@ -94,7 +94,7 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => table.TableID == _testingTableId).ToList();
         }
 
-
+        var moduleZets = new List<string>();  
         foreach (var table in ModuleTables)
         {            
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
@@ -110,11 +110,14 @@ public partial class FactsDecorator : IFactsDecorator
             //** alternatively we could update each fact with zet and then do the grouping in sql
             //fact.ZetValues is a string concatenating the Facts' zet dims
             //facts with the same zet values(concatenated as a string) should be assigned to the same sheet
-            List<string> distinctFactZetStrings = tableFacts
+            List<string> distinctTableZetStrings = tableFacts
                     .GroupBy(fact => fact.ZetValues ?? "")
                     .Select(group => group.Key).ToList();
+            
+            moduleZets.AddRange(distinctTableZetStrings);
             Console.WriteLine($"\n---Grouping table facts by Zet");
-            List<SheetInfoType> sheetsInfo = CreateSheetForEachZetGroup(table, distinctFactZetStrings);
+
+            List<SheetInfoType> sheetsInfo = CreateSheetForEachZetGroup(table, distinctTableZetStrings);
             
             //*********** Assign facts to sheets and update fact row, col, etc
             AssignFactsToSheet280(tableFacts, sheetsInfo);
@@ -134,11 +137,26 @@ public partial class FactsDecorator : IFactsDecorator
             }
         }
 
+        //update tableSheetNames
+        UpdateTableSheetNames(moduleZets);
         Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
         return 0;
 
     }
 
+    private void UpdateTableSheetNames(List<string> ModuleZets)
+    {
+        //since excel tabsheet names cannot exceed 30 characters, map each table zet to a unique number
+        var uniqueModuleZets = ModuleZets.Distinct().ToList();
+        var sheets = _SqlFunctions.SelectTempateSheets(_documentId);
+        foreach(var sheet in sheets)
+        {            
+            var idx = uniqueModuleZets.IndexOf(sheet.SheetCodeZet);
+            var sheetName = $"{sheet.TableCode}_{idx:d3}";
+            _SqlFunctions.UpdateTemplateSheetName(sheet.TemplateSheetId,sheetName);
+        }
+
+    }
     private bool IsOpenTable(int tableId)
     {        
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(tableId)
@@ -194,7 +212,8 @@ public partial class FactsDecorator : IFactsDecorator
         var sheetInfo = new List<SheetInfoType>();
 
         //create sheets for each template due to page zets (more than one)
-        var sheetCount = 1;
+        //the tabsheetname will be used to group sheets togther in merge
+        var zetCount = 1;
         foreach (var FactZetValue in FactZetValuesList)
         {
             
@@ -202,12 +221,12 @@ public partial class FactsDecorator : IFactsDecorator
                     ? table.TableCode
                     : $"{table.TableCode}__{FactZetValue}";
 
-            var sheetName = $"{table.TableCode}__{FactZetValue}";
+            var sheetName = $"update later";
             
             var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName,FactZetValue, table);
             Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
             sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, FactZetValue, sheetName, sheet.YDimVal));
-            sheetCount++;
+            zetCount++;
         }
 
         return sheetInfo;

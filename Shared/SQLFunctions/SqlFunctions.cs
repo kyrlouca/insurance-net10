@@ -78,6 +78,20 @@ public class SqlFunctions : ISqlFunctions
         return docs ?? Enumerable.Empty<DocInstance>();
     }
 
+    public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId,  string sheetCodeZet)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSheets = @"
+            SELECT 
+              sheet.*
+            FROM TemplateSheetInstance sheet    
+            WHERE 
+                sheet.InstanceId = @documentId        
+                and SheetCodeZet = @sheetCodeZet
+             ";
+        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode, sheetCodeZet });
+        return sheet;
+    }
 
     public List<TemplateSheetInstance> SelectTempateSheets(int documentId)
     {
@@ -96,6 +110,7 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
+    
 
     public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId,int tableId)
     {
@@ -104,6 +119,19 @@ public class SqlFunctions : ISqlFunctions
         var sheets = connectionLocal.Query<TemplateSheetInstance>(sqlSheets, new { documentId,tableId });        
         return sheets.ToList();
     }
+
+
+
+    
+
+
+    public void UpdateTemplateSheetName(int templateSheetId, string sheetTabName)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlUpdate = @"update TemplateSheetInstance set SheetTabName = @SheetTabName where TemplateSheetId= @TemplateSheetId";
+        var res = connectionInsurance.Execute(sqlUpdate, new { templateSheetId, sheetTabName });
+    }
+
 
     public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter)
     {
@@ -514,6 +542,8 @@ public class SqlFunctions : ISqlFunctions
         var res = connectionEiopa.QuerySingleOrDefault<MDimensionModel>(sqlSelect, new { DomainCode, DimensionCode });
         return res;
     }
+
+
 
 }
 
