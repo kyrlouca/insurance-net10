@@ -18,4 +18,4 @@ public readonly record struct TableGroup(string TemplateCode, string TemplateDes
 public record struct SheetExtensiveInfo(string TableCode,TemplateSheetInstance? DbSheet, IWorksheet? WorkSheet,string TableDescription);
 public record struct HorizontalLine(List<SheetExtensiveInfo> HorizontalSheetInfo);
 
-public record struct ZetTemplateLayout(string GroupTableCode, string SheetCodeZet, string SheetName, string TemplateDescription, List<HorizontalLine> TableMatrix);
+public record struct ZetTemplateLayout(string GroupTableCode, string SheetCodeZet, bool IsOnlyZet, string SheetName, string TemplateDescription, List<HorizontalLine> TableMatrix);

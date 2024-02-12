@@ -94,6 +94,22 @@ public class SqlFunctions : ISqlFunctions
         return sheet;
     }
 
+
+    public TemplateSheetInstance? SelectTempateSheetBySheetCodeAllZets(int documentId, string tableCode)
+    {
+        //assume that for this tableCode there is only one sheet with or withoutzet  
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSheets = @"
+            SELECT 
+              sheet.*
+            FROM TemplateSheetInstance sheet    
+            WHERE 
+                sheet.InstanceId = @documentId        
+                and sheet.TableCode = @tableCode                        
+             ";
+        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode });
+        return sheet;
+    }
     public List<TemplateSheetInstance> SelectTempateSheets(int documentId)
     {
 

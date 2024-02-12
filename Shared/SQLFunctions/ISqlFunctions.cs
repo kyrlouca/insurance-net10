@@ -13,6 +13,8 @@ public interface ISqlFunctions
     public IEnumerable<DocInstance> SelectDocInstances(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
 
     public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId,string tableCode, string sheetCodeZet);
+    public TemplateSheetInstance? SelectTempateSheetBySheetCodeAllZets(int documentId, string tableCode);
+
     List<TemplateSheetInstance> SelectTempateSheets(int documentId);
     public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId, int tableId);
     public void UpdateTemplateSheetName(int templateSheetId, string sheetTabName);

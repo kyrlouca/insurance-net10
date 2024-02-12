@@ -11,18 +11,19 @@ public record ZHorizontalTables(List<string> TablesList);
 public record ZMatrix(List<ZHorizontalTables> Matrix);
 
 
-
 public class SpecialTemplateLayout
 {
     public string TemplateCode { get; init; }
     public string TemplateSheetName { get; init; }
+    public bool IsOnlyZet { get;init; }
     public String[][] TableCodesMatrix { get; init; }
     public ZMatrix ZMatrix { get; init; }
     public List<List<string>> TableCodes { get; init; }
-    public SpecialTemplateLayout(string templateCode, string templateSheetName, string[][] tableCodes)
+    public SpecialTemplateLayout(string templateCode, string templateSheetName, bool isOnlyZet, string[][] tableCodes)
     {
         TemplateCode = templateCode;
         TemplateSheetName = templateSheetName;
+        IsOnlyZet = isOnlyZet;
         TableCodesMatrix = tableCodes;
         TableCodes = TableCodesMatrix.Select(tc => tc.ToList()).ToList();        
         ZMatrix = new ZMatrix(tableCodes.Select(codeList => new ZHorizontalTables(codeList.ToList())).ToList());
@@ -38,13 +39,13 @@ public static class SpecialTemplateList
     {
         Records = new()
         {
-            new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01", new[] { new string[] { "S.06.02.01.01" } }),
-            new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02", new[] { new string[] { "S.06.02.01.02" } }),
-            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01", new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
-            new SpecialTemplateLayout("S.02.02.01", "S.02.02.01", new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
-            new SpecialTemplateLayout("S.04.01.01", "S.04.01.01", new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
-            new SpecialTemplateLayout("S.05.02.01", "S.05.02.01", new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
-            new SpecialTemplateLayout("S.19.01.01", "S.19.01.01", new[] {
+            new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01",false, new[] { new string[] { "S.06.02.01.01" } }),
+            new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02",false, new[] { new string[] { "S.06.02.01.02" } }),
+            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01",true, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
+            new SpecialTemplateLayout("S.02.02.01", "S.02.02.01",true, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
+            new SpecialTemplateLayout("S.04.01.01", "S.04.01.01", true, new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
+            new SpecialTemplateLayout("S.05.02.01", "S.05.02.01", true, new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
+            new SpecialTemplateLayout("S.19.01.01", "S.19.01.01", true, new[] {
                 new string[] { "S.19.01.01.01", "S.19.01.01.02", "S.19.01.01.03", "S.19.01.01.04", "S.19.01.01.05" ,"S.19.01.01.06" },
                 new string[] { "S.19.01.01.07", "S.19.01.01.08", "S.19.01.01.09", "S.19.01.01.10", "S.19.01.01.11" ,"S.19.01.01.12" },
                 new string[] { "S.19.01.01.13", "S.19.01.01.14", "S.19.01.01.15", "S.19.01.01.16", "S.19.01.01.17" ,"S.19.01.01.18" },
@@ -52,13 +53,13 @@ public static class SpecialTemplateList
                 new string[] { "S.19.01.01.20" },
                 new string[] { "S.19.01.01.21" },
             }),
-            new SpecialTemplateLayout("S.19.01.21", "S.19.01.21", new[] { new string[] { "S.19.01.21.01", "S.19.01.21.02" , "S.19.01.21.03" , "S.19.01.21.04" } }),
-            new SpecialTemplateLayout("S.22.06.01", "S.22.06.01", new[]
+            new SpecialTemplateLayout("S.19.01.21", "S.19.01.21", true, new[] { new string[] { "S.19.01.21.01", "S.19.01.21.02" , "S.19.01.21.03" , "S.19.01.21.04" } }),
+            new SpecialTemplateLayout("S.22.06.01", "S.22.06.01", true, new[]
                 {
                     new string[] { "S.22.06.01.01", "S.22.06.01.01" },
                     new string[] { "S.22.06.01.03", "S.22.06.01.04" }
             }),
-            new SpecialTemplateLayout("S.28.01.01", "S.28.01.01", new[]
+            new SpecialTemplateLayout("S.28.01.01", "S.28.01.01", false, new[]
                 {
                     new string[] { "S.28.01.01.01" },
                     new string[] { "S.28.01.01.02" },
