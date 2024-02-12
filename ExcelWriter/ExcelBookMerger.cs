@@ -137,21 +137,18 @@ public class ExcelBookMerger : IExcelBookMerger
         }
         ///////////////////////
 
+
+
+        FixCombinedS6Form(s6Zet);
+        
+
+
         var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
         var templateDescription = "Information on Positions Held";
-        CreateSheetFromLayout( s6Zet, specialTemplateForSingleS61, templateDescription);
+        CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
 
-        //var specialTemplateForSingleS62 = "S.06.02.01.02_Single";        
-        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
-
-
-
-        var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
-        if (s6SpecialTemplateLayout is not null)
-        {
-            var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, s6Zet, "special S6");
-            FixCombinedS6Form(s6ZetTemplateBundle);
-        }
+        var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
+        CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
 
 
         var indexSheet = RenderIndexList(indexList);
@@ -182,14 +179,14 @@ public class ExcelBookMerger : IExcelBookMerger
             return templateDesciption;
         }
 
-        void CreateSheetFromLayout(string s6Zet, string specialTemplateLayout, string templateDescription)
+        void CreateSheetFromLayout(string s6Zet, string specialTemplateLayoutCode, string templateDescription)
         {
-            var s61Single = SpecialTemplateList.FindSpecialTemplateLayout(specialTemplateLayout);
-            var s61SignleZet = ToZetTemplateBundleSpecial(s61Single, s6Zet, templateDescription);
-            var isRenderedx = RenderOneZetSheet(s61SignleZet);
+            var specialLayout = SpecialTemplateList.FindSpecialTemplateLayout(specialTemplateLayoutCode);
+            var specialLayoutZet = ToZetTemplateBundleSpecial(specialLayout, s6Zet, templateDescription);
+            var isRenderedx = RenderOneZetSheet(specialLayoutZet);
             if (isRenderedx)
             {
-                var indexItem = new IndexSheetListItem(s61SignleZet.SheetName, s61SignleZet.SheetName, s61SignleZet.TemplateDescription);
+                var indexItem = new IndexSheetListItem(specialLayoutZet.SheetName, specialLayoutZet.SheetName, specialLayoutZet.TemplateDescription);
                 indexList.ListItems.Add(indexItem);
             }
         }
@@ -221,7 +218,12 @@ public class ExcelBookMerger : IExcelBookMerger
     }
     private ZetTemplateLayout ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout, string sheetCodeZet, string templateDescription)
     {
-        
+        if(specialTemplateLayout is null)
+        {
+            Console.WriteLine("null temp");
+            throw(new ArgumentNullException(nameof(specialTemplateLayout)));
+        }
+
         //populate the special template layout with the seets of the specified sheetCodeZet
         //each horizontalLine contains a set of sheets to be rendered next to each other 
         //some sheets may be null
@@ -514,17 +516,21 @@ public class ExcelBookMerger : IExcelBookMerger
         return indexSheet;
     }
 
-    private bool FixCombinedS6Form(ZetTemplateLayout zetTemplateBundle)
+    private bool FixCombinedS6Form(string s6Zet)
     {
+
+        var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
+        var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, s6Zet, "special S6");
 
         var s61Code = "S.06.02.01.01";
         var s62Code = "S.06.02.01.02";
 
+                
 
-        var s61Line = zetTemplateBundle.TableMatrix.FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode.StartsWith("S.06.02.01.01")));
-        var s61Worksheet = s61Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode.StartsWith("S.06.02.01.01")).WorkSheet;
+        var s61Line = s6ZetTemplateBundle.TableMatrix.FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode =="S.06.02.01.01"));
+        var s61Worksheet = s61Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode =="S.06.02.01.01").WorkSheet;
 
-        var s62Line = zetTemplateBundle.TableMatrix
+        var s62Line = s6ZetTemplateBundle.TableMatrix
             .FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.02"));
         var s62Worksheet = s62Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.02").WorkSheet;
 
