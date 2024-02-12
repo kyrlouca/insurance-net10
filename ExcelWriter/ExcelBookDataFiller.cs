@@ -304,16 +304,15 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             dataRange.ColumnWidth = 20;
             dataRange.WrapText = false;
             
-            dataRange.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
-            dataRange.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-            dataRange.CellStyle.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
-            dataRange.CellStyle.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
+            
+            dataRange.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+            dataRange.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+            dataRange.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
+            dataRange.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
         }
         
 
         ///////////////////////fill keys
-
-
 
 
         //style columns        
