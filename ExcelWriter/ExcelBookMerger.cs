@@ -119,7 +119,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 //use the specialTemplateLayout if is  found in the static list, otherwise create one using the tables in the table group
                 var zetTemplateLayout = specialTemplateLayout is null
                     ? ToZetTemplateLayout(tableGroup, sheetCodeZet)
-                    : ToZetTemplateBundleSpecial(specialTemplateLayout, sheetCodeZet, tableGroup.TemplateDescription);
+                    : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, sheetCodeZet, tableGroup.TemplateDescription);
 
                 zetTemplateLayout.SheetName = distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}" : $"{zetTemplateLayout.GroupTableCode}";
                 zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(zetTemplateLayout);
@@ -188,7 +188,7 @@ public class ExcelBookMerger : IExcelBookMerger
         void CreateSheetFromLayout(string s6Zet, string specialTemplateLayoutCode, string templateDescription)
         {
             var specialLayout = SpecialTemplateList.FindSpecialTemplateLayout(specialTemplateLayoutCode);
-            var specialLayoutZet = ToZetTemplateBundleSpecial(specialLayout, s6Zet, templateDescription);
+            var specialLayoutZet = ToZetTemplateUsingSpecialLayout(specialLayout, s6Zet, templateDescription);
             var isRenderedx = RenderOneZetSheet(specialLayoutZet);
             if (isRenderedx)
             {
@@ -199,14 +199,14 @@ public class ExcelBookMerger : IExcelBookMerger
     }
 
 
-    private ZetTemplateLayout ToZetTemplateLayout(TableGroup templateBundle, string sheetCodeZet)
+    private ZetTemplateLayout ToZetTemplateLayout(TableGroup tableGroup, string sheetCodeZet)
     {
 
         //A template has many tables S.23.01.01=>  S.23.01.01.01, S.23.01.01.02         
         //A template bundle defines a layout ( a list of horizontal lines where each line contains many sheets)
         //populate the special template layout with the sheets of the specified sheetCodeZet
         
-            var tableMatrix = templateBundle.TableCodes
+            var tableMatrix = tableGroup.TableCodes
                 .Select(tableCode => new HorizontalLine(new List<SheetExtensiveInfo>() { CreateSheetExtensiveInfo(tableCode, sheetCodeZet) }))
                 .ToList();
 
@@ -215,26 +215,21 @@ public class ExcelBookMerger : IExcelBookMerger
         var ztb = new ZetTemplateLayout()
         {
             SheetCodeZet = sheetCodeZet,
-            GroupTableCode = templateBundle.TemplateCode,
-            TemplateDescription = templateBundle.TemplateDescription,
+            GroupTableCode = tableGroup.TemplateCode,
+            TemplateDescription = tableGroup.TemplateDescription,
             TableMatrix = tableMatrix
         };
         return ztb;
 
     }
-    private ZetTemplateLayout ToZetTemplateBundleSpecial(SpecialTemplateLayout specialTemplateLayout, string sheetCodeZet, string templateDescription)
+    private ZetTemplateLayout ToZetTemplateUsingSpecialLayout(SpecialTemplateLayout specialTemplateLayout, string sheetCodeZet, string templateDescription)
     {
-        if(specialTemplateLayout is null)
-        {
-            Console.WriteLine("null temp");
-            throw(new ArgumentNullException(nameof(specialTemplateLayout)));
-        }
+        
 
-        //populate the special template layout with the seets of the specified sheetCodeZet
+        //populate the special template layout with the se of the specified sheetCodeZet
         //each horizontalLine contains a set of sheets to be rendered next to each other 
         //some sheets may be null
         var tableMatrix = specialTemplateLayout.TableCodesMatrix
-            //.Select(line =>line.Where(tableCode => _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, sheetCodeZet) is not null))
             .Select(line => new HorizontalLine(line.Select(code => CreateSheetExtensiveInfo(code, sheetCodeZet)).ToList()))
             .ToList();
 
@@ -249,6 +244,7 @@ public class ExcelBookMerger : IExcelBookMerger
         return ztb;
 
     }
+    
 
     private List<string> SelectSheetCodeZets(string templateCode)
     {
@@ -524,7 +520,7 @@ public class ExcelBookMerger : IExcelBookMerger
     {
 
         var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
-        var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, s6Zet, "special S6");
+        var s6ZetTemplateBundle = ToZetTemplateUsingSpecialLayout(s6SpecialTemplateLayout, s6Zet, "special S6");
 
         var s61Code = "S.06.02.01.01";
         var s62Code = "S.06.02.01.02";
