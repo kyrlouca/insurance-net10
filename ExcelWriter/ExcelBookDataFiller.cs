@@ -298,9 +298,18 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //style data
-        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-        dataRange.ColumnWidth = 20;
-        dataRange.WrapText = false;
+        if(dataRange is not null)
+        {
+            dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+            dataRange.ColumnWidth = 20;
+            dataRange.WrapText = false;
+            
+            dataRange.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+            dataRange.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+            dataRange.CellStyle.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
+            dataRange.CellStyle.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
+        }
+        
 
         ///////////////////////fill keys
 

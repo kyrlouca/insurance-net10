@@ -112,6 +112,12 @@ public class ExcelBookMerger : IExcelBookMerger
             }
 
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(tableGroup.TemplateCode);
+
+            if (!specialTemplateLayout?.IsOnlyZet ?? true)
+            {
+                //to avoid rendering twice the same mergedsheet for multiple zets (case S.28.01.01)
+                distinctSheetCodeZets = new() { "" };
+            }
             var line = 0;
             foreach (var sheetCodeZet in distinctSheetCodeZets)
             {
@@ -261,7 +267,7 @@ public class ExcelBookMerger : IExcelBookMerger
     }
     private SheetExtensiveInfo CreateSheetExtensiveInfo(string tableCode, string sheetCodeZet, bool isOnlyZet)
     {
-        var dbSheet = isOnlyZet 
+        var dbSheet = isOnlyZet
             ? _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, tableCode, sheetCodeZet)
             : _SqlFunctions.SelectTempateSheetBySheetCodeAllZets(_documentId, tableCode);
 
@@ -281,6 +287,7 @@ public class ExcelBookMerger : IExcelBookMerger
         {
             return false;
         }
+
 
         var destSheet = DestWorkbook.Worksheets.Create(zetTemplateLayout.SheetName);
 
