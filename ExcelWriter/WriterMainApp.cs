@@ -32,7 +32,7 @@ public class WriterMainApp : IWriterMainApp
     }
     public int Run()
     {
-        Console.WriteLine("started Excel Writer");
+        Console.WriteLine($"started Excel Writer - DocumentId:{_parameterData.DocumentId}");
 
         var doc = _SqlFunctions.SelectDocInstance(_parameterData.DocumentId);        
         
@@ -76,7 +76,7 @@ public class WriterMainApp : IWriterMainApp
         var mergedFilename = Path.Combine(dir, $"{fileNoExtension}_merged.xlsx");
 
 
-        if (1 == 2)
+        if (1 == 1)
         {
             Console.WriteLine($"\n Create excel Fil3e : {filledFilename}");
             //****************************************************************************************************
@@ -89,7 +89,7 @@ public class WriterMainApp : IWriterMainApp
                 return 1;
             }
         }
-        if (1 == 2)
+        if (1 == 1)
         {
             Console.WriteLine($"\n Fill Excel : {filledFilename}");
             //****************************************************************************************************
