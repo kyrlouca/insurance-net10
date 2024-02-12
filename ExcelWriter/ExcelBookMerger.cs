@@ -147,11 +147,17 @@ public class ExcelBookMerger : IExcelBookMerger
         var templateDescription = "Information on Positions Held";
         CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
 
+
+
         var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
         CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
 
+        
+        var sortedItems = indexList.ListItems.OrderBy(li => li.templateCode).ToList();
+        var sortedIndexList = indexList with { ListItems = sortedItems };
 
-        var indexSheet = RenderIndexList(indexList);
+        var indexSheet = RenderIndexList(sortedIndexList);
+        SortWorksheets(DestWorkbook, sortedIndexList);
 
         indexSheet.Activate();
 
@@ -484,19 +490,17 @@ public class ExcelBookMerger : IExcelBookMerger
 
     private IWorksheet RenderIndexList(IndexSheetList indexList)
     {
-
-
-        var indexSheet = DestWorkbook.Worksheets.Create("List");
-        indexSheet.Move(0);
+        
+        var indexSheet = DestWorkbook.Worksheets.Create("List");        
         indexSheet.SetColumnWidth(1, 30);
         indexSheet.Zoom = 80;
         var titleCell = indexSheet[1, 1];
         titleCell.Text = "List of Templates";
         titleCell.CellStyle = _pensionStyles.HeaderStyle;
         var row = 3;
+
         foreach (var indexItem in indexList.ListItems)
         {
-
             var tableCodeCell = indexSheet[row, 1];
             tableCodeCell.Text = indexItem.templateCode;
 
@@ -516,7 +520,7 @@ public class ExcelBookMerger : IExcelBookMerger
         return indexSheet;
     }
 
-    private bool FixCombinedS6Form(string s6Zet)
+    private IWorksheet? FixCombinedS6Form(string s6Zet)
     {
 
         var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
@@ -538,7 +542,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
         if (s61Worksheet is null || s62Worksheet is null)
         {
-            return false;
+            return null;
         }
 
         //the range for the s61 and s62 data is just one row, and we need to expand to the end of the sheet
@@ -552,7 +556,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
         if (s61DataLine is null || s62DataLine is null)
         {
-            return false;
+            return null;
         }
 
         //expand the range of s61 and s62 to include all the rows until the last Row (UsedRange)
@@ -581,13 +585,12 @@ public class ExcelBookMerger : IExcelBookMerger
         var newS62Range = sCombined.Range[s62Data.Row, s62Data.Column, s61Data.LastRow, s62Data.LastColumn];
         newS62Range.CellStyle = _pensionStyles.DataSectionStyle;
         s61Data.CellStyle = _pensionStyles.DataSectionStyle;
-        var xxss = newS62Range.Columns.First();
-        //xxss.CellStyle.Borders[ExcelBordersIndex.EdgeLeft] = ExcelLineStyle.Thick;
+        var xxss = newS62Range.Columns.First();        
         xxss.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
 
 
 
-        return true;
+        return sCombined;
 
         IRange? FindRow(string key)
         {
@@ -599,6 +602,20 @@ public class ExcelBookMerger : IExcelBookMerger
             return null;
         }
 
+
+    }
+
+    private void SortWorksheets(IWorkbook workbook, IndexSheetList indexList)
+    {
+        var list = indexList.ListItems;
+        foreach(var li in indexList.ListItems)
+        {
+            var pos = list.IndexOf(li);
+            var sheet = workbook.Worksheets[li.sheetName];
+            sheet.Move(pos);
+        }
+        var listsheet = workbook.Worksheets["List"];
+        listsheet.Move(0);
 
     }
 
