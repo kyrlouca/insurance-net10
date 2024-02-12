@@ -113,7 +113,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(tableGroup.TemplateCode);
 
-            if (!specialTemplateLayout?.IsOnlyZet ?? true)
+            if (!specialTemplateLayout?.IsOnlyZet ?? false)
             {
                 //to avoid rendering twice the same mergedsheet for multiple zets (case S.28.01.01)
                 distinctSheetCodeZets = new() { "" };
