@@ -97,6 +97,7 @@ public class ExcelBookMerger : IExcelBookMerger
         var TableGroupsList = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
 
         ///////////////////////
+        var s6Zet = "";
         foreach (var tableGroup in TableGroupsList)
         {
 
@@ -128,6 +129,10 @@ public class ExcelBookMerger : IExcelBookMerger
                     var indexItem = new IndexSheetListItem(zetTemplateLayout.SheetName, zetTemplateLayout.SheetName, zetTemplateLayout.TemplateDescription);
                     indexList.ListItems.Add(indexItem);
                 }
+                if (tableGroup.TemplateCode == "S.06.02.01")
+                {
+                    s6Zet = sheetCodeZet;
+                }
             }
         }
         ///////////////////////
@@ -135,8 +140,8 @@ public class ExcelBookMerger : IExcelBookMerger
         var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
         if (s6SpecialTemplateLayout is not null)
         {
-            var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, "", "abc");
-            //FixCombinedS6Form(s6ZetTemplateBundle);
+            var s6ZetTemplateBundle = ToZetTemplateBundleSpecial(s6SpecialTemplateLayout, s6Zet, "special S6");
+            FixCombinedS6Form(s6ZetTemplateBundle);
         }
 
 
@@ -521,9 +526,8 @@ public class ExcelBookMerger : IExcelBookMerger
         var s62Code = "S.06.02.01.02";
 
 
-        var s61Line = zetTemplateBundle.TableMatrix
-            .FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.01"));
-        var s61Worksheet = s61Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.01").WorkSheet;
+        var s61Line = zetTemplateBundle.TableMatrix.FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode.StartsWith("S.06.02.01.01")));
+        var s61Worksheet = s61Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode.StartsWith("S.06.02.01.01")).WorkSheet;
 
         var s62Line = zetTemplateBundle.TableMatrix
             .FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.02"));
@@ -538,8 +542,17 @@ public class ExcelBookMerger : IExcelBookMerger
 
         //the range for the s61 and s62 data is just one row, and we need to expand to the end of the sheet
         var s61TabName = $"{s61Worksheet.Name}_data";
-        var s61DataLine = DestWorkbook?.Names[$"{s61Worksheet.Name}_data"]?.RefersToRange;
-        var s62DataLine = DestWorkbook?.Names[$"{s62Worksheet.Name}_data"]?.RefersToRange;
+        var s61OriginalDataLine = DestWorkbook?.Names[$"{s61Worksheet.Name}_data"]?.RefersToRange;
+        var s62OriginalDataLine = DestWorkbook?.Names[$"{s62Worksheet.Name}_data"]?.RefersToRange;
+
+
+        var s61DataLine = s61OriginalDataLine?.Rows.First().Offset(1, 0);
+        var s62DataLine = s62OriginalDataLine?.Rows.First().Offset(1, 0);
+
+        if (s61DataLine is null || s62DataLine is null)
+        {
+            return false;
+        }
 
         //expand the range of s61 and s62 to include all the rows until the last Row (UsedRange)
         var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, s61DataLine.LastColumn];
