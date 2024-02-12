@@ -38,6 +38,8 @@ public static class SpecialTemplateList
     {
         Records = new()
         {
+            new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01", new[] { new string[] { "S.06.02.01.01" } }),
+            new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02", new[] { new string[] { "S.06.02.01.02" } }),
             new SpecialTemplateLayout("S.06.02.01", "S.06.02.01", new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             new SpecialTemplateLayout("S.02.02.01", "S.02.02.01", new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
             new SpecialTemplateLayout("S.04.01.01", "S.04.01.01", new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),

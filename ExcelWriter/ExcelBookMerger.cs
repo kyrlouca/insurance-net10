@@ -121,7 +121,7 @@ public class ExcelBookMerger : IExcelBookMerger
                     ? ToZetTemplateLayout(tableGroup, sheetCodeZet)
                     : ToZetTemplateBundleSpecial(specialTemplateLayout, sheetCodeZet, tableGroup.TemplateDescription);
 
-                zetTemplateLayout.SheetName = distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}": $"{zetTemplateLayout.GroupTableCode}";                 
+                zetTemplateLayout.SheetName = distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}" : $"{zetTemplateLayout.GroupTableCode}";
                 zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(zetTemplateLayout);
                 var isRendered = RenderOneZetSheet(zetTemplateLayout);
                 if (isRendered)
@@ -136,6 +136,15 @@ public class ExcelBookMerger : IExcelBookMerger
             }
         }
         ///////////////////////
+
+        var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
+        var templateDescription = "Information on Positions Held";
+        CreateSheetFromLayout( s6Zet, specialTemplateForSingleS61, templateDescription);
+
+        //var specialTemplateForSingleS62 = "S.06.02.01.02_Single";        
+        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
+
+
 
         var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
         if (s6SpecialTemplateLayout is not null)
@@ -161,7 +170,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
         return true;
 
-        
+
         string BuildMergedTableDescription(ZetTemplateLayout zetTemplateBundle)
         {
             using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -173,6 +182,17 @@ public class ExcelBookMerger : IExcelBookMerger
             return templateDesciption;
         }
 
+        void CreateSheetFromLayout(string s6Zet, string specialTemplateLayout, string templateDescription)
+        {
+            var s61Single = SpecialTemplateList.FindSpecialTemplateLayout(specialTemplateLayout);
+            var s61SignleZet = ToZetTemplateBundleSpecial(s61Single, s6Zet, templateDescription);
+            var isRenderedx = RenderOneZetSheet(s61SignleZet);
+            if (isRenderedx)
+            {
+                var indexItem = new IndexSheetListItem(s61SignleZet.SheetName, s61SignleZet.SheetName, s61SignleZet.TemplateDescription);
+                indexList.ListItems.Add(indexItem);
+            }
+        }
     }
 
 
@@ -245,32 +265,7 @@ public class ExcelBookMerger : IExcelBookMerger
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";
         return new SheetExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet, TableDescription = tableDesc };
     }
-    private TemplateSheetInstance? SelectDbSheetBySheetCodeZet(string tableCode, string sheetCodeZet)
-    {
-        //if zet is null or empty do NOT use it in selection
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-
-        var sqlSheetWithoutZet = @"
-                    SELECT sheet.TemplateSheetId, sheet.SheetCode, sheet.TableCode,sheet.SheetTabName
-                    FROM TemplateSheetInstance sheet
-                    WHERE sheet.InstanceId = @_documentId
-                     AND sheet.TableCode= @tableCode                     
-                ";
-
-        var sqlSheetWithZet = @"
-                    SELECT sheet.TemplateSheetId, sheet.SheetCode, sheet.TableCode,sheet.SheetTabName
-                    FROM TemplateSheetInstance sheet
-                    left outer join   SheetZetValue zet on zet.TemplateSheetId= sheet.TemplateSheetId
-                    WHERE sheet.InstanceId = @_documentId
-                        AND sheet.TableCode= @tableCode                                             
-                        and  SheetCodeZet = @SheetCodeZet
-                ";
-
-        var sqlSheets = string.IsNullOrEmpty(sheetCodeZet) ? sqlSheetWithoutZet : sqlSheetWithZet;
-        var result = connectionInsurance.QueryFirstOrDefault<TemplateSheetInstance>(sqlSheets, new { _documentId, tableCode, sheetCodeZet });
-        return result;
-    }
+    
     private bool RenderOneZetSheet(ZetTemplateLayout zetTemplateLayout)
     {
 
