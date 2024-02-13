@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XbrlReader", "XbrlReader\Xb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Validator", "Validator\Validator.csproj", "{2CBCAA6B-908A-4499-9AC6-724296C76531}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewValidator", "NewValidator\NewValidator.csproj", "{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,10 @@ Global
 		{2CBCAA6B-908A-4499-9AC6-724296C76531}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2CBCAA6B-908A-4499-9AC6-724296C76531}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2CBCAA6B-908A-4499-9AC6-724296C76531}.Release|Any CPU.Build.0 = Release|Any CPU
+		{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
