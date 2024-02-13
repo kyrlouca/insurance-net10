@@ -58,7 +58,7 @@ public record ValidationRecord
     public static ValidationRecord? CreateValidationRecord(string text)
     {
         var pairs = SplitTerm(text);
-        string zet="", table="", row="", col="", solv="", solv2="", dim="" ,metric="", fa="",fv="" ,dv="",id="";
+        string zet="", table="", row="", col="", dim="" ,metric="", fa="",fv="" ,dv="",id="";
         bool isSeq = false;
         
         foreach (var pair in pairs)
@@ -69,11 +69,11 @@ public record ValidationRecord
                 case "t": table = pair.Value; break;
                 case "r": row = pair.Value; break;
                 case "c": col = pair.Value; break;
-                case "s": solv= pair.Value; break;
+                //case "s": solv= pair.Value; break;
                 case "dim": dim = pair.Value; break;
                 case "m": metric = pair.Value; break;
                 case "seq": isSeq =  pair.Value=="True"; break;
-                case "f": fa = pair.Value; break;
+                case "f": solv = pair.Value; break;
                 case "fv": fv = pair.Value; break;
                 case "dv": dv = pair.Value; break;
                 case "id": id = pair.Value; break;
@@ -92,7 +92,7 @@ public record ValidationRecord
             Metric = metric,
             Fa = fa,    
             Fv = fv,
-            Id = id,
+            Id
             IsSeq = isSeq
 
 
