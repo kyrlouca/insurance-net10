@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Validator", "Validator\Vali
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewValidator", "NewValidator\NewValidator.csproj", "{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestNewValidations", "TestNewValidations\TestNewValidations.csproj", "{37055BD7-C2A2-4EB9-B4D3-9281929CFE3D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,10 @@ Global
 		{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37055BD7-C2A2-4EB9-B4D3-9281929CFE3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37055BD7-C2A2-4EB9-B4D3-9281929CFE3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37055BD7-C2A2-4EB9-B4D3-9281929CFE3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37055BD7-C2A2-4EB9-B4D3-9281929CFE3D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
