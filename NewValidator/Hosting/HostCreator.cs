@@ -39,10 +39,10 @@ public class HostCreator
 			 var vr = context.Configuration["eiopa-version"] ?? "";
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
-			 services.AddScoped<IParameterHandler, ParameterHandler>();
-			 //services.AddScoped<IExcelBookWriter,ExcelBookCreator>();			 
+			 services.AddScoped<IParameterHandler, ParameterHandler>();			 
 			 services.AddScoped<INewValidatorMain, NewValidatorMain>();
-   
+             services.AddScoped<IDocumentValidator, DocumentValidator>();
+
          })
 		.UseSerilog((hostingContext, loggerConfiguration) =>
 		{

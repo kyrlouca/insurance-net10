@@ -14,22 +14,24 @@ public class NewValidatorMain : INewValidatorMain
     private ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
+    private IDocumentValidator _documentValidator;
     //private readonly IExcelBookWriter _excelBookWriter;
     //private readonly IExcelBookDataFiller _excelBookDataFiller;
     //private readonly IExcelBookMerger _templateMerger;
 
 
     public int id = 12;
-    public NewValidatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
+    public NewValidatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
-        //_excelBookWriter = excelBookWriter;
-        //_excelBookDataFiller = excelBookDataFiller;
-        //_templateMerger = templateMerger;
-    }
+        _documentValidator = documentValidator;
+        
+    //_excelBookDataFiller = excelBookDataFiller;
+    //_templateMerger = templateMerger;
+}
     public int Run()
     {
         Console.WriteLine($"started Excel Writer - DocumentId:{_parameterData.DocumentId}");
@@ -68,12 +70,10 @@ public class NewValidatorMain : INewValidatorMain
             _logger.Information(smessage);
             _SqlFunctions.CreateTransactionLog(MessageType.INFO, smessage);
 
+            
 
-            var docId = 5004;
-            var result = false;
-
-            var res = 1;
-            //var res = _documentValidator.ValidateDocument();
+            //var res = 1;
+            var res = _documentValidator.ValidateDocument();
             if (res == 0)
             {
                 var fmessage = $"\nValidator Finished";
