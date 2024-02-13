@@ -19,18 +19,18 @@ public record ValidationRecord
     //{t: S.01.01.07.01, r: R0540, c: C0010}
     //{t: S.01.01.07.01, r: R0540, c: C0010, dv: [Default], seq: False, id: v1, f: solvency, fv: solvency2}
     //{ m: [s2md_met:ei1024], seq: False, id: v0} 
-    public string Table { get; set; }
-    public string Zet { get; set; } 
-    public string Row { get; set; }
-    public string Col { get; set; }
-    public string Dim { get; set; }
-    public string Metric { get; set; }
-    public string Solv { get; set; }
-    public string Solv2 { get; set; }
-    public string Fa { get; set; }
-    public string Fv { get; set; }
-    public string Dv { get; set; }
-    public string Id { get; set; }
+    public string Table { get; set; } = "";
+    public string Zet { get; set; } = string.Empty; 
+    public string Row { get; set; } = "";
+    public string Col { get; set; } = "";
+    public string Id { get; set; } = "";
+
+    public string Dim { get; set; } = "";
+    public string Metric { get; set; } = "";
+
+    public string F { get; set; } = "";
+    public string Fv { get; set; } = "";
+    public string Dv { get; set; } = "";
     public bool IsSeq { get; set; }
 
     static public List<TermPairSplit> SplitTerm(string text)
@@ -58,22 +58,22 @@ public record ValidationRecord
     public static ValidationRecord? CreateValidationRecord(string text)
     {
         var pairs = SplitTerm(text);
-        string zet="", table="", row="", col="", dim="" ,metric="", fa="",fv="" ,dv="",id="";
+        string z="", t="", r="", col="", dim="" ,m="", f="",fv="" ,dv="",id="";
         bool isSeq = false;
         
         foreach (var pair in pairs)
         {
             switch (pair.Key.ToLower()) // Case-insensitive comparison
             {
-                case "z": zet = pair.Value; break;
-                case "t": table = pair.Value; break;
-                case "r": row = pair.Value; break;
+                case "z": z = pair.Value; break;
+                case "t": t = pair.Value; break;
+                case "r": r = pair.Value; break;
                 case "c": col = pair.Value; break;
-                //case "s": solv= pair.Value; break;
+                
                 case "dim": dim = pair.Value; break;
-                case "m": metric = pair.Value; break;
+                case "m": m = pair.Value; break;
                 case "seq": isSeq =  pair.Value=="True"; break;
-                case "f": solv = pair.Value; break;
+                case "f": f = pair.Value; break;
                 case "fv": fv = pair.Value; break;
                 case "dv": dv = pair.Value; break;
                 case "id": id = pair.Value; break;
@@ -82,17 +82,16 @@ public record ValidationRecord
         }
         var rec = new ValidationRecord()
         {
-            Zet = zet,
-            Table = table,
-            Row = row,
-            Col = col,
-            Solv = solv,            
-            Solv2 = solv2,
+            Zet = z,
+            Table = t,
+            Row = r,
+            Col = col,            
             Dim = dim,
-            Metric = metric,
-            Fa = fa,    
+            Metric = m,
+            F = f,    
             Fv = fv,
-            Id
+            Id=id,
+            Dv = dv,
             IsSeq = isSeq
 
 
