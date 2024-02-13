@@ -1,4 +1,4 @@
-﻿namespace ExcelWriter.Hosting;
+﻿namespace NewValidator.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
@@ -40,11 +40,9 @@ public class HostCreator
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
-			 //services.AddScoped<IExcelBookWriter,ExcelBookCreator>();
-			 //services.AddScoped<IExcelBookDataFiller, ExcelBookDataFiller>();
-			 //services.AddScoped<IExcelBookMerger, ExcelBookMerger>();
-			 //services.AddScoped<IWriterMainApp, WriterMainApp>();
-    //         services.AddScoped<ICustomPensionStyler, CustomPensionStyler>();
+			 //services.AddScoped<IExcelBookWriter,ExcelBookCreator>();			 
+			 services.AddScoped<INewValidatorMain, NewValidatorMain>();
+   
          })
 		.UseSerilog((hostingContext, loggerConfiguration) =>
 		{

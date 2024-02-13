@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "NewValidator": {
+      "commandName": "Project",
+      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=14159\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\T1-GeneralInsurance-q4-2023-v2.xlsx\"",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Develop"
+      }
+    }
+  }
+}
