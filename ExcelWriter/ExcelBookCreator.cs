@@ -238,7 +238,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
 
                 leftLabelRange.ColumnWidth = 50;
-                leftLabelRange.WrapText = false;
+                leftLabelRange.WrapText = true;
             }
 
             //////////// LEFT ROW Numbers

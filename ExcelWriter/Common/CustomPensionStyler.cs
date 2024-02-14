@@ -40,7 +40,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.Font.FontName = "Calibri";
         style.Font.Size = 11;
         style.ColorIndex = ExcelKnownColors.Custom18;
-        style.WrapText = false;        
+        style.WrapText = true;        
         style.Borders.LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
         style.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;

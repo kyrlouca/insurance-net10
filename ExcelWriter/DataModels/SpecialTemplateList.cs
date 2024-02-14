@@ -44,8 +44,8 @@ public static class SpecialTemplateList
             //todo replace 5.01.02 with 12.
             new SpecialTemplateLayout("S.05.01.02.01", "S.05.01.02.01","Premiums, claims and expenses by line of business - non life",false, new[] { new string[] { "S.05.01.02.01" } }),
             new SpecialTemplateLayout("S.05.01.02.02", "S.05.01.02.02","Premiums, claims and expenses by line of business - life",false, new[] { new string[] { "S.05.01.02.02" } }),
-            //new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01","List of assets-Information on positions held",false, new[] { new string[] { "S.06.02.01.01" } }),
-            //new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02","List of assets-Information on assets",false, new[] { new string[] { "S.06.02.01.02" } }),
+            new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01","List of assets-Information on positions held",false, new[] { new string[] { "S.06.02.01.01" } }),
+            new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02","List of assets-Information on assets",false, new[] { new string[] { "S.06.02.01.02" } }),
             new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             //new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01" } }),
             new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",true, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
@@ -82,7 +82,7 @@ public static class SpecialTemplateList
         return new List<string> { "S.05.01.02","S.06.02.01" };
     }
 
-    public static List<string> SinglePageTemplateGroups()
+    public static List<string> IncludeSinglePageTemplateGroups()
     {
         return new List<string> { "S.06.02.01", "S.05.01.02.01_Single", "S.05.01.02.02_Single" };
     }
@@ -92,24 +92,14 @@ public static class SpecialTemplateList
         return new List<string> {
             "S.05.01.02.01",        
             "S.05.01.02.02",        
-            "S.06.02.01.01_Single", 
-            "S.06.02.01.02_Single", 
+            //"S.06.02.01.01_Single", 
+            //"S.06.02.01.02_Single", 
             "S.06.02.01",           
         };
     }
+    
 
-    public static List<TableGroup> SinglePageTableGroupsxx()
-    {
-        return new List<TableGroup> {
-            new("S.05.01.02.01", "S.05.01.02.02 LifeInsurance", new List<string>()),
-            new("S.05.01.02.02", "S.05.01.02.02 Life", new List<string>()),            
-            //new("S.06.02.01.01_Single", "S.06.02.01.01 Description Single", new List<string>()),
-            //new("S.06.02.01.02_Single", "S.06.02.01.02 Description Single", new List<string>()),
-            new("S.06.02.01", "S.06.02.01 Combined Description Single", new List<string>()),
-        };
-    }
-
-    public static SpecialTemplateLayout? FindSpecialTemplateLayout(string templateCode)
+    public static SpecialTemplateLayout? FindSpecialTemplateLayoutByCode(string templateCode)
     {
         var rec = Records.FirstOrDefault(line => line.TemplateCode == templateCode.Trim());
         return rec;

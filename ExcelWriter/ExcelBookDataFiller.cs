@@ -196,7 +196,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //data
         //dataRange.CellStyle = _pensionStyles.DataSectionStyle;
         dataRange.ColumnWidth = 30;
-        dataRange.WrapText = false;
+        dataRange.WrapText = true;
 
          FormatDataSectionColors(dataRange);
 
@@ -316,7 +316,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         {
             dataRange.CellStyle = _pensionStyles.DataSectionStyle;
             dataRange.ColumnWidth = 20;
-            dataRange.WrapText = false;
+            dataRange.WrapText = true;
             
             
             dataRange.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;

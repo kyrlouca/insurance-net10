@@ -8,6 +8,7 @@ using Shared.DataModels;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
+using Syncfusion.Compression;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.FormatParser.FormatTokens;
 using Syncfusion.XlsIO.Implementation;
@@ -29,6 +30,8 @@ public class ExcelBookMerger : IExcelBookMerger
     private IWorkbook? DestWorkbook;
     int _documentId = 0;
     DocInstance _documentInstance;
+    const int SPACE_BETWEEN_TABLES_HORIZONTAL = 2;
+    const int SPACE_BETWEEN_TABLES_VERTICAL = 3;
 
     //private IStyle? tableCodeStyle;
     //private IStyle? bodyStyle;
@@ -99,7 +102,7 @@ public class ExcelBookMerger : IExcelBookMerger
             .Where(tg => !SpecialTemplateList.ExcludeTemplateGroups().Contains(tg.TemplateCode)).ToList();
 
         var specialGroups = SpecialTemplateList.SinglePageTableGroupsId()
-            .Select(code => SpecialTemplateList.FindSpecialTemplateLayout(code))
+            .Select(code => SpecialTemplateList.FindSpecialTemplateLayoutByCode(code))
             .Where(sp=> sp is not null)
             .Select(sp=>new TableGroup(sp.TemplateCode,"",new List<string>()))
             .ToList();
@@ -113,9 +116,7 @@ public class ExcelBookMerger : IExcelBookMerger
         var s6Zet = "";
         foreach (var tableGroup in tableGroupsList)
         {
-            if (tableGroup.TemplateCode == "S.06.02.01") {
-                var xx = 323;
-            }
+            
 
                 var distinctSheetCodeZets = tableGroup.TableCodes
                 .SelectMany(tc => SelectSheetCodeZets(tc))
@@ -127,7 +128,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 distinctSheetCodeZets.Add("");
             }
 
-            var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(tableGroup.TemplateCode);
+            var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCode(tableGroup.TemplateCode);
             
 
             if (!specialTemplateLayout?.IsZetImportant ?? false)
@@ -142,13 +143,13 @@ public class ExcelBookMerger : IExcelBookMerger
                 //use the specialTemplateLayout if is  found in the static list, otherwise create one using the tables in the table group
                 var zetTemplateLayout = specialTemplateLayout is null
                     ? ToZetTemplateLayout(tableGroup, sheetCodeZet)
-                    : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, sheetCodeZet, specialTemplateLayout.TemplateSheetDescription);
+                    : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, sheetCodeZet);
 
                 zetTemplateLayout.SheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName
                                                    :distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}" 
                                                    : $"{zetTemplateLayout.GroupTableCode}";
                 zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(specialTemplateLayout is not null,zetTemplateLayout);
-                var isRendered = RenderOneZetSheet(zetTemplateLayout);
+                (var isRendered,var sheet )= RenderOneZetSheet(zetTemplateLayout);
                 if (isRendered)
                 {
                     var indexItem = new IndexSheetListItem(zetTemplateLayout.SheetName, zetTemplateLayout.SheetName, zetTemplateLayout.TemplateDescription);
@@ -162,18 +163,11 @@ public class ExcelBookMerger : IExcelBookMerger
         }
         ///////////////////////
 
+        var sheet61 = CreateSheetFromLayout("", "S.06.02.01.01_Single");
+        var sheet62 = CreateSheetFromLayout("", "S.06.02.01.02_Single");
+        
 
-
-        //FixCombinedS6Form(s6Zet);
-
-
-
-        //var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
-        //var templateDescription = "Information on Positions Held";
-        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
-
-        //var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
-        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
+        FixCombinedS6Form(s6Zet);
 
 
         var sortedItems = indexList.ListItems.OrderBy(li => li.templateCode).ToList();
@@ -210,16 +204,18 @@ public class ExcelBookMerger : IExcelBookMerger
             return templateDesciption;
         }
 
-        void CreateSheetFromLayout(string s6Zet, string specialTemplateLayoutCode, string templateDescription)
+        IWorksheet? CreateSheetFromLayout(string s6Zet, string specialTemplateLayoutCode)
         {
-            var specialLayout = SpecialTemplateList.FindSpecialTemplateLayout(specialTemplateLayoutCode);
-            var specialLayoutZet = ToZetTemplateUsingSpecialLayout(specialLayout, s6Zet, templateDescription);
-            var isRenderedx = RenderOneZetSheet(specialLayoutZet);
+            var specialLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCode(specialTemplateLayoutCode);
+            var specialLayoutZet = ToZetTemplateUsingSpecialLayout(specialLayout, s6Zet);
+             (var isRenderedx,var sheet )= RenderOneZetSheet(specialLayoutZet);
             if (isRenderedx)
             {
                 var indexItem = new IndexSheetListItem(specialLayoutZet.SheetName, specialLayoutZet.SheetName, specialLayoutZet.TemplateDescription);
                 indexList.ListItems.Add(indexItem);
+                return sheet;
             }
+            return null;
         }
     }
 
@@ -247,7 +243,7 @@ public class ExcelBookMerger : IExcelBookMerger
         return ztb;
 
     }
-    private ZetTemplateLayout ToZetTemplateUsingSpecialLayout(SpecialTemplateLayout specialTemplateLayout, string sheetCodeZet, string templateDescription)
+    private ZetTemplateLayout ToZetTemplateUsingSpecialLayout(SpecialTemplateLayout specialTemplateLayout, string sheetCodeZet)
     {
 
         //populate the special template layout with the se of the specified sheetCodeZet
@@ -262,7 +258,7 @@ public class ExcelBookMerger : IExcelBookMerger
             SheetCodeZet = sheetCodeZet,
             SheetName = specialTemplateLayout.TemplateSheetName,
             GroupTableCode = specialTemplateLayout.TemplateCode,
-            TemplateDescription = templateDescription,
+            TemplateDescription = specialTemplateLayout.TemplateSheetDescription,
             IsOnlyZet = specialTemplateLayout.IsZetImportant,
             TableMatrix = tableMatrix
         };
@@ -286,9 +282,9 @@ public class ExcelBookMerger : IExcelBookMerger
         return distinctList;
 
     }
-    private SheetExtensiveInfo CreateSheetExtensiveInfo(string tableCode, string sheetCodeZet, bool isOnlyZet)
+    private SheetExtensiveInfo CreateSheetExtensiveInfo(string tableCode, string sheetCodeZet, bool isZetImportant)
     {
-        var dbSheet = isOnlyZet
+        var dbSheet = isZetImportant
             ? _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, tableCode, sheetCodeZet)
             : _SqlFunctions.SelectTempateSheetBySheetCodeAllZets(_documentId, tableCode);
 
@@ -297,7 +293,7 @@ public class ExcelBookMerger : IExcelBookMerger
         return new SheetExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet, TableDescription = tableDesc };
     }
 
-    private bool RenderOneZetSheet(ZetTemplateLayout zetTemplateLayout)
+    private (bool,IWorksheet? )RenderOneZetSheet(ZetTemplateLayout zetTemplateLayout)
     {
 
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -306,7 +302,7 @@ public class ExcelBookMerger : IExcelBookMerger
         var hasElements = zetTemplateLayout.TableMatrix.Any(row => row.HorizontalSheetInfo.Any(sh => sh.WorkSheet is not null));
         if (!hasElements)
         {
-            return false;
+            return (false,null);
         }
 
 
@@ -378,25 +374,26 @@ public class ExcelBookMerger : IExcelBookMerger
 
                 maxTableHeight = Math.Max(maxTableHeight, sheetLastRow);
 
-                OffesetHORIZONTAL += OffesetHORIZONTAL + sheetLastCol + 3;
+                OffesetHORIZONTAL += OffesetHORIZONTAL + sheetLastCol + SPACE_BETWEEN_TABLES_HORIZONTAL;
             }
-            offsetVERTICAL = offsetVERTICAL + maxTableHeight + 5;
+            offsetVERTICAL = offsetVERTICAL + maxTableHeight + SPACE_BETWEEN_TABLES_VERTICAL;
         }
 
 
-        return true;
+        return (true,destSheet);
         /////////////////////////////////////////////////////////////////////        
 
         static void FormatColumnsWidth(bool isOpenTable, IWorksheet worksheet, IRange destRange)
         {
             //destRange.ColumnWidth = isOpenTable? 30 : 20;
-            destRange.WrapText = false;
+            destRange.WrapText = true;
             IRange rowLabelCell = destRange["A1"];
             var rowRgxN = new Regex(@"^R\d{4}");
             var colRgxN = new Regex(@"^C\d{4}");
             if (isOpenTable)
             {
                 destRange.ColumnWidth = 20;
+                destRange.WrapText = false;
             }
             if (!isOpenTable)
             {
@@ -566,25 +563,25 @@ public class ExcelBookMerger : IExcelBookMerger
             return null;
         }
 
-        var S61CombinedData = FindNamedRange(DestWorkbook, s61Code);
-        var S62CombinedData = FindNamedRange(DestWorkbook, s62Code);
-        var localCombine62 = S62CombinedData.AddressLocal;
+        
+        var S61DataRange = FindNamedRange(DestWorkbook, s61Code);
+        var S62DataRange = FindNamedRange(DestWorkbook, s62Code);
 
-        var ff = S62CombinedData.Columns.FirstOrDefault();
-        var S62SinglePageData = s62Worksheet.Range[localCombine62].Offset(0, -5);
+        var last = S61DataRange.Rows.First().Columns.Last();
+        var s62InCombined = sCombinedWorksheet.Range[last.Row, last.Column + 1, last.Row, last.Column + 20];        
+        var cellx = s62InCombined.Cells.FirstOrDefault(cell => Regex.IsMatch(cell.Value, @"C\d{4}"));
 
+        
 
-
-        foreach (var s61row in S61CombinedData!.Rows.Skip(1))
+        foreach (var s61row in S61DataRange!.Rows.Skip(1))
         {
-            var key = s61row.Columns[1].Value ?? "";
-            //var s62xRow = Find62Row(s62FullData, key);
-            var s62xRow = Find62Row(S62CombinedData, key);
+            var key = s61row.Columns[1].Value ?? "";            
+            var s62xRow = Find62Row(S62DataRange, key);
             if (s62xRow is null)
             {
                 continue;
             }
-            s62xRow.CopyTo(sCombinedWorksheet.Range[s61row.Row, s62xRow.LastColumn + 5]);
+            s62xRow.CopyTo(sCombinedWorksheet.Range[s61row.Row, cellx.Column]);
         }
 
 
