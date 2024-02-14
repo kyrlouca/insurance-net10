@@ -15,7 +15,7 @@ public class SpecialTemplateLayout
 {
     public string TemplateCode { get; init; }
     public string TemplateSheetName { get; init; }
-    public bool IsOnlyZet { get;init; }
+    public bool IsOnlyZet { get; init; }
     public String[][] TableCodesMatrix { get; init; }
     public ZMatrix ZMatrix { get; init; }
     public List<List<string>> TableCodes { get; init; }
@@ -25,9 +25,9 @@ public class SpecialTemplateLayout
         TemplateSheetName = templateSheetName;
         IsOnlyZet = isOnlyZet;
         TableCodesMatrix = tableCodes;
-        TableCodes = TableCodesMatrix.Select(tc => tc.ToList()).ToList();        
+        TableCodes = TableCodesMatrix.Select(tc => tc.ToList()).ToList();
         ZMatrix = new ZMatrix(tableCodes.Select(codeList => new ZHorizontalTables(codeList.ToList())).ToList());
-    }    
+    }
 }
 
 
@@ -39,6 +39,8 @@ public static class SpecialTemplateList
     {
         Records = new()
         {
+            new SpecialTemplateLayout("S.05.01.02.01", "S.05.01.02.01",false, new[] { new string[] { "S.05.01.02.01" } }),
+            new SpecialTemplateLayout("S.05.01.02.02", "S.05.01.02.02",false, new[] { new string[] { "S.05.01.02.02" } }),
             new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01",false, new[] { new string[] { "S.06.02.01.01" } }),
             new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02",false, new[] { new string[] { "S.06.02.01.02" } }),
             new SpecialTemplateLayout("S.06.02.01", "S.06.02.01",true, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
@@ -66,6 +68,30 @@ public static class SpecialTemplateList
                     new string[] { "S.28.01.01.03", "S.28.01.01.04" },
                     new string[] { "S.28.01.01.05" }
             })
+        };
+    }
+
+    //a list of excluded template groups because use wants to separate sheet for each table
+    //the tables should be added in SinglePageTemplateGroups
+    public static List<string> ExcludeTemplateGroups()
+    {
+        return new List<string> { "S.05.01.02" };
+    }
+
+    public static List<string> SinglePageTemplateGroups()
+    {
+        return new List<string> { "S.05.01.02.01_Single", "S.05.01.02.02_Single" };
+    }
+
+
+
+    public static List<TableGroup> SinglePageTableGroups()
+    {
+        return new List<TableGroup> {
+            new("S.05.01.02.01", "S.05.01.02.02 LifeInsurance", new List<string>()),
+            new("S.05.01.02.02", "S.05.01.02.02 Life", new List<string>()),
+            new("S.06.02.01.01_Single", "S.06.02.01.01 Description Single", new List<string>()),
+            new("S.06.02.01.02_Single", "S.06.02.01.02 Description Single", new List<string>())
         };
     }
 

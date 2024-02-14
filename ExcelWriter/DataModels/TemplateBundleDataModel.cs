@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace ExcelWriter.DataModels;
 
-public record struct xxZetTemplateBundleListxx(List<ZetTemplateLayout> ZetBundleList);
 
 //ZetTemplateBundle contains list of lists to accomodate a list of horizontal tables layout
 //Each outer vertical list contains a horizontal line of tables

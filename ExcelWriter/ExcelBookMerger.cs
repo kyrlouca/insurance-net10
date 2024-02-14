@@ -1,19 +1,17 @@
 ﻿namespace ExcelWriter;
-using Shared.HostParameters;
 using Dapper;
+using ExcelWriter.Common;
+using ExcelWriter.DataModels;
 using Microsoft.Data.SqlClient;
 using Serilog;
-using Shared.SharedHost;
 using Shared.DataModels;
-using ExcelWriter.DataModels;
+using Shared.HostParameters;
+using Shared.SharedHost;
+using Shared.SQLFunctions;
 using Syncfusion.XlsIO;
+using Syncfusion.XlsIO.Implementation;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Reflection.Metadata;
-using Syncfusion.XlsIO.Implementation;
-using ExcelWriter.Common;
-using Shared.SQLFunctions;
 using System.Text.RegularExpressions;
 
 public class ExcelBookMerger : IExcelBookMerger
@@ -94,11 +92,19 @@ public class ExcelBookMerger : IExcelBookMerger
 
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
 
-        var TableGroupsList = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
+        var tableGroupsList = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
+
+        tableGroupsList = tableGroupsList
+            .Where(tg => !SpecialTemplateList.ExcludeTemplateGroups().Contains(tg.TemplateCode)).ToList();
+        
+        tableGroupsList.AddRange(SpecialTemplateList.SinglePageTableGroups());
+
+            
+
 
         ///////////////////////
         var s6Zet = "";
-        foreach (var tableGroup in TableGroupsList)
+        foreach (var tableGroup in tableGroupsList)
         {
 
             var distinctSheetCodeZets = tableGroup.TableCodes
@@ -112,6 +118,7 @@ public class ExcelBookMerger : IExcelBookMerger
             }
 
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(tableGroup.TemplateCode);
+            
 
             if (!specialTemplateLayout?.IsOnlyZet ?? false)
             {
@@ -149,12 +156,12 @@ public class ExcelBookMerger : IExcelBookMerger
 
 
 
-        var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
-        var templateDescription = "Information on Positions Held";
-        CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
+        //var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
+        //var templateDescription = "Information on Positions Held";
+        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
 
-        var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
-        CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
+        //var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
+        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
 
 
         var sortedItems = indexList.ListItems.OrderBy(li => li.templateCode).ToList();
