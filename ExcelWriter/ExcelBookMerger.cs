@@ -9,6 +9,7 @@ using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
 using Syncfusion.XlsIO;
+using Syncfusion.XlsIO.FormatParser.FormatTokens;
 using Syncfusion.XlsIO.Implementation;
 using System;
 using System.Collections.Generic;
@@ -545,87 +546,81 @@ public class ExcelBookMerger : IExcelBookMerger
 
     private IWorksheet? FixCombinedS6Form(string s6Zet)
     {
-        var tabSheetCode = "S.06.02.01";
-
-        var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(tabSheetCode);
-        var s6ZetTemplateBundle = ToZetTemplateUsingSpecialLayout(s6SpecialTemplateLayout, s6Zet, "special S6");
-
-        //var s61Code = "S.06.02.01.01";
-        //var s62Code = "S.06.02.01.02";
+        var combinedCode = "S.06.02.01_Combined";
+        var s61Code = "S.06.02.01.01";
+        var s62Code = "S.06.02.01.02";
 
 
-        var s61Line = s6ZetTemplateBundle.TableMatrix.FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.01"));
-        var s61Worksheet = s61Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.01").WorkSheet;
+        //var s61Line = s6ZetTemplateBundle.TableMatrix.FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.01"));
+        //var s61Worksheet = s61Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.01").WorkSheet;
 
-        var s62Line = s6ZetTemplateBundle.TableMatrix
-            .FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.02"));
-        var s62Worksheet = s62Line.HorizontalSheetInfo.FirstOrDefault(tbl => tbl.TableCode == "S.06.02.01.02").WorkSheet;
 
-        var sCombined = DestWorkbook.Worksheets["S.06.02.01"];
+        var xx = DestWorkbook.Names; 
 
-        if (s61Worksheet is null || s62Worksheet is null)
+        var sCombinedWorksheet = DestWorkbook.Worksheets[combinedCode];
+        var s61Worksheet = DestWorkbook.Worksheets[s61Code];
+        var s62Worksheet = DestWorkbook.Worksheets[s62Code];
+
+        if (sCombinedWorksheet is null || s61Worksheet is null || s62Worksheet is null)
         {
             return null;
         }
 
-        //the range for the s61 and s62 data is just one row, and we need to expand to the end of the sheet
-        var s61TabName = $"{s61Worksheet.Name}_data";
-        var s61OriginalDataLine = DestWorkbook?.Names[$"{s61Worksheet.Name}_data"]?.RefersToRange;
-        var s62OriginalDataLine = DestWorkbook?.Names[$"{s62Worksheet.Name}_data"]?.RefersToRange;
+        var S61CombinedData = FindNamedRange(DestWorkbook, s61Code);
+        var S62CombinedData = FindNamedRange(DestWorkbook, s62Code);
+        var localCombine62 = S62CombinedData.AddressLocal;
+
+        var ff = S62CombinedData.Columns.FirstOrDefault();
+        var S62SinglePageData = s62Worksheet.Range[localCombine62].Offset(0, -5);
 
 
-        var s61DataLine = s61OriginalDataLine?.Rows.First().Offset(1, 0);
-        var s62DataLine = s62OriginalDataLine?.Rows.First().Offset(1, 0);
 
-        if (s61DataLine is null || s62DataLine is null)
+        foreach (var s61row in S61CombinedData!.Rows.Skip(1))
         {
-            return null;
-        }
-
-        //expand the range of s61 and s62 to include all the rows until the last Row (UsedRange)
-        var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, s61DataLine.LastColumn];
-        var s62Data = sCombined.Range[s62DataLine.Row, s62DataLine.Column, s62Worksheet.UsedRange.LastRow, s62DataLine.LastColumn];
-        var s62KeyColumn = s62Data.Columns[0];
-
-
-
-        foreach (var s61row in s61Data.Rows)
-        {
-            var key = s61row.Columns[1].Value;
-            var s62Row = FindRow(key);
-            if (s62Row is null)
+            var key = s61row.Columns[1].Value ?? "";
+            //var s62xRow = Find62Row(s62FullData, key);
+            var s62xRow = Find62Row(S62CombinedData, key);
+            if (s62xRow is null)
             {
                 continue;
             }
-            s62Row.CopyTo(sCombined.Range[s61row.Row, s62Row.LastColumn + 5]);
+            s62xRow.CopyTo(sCombinedWorksheet.Range[s61row.Row, s62xRow.LastColumn + 5]);
         }
 
 
-        var sortedRange = sCombined.Range[s62Data.Row, s62Data.LastColumn + 5, s61Data.LastRow, s62Data.LastColumn + 5 + s62Data.Columns.Length - 1];
-        sortedRange.MoveTo(s62Data);
-        sCombined.UsedRange.ColumnWidth = 30;
-        var xxstyle = _pensionStyles.DataSectionStyle.Borders[ExcelBordersIndex.EdgeLeft];
-        var newS62Range = sCombined.Range[s62Data.Row, s62Data.Column, s61Data.LastRow, s62Data.LastColumn];
-        newS62Range.CellStyle = _pensionStyles.DataSectionStyle;
-        s61Data.CellStyle = _pensionStyles.DataSectionStyle;
-        var xxss = newS62Range.Columns.First();
-        xxss.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thick;
+
+
+        return sCombinedWorksheet;
 
 
 
-        return sCombined;
-
-        IRange? FindRow(string key)
+        IRange? Find62Row(IRange range62, string key)
         {
-            foreach (IRange keyRange in s62KeyColumn.FindAll(key, ExcelFindType.Text))
+            foreach (IRange keyRange in range62.Columns[0].FindAll(key, ExcelFindType.Text))
             {
-                var s62Row = s62Data[keyRange.Row, s62Data.Column, keyRange.Row, s62Data.LastColumn];
+                var s62Row = range62[keyRange.Row, range62.Column, keyRange.Row, range62.LastColumn];
                 return s62Row;
             }
+
             return null;
         }
 
-
+        IRange? FindNamedRange(IWorkbook workbook, string startingText)
+        {
+            var names = workbook.Names;
+            IRange range = null;
+            foreach (var r in Enumerable.Range(1, names.Count))
+            {
+                var x = names[r];
+                var name = x.Name ?? "";
+                if (name.StartsWith(startingText))
+                {
+                    range = x.RefersToRange;
+                    return range;
+                }
+            }
+            return null;
+        }
     }
 
     private void SortWorksheets(IWorkbook workbook, IndexSheetList indexList)

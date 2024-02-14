@@ -44,6 +44,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
     public bool FillExcelBook(int documentId, string sourceFilename, string destFileName)
     {
+        //Open the source file as a workbook, fill the sheets and save this Workbook with another name.
         _documentId = documentId;
         _parameterData = _parameterHandler.GetParameterData();
 
