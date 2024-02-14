@@ -43,7 +43,7 @@ public static class SpecialTemplateList
             new SpecialTemplateLayout("S.05.01.02.02", "S.05.01.02.02",false, new[] { new string[] { "S.05.01.02.02" } }),
             new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01",false, new[] { new string[] { "S.06.02.01.01" } }),
             new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02",false, new[] { new string[] { "S.06.02.01.02" } }),
-            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01",true, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
+            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined",true, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             new SpecialTemplateLayout("S.02.02.01", "S.02.02.01",true, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
             new SpecialTemplateLayout("S.04.01.01", "S.04.01.01", true, new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
             new SpecialTemplateLayout("S.05.02.01", "S.05.02.01", true, new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
@@ -90,8 +90,8 @@ public static class SpecialTemplateList
         return new List<TableGroup> {
             new("S.05.01.02.01", "S.05.01.02.02 LifeInsurance", new List<string>()),
             new("S.05.01.02.02", "S.05.01.02.02 Life", new List<string>()),
-            new("S.06.02.01.01_Single", "S.06.02.01.01 Description Single", new List<string>()),
-            new("S.06.02.01.02_Single", "S.06.02.01.02 Description Single", new List<string>())
+            //new("S.06.02.01.01_Single", "S.06.02.01.01 Description Single", new List<string>()),
+            //new("S.06.02.01.02_Single", "S.06.02.01.02 Description Single", new List<string>())
         };
     }
 

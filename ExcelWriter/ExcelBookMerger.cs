@@ -156,12 +156,12 @@ public class ExcelBookMerger : IExcelBookMerger
 
 
 
-        //var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
-        //var templateDescription = "Information on Positions Held";
-        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
+        var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
+        var templateDescription = "Information on Positions Held";
+        CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
 
-        //var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
-        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
+        var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
+        CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
 
 
         var sortedItems = indexList.ListItems.OrderBy(li => li.templateCode).ToList();
