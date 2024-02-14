@@ -15,15 +15,17 @@ public class SpecialTemplateLayout
 {
     public string TemplateCode { get; init; }
     public string TemplateSheetName { get; init; }
-    public bool IsOnlyZet { get; init; }
+    public string TemplateSheetDescription { get; init; }
+    public bool IsZetImportant { get; init; }
     public String[][] TableCodesMatrix { get; init; }
     public ZMatrix ZMatrix { get; init; }
     public List<List<string>> TableCodes { get; init; }
-    public SpecialTemplateLayout(string templateCode, string templateSheetName, bool isOnlyZet, string[][] tableCodes)
+    public SpecialTemplateLayout(string templateCode, string templateSheetName,string templateSheetDescription, bool isZetImportant, string[][] tableCodes)
     {
         TemplateCode = templateCode;
         TemplateSheetName = templateSheetName;
-        IsOnlyZet = isOnlyZet;
+        TemplateSheetDescription = templateSheetDescription;
+        IsZetImportant = isZetImportant;
         TableCodesMatrix = tableCodes;
         TableCodes = TableCodesMatrix.Select(tc => tc.ToList()).ToList();
         ZMatrix = new ZMatrix(tableCodes.Select(codeList => new ZHorizontalTables(codeList.ToList())).ToList());
@@ -39,29 +41,29 @@ public static class SpecialTemplateList
     {
         Records = new()
         {
-            new SpecialTemplateLayout("S.05.01.02.01", "S.05.01.02.01",false, new[] { new string[] { "S.05.01.02.01" } }),
-            new SpecialTemplateLayout("S.05.01.02.02", "S.05.01.02.02",false, new[] { new string[] { "S.05.01.02.02" } }),
-            new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01",false, new[] { new string[] { "S.06.02.01.01" } }),
-            new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02",false, new[] { new string[] { "S.06.02.01.02" } }),
-            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined",true, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
-            new SpecialTemplateLayout("S.02.02.01", "S.02.02.01",true, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
-            new SpecialTemplateLayout("S.04.01.01", "S.04.01.01", true, new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
-            new SpecialTemplateLayout("S.05.02.01", "S.05.02.01", true, new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
-            new SpecialTemplateLayout("S.19.01.01", "S.19.01.01", true, new[] {
-                new string[] { "S.19.01.01.01", "S.19.01.01.02", "S.19.01.01.03", "S.19.01.01.04", "S.19.01.01.05" ,"S.19.01.01.06" },
-                new string[] { "S.19.01.01.07", "S.19.01.01.08", "S.19.01.01.09", "S.19.01.01.10", "S.19.01.01.11" ,"S.19.01.01.12" },
-                new string[] { "S.19.01.01.13", "S.19.01.01.14", "S.19.01.01.15", "S.19.01.01.16", "S.19.01.01.17" ,"S.19.01.01.18" },
+            new SpecialTemplateLayout("S.05.01.02.01", "S.05.01.02.01","Premiums, claims and expenses by line of business - non life",false, new[] { new string[] { "S.05.01.02.01" } }),
+            new SpecialTemplateLayout("S.05.01.02.02", "S.05.01.02.02","Premiums, claims and expenses by line of business - life",false, new[] { new string[] { "S.05.01.02.02" } }),
+            new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01","List of assets-Information on positions held",false, new[] { new string[] { "S.06.02.01.01" } }),
+            new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02","List of assets-Information on assets",false, new[] { new string[] { "S.06.02.01.02" } }),
+            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
+            new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",true, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
+            new SpecialTemplateLayout("S.04.01.01", "S.04.01.01","XX", true, new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
+            new SpecialTemplateLayout("S.05.02.01", "S.05.02.01","xx", true, new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
+            new SpecialTemplateLayout("S.19.01.01", "S.19.01.01","Non-life insurance claims", true, new[] {
+                new string[] { "S.19.01.01.01", "S.19.01.01.02","", "S.19.01.01.03", "S.19.01.01.04", "S.19.01.01.05" ,"S.19.01.01.06" },
+                new string[] { "S.19.01.01.07", "S.19.01.01.08","", "S.19.01.01.09", "S.19.01.01.10", "S.19.01.01.11" ,"S.19.01.01.12" },
+                new string[] { "S.19.01.01.13", "S.19.01.01.14","", "S.19.01.01.15", "S.19.01.01.16", "S.19.01.01.17" ,"S.19.01.01.18" },
                 new string[] { "S.19.01.01.19" },
                 new string[] { "S.19.01.01.20" },
                 new string[] { "S.19.01.01.21" },
             }),
-            new SpecialTemplateLayout("S.19.01.21", "S.19.01.21", true, new[] { new string[] { "S.19.01.21.01", "S.19.01.21.02" , "S.19.01.21.03" , "S.19.01.21.04" } }),
-            new SpecialTemplateLayout("S.22.06.01", "S.22.06.01", true, new[]
+            new SpecialTemplateLayout("S.19.01.21", "S.19.01.21","Non-life insurance claims", true, new[] { new string[] { "S.19.01.21.01", "S.19.01.21.02" , "S.19.01.21.03" , "S.19.01.21.04" } }),
+            new SpecialTemplateLayout("S.22.06.01", "S.22.06.01", "Best estimate subject to volatility adjustment by country and currency", true, new[]
                 {
                     new string[] { "S.22.06.01.01", "S.22.06.01.01" },
                     new string[] { "S.22.06.01.03", "S.22.06.01.04" }
             }),
-            new SpecialTemplateLayout("S.28.01.01", "S.28.01.01", false, new[]
+            new SpecialTemplateLayout("S.28.01.01", "S.28.01.01", "Minimum Capital Requirement - Only life or only non-life insurance or reinsurance activity", false, new[]
                 {
                     new string[] { "S.28.01.01.01" },
                     new string[] { "S.28.01.01.02" },
@@ -75,23 +77,33 @@ public static class SpecialTemplateList
     //the tables should be added in SinglePageTemplateGroups
     public static List<string> ExcludeTemplateGroups()
     {
-        return new List<string> { "S.05.01.02" };
+        return new List<string> { "S.05.01.02","S.06.02.01" };
     }
 
     public static List<string> SinglePageTemplateGroups()
     {
-        return new List<string> { "S.05.01.02.01_Single", "S.05.01.02.02_Single" };
+        return new List<string> { "S.06.02.01", "S.05.01.02.01_Single", "S.05.01.02.02_Single" };
     }
 
+    public static List<string> SinglePageTableGroupsId()
+    {
+        return new List<string> {
+            "S.05.01.02.01",        
+            "S.05.01.02.02",        
+            "S.06.02.01.01_Single", 
+            "S.06.02.01.02_Single", 
+            "S.06.02.01",           
+        };
+    }
 
-
-    public static List<TableGroup> SinglePageTableGroups()
+    public static List<TableGroup> SinglePageTableGroupsxx()
     {
         return new List<TableGroup> {
             new("S.05.01.02.01", "S.05.01.02.02 LifeInsurance", new List<string>()),
-            new("S.05.01.02.02", "S.05.01.02.02 Life", new List<string>()),
-            //new("S.06.02.01.01_Single", "S.06.02.01.01 Description Single", new List<string>()),
-            //new("S.06.02.01.02_Single", "S.06.02.01.02 Description Single", new List<string>())
+            new("S.05.01.02.02", "S.05.01.02.02 Life", new List<string>()),            
+            new("S.06.02.01.01_Single", "S.06.02.01.01 Description Single", new List<string>()),
+            new("S.06.02.01.02_Single", "S.06.02.01.02 Description Single", new List<string>()),
+            new("S.06.02.01", "S.06.02.01 Combined Description Single", new List<string>()),
         };
     }
 
@@ -100,6 +112,12 @@ public static class SpecialTemplateList
         var rec = Records.FirstOrDefault(line => line.TemplateCode == templateCode.Trim());
         return rec;
     }
+    public static SpecialTemplateLayout? FindSpecialTemplateLayoutByName(string templateSheetName)
+    {
+        var rec = Records.FirstOrDefault(line => line.TemplateSheetName == templateSheetName.Trim());
+        return rec;
+    }
+
 }
 //S.02.02.01-S.02.02.01.01,S.02.02.01.02
 //S.04.01.01-S.04.01.01.01,S.04.01.01.02,S.04.01.01.03,S.04.01.01.04

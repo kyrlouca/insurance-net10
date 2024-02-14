@@ -96,8 +96,14 @@ public class ExcelBookMerger : IExcelBookMerger
 
         tableGroupsList = tableGroupsList
             .Where(tg => !SpecialTemplateList.ExcludeTemplateGroups().Contains(tg.TemplateCode)).ToList();
-        
-        tableGroupsList.AddRange(SpecialTemplateList.SinglePageTableGroups());
+
+        var specialGroups = SpecialTemplateList.SinglePageTableGroupsId()
+            .Select(code => SpecialTemplateList.FindSpecialTemplateLayout(code))
+            .Where(sp=> sp is not null)
+            .Select(sp=>new TableGroup(sp.TemplateCode,"",new List<string>()))
+            .ToList();
+                    
+            tableGroupsList.AddRange(specialGroups);
 
             
 
@@ -106,8 +112,11 @@ public class ExcelBookMerger : IExcelBookMerger
         var s6Zet = "";
         foreach (var tableGroup in tableGroupsList)
         {
+            if (tableGroup.TemplateCode == "S.06.02.01") {
+                var xx = 323;
+            }
 
-            var distinctSheetCodeZets = tableGroup.TableCodes
+                var distinctSheetCodeZets = tableGroup.TableCodes
                 .SelectMany(tc => SelectSheetCodeZets(tc))
                 .Distinct()
                 .ToList();
@@ -120,7 +129,7 @@ public class ExcelBookMerger : IExcelBookMerger
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(tableGroup.TemplateCode);
             
 
-            if (!specialTemplateLayout?.IsOnlyZet ?? false)
+            if (!specialTemplateLayout?.IsZetImportant ?? false)
             {
                 //to avoid rendering twice the same mergedsheet for multiple zets (case S.28.01.01)
                 distinctSheetCodeZets = new() { "" };
@@ -132,10 +141,12 @@ public class ExcelBookMerger : IExcelBookMerger
                 //use the specialTemplateLayout if is  found in the static list, otherwise create one using the tables in the table group
                 var zetTemplateLayout = specialTemplateLayout is null
                     ? ToZetTemplateLayout(tableGroup, sheetCodeZet)
-                    : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, sheetCodeZet, tableGroup.TemplateDescription);
+                    : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, sheetCodeZet, specialTemplateLayout.TemplateSheetDescription);
 
-                zetTemplateLayout.SheetName = distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}" : $"{zetTemplateLayout.GroupTableCode}";
-                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(zetTemplateLayout);
+                zetTemplateLayout.SheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName
+                                                   :distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}" 
+                                                   : $"{zetTemplateLayout.GroupTableCode}";
+                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(specialTemplateLayout is not null,zetTemplateLayout);
                 var isRendered = RenderOneZetSheet(zetTemplateLayout);
                 if (isRendered)
                 {
@@ -152,16 +163,16 @@ public class ExcelBookMerger : IExcelBookMerger
 
 
 
-        FixCombinedS6Form(s6Zet);
+        //FixCombinedS6Form(s6Zet);
 
 
 
-        var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
-        var templateDescription = "Information on Positions Held";
-        CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
+        //var specialTemplateForSingleS61 = "S.06.02.01.01_Single";
+        //var templateDescription = "Information on Positions Held";
+        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS61, templateDescription);
 
-        var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
-        CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
+        //var specialTemplateForSingleS62 = "S.06.02.01.02_Single";
+        //CreateSheetFromLayout(s6Zet, specialTemplateForSingleS62, templateDescription);
 
 
         var sortedItems = indexList.ListItems.OrderBy(li => li.templateCode).ToList();
@@ -185,11 +196,13 @@ public class ExcelBookMerger : IExcelBookMerger
         return true;
 
 
-        string BuildMergedTableDescription(ZetTemplateLayout zetTemplateBundle)
+        string BuildMergedTableDescription(bool isSpecialTemplate, ZetTemplateLayout zetTemplateBundle)
         {
             using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
             var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
             var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.SheetCodeZet });
+
+            
             var templateDesciption = string.IsNullOrEmpty(zetLabel)
                 ? $"{zetTemplateBundle.TemplateDescription.Trim()}"
                 : $"{zetTemplateBundle.TemplateDescription.Trim()} -- {zetLabel}";
@@ -240,7 +253,7 @@ public class ExcelBookMerger : IExcelBookMerger
         //each horizontalLine contains a set of sheets to be rendered next to each other 
         //some sheets may be null
         var tableMatrix = specialTemplateLayout.TableCodesMatrix
-            .Select(line => new HorizontalLine(line.Select(code => CreateSheetExtensiveInfo(code, sheetCodeZet, specialTemplateLayout.IsOnlyZet)).ToList()))
+            .Select(line => new HorizontalLine(line.Select(code => CreateSheetExtensiveInfo(code, sheetCodeZet, specialTemplateLayout.IsZetImportant)).ToList()))
             .ToList();
 
         var ztb = new ZetTemplateLayout()
@@ -249,7 +262,7 @@ public class ExcelBookMerger : IExcelBookMerger
             SheetName = specialTemplateLayout.TemplateSheetName,
             GroupTableCode = specialTemplateLayout.TemplateCode,
             TemplateDescription = templateDescription,
-            IsOnlyZet = specialTemplateLayout.IsOnlyZet,
+            IsOnlyZet = specialTemplateLayout.IsZetImportant,
             TableMatrix = tableMatrix
         };
         return ztb;
@@ -532,13 +545,13 @@ public class ExcelBookMerger : IExcelBookMerger
 
     private IWorksheet? FixCombinedS6Form(string s6Zet)
     {
+        var tabSheetCode = "S.06.02.01";
 
-        var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout("S.06.02.01");
+        var s6SpecialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayout(tabSheetCode);
         var s6ZetTemplateBundle = ToZetTemplateUsingSpecialLayout(s6SpecialTemplateLayout, s6Zet, "special S6");
 
-        var s61Code = "S.06.02.01.01";
-        var s62Code = "S.06.02.01.02";
-
+        //var s61Code = "S.06.02.01.01";
+        //var s62Code = "S.06.02.01.02";
 
 
         var s61Line = s6ZetTemplateBundle.TableMatrix.FirstOrDefault(line => line.HorizontalSheetInfo.Any(htbl => htbl.TableCode == "S.06.02.01.01"));
