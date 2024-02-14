@@ -226,10 +226,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
     private bool FillOpenTable280(TemplateSheetInstance dbSheet)
     {
-        
+
+        var worksheet = (Workbook!.Worksheets[$"{dbSheet.SheetTabName.Trim()}"]) ?? throw new Exception($"null worksheet {dbSheet.SheetTabName}");
         var dataRangeName = $"{dbSheet.SheetTabName.Trim()}_data";
         var dataRangeNameObject = Workbook!.Names[dataRangeName];
         var dataRange = dataRangeNameObject.RefersToRange;
+        
 
 
         var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
@@ -283,6 +285,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             Console.Write(".");
         }
         Console.WriteLine();
+
+        //expand the Data range
+        var expandedDataRows = worksheet.Range[dataRange.Row, dataRange.Column, worksheet.UsedRange.LastRow, dataRange.LastColumn];
+
+        Workbook.Names.Remove(dataRangeName);
+        var dataNamedObjectE = Workbook.Names.Add(dataRangeName);
+        dataNamedObjectE.RefersToRange = expandedDataRows;
+        dataRange = dataNamedObjectE.RefersToRange;
+
+        var xx3 = 33;
+
 
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
