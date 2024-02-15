@@ -73,7 +73,7 @@ public class WriterMainApp : IWriterMainApp
 
         var EmptyFilename = Path.Combine(dir, $"{fileNoExtension}_empty.xlsx");
         var filledFilename = Path.Combine(dir, $"{fileNoExtension}_filled.xlsx");
-        var mergedFilename = Path.Combine(dir, $"{fileNoExtension}_v3.xlsx");
+        var mergedFilename = Path.Combine(dir, $"{fileNoExtension}_v4.xlsx");
 
 
         if (1 == 1)

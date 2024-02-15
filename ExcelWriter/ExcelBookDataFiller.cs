@@ -294,6 +294,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (titles is not null)
         {
             titles.CellStyle.Font.Size = 12;
+            titles.CellStyle.WrapText= true;
             //fuck14
             //titles.CellStyle.ColorIndex = ExcelKnownColors.Custom14;
             titles.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
