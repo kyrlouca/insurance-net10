@@ -64,7 +64,16 @@ public static class SpecialTemplateList
                     new string[] { "S.22.06.01.01", "S.22.06.01.01" },
                     new string[] { "S.22.06.01.03", "S.22.06.01.04" }
             }),
-            new SpecialTemplateLayout("S.28.02.01", "S.28.02.01", "Minimum Capital Requirement - Only life or only non-life insurance or reinsurance activity", false, new[]
+            //Minimum Capital Requirement - Only life or only non-life insurance or reinsurance activity
+            new SpecialTemplateLayout("S.28.01.01", "S.28.01.01", "Minimum Capital Requirement - Only life or only non-life insurance or reinsurance activity", false, new[]
+                {
+                    new string[] { "S.28.01.01.01" },
+                    new string[] { "S.28.01.01.02" },
+                    new string[] { "S.28.01.01.03" },
+                    new string[] { "S.28.01.01.04" },
+                    new string[] { "S.28.01.01.05" }
+            }),
+            new SpecialTemplateLayout("S.28.02.01", "S.28.02.01", "Minimum Capital Requirement - Both life and non-life insurance activity", false, new[]
                 {
                     new string[] { "S.28.02.01.01" },
                     new string[] { "S.28.02.01.02" },
