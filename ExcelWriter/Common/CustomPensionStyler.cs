@@ -177,17 +177,12 @@ public class CustomPensionStyler : ICustomPensionStyler
     private IStyle DiagonalStyle()
     {
         var styleName = "DPM_EmptyCell";
-        IStyle style = GetOrCreateStyle(styleName);
-        
-        //st.FillPattern = ExcelPattern.Percent25Gray;
-        style.Color = Syncfusion.Drawing.Color.LightGray;
-        //st.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.None;
+        IStyle style = GetOrCreateStyle(styleName);                
+        style.Color = Syncfusion.Drawing.Color.LightGray;        
         style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-        style.IncludeBorder = true;
-        //st.ColorIndex = ExcelKnownColors.Grey_50_percent;
+        style.IncludeBorder = true;        
         return style;
-
     }
 
     

@@ -298,17 +298,8 @@ public class ExcelBookCreator : IExcelBookWriter
             _destinationWorkbook.Names.Remove(topNamed);
             var tlNamedRange = _destinationWorkbook.Names.Add(topNamed);
             tlNamedRange.RefersToRange = topColumnsRange;
-
-
-
         }
-
-
-
-        //////////////////////////////////////////////////////////////////
-
-        //CustomPensionStyles.ChangeDiagonalStyle(_destinationWorkbook);
-
+        
         //var savedFile = _parameterData.FileName;
         var savedFile = filename;
         var (isSaveValid, saveMessage) = HelperRoutines.SaveWorkbook(_destinationWorkbook, savedFile);
