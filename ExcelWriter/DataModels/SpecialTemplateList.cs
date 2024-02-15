@@ -68,7 +68,8 @@ public static class SpecialTemplateList
                 {
                     new string[] { "S.28.02.01.01" },
                     new string[] { "S.28.02.01.02" },
-                    new string[] { "S.28.02.01.03", "S.28.02.01.04" },
+                    new string[] { "S.28.02.01.03" },
+                    new string[] { "S.28.02.01.04" },
                     new string[] { "S.28.02.01.05" }
             })
         };

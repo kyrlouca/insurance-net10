@@ -151,9 +151,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var ZetRange = wholeRange["A3"];
         ZetRange.Text = zetDescription;
         ZetRange.CellStyle = _pensionStyles.ZetLabelStyle;
-        //ZetRange.CellStyle.Font.Size = 12;
-        //ZetRange.CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
-
+        
 
         var columnRow = dataRange.Rows.First();
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
@@ -243,8 +241,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var ZetRange = wholeRange["A3"];
         ZetRange.Text = zetDescription;
         ZetRange.CellStyle = _pensionStyles.ZetLabelStyle;
-        //ZetRange.CellStyle.Font.Size = 12;
-        //ZetRange.CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+        
 
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
               .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)

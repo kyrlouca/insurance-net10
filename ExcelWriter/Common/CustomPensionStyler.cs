@@ -106,6 +106,8 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.IncludeBorder = false;
         style.WrapText = true;        
         style.VerticalAlignment = ExcelVAlign.VAlignCenter;
+        
+        style.IncludeNumberFormat = false;
         style.EndUpdate();
         return style;
     }
