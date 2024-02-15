@@ -135,8 +135,8 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
-        //style.ColorIndex = ExcelKnownColors.Custom34;
-        style.ColorIndex = ExcelKnownColors.Custom44;
+        style.ColorIndex = ExcelKnownColors.Custom34;
+        
 
         style.EndUpdate();
         return style;

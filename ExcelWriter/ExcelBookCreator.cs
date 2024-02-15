@@ -249,7 +249,7 @@ public class ExcelBookCreator : IExcelBookWriter
                 var orignColumnNames = lfr.Columns[0];
                 var leftRowNumRange = CopyRangeToFixedPosition(dataRowPos, dataColPos - 1, originSheet, destSheet, orignColumnNames.Address);
 
-                leftRowNumRange.CellStyle = _pensionStyles.LeftRowNumbersSectionStyle;
+                //leftRowNumRange.CellStyle = _pensionStyles.LeftRowNumbersSectionStyle;
 
                 var leftNamed = $"{destSheet.Name.Trim()}_left";
                 _destinationWorkbook.Names.Remove(leftNamed);

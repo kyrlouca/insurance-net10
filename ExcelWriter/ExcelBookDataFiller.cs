@@ -213,12 +213,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //row descriptions
         var rowDescriptionRange = wholeRange.Worksheet[dataRange.Row + 1, 1, dataRange.LastRow, dataRange.Column - 1];
         var xx = rowDescriptionRange.CellStyle;
-        rowDescriptionRange.CellStyle.ColorIndex = ExcelKnownColors.Custom18;
+        //fuck 18
+        //rowDescriptionRange.CellStyle.ColorIndex = ExcelKnownColors.Custom18;
         rowDescriptionRange.CellStyle.Font.Size = 11;
 
 
-        //rowDescriptionRange.CellStyle = _pensionStyles.LeftLabelStyle;
-        //rowDescriptionRange.AutofitColumns();
+        
         rowDescriptionRange.ColumnWidth = 40;
 
 
@@ -302,7 +302,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (titles is not null)
         {
             titles.CellStyle.Font.Size = 11;
-            titles.CellStyle.ColorIndex = ExcelKnownColors.Custom14;
+            //fuck14
+            //titles.CellStyle.ColorIndex = ExcelKnownColors.Custom14;
             titles.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
             titles.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
             titles.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
