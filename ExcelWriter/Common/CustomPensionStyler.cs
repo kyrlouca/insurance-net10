@@ -35,18 +35,22 @@ public class CustomPensionStyler : ICustomPensionStyler
 
         var styleName = "LeftLabelStyle";
         IStyle style = GetOrCreateStyle(styleName);
-
+        
         style.BeginUpdate();
+        style.IncludeAlignment = false;
+        style.IncludeBorder = false;        
+        style.WrapText = true;
+
         style.Font.FontName = "Calibri";
         style.Font.Size = 11;
-        //style.ColorIndex = ExcelKnownColors.Custom36;
-        style.ColorIndex = ExcelKnownColors.Custom46;
-        style.WrapText = true;        
-        style.Borders.LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
-        style.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
         
+        
+        style.WrapText = true;        
+        //style.Borders.LineStyle = ExcelLineStyle.Thin;
+        //style.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
+        //style.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
 
+        style.ColorIndex = ExcelKnownColors.Custom33;
         style.EndUpdate();
         return style;
     }
@@ -57,6 +61,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         IStyle style = GetOrCreateStyle(styleName);
         style.Font.Size = 15;
         style.Font.Bold = true;
+        style.WrapText = false;
 
         return style;
     }

@@ -209,7 +209,7 @@ public class ExcelBookCreator : IExcelBookWriter
             dataNamedRange.RefersToRange = dataRange;
 
             dataRange.ColumnWidth = 30;
-            dataRange.WrapText = false;
+            //dataRange.WrapText = false;
             if (!sheet.IsOpenTable)
             {
                 var bor = dataRange.Borders;

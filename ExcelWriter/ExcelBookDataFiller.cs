@@ -212,10 +212,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         //row descriptions
         var rowDescriptionRange = wholeRange.Worksheet[dataRange.Row + 1, 1, dataRange.LastRow, dataRange.Column - 1];
-        var xx = rowDescriptionRange.CellStyle;
-        //fuck 18
-        //rowDescriptionRange.CellStyle.ColorIndex = ExcelKnownColors.Custom18;
-        rowDescriptionRange.CellStyle.Font.Size = 11;
+        rowDescriptionRange.CellStyle = _pensionStyles.LeftLabelStyle;
+        //rowDescriptionRange.CellStyle.Font.Size = 11;
 
 
         
