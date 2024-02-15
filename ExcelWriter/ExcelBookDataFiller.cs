@@ -361,16 +361,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return res ?? "";
     }
 
-    private static void FormatDataSectionForProtectedCells(IRange dataRange)
+    private  void FormatDataSectionForProtectedCells(IRange dataRange)
     {
         foreach (var cell in dataRange.Cells)
         {
             var diagonal = cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle;
             if (diagonal == ExcelLineStyle.Thin)
             {
-                cell.CellStyle.ColorIndex = ExcelKnownColors.Grey_50_percent;
-                cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
-                cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
+                cell.CellStyle = _pensionStyles.DiagonalStyle;
+                //cell.CellStyle.ColorIndex = ExcelKnownColors.Grey_50_percent;
+                //cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
+                //cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
             }
 
         }
