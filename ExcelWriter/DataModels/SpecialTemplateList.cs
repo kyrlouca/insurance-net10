@@ -46,8 +46,7 @@ public static class SpecialTemplateList
             new SpecialTemplateLayout("S.05.01.02.02", "S.05.01.02.02","Premiums, claims and expenses by line of business - life",false, new[] { new string[] { "S.05.01.02.02" } }),
             new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01","List of assets-Information on positions held",false, new[] { new string[] { "S.06.02.01.01" } }),
             new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02","List of assets-Information on assets",false, new[] { new string[] { "S.06.02.01.02" } }),
-            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
-            //new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01" } }),
+            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),            
             new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",true, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
             new SpecialTemplateLayout("S.04.01.01", "S.04.01.01","XX", true, new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
             new SpecialTemplateLayout("S.05.02.01", "S.05.02.01","xx", true, new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
@@ -65,12 +64,12 @@ public static class SpecialTemplateList
                     new string[] { "S.22.06.01.01", "S.22.06.01.01" },
                     new string[] { "S.22.06.01.03", "S.22.06.01.04" }
             }),
-            new SpecialTemplateLayout("S.28.01.01", "S.28.01.01", "Minimum Capital Requirement - Only life or only non-life insurance or reinsurance activity", false, new[]
+            new SpecialTemplateLayout("S.28.02.01", "S.28.02.01", "Minimum Capital Requirement - Only life or only non-life insurance or reinsurance activity", false, new[]
                 {
-                    new string[] { "S.28.01.01.01" },
-                    new string[] { "S.28.01.01.02" },
-                    new string[] { "S.28.01.01.03", "S.28.01.01.04" },
-                    new string[] { "S.28.01.01.05" }
+                    new string[] { "S.28.02.01.01" },
+                    new string[] { "S.28.02.01.02" },
+                    new string[] { "S.28.02.01.03", "S.28.02.01.04" },
+                    new string[] { "S.28.02.01.05" }
             })
         };
     }
@@ -91,9 +90,7 @@ public static class SpecialTemplateList
     {
         return new List<string> {
             "S.05.01.02.01",        
-            "S.05.01.02.02",        
-            //"S.06.02.01.01_Single", 
-            //"S.06.02.01.02_Single", 
+            "S.05.01.02.02",                    
             "S.06.02.01",           
         };
     }
