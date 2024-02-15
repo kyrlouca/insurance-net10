@@ -1,5 +1,6 @@
 namespace TestNewValidations;
-using NewValidator.DataModels;
+
+using NewValidator.Common.FunctionalRoutines;
 
 public class ValidationTermTest
 {

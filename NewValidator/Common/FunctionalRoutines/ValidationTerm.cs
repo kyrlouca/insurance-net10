@@ -1,4 +1,4 @@
-﻿namespace NewValidator.DataModels;
+﻿namespace NewValidator.Common.FunctionalRoutines;
 using Shared.DataModels;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections.Grouping;
@@ -20,7 +20,7 @@ public record ValidationRecord
     //{t: S.01.01.07.01, r: R0540, c: C0010, dv: [Default], seq: False, id: v1, f: solvency, fv: solvency2}
     //{ m: [s2md_met:ei1024], seq: False, id: v0} 
     public string Table { get; set; } = "";
-    public string Zet { get; set; } = string.Empty; 
+    public string Zet { get; set; } = string.Empty;
     public string Row { get; set; } = "";
     public string Col { get; set; } = "";
     public string Id { get; set; } = "";
@@ -48,7 +48,7 @@ public record ValidationRecord
             TermPairSplit res = pair.Length == 2 ? new TermPairSplit(pair[0].Trim(), pair[1].Trim()) : new();
             return res;
         })
-        .Where(pair => (!string.IsNullOrEmpty(pair.Key) && !string.IsNullOrEmpty(pair.Value)))
+        .Where(pair => !string.IsNullOrEmpty(pair.Key) && !string.IsNullOrEmpty(pair.Value))
         .ToList();
         return terms;
         //return new ValidationRecord { Table = text, Zet = text, Row = text, Col = text, Solvency = text, };
@@ -58,9 +58,9 @@ public record ValidationRecord
     public static ValidationRecord? CreateValidationRecord(string text)
     {
         var pairs = SplitTerm(text);
-        string z="", t="", r="", col="", dim="" ,m="", f="",fv="" ,dv="",id="";
+        string z = "", t = "", r = "", col = "", dim = "", m = "", f = "", fv = "", dv = "", id = "";
         bool isSeq = false;
-        
+
         foreach (var pair in pairs)
         {
             switch (pair.Key.ToLower()) // Case-insensitive comparison
@@ -69,10 +69,10 @@ public record ValidationRecord
                 case "t": t = pair.Value; break;
                 case "r": r = pair.Value; break;
                 case "c": col = pair.Value; break;
-                
+
                 case "dim": dim = pair.Value; break;
                 case "m": m = pair.Value; break;
-                case "seq": isSeq =  pair.Value=="True"; break;
+                case "seq": isSeq = pair.Value == "True"; break;
                 case "f": f = pair.Value; break;
                 case "fv": fv = pair.Value; break;
                 case "dv": dv = pair.Value; break;
@@ -85,18 +85,18 @@ public record ValidationRecord
             Zet = z,
             Table = t,
             Row = r,
-            Col = col,            
+            Col = col,
             Dim = dim,
             Metric = m,
-            F = f,    
+            F = f,
             Fv = fv,
-            Id=id,
+            Id = id,
             Dv = dv,
             IsSeq = isSeq
 
 
         };
         return rec;
-        
+
     }
 }

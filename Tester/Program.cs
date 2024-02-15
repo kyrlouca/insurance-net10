@@ -2,8 +2,8 @@
 using System.Text.RegularExpressions;
 using Shared.SpecialRoutines;
 using NewValidator;
-using NewValidator.DataModels;
 using System.Linq;
+using NewValidator.Common.FunctionalRoutines;
 
 var text = @"{t: S.01.01.07.01, r: R0540, c: C0010}";
 //[BV321_1-3];[scope((t: S.02.01.02.01, c:C0010))];[(t: S.02.01.02.01, r: R0510) reported as {$v1} = (t: S.02.01.02.01, r: R0520) reported as {$v2} + (t: S.02.01.02.01, r: R0560) reported as {$v3}]
