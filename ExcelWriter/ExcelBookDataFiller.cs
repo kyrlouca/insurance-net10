@@ -80,7 +80,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         foreach (var dbClosedSheet in dbClosedSheets)
         {
-            
+
 
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
             //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
@@ -129,7 +129,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
     private bool FillClosedTable280(TemplateSheetInstance dbSheet)
-    { 
+    {
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
         //for multi facts, we need to create additional columns and write the currency/country above the column
 
@@ -141,7 +141,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         ClearLinks(wholeRange);
 
-        
+
         wholeRange["A4"].Clear(true);
         IDataValidation validation = wholeRange["A3"].DataValidation;
         validation.AllowType = ExcelDataType.Any;
@@ -152,7 +152,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ZetRange.Text = zetDescription;
         ZetRange.CellStyle.Font.Size = 12;
         ZetRange.CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
-        
+
 
         var columnRow = dataRange.Rows.First();
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
@@ -190,16 +190,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //table code
         var tableCodeRange = wholeRange[1, 1];
         tableCodeRange.CellStyle = _pensionStyles.TableCodeStyle;
-        //tableCodeRange.
-
-
-        //data
-        //dataRange.CellStyle = _pensionStyles.DataSectionStyle;
+        //tableCodeRange.                       
         dataRange.ColumnWidth = 30;
-        //dataRange.WrapText = true;
         dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-
-         FormatDataSectionColors(dataRange);
+        FormatDataSectionColors(dataRange);
 
 
         //style columns        
@@ -214,10 +208,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //row descriptions
         var rowDescriptionRange = wholeRange.Worksheet[dataRange.Row + 1, 1, dataRange.LastRow, dataRange.Column - 1];
         rowDescriptionRange.CellStyle = _pensionStyles.LeftLabelStyle;
-        
 
 
-        
+
+
         rowDescriptionRange.ColumnWidth = 40;
 
 
@@ -231,7 +225,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dataRangeName = $"{dbSheet.SheetTabName.Trim()}_data";
         var dataRangeNameObject = Workbook!.Names[dataRangeName];
         var dataRange = dataRangeNameObject.RefersToRange;
-        
+
 
 
         var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
@@ -312,19 +306,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //style data
-        if(dataRange is not null)
+        if (dataRange is not null)
         {
             dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-            dataRange.ColumnWidth = 20;
-            dataRange.WrapText = true;
-            
-            
+            dataRange.ColumnWidth = 20;            
+
             dataRange.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
             dataRange.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
             dataRange.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
             dataRange.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
         }
-        
+
 
         ///////////////////////fill keys
 

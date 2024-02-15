@@ -208,8 +208,7 @@ public class ExcelBookCreator : IExcelBookWriter
             var dataNamedRange = _destinationWorkbook.Names.Add(dataNamed);
             dataNamedRange.RefersToRange = dataRange;
 
-            dataRange.ColumnWidth = 30;
-            //dataRange.WrapText = false;
+            dataRange.ColumnWidth = 30;            
             if (!sheet.IsOpenTable)
             {
                 var bor = dataRange.Borders;
@@ -235,10 +234,8 @@ public class ExcelBookCreator : IExcelBookWriter
 
 
                 var leftLabelRange = CopyRangeToFixedPosition(dataRowPos, dataColPos - 2, originSheet, destSheet, _TL);
-
-
                 leftLabelRange.ColumnWidth = 50;
-                leftLabelRange.WrapText = true;
+                
             }
 
             //////////// LEFT ROW Numbers
