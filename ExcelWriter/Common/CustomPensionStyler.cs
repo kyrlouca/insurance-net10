@@ -18,6 +18,7 @@ public record struct PensionStyles(
     IStyle LeftLabelStyle,
     IStyle DataSectionStyle,
     IStyle LeftRowNumbersSectionStyle,
+    IStyle TopLabelsStyle,
     IStyle TopColumnNumbersStyle
     );
 public class CustomPensionStyler : ICustomPensionStyler
@@ -29,7 +30,7 @@ public class CustomPensionStyler : ICustomPensionStyler
     {
         _workbook = workbook;
 
-        return new PensionStyles(NormalStyle(), HeaderStyle(), ZetLabelStyle(), TableCodeStyle(), DiagonalStyle(), LeftLabelStyle(), DataSectionStyle(), LeftRowNumbersSectionStyle(), TopColumnNumbersStyle());
+        return new PensionStyles(NormalStyle(), HeaderStyle(), ZetLabelStyle(), TableCodeStyle(), DiagonalStyle(), LeftLabelStyle(), DataSectionStyle(), LeftRowNumbersSectionStyle(), TopLabelsStyle(), TopColumnNumbersStyle());
     }
     private IStyle LeftLabelStyle()
     {
@@ -77,6 +78,8 @@ public class CustomPensionStyler : ICustomPensionStyler
 
         return style;
     }
+
+
 
     private IStyle TableCodeStyle()
     {        
@@ -133,6 +136,23 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.VerticalAlignment = ExcelVAlign.VAlignCenter;
         style.HorizontalAlignment = ExcelHAlign.HAlignCenter;
         style.EndUpdate();
+        return style;
+    }
+
+    private IStyle TopLabelsStyle()
+    {
+
+        var styleName = "TopLabels";
+        IStyle style = GetOrCreateStyle(styleName);
+        style.Font.Size = 12;
+        style.WrapText = true;
+        style.ColorIndex = ExcelKnownColors.Grey_25_percent;                
+        style.VerticalAlignment = ExcelVAlign.VAlignCenter;
+        style.HorizontalAlignment = ExcelHAlign.HAlignCenter;
+        style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
         return style;
     }
     private IStyle TopColumnNumbersStyle()

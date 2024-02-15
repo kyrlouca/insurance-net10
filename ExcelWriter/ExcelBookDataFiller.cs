@@ -192,7 +192,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //tableCodeRange.                       
         dataRange.ColumnWidth = 30;
         dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-        FormatDataSectionColors(dataRange);
+        FormatDataSectionForProtectedCells(dataRange);
 
 
         //style columns        
@@ -293,14 +293,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
         {
-            titles.CellStyle.Font.Size = 12;
-            titles.CellStyle.WrapText= true;
-            //fuck14
-            //titles.CellStyle.ColorIndex = ExcelKnownColors.Custom14;
-            titles.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
-            titles.CellStyle.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
-            titles.CellStyle.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-            titles.CellStyle.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
+            titles.CellStyle = _pensionStyles.TopLabelsStyle;           
 
         }
 
@@ -369,7 +362,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return res ?? "";
     }
 
-    private static void FormatDataSectionColors(IRange dataRange)
+    private static void FormatDataSectionForProtectedCells(IRange dataRange)
     {
         foreach (var cell in dataRange.Cells)
         {
