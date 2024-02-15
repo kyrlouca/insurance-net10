@@ -50,7 +50,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         //style.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
         //style.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
 
-        style.ColorIndex = ExcelKnownColors.Custom33;
+        style.ColorIndex = ExcelKnownColors.Custom36;
         style.EndUpdate();
         return style;
     }
@@ -88,15 +88,11 @@ public class CustomPensionStyler : ICustomPensionStyler
 
 
         style.BeginUpdate();
-        //bodyStyle.Color = Color.FromArgb(239, 243, 247);
-        style.Font.FontName = "Calibri";
         
-        style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
+        style.Font.FontName = "Calibri";
+        style.IncludeBorder = false;
+        style.WrapText = true;        
+        style.VerticalAlignment = ExcelVAlign.VAlignCenter;
         style.EndUpdate();
         return style;
     }
@@ -119,7 +115,8 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
         style.ColorIndex = ExcelKnownColors.Custom34;
-        //style.ColorIndex = ExcelKnownColors.Custom44;
+        style.VerticalAlignment = ExcelVAlign.VAlignCenter;
+        style.HorizontalAlignment = ExcelHAlign.HAlignCenter;
         style.EndUpdate();
         return style;
     }
@@ -141,7 +138,9 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.Borders[ExcelBordersIndex.InsideHorizontal].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
         style.ColorIndex = ExcelKnownColors.Custom34;
-        
+
+        style.VerticalAlignment = ExcelVAlign.VAlignCenter;
+        style.HorizontalAlignment = ExcelHAlign.HAlignCenter;
 
         style.EndUpdate();
         return style;

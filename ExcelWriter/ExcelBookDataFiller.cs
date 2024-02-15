@@ -196,7 +196,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //data
         //dataRange.CellStyle = _pensionStyles.DataSectionStyle;
         dataRange.ColumnWidth = 30;
-        dataRange.WrapText = true;
+        //dataRange.WrapText = true;
+        dataRange.CellStyle = _pensionStyles.DataSectionStyle;
 
          FormatDataSectionColors(dataRange);
 
