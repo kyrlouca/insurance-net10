@@ -65,9 +65,9 @@ public class CustomPensionStyler : ICustomPensionStyler
     {
 
         var styleName = "ZetLabelStyle";
-        IStyle style = GetOrCreateStyle(styleName);
-        style.ColorIndex = ExcelKnownColors.Grey_25_percent;
+        IStyle style = GetOrCreateStyle(styleName);        
         style.Font.Size = 12;
+        style.Font.Color = ExcelKnownColors.Blue;
         style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
         style.WrapText = false;
 

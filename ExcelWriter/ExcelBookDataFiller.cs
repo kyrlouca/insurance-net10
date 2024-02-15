@@ -142,10 +142,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ClearLinks(wholeRange);
 
 
-        wholeRange["A4"].Clear(true);
-        IDataValidation validation = wholeRange["A3"].DataValidation;
-        validation.AllowType = ExcelDataType.Any;
-        validation.ListOfValues = Array.Empty<string>();
+        wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
 
         var zetDescription = SelectZetValues(dbSheet);
         var ZetRange = wholeRange["A3"];
@@ -231,11 +228,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
-
-        wholeRange["A4"].Clear(true);
-        IDataValidation validation = wholeRange["A3"].DataValidation;
-        validation.AllowType = ExcelDataType.Any;
-        validation.ListOfValues = Array.Empty<string>();
+        
+        wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
+        
+        //wholeRange["A4"].Clear(true);
+        //IDataValidation validation = wholeRange["A3"].DataValidation;
+        //validation.AllowType = ExcelDataType.Any;
+        //validation.ListOfValues = Array.Empty<string>();
 
         var zetDescription = SelectZetValues(dbSheet);
         var ZetRange = wholeRange["A3"];
