@@ -38,7 +38,7 @@ public class WriterMainApp : IWriterMainApp
         
         if (doc is null)
         {
-            var message = $"Cannot Find DocInstance for fund:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
+            var message = $"Cannot Find DocInstance  Id:{_parameterData.DocumentId} for fund:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
@@ -123,7 +123,7 @@ public class WriterMainApp : IWriterMainApp
                 }
             }
         }
-        if (!_parameterData.IsDevelop && 1==2)
+        if (!_parameterData.IsDevelop && 1==1)
         {
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
             if (!isSuccess)
@@ -135,11 +135,12 @@ public class WriterMainApp : IWriterMainApp
             {
                 _logger.Error(sErrorMessage);
             }
-            var (isRsuccess, rMessage) = FileUtilsKyr.MoveFile(mergedFilename, fileName);
-            if (!isRsuccess)
-            {
-                _logger.Error(rMessage);
-            }
+
+            //var (isRsuccess, rMessage) = FileUtilsKyr.MoveFile(mergedFilename, fileName);
+            //if (!isRsuccess)
+            //{
+            //    _logger.Error(rMessage);
+            //}
 
             var message = $"Excel File Created:{_parameterData.FileName}";
             _logger.Information(message);            

@@ -379,7 +379,7 @@ public class FactsCreator : IFactsCreator
 					DataType = mMetric?.DataType ?? "",
 					DataTypeUse = dataTypeUse,
 					DataPointSignature = "",
-					DataPointSignatureFilled = factSignature,
+					//DataPointSignatureFilled = "",
 					RowSignature = "",
 				};
                 
