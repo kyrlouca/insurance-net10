@@ -97,7 +97,7 @@ public class ExcelBookCreator : IExcelBookWriter
         var shnames = sheets.Select(sh => sh.SheetTabName).ToList();
         foreach (var sheet in sheets)
         {
-            Console.WriteLine("process" + sheet?.SheetTabName?.Trim() + "-" + sheet?.TableCode.Trim() + sheet?.SheetTabName.Trim());
+            Console.WriteLine("process " + sheet?.SheetTabName?.Trim() + "-" + sheet?.TableCode.Trim() + sheet?.SheetTabName.Trim());
 
             var table = _SqlFunctions.SelectTable(sheet?.TableCode ?? "");
             
@@ -302,6 +302,7 @@ public class ExcelBookCreator : IExcelBookWriter
         
         //var savedFile = _parameterData.FileName;
         var savedFile = filename;
+        Console.WriteLine($"Saving File:{savedFile}");
         var (isSaveValid, saveMessage) = HelperRoutines.SaveWorkbook(_destinationWorkbook, savedFile);
         if (!isSaveValid)
         {

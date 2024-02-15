@@ -73,7 +73,7 @@ public class WriterMainApp : IWriterMainApp
 
         var EmptyFilename = Path.Combine(dir, $"{fileNoExtension}_empty.xlsx");
         var filledFilename = Path.Combine(dir, $"{fileNoExtension}_filled.xlsx");
-        var mergedFilename = Path.Combine(dir, $"{fileNoExtension}_v4.xlsx");
+        var mergedFilename = Path.Combine(dir, $"{fileNoExtension}.xlsx");
 
 
         if (1 == 1)
@@ -108,6 +108,11 @@ public class WriterMainApp : IWriterMainApp
             Console.WriteLine($"\n Merge TabSheets  : {mergedFilename}");
             //****************************************************************************************************
             var isMerged = _templateMerger.MergeTables(doc.InstanceId, filledFilename, mergedFilename);
+            if (isMerged)
+            {
+                Console.WriteLine($"\n File saved successfully in: {mergedFilename}");
+            }
+            
             if (!isMerged)
             {
                 {
