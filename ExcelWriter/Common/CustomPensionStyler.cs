@@ -45,13 +45,8 @@ public class CustomPensionStyler : ICustomPensionStyler
 
         style.Font.FontName = "Calibri";
         style.Font.Size = 12;
-        
-        
-        style.WrapText = true;        
-        //style.Borders.LineStyle = ExcelLineStyle.Thin;
-        //style.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
-        //style.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
-
+                
+        style.WrapText = true;                
         style.ColorIndex = ExcelKnownColors.Custom36;
         style.EndUpdate();
         return style;
@@ -149,10 +144,9 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.ColorIndex = ExcelKnownColors.Grey_25_percent;                
         style.VerticalAlignment = ExcelVAlign.VAlignCenter;
         style.HorizontalAlignment = ExcelHAlign.HAlignCenter;
-        style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
-        style.Borders[ExcelBordersIndex.InsideVertical].LineStyle = ExcelLineStyle.Thin;
+        style.Borders.LineStyle = ExcelLineStyle.Thin;
+        style.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
+        style.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
         return style;
     }
     private IStyle TopColumnNumbersStyle()
@@ -165,7 +159,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
         style.Font.FontName = "Calibri";        
-        style.WrapText = false;
+        style.WrapText = false;        
         style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thick;        
         style.Borders[ExcelBordersIndex.EdgeBottom].LineStyle = ExcelLineStyle.Thick;
         style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;

@@ -394,6 +394,15 @@ public class ExcelBookMerger : IExcelBookMerger
             {
                 destRange.ColumnWidth = 20;
                 destRange.WrapText = false;
+                var cellx = destRange.Cells.FirstOrDefault(cell => Regex.IsMatch(cell.Value, @"C\d{4}"));
+                if (cellx != null)
+                {
+                    var rowx = cellx.EntireRow.Offset(-1,0);
+                    rowx.WrapText = true;
+                    
+                }
+                
+
             }
             if (!isOpenTable)
             {
