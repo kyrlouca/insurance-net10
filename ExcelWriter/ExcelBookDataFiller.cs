@@ -150,7 +150,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var zetDescription = SelectZetValues(dbSheet);
         var ZetRange = wholeRange["A3"];
         ZetRange.Text = zetDescription;
-        ZetRange.CellStyle.Font.Size = 11;
+        ZetRange.CellStyle.Font.Size = 12;
         ZetRange.CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
         
 
@@ -183,7 +183,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
         {
-            titles.CellStyle.Font.Size = 11;
+            titles.CellStyle.Font.Size = 12;
         }
 
 
@@ -213,7 +213,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //row descriptions
         var rowDescriptionRange = wholeRange.Worksheet[dataRange.Row + 1, 1, dataRange.LastRow, dataRange.Column - 1];
         rowDescriptionRange.CellStyle = _pensionStyles.LeftLabelStyle;
-        //rowDescriptionRange.CellStyle.Font.Size = 11;
+        
 
 
         
@@ -246,7 +246,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var zetDescription = SelectZetValues(dbSheet);
         var ZetRange = wholeRange["A3"];
         ZetRange.Text = zetDescription;
-        ZetRange.CellStyle.Font.Size = 11;
+        ZetRange.CellStyle.Font.Size = 12;
         ZetRange.CellStyle.HorizontalAlignment = ExcelHAlign.HAlignLeft;
 
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
@@ -299,7 +299,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
         {
-            titles.CellStyle.Font.Size = 11;
+            titles.CellStyle.Font.Size = 12;
             //fuck14
             //titles.CellStyle.ColorIndex = ExcelKnownColors.Custom14;
             titles.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;

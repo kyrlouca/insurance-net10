@@ -308,7 +308,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
         var destSheet = DestWorkbook.Worksheets.Create(zetTemplateLayout.SheetName);
 
-        destSheet.Zoom = 80;
+        destSheet.Zoom = 90;
 
         var countVerticals = 0;
         var offsetVERTICAL = 1;
@@ -514,7 +514,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
         var indexSheet = DestWorkbook.Worksheets.Create("List");
         indexSheet.SetColumnWidth(1, 30);
-        indexSheet.Zoom = 80;
+        indexSheet.Zoom = 90;
         var titleCell = indexSheet[1, 1];
         titleCell.Text = "List of Templates";
         titleCell.CellStyle = _pensionStyles.HeaderStyle;

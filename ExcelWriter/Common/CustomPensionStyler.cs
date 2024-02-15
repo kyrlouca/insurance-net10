@@ -42,7 +42,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.WrapText = true;
 
         style.Font.FontName = "Calibri";
-        style.Font.Size = 11;
+        style.Font.Size = 12;
         
         
         style.WrapText = true;        
@@ -110,7 +110,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.BeginUpdate();
         //bodyStyle.Color = Color.FromArgb(239, 243, 247);
         style.Font.FontName = "Calibri";
-        style.Font.Size = 11;
+        style.Font.Size = 12;
         style.WrapText = false;
         style.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
@@ -169,7 +169,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         IStyle style=GetOrCreateStyle(styleName);
         
         style.Font.FontName = "Calibri";
-        style.Font.Size = 11;
+        style.Font.Size = 12;
         return style;
 
     }

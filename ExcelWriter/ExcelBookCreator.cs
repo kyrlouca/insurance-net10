@@ -116,7 +116,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
                 var sheetName = sheet.SheetTabName.Trim();
                 var destSheet = _destinationWorkbook.Worksheets.Create(sheetName);
-                destSheet.Zoom = 80;
+                destSheet.Zoom = 90;
 
 
                 var wholeAddress = orgWholeRange280.AddressLocal;
@@ -155,7 +155,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
             var sheetName = sheet.SheetTabName.Trim();
             var destSheet = _destinationWorkbook.Worksheets.Create(sheetName);
-            destSheet.Zoom = 80;
+            destSheet.Zoom = 90;
 
 
             /////Table code
