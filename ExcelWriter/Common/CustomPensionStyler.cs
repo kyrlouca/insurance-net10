@@ -12,6 +12,7 @@ namespace ExcelWriter;
 public record struct PensionStyles(
     IStyle Normal,
     IStyle HeaderStyle,
+    IStyle ZetLabelStyle,
     IStyle TableCodeStyle,
     IStyle DiagonalStyle,
     IStyle LeftLabelStyle,
@@ -28,7 +29,7 @@ public class CustomPensionStyler : ICustomPensionStyler
     {
         _workbook = workbook;
 
-        return new PensionStyles(NormalStyle(), HeaderStyle(), TableCodeStyle(), DiagonalStyle(), LeftLabelStyle(), DataSectionStyle(), LeftRowNumbersSectionStyle(), TopColumnNumbersStyle());
+        return new PensionStyles(NormalStyle(), HeaderStyle(), ZetLabelStyle(), TableCodeStyle(), DiagonalStyle(), LeftLabelStyle(), DataSectionStyle(), LeftRowNumbersSectionStyle(), TopColumnNumbersStyle());
     }
     private IStyle LeftLabelStyle()
     {
@@ -59,12 +60,24 @@ public class CustomPensionStyler : ICustomPensionStyler
         
         var styleName = "HeaderStyle";
         IStyle style = GetOrCreateStyle(styleName);
-        style.Font.Size = 15;
-        style.Font.Bold = true;
+        style.Font.Size = 12;        
         style.WrapText = false;
 
         return style;
     }
+    private IStyle ZetLabelStyle()
+    {
+
+        var styleName = "ZetLabelStyle";
+        IStyle style = GetOrCreateStyle(styleName);
+        style.ColorIndex = ExcelKnownColors.Grey_25_percent;
+        style.Font.Size = 12;
+        style.HorizontalAlignment = ExcelHAlign.HAlignLeft;
+        style.WrapText = false;
+
+        return style;
+    }
+
     private IStyle TableCodeStyle()
     {        
         
