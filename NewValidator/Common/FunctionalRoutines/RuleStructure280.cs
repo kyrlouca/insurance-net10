@@ -9,79 +9,46 @@ namespace NewValidator.Common.FunctionalRoutines;
 
 public class RuleStructure280
 {
-    public static (bool isIfExpression, string ifExpression, string thenExpression,string elseExpression) SplitIfThenElse(string stringExpression)
+    bool IsValid { get; set; }
+    public RuleComponent IfComponent { get; init; }
+    public RuleComponent ThenComponent { get; init; }
+    public RuleComponent ElseComponent { get; init; }
+
+    private RuleStructure280(bool isValid, RuleComponent ifComponent, RuleComponent thenComponent, RuleComponent elseComponent)
+    {
+        IsValid = isValid;
+        IfComponent = ifComponent;
+        ThenComponent = thenComponent;
+        ElseComponent = elseComponent;
+    }
+
+    public static (bool isIfExpression, string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)
     {
         //split if then expression            
         //if(A) then B=> A, B            
 
         var rgxIfThenElse = @"if\s*(.*)\s*then(.*)\s*else(.*)";
-        
-
         var terms = RegexUtils.GetRegexSingleMatchManyGroups(rgxIfThenElse, stringExpression);
-        if (terms.Count != 4)
+
+        var res = terms.Count switch
         {
-            return (false, "", "","");
-        }
-
-
-        return (true, terms[1].Trim(), terms[2].Trim() , terms[3].Trim());
+            4 => (true, terms[1].Trim(), terms[2].Trim(), terms[3].Trim()),
+            0 => (true, stringExpression.Trim(), "", ""),
+            _ => (false, "", "", "")//does not happen but i could check for optional then ,els
+        }; 
+        
+        return res;
     }
 
-    private static (string symbolExpression, List<RuleTerm280>) CreateFunctionTerms(string expression, string termLetter)
+    public static RuleStructure280 CreateRuleStructure(string text)
     {
-        //1.Return a new SymbolExpression with term symbols for each FUNCTION (not term)
-        //2 Create one new term  for each function     
-        //X0=sum(X1) + sum(X2) => X0=Z0 + Z1 and create two new terms 
-        //*** Same distinct letter for exactly the same terms ***
-
-        if (string.IsNullOrWhiteSpace(expression))
-            return ("", new List<RuleTerm280>());
-
-        //replace
-        var distinctMatches = RegexValidationFunctions.FunctionTypesRegex.Matches(expression)
-            .Select(item => item.Captures[0].Value.Trim()).ToList()
-            .Distinct()
-            .ToList();
-
-
-        var ruleFunctionTerms = distinctMatches
-            .Select((item, Idx) =>  RuleTerm280.CreateRawTerm($"{termLetter}{Idx:D2}", item)).ToList();
-         
-        if (ruleFunctionTerms.Count == 0)
-            return (expression, new List<RuleTerm280>());
-
-        var symbolExpression = ruleFunctionTerms
-            .Aggregate(expression, (currValue, item) => currValue.Replace(item.TermText, item.Letter));
-        return (symbolExpression, ruleFunctionTerms);
-    }
-
-
-    private static (string symbolExpression, List<RuleTerm280>) CreateRuleExpressions(string expression, string termLetter)
-    {
-        //1.Return a new SymbolExpression with term symbols for each FUNCTION (not term)
-        //2 Create one new term  for each function     
-        //X0=sum(X1) + sum(X2) => X0=Z0 + Z1 and create two new terms 
-        //*** Same distinct letter for exactly the same terms ***
-
-        if (string.IsNullOrWhiteSpace(expression))
-            return ("", new List<RuleTerm280>());
-
-        //replace
-        var distinctMatches = RegexValidationFunctions.FunctionTypesRegex.Matches(expression)
-            .Select(item => item.Captures[0].Value.Trim()).ToList()
-            .Distinct()
-            .ToList();
-
-
-        var ruleFunctionTerms = distinctMatches
-            .Select((item, Idx) => RuleTerm280.CreateRawTerm($"{termLetter}{Idx:D2}", item)).ToList();
-
-        if (ruleFunctionTerms.Count == 0)
-            return (expression, new List<RuleTerm280>());
-
-        var symbolExpression = ruleFunctionTerms
-            .Aggregate(expression, (currValue, item) => currValue.Replace(item.TermText, item.Letter));
-        return (symbolExpression, ruleFunctionTerms);
+        var (isIfExpression, ifExpression, thenExpression, elseExpression) = SplitIfThenElse(text);
+        var ifComponent = RuleComponent.CreateRuleComponent( ifExpression);
+        var thenComponent = RuleComponent.CreateRuleComponent( thenExpression);
+        var elseComponent = RuleComponent.CreateRuleComponent(elseExpression);
+        
+        var rec = new RuleStructure280(isIfExpression, ifComponent, thenComponent, elseComponent);
+        return rec;
     }
 
 

@@ -30,4 +30,11 @@ public class RuleComponent
         return (formula,expressions);
     }
 
+    public static RuleComponent CreateRuleComponent(string text)
+    {
+        var (componentFormula, expressions) = ParseComponent(text);
+        var rc = new RuleComponent() { ComponentText = text, ComponentFormula = componentFormula, ComponentExpressions = expressions };
+        return rc;
+    }
+
 }
