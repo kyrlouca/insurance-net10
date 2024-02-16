@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 public record struct TermPairSplit(string Key, string Value);
 //public enum TermKey { Tab, Zet, Row, Col, Met }
 //public record TermPair(TermKey Key, string Value);
-public record ValidationRecord
+public record ValidationTerm280
 {
     //{t: S.01.01.07.01, r: R0540, c: C0010}
     //{t: S.01.01.07.01, r: R0540, c: C0010, dv: [Default], seq: False, id: v1, f: solvency, fv: solvency2}
@@ -55,7 +55,7 @@ public record ValidationRecord
     }
 
 
-    public static ValidationRecord? CreateValidationRecord(string text)
+    public static ValidationTerm280? CreateValidationRecord(string text)
     {
         var pairs = SplitTerm(text);
         string z = "", t = "", r = "", col = "", dim = "", m = "", f = "", fv = "", dv = "", id = "";
@@ -80,7 +80,7 @@ public record ValidationRecord
                 default: throw new Exception($"unkown key {pair.Key}");
             }
         }
-        var rec = new ValidationRecord()
+        var rec = new ValidationTerm280()
         {
             Zet = z,
             Table = t,
