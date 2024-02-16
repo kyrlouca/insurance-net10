@@ -24,8 +24,6 @@ public class ValidationTermTest
         Assert.Equal("aa vv aa", record.expressions["X00"]);
     }
 
-
-
     [Fact]
     public void TestIfThenElse()
     {
@@ -41,22 +39,23 @@ public class ValidationTermTest
         string[] expectedValues1 = { "abc","","" };
         string[] actualValues1 = { record.ifExpression, record.thenExpression, record.elseExpression };
         Assert.Equal(expectedValues1, actualValues1);
-        Assert.True(record.isIfExpression);
+        
 
         text = @"if a ";
         record = RuleStructure280.SplitIfThenElse(text);
          string[] expectedValues2 = { "if a", "", "" };
         string[] actualValues2 = { record.ifExpression, record.thenExpression, record.elseExpression };
         Assert.Equal(expectedValues2, actualValues2);
-        Assert.True(record.isIfExpression);
+        
     }
 
+    
 
     [Fact]
-    public void TestParser()
+    public void TestRuleTerm()
     {
         var text = @"{t: S.02.01.07.01, r: R0690, dv: 0, seq: False, id: v4, f: solvency, fv: solvency2}";
-        var record = RuleTerm280.CreateValidationRecord(text);
+        var record = RuleTerm280.CreateRuleTerm(text);
         string[] expectedValues = { "S.02.01.07.01", "", "R0690", "" };
         string[] actualValues = { record.Table, record.Zet, record.Row, record.Col };
 
@@ -64,7 +63,7 @@ public class ValidationTermTest
 
 
         var text2 = @"{t: S.23.01.05.01, r: R0570, z: Z0001, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2}";
-        record = RuleTerm280.CreateValidationRecord(text2);
+        record = RuleTerm280.CreateRuleTerm(text2);
         expectedValues = new string[] { "S.23.01.05.01", "Z0001", "R0570", ""
            ,"v1" , "solvency", "solvency2",  };
         actualValues = new string[] { record.Table, record.Zet, record.Row, record.Col
@@ -73,5 +72,22 @@ public class ValidationTermTest
     }
 
 
+    [Fact]
+    public void TestRuleStructure()
+    {
+        var text = @"if not(isNull({d: [s2c_dim:LG], filter:dim(this(), [s2c_dim:LG]) = [s2c_GA:x113], seq: False, id: v0})) then false() else true()";
+        var record = RuleStructure280.CreateRuleStructure(text);        
+        var expectedVal = "not(isNull({d: [s2c_dim:LG], filter:dim(this(), [s2c_dim:LG]) = [s2c_GA:x113], seq: False, id: v0}))";
+        Assert.Equal(expectedVal, record.IfComponent.ComponentFormula);
+        Assert.False(record.IsPlainRule);
+
+        text = "isNull({t: T.99.01.01.01, c: C0100, seq: False, id: v0, f: solvency, fv: solvency2})";
+        record = RuleStructure280.CreateRuleStructure(text);
+        expectedVal = "isNull({t: T.99.01.01.01, c: C0100, seq: False, id: v0, f: solvency, fv: solvency2})";
+        Assert.Equal(expectedVal, record.IfComponent.ComponentFormula);
+        Assert.True(record.IsPlainRule);
+
+
+    }
 
 }

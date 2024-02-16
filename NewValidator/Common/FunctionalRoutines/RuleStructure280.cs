@@ -9,45 +9,59 @@ namespace NewValidator.Common.FunctionalRoutines;
 
 public class RuleStructure280
 {
-    bool IsValid { get; set; }
+    public bool IsComplete { get; init; }
+    public bool IsPlainRule { get; init; }
     public RuleComponent IfComponent { get; init; }
     public RuleComponent ThenComponent { get; init; }
     public RuleComponent ElseComponent { get; init; }
 
-    private RuleStructure280(bool isValid, RuleComponent ifComponent, RuleComponent thenComponent, RuleComponent elseComponent)
+    private RuleStructure280(bool isComplete, bool isPlainRule, RuleComponent ifComponent, RuleComponent thenComponent, RuleComponent elseComponent)
     {
-        IsValid = isValid;
+        IsComplete = isComplete;
+        IsPlainRule = isPlainRule;
         IfComponent = ifComponent;
         ThenComponent = thenComponent;
         ElseComponent = elseComponent;
     }
 
-    public static (bool isIfExpression, string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)
+    public static ( string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)
     {
-        //split if then expression            
-        //if(A) then B=> A, B            
+        //split if then  else expression            
+        //if(A) then B else C => A, B, C (it is complete and NOT plain
+        // abc =>abc (is complete AND plain)
+
+        if (string.IsNullOrEmpty(stringExpression))
+        {
+            return ( "", "", "");
+        }
 
         var rgxIfThenElse = @"if\s*(.*)\s*then(.*)\s*else(.*)";
         var terms = RegexUtils.GetRegexSingleMatchManyGroups(rgxIfThenElse, stringExpression);
 
         var res = terms.Count switch
         {
-            4 => (true, terms[1].Trim(), terms[2].Trim(), terms[3].Trim()),
-            0 => (true, stringExpression.Trim(), "", ""),
-            _ => (false, "", "", "")//does not happen but i could check for optional then ,els
-        }; 
-        
+            4 => ( terms[1].Trim(), terms[2].Trim(), terms[3].Trim()),
+            0 => ( stringExpression.Trim(), "", ""),
+            _ => ( "", "", "")//does not happen but i could check for optional then ,els
+        };
+
         return res;
     }
 
     public static RuleStructure280 CreateRuleStructure(string text)
     {
-        var (isIfExpression, ifExpression, thenExpression, elseExpression) = SplitIfThenElse(text);
-        var ifComponent = RuleComponent.CreateRuleComponent( ifExpression);
-        var thenComponent = RuleComponent.CreateRuleComponent( thenExpression);
+        var (ifExpression, thenExpression, elseExpression) = SplitIfThenElse(text);
+        var ifComponent = RuleComponent.CreateRuleComponent(ifExpression);
+        var thenComponent = RuleComponent.CreateRuleComponent(thenExpression);
         var elseComponent = RuleComponent.CreateRuleComponent(elseExpression);
-        
-        var rec = new RuleStructure280(isIfExpression, ifComponent, thenComponent, elseComponent);
+
+        var isPlainRule = ifComponent.HasValue && !elseComponent.HasValue && !thenComponent.HasValue;
+        var isCompleteRule =
+            (ifComponent.HasValue && elseComponent.HasValue && thenComponent.HasValue)
+            || (ifComponent.HasValue && !elseComponent.HasValue && !thenComponent.HasValue);
+            
+
+        var rec = new RuleStructure280(isCompleteRule, isPlainRule, ifComponent, thenComponent, elseComponent);
         return rec;
     }
 

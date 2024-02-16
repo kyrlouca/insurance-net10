@@ -68,7 +68,7 @@ public record RuleTerm280
         };
         return rec;
     }
-    public static RuleTerm280? CreateValidationRecord(string text)
+    public static RuleTerm280? CreateRuleTerm(string text)
     {
         var pairs = SplitTerm(text);
         string z = "", t = "", r = "", col = "", dim = "", m = "", f = "", fv = "", dv = "", id = "";
