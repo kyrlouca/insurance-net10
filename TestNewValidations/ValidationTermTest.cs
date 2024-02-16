@@ -48,9 +48,7 @@ public class ValidationTermTest
         Assert.Equal(expectedValues2, actualValues2);
         
     }
-
     
-
     [Fact]
     public void TestRuleTerm()
     {
@@ -71,7 +69,6 @@ public class ValidationTermTest
         Assert.Equal(expectedValues, actualValues);
     }
 
-
     [Fact]
     public void TestRuleStructure()
     {
@@ -87,6 +84,12 @@ public class ValidationTermTest
         Assert.Equal(expectedVal, record.IfComponent.ComponentFormula);
         Assert.True(record.IsPlainRule);
 
+        text = "not(isNull({t: S.06.02.07.01, c: C0170, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2})) and not(isNull({t: S.01.03.01.01, c: C0050, dv: emptySequence(), seq: False, id: v2, f: solvency, fv: solvency2}))";
+        record = RuleStructure280.CreateRuleStructure(text);
+        expectedVal = "not(isNull({t: S.06.02.07.01, c: C0170, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2})) and not(isNull({t: S.01.03.01.01, c: C0050, dv: emptySequence(), seq: False, id: v2, f: solvency, fv: solvency2}))";
+        Assert.Equal(expectedVal, record.IfComponent.ComponentFormula);
+        Assert.True(record.IsPlainRule);
+        Assert.Equal(2, record.IfComponent.ComponentExpressions.Count);
 
     }
 
