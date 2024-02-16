@@ -2,6 +2,7 @@
 using Shared.DataModels;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections.Grouping;
+using Syncfusion.XlsIO.Implementation.XmlSerialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +15,14 @@ using System.Threading.Tasks;
 public record struct TermPairSplit(string Key, string Value);
 //public enum TermKey { Tab, Zet, Row, Col, Met }
 //public record TermPair(TermKey Key, string Value);
-public record ValidationTerm280
+public record RuleTerm280
 {
     //{t: S.01.01.07.01, r: R0540, c: C0010}
     //{t: S.01.01.07.01, r: R0540, c: C0010, dv: [Default], seq: False, id: v1, f: solvency, fv: solvency2}
     //{ m: [s2md_met:ei1024], seq: False, id: v0} 
+    public string Letter { get; set; } = "";
+    public string TermText { get; set; } = "";
+
     public string Table { get; set; } = "";
     public string Zet { get; set; } = string.Empty;
     public string Row { get; set; } = "";
@@ -54,8 +58,17 @@ public record ValidationTerm280
         //return new ValidationRecord { Table = text, Zet = text, Row = text, Col = text, Solvency = text, };
     }
 
+    public static RuleTerm280? CreateRawTerm(string letter, string termText)
+    {
+        var rec = new RuleTerm280()
+        {
+            Letter = letter,
+            TermText = termText
 
-    public static ValidationTerm280? CreateValidationRecord(string text)
+        };
+        return rec;
+    }
+    public static RuleTerm280? CreateValidationRecord(string text)
     {
         var pairs = SplitTerm(text);
         string z = "", t = "", r = "", col = "", dim = "", m = "", f = "", fv = "", dv = "", id = "";
@@ -80,7 +93,7 @@ public record ValidationTerm280
                 default: throw new Exception($"unkown key {pair.Key}");
             }
         }
-        var rec = new ValidationTerm280()
+        var rec = new RuleTerm280()
         {
             Zet = z,
             Table = t,
