@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NewValidator.Common.FunctionalRoutines;
-public class RuleExpression
+public partial class RuleExpression
 {
     public bool IsNegative { get; set; }
     public string ExpressionText { get; init; } = "";
@@ -22,17 +22,12 @@ public class RuleExpression
         var matchNot = rgxNot.Match(text);
         var isNot= matchNot.Success;
         var withoutNot = matchNot.Success ? matchNot.Groups[1].Value : text;
-        
-        //remove parenthesis if around 
-        var rgxParen = RegexParenthesis();
-        var match = rgxParen.Match(withoutNot);
-        var cleanStr = match.Success ? match.Groups[1].Value : withoutNot;        
 
-        return new RuleExpression() {IsNegative=isNot, ExpressionText=cleanStr};
+        
+        return new RuleExpression() {IsNegative=isNot, ExpressionText=withoutNot};
     }
 
-    [GeneratedRegex("not\\s?\\((.*)\\)")]
+    [GeneratedRegex(@"^\(?not\s?\((.*)\)\)?")]
     private static partial Regex RegexNot();
-    [GeneratedRegex("\\((.*)\\)")]
-    private static partial Regex RegexParenthesis();
+   
 }
