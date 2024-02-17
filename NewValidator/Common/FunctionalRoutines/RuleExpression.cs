@@ -9,28 +9,40 @@ using System.Threading.Tasks;
 
 namespace NewValidator.Common.FunctionalRoutines;
 
-public enum ExpressionFunctionType{normal,matches,isNill};
+public enum FunctionType{Normal,Matches,IsNull};
 public partial class RuleExpression
 {
     //an expression is the text between AND and/or OR
+    public required string ExpressionId { get; init; }
     public bool IsNegative { get; set; }
-    public string ExpressionText { get; init; } = "";
+    public FunctionType FunctionType { get; set; }
+    public required string ExpressionText { get; init; }
 
-    public static RuleExpression CreateRuleExpression(string text)
+    public static RuleExpression CreateRuleExpression(string expressionId, string text)
     {
         //(not(ab))=>ab
         //not(ab)=> ab
+        //ab=>ab
+        //not(matches("abc")) => abc and function type = matches
 
-        var rgxNot = RegexNot();
+        //check if not and it will also remove any parenthesis around
+        var rgxNot = RegexNot() ;
         var matchNot = rgxNot.Match(text);
         var isNot= matchNot.Success;
         var withoutNot = matchNot.Success ? matchNot.Groups[1].Value : text;
 
+        var rgxFunc = RgxFunctionType();
+        var matchFunc = rgxFunc.Match(withoutNot);
+        FunctionType fnType = !matchFunc.Success ? FunctionType.Normal
+            : matchFunc.Groups[1].Value == "matches" ? FunctionType.Matches
+            : FunctionType.IsNull;               
+        var functionValue = matchFunc.Success ? matchFunc.Groups[2].Value : withoutNot;
         
-        return new RuleExpression() {IsNegative=isNot, ExpressionText=withoutNot};
+        return new RuleExpression() {ExpressionId=expressionId, IsNegative=isNot, FunctionType=fnType, ExpressionText= functionValue};
     }
 
     [GeneratedRegex(@"^\(?not\s?\((.*)\)\)?")]
     private static partial Regex RegexNot();
-   
+    [GeneratedRegex("(isNull|matches)\\s?\\((.*)\\)")]
+    private static partial Regex RgxFunctionType();
 }

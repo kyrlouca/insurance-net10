@@ -41,7 +41,7 @@ public class RuleComponent
     public static RuleComponent CreateRuleComponent(string text)
     {
         var (hasValue, componentFormula, expressions) = ParseComponent(text);
-        var ruleExpressions = expressions.Select(exp => new RuleExpression() { });
+        var ruleExpressions = expressions.Select(exp => RuleExpression.CreateRuleExpression(exp.Key,exp.Value));
         var rc = new RuleComponent() {HasValue=hasValue, ComponentText = text, ComponentFormula = componentFormula, ComponentExpressions = expressions };
         return rc;
     }
