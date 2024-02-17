@@ -93,4 +93,30 @@ public class ValidationTermTest
 
     }
 
+
+    [Fact]
+    public void TestRuleExpression()
+    {
+        var text = @"not(isNull({d: [s2c_dim:LG], filter:dim(this(), [s2c_dim:LG]) = [s2c_GA:x113], seq: False, id: v0}))";
+        var record = RuleStructure280.CreateRuleE(text);
+        var expectedVal = "not(isNull({d: [s2c_dim:LG], filter:dim(this(), [s2c_dim:LG]) = [s2c_GA:x113], seq: False, id: v0}))";
+        Assert.Equal(expectedVal, record.IfComponent.ComponentFormula);
+        Assert.False(record.IsPlainRule);
+
+        text = "isNull({t: T.99.01.01.01, c: C0100, seq: False, id: v0, f: solvency, fv: solvency2})";
+        record = RuleStructure280.CreateRuleStructure(text);
+        expectedVal = "isNull({t: T.99.01.01.01, c: C0100, seq: False, id: v0, f: solvency, fv: solvency2})";
+        Assert.Equal(expectedVal, record.IfComponent.ComponentFormula);
+        Assert.True(record.IsPlainRule);
+
+        text = "not(isNull({t: S.06.02.07.01, c: C0170, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2})) and not(isNull({t: S.01.03.01.01, c: C0050, dv: emptySequence(), seq: False, id: v2, f: solvency, fv: solvency2}))";
+        record = RuleStructure280.CreateRuleStructure(text);
+        expectedVal = "not(isNull({t: S.06.02.07.01, c: C0170, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2})) and not(isNull({t: S.01.03.01.01, c: C0050, dv: emptySequence(), seq: False, id: v2, f: solvency, fv: solvency2}))";
+        Assert.Equal(expectedVal, record.IfComponent.ComponentFormula);
+        Assert.True(record.IsPlainRule);
+        Assert.Equal(2, record.IfComponent.ComponentExpressions.Count);
+
+    }
+
+
 }

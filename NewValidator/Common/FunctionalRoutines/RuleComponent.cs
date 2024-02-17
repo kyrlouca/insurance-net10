@@ -7,18 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace NewValidator.Common.FunctionalRoutines;
 
-public class RuleExpression
-{
-    public bool IsNegative { get; set; }
-    public string Expression { get; init; } = "";
 
-    public static RuleExpression HandleNulls(string text)
-    {
-        var exp= new RuleExpression{ IsNegative= false, Expression= text };
-        return exp;
-    }
-
-}
 public class RuleComponent
 {
     //a rule component is a part of a rule separated by AND or OR
@@ -52,13 +41,11 @@ public class RuleComponent
     public static RuleComponent CreateRuleComponent(string text)
     {
         var (hasValue, componentFormula, expressions) = ParseComponent(text);
+        var ruleExpressions = expressions.Select(exp => new RuleExpression() { });
         var rc = new RuleComponent() {HasValue=hasValue, ComponentText = text, ComponentFormula = componentFormula, ComponentExpressions = expressions };
         return rc;
     }
 
-    public string HandleNotExpression(string text)
-    {
-        return "";
-    }
+    
 
 }
