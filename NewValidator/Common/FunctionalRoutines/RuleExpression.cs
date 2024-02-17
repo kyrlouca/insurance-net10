@@ -8,8 +8,11 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NewValidator.Common.FunctionalRoutines;
+
+public enum ExpressionFunctionType{normal,matches,isNill};
 public partial class RuleExpression
 {
+    //an expression is the text between AND and/or OR
     public bool IsNegative { get; set; }
     public string ExpressionText { get; init; } = "";
 
