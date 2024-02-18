@@ -5,17 +5,23 @@ using Syncfusion.XlsIO.Implementation.Collections.Grouping;
 using Syncfusion.XlsIO.Implementation.XmlSerialization;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 
+public enum ValueType{IsNumber, IsString, IsBoolean};
 public record struct TermPairSplit(string Key, string Value);
 //public enum TermKey { Tab, Zet, Row, Col, Met }
 //public record TermPair(TermKey Key, string Value);
-public record RuleTerm280
+
+
+
+public record RuleExpressionTerm280
 {
     //{t: S.01.01.07.01, r: R0540, c: C0010}
     //{t: S.01.01.07.01, r: R0540, c: C0010, dv: [Default], seq: False, id: v1, f: solvency, fv: solvency2}
@@ -23,10 +29,12 @@ public record RuleTerm280
     public string Letter { get; set; } = "";
     public string TermText { get; set; } = "";
 
-    public string Table { get; set; } = "";
-    public string Zet { get; set; } = string.Empty;
-    public string Row { get; set; } = "";
-    public string Col { get; set; } = "";
+    public ValueType ValueType {  get; set; }
+
+    public string T { get; set; } = "";
+    public string Z { get; set; } = string.Empty;
+    public string R { get; set; } = "";
+    public string C { get; set; } = "";
     public string Id { get; set; } = "";
 
     public string Dim { get; set; } = "";
@@ -35,10 +43,15 @@ public record RuleTerm280
     public string F { get; set; } = "";
     public string Fv { get; set; } = "";
     public string Dv { get; set; } = "";
+    public string Seq { get; set; } = "";
     public bool IsSeq { get; set; }
 
     static public List<TermPairSplit> SplitTerm(string text)
     {
+
+        //split the pairs and TitleCase the key
+        //{t: S.01.01.07.01, r: R0540, c: C0010}=> { {"T":"S.01.01.07.01"},{"R","R0540"}..
+        TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
         var rgxPair = new Regex(@"(\w{1,3}):\s*?(.*)");
         var rgxTerm = new Regex(@"^\{(.*)\}", RegexOptions.Compiled);
         var match = rgxTerm.Match(text);
@@ -49,6 +62,7 @@ public record RuleTerm280
         var terms = cleanText.Split(",").Select(term =>
         {
             var pair = term.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            //TermPairSplit res = pair.Length == 2 ? new TermPairSplit(textInfo.ToTitleCase( pair[0].Trim()), pair[1].Trim()) : new();
             TermPairSplit res = pair.Length == 2 ? new TermPairSplit(pair[0].Trim(), pair[1].Trim()) : new();
             return res;
         })
@@ -58,9 +72,9 @@ public record RuleTerm280
         //return new ValidationRecord { Table = text, Zet = text, Row = text, Col = text, Solvency = text, };
     }
 
-    public static RuleTerm280? CreateRawTerm(string letter, string termText)
+    public static RuleExpressionTerm280? CreateRawTerm(string letter, string termText)
     {
-        var rec = new RuleTerm280()
+        var rec = new RuleExpressionTerm280()
         {
             Letter = letter,
             TermText = termText
@@ -68,48 +82,25 @@ public record RuleTerm280
         };
         return rec;
     }
-    public static RuleTerm280? CreateRuleTerm(string text)
+    
+    public static RuleExpressionTerm280? CreateRuleExpressionTerm(string text)
     {
-        var pairs = SplitTerm(text);
-        string z = "", t = "", r = "", col = "", dim = "", m = "", f = "", fv = "", dv = "", id = "";
-        bool isSeq = false;
+        //use reflection to update the fields of the record
 
+        var record = new RuleExpressionTerm280();
+        var recordType = record.GetType();
+                
+        var pairs = SplitTerm(text);
         foreach (var pair in pairs)
         {
-            switch (pair.Key.ToLower()) // Case-insensitive comparison
+            var fieldInfo = recordType.GetProperty(pair.Key,BindingFlags.Public| BindingFlags.IgnoreCase|BindingFlags.Instance); 
+            if(fieldInfo is null)
             {
-                case "z": z = pair.Value; break;
-                case "t": t = pair.Value; break;
-                case "r": r = pair.Value; break;
-                case "c": col = pair.Value; break;
-
-                case "dim": dim = pair.Value; break;
-                case "m": m = pair.Value; break;
-                case "seq": isSeq = pair.Value == "True"; break;
-                case "f": f = pair.Value; break;
-                case "fv": fv = pair.Value; break;
-                case "dv": dv = pair.Value; break;
-                case "id": id = pair.Value; break;
-                default: throw new Exception($"unkown key {pair.Key}");
+                throw new Exception($"Property of RuleTerm does NOT exist: {pair.Key}");
+                continue;
             }
-        }
-        var rec = new RuleTerm280()
-        {
-            Zet = z,
-            Table = t,
-            Row = r,
-            Col = col,
-            Dim = dim,
-            Metric = m,
-            F = f,
-            Fv = fv,
-            Id = id,
-            Dv = dv,
-            IsSeq = isSeq
-
-
-        };
-        return rec;
-
+            fieldInfo.SetValue(record, pair.Value);
+        }  
+        return record;
     }
 }
