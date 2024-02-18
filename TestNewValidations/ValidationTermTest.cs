@@ -97,6 +97,8 @@ public class ValidationTermTest
     [Fact]
     public void TestRuleExpression()
     {
+        
+
         var text = @"not(isNull({d: [s2c_dim:LG], filter:dim(this(), [s2c_dim:LG]) = [s2c_GA:x113], seq: False, id: v0}))";
         var record = RuleExpression.CreateRuleExpression("X0",text);
         var expectedVal = "isNull({d: [s2c_dim:LG], filter:dim(this(), [s2c_dim:LG]) = [s2c_GA:x113], seq: False, id: v0})";
@@ -111,9 +113,9 @@ public class ValidationTermTest
         Assert.Equal( FunctionType.IsNull, record.FunctionType);
 
         
-        text = """matches({t: S.06.02.04.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, "^((XL)|(XT))..$")""";
+        text = """matches({t: S.06.02.04.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, ^((XL)|(XT))..$"!) """;
         record = RuleExpression.CreateRuleExpression("X1", text);
-        expectedVal =  """{t: S.06.02.04.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, "^((XL)|(XT))..$""";
+        expectedVal =  """{t: S.06.02.04.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, ^((XL)|(XT))..$"!""";
         Assert.Equal(expectedVal, record.ExpressionText);
         Assert.False(record.IsNegative);
         Assert.Equal( FunctionType.Matches, record.FunctionType);
