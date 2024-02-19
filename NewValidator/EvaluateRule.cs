@@ -23,6 +23,8 @@ public class EvaluateRuler
         //and has precedence        
         //var regexOr = new Regex(@"(.*)(or)(.*)");
 
+        //var paren = 
+
         var booleanType = text.Contains("and") ? BooleanOperator.IsAnd
             : text.Contains("or") ? BooleanOperator.IsOR
             : BooleanOperator.None;
