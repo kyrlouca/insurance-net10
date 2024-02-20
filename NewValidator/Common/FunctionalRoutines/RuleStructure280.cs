@@ -11,11 +11,11 @@ public class RuleStructure280
 {
     public bool IsComplete { get; init; }
     public bool IsPlainRule { get; init; }
-    public RuleComponent IfComponent { get; init; }
-    public RuleComponent ThenComponent { get; init; }
-    public RuleComponent ElseComponent { get; init; }
+    public RuleComponent280 IfComponent { get; init; }
+    public RuleComponent280 ThenComponent { get; init; }
+    public RuleComponent280 ElseComponent { get; init; }
 
-    private RuleStructure280(bool isComplete, bool isPlainRule, RuleComponent ifComponent, RuleComponent thenComponent, RuleComponent elseComponent)
+    private RuleStructure280(bool isComplete, bool isPlainRule, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent)
     {
         IsComplete = isComplete;
         IsPlainRule = isPlainRule;
@@ -51,14 +51,14 @@ public class RuleStructure280
     public static RuleStructure280 CreateRuleStructure(string text)
     {
         var (ifExpression, thenExpression, elseExpression) = SplitIfThenElse(text);
-        var ifComponent = RuleComponent.CreateRuleComponent(ifExpression);
-        var thenComponent = RuleComponent.CreateRuleComponent(thenExpression);
-        var elseComponent = RuleComponent.CreateRuleComponent(elseExpression);
+        var ifComponent = RuleComponent280.CreateRuleComponent(ifExpression);
+        var thenComponent = RuleComponent280.CreateRuleComponent(thenExpression);
+        var elseComponent = RuleComponent280.CreateRuleComponent(elseExpression);
 
-        var isPlainRule = ifComponent.HasValue && !elseComponent.HasValue && !thenComponent.HasValue;
+        var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
         var isCompleteRule =
-            (ifComponent.HasValue && elseComponent.HasValue && thenComponent.HasValue)
-            || (ifComponent.HasValue && !elseComponent.HasValue && !thenComponent.HasValue);
+            (ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid)
+            || (ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid);
             
 
         var rec = new RuleStructure280(isCompleteRule, isPlainRule, ifComponent, thenComponent, elseComponent);

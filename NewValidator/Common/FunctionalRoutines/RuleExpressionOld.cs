@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace NewValidator.Common.FunctionalRoutines;
 
 public enum FunctionType{Normal,Matches,IsNull};
-public partial class RuleExpression
+public partial class RuleExpressionOld
 {
     //an expression is the text between AND and/or OR
     //the one below if has tow terms
@@ -21,7 +21,7 @@ public partial class RuleExpression
     public required string ExpressionText { get; init; }
     public List<RuleExpressionTerm280> ExpressionTerms { get; init; } = new List<RuleExpressionTerm280>();
 
-    public static RuleExpression CreateRuleExpression(string expressionId, string text)
+    public static RuleExpressionOld CreateRuleExpression(string expressionId, string text)
     {
         //(not(ab))=>ab
         //not(ab)=> ab
@@ -42,7 +42,7 @@ public partial class RuleExpression
         var functionText = matchFunc.Success ? matchFunc.Groups[2].Value : withoutNot;
 
         //var expresionTerms = RuleExpressionTerm280.(functionText);
-        return new RuleExpression() {ExpressionId=expressionId, IsNegative=isNot, FunctionType=fnType, ExpressionText= functionText};
+        return new RuleExpressionOld() {ExpressionId=expressionId, IsNegative=isNot, FunctionType=fnType, ExpressionText= functionText};
     }
 
     [GeneratedRegex(@"^\(?not\s?\((.*)\)\)?")]
