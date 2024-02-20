@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NewValidator.ValidationClasses;
 
-public class EvaluateRuler
+public class RuleEvaluator
 {
     private enum TermOperators { None, IsAnd, IsOR };
     public static bool EvaluateRule(string text)
