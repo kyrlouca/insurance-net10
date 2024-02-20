@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Z.Expressions;
 
 namespace NewValidator.ValidationClasses;
 internal class ValidationFunctions
@@ -14,17 +15,26 @@ internal class ValidationFunctions
     public static bool ValidateMatch(string text)
     {
         //matches("LEI/12A01", "^LEI\/[A-Z0-9]{3}(01|00)$")
-
-        var res = text.Split(",", StringSplitOptions.RemoveEmptyEntries);
-        if(!res.Any())
+        //matches\(\"(.*?)\"\s*,\s*\"(.*?)\"\)
+        var regex = new Regex("""matches\(\"(.*?)\"\s*,\s*\"(.*?)\"\)""");
+        var match = regex.Match(text);
+        if (!match.Success)
         {
-            throw new Exception($"match not valid:{text}");
+            throw new InvalidOperationException($"invalid match:{text} ");
         }
-        
-        var rgxText = res[1].Replace(@"/", @"\/"); //^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
-        var rgx= new Regex(rgxText, RegexOptions.IgnoreCase);
-        var match= rgx.Match(res[0].Trim());
-        return match.Success;
+
+        var value = match.Groups[1].Value;
+        var rgxExpression = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
+        var rgx= new Regex(rgxExpression, RegexOptions.IgnoreCase);
+        var matchValidation= rgx.Match(value);
+        return matchValidation.Success;
+
+    }
+
+    public static bool ValidateArithmetic(string text)
+    {
+        var result = Eval.Execute<bool>(text);
+        return result;
 
     }
 }

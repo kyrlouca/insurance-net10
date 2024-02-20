@@ -42,7 +42,7 @@ public class EvaluateRuler
                 case "isNull":
                     var resn = string.IsNullOrEmpty(value);
                     return resn;
-                case "mathces":
+                case "matches":
                     var resm = ValidationFunctions.ValidateMatch(text);
                     return resm;
                 default:
@@ -58,22 +58,25 @@ public class EvaluateRuler
 
         if (termOperator == TermOperators.None)
         {
-            var res = text == "found";
+            var res = ValidationFunctions.ValidateArithmetic(text);
             return res;
         }
 
         if (termOperator == TermOperators.IsAnd)
         {
             var resAnd = text.Split("and", StringSplitOptions.RemoveEmptyEntries);
-            var res1 = EvaluateRule(resAnd[0].Trim());
-            var res2 = EvaluateRule(resAnd[1].Trim());
+            var val1 = resAnd[0].Trim();
+            var val2 = resAnd[1].Trim();
+            var res1 = EvaluateRule(val1);
+            var res2 = EvaluateRule(val2);
             return res1 && res2;
         }
         if (termOperator == TermOperators.IsOR)
         {
             var res = text.Split("or", StringSplitOptions.RemoveEmptyEntries);
             var bres1 = EvaluateRule(res[0].Trim());
-            var bres2 = EvaluateRule(res[1].Trim());
+            var val2 = res[1].Trim();
+            var bres2 = EvaluateRule(val2);
             return bres1 || bres2;
         }
 
