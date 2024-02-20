@@ -23,41 +23,35 @@ public class EvaluateRuler
         //and has precedence        
         //var regexOr = new Regex(@"(.*)(or)(.*)");
 
-        //var paren = 
 
-        var rgxFn = new Regex(@"(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var rgxFn = new Regex(@"^(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        var rgxEmptyParen = new Regex(@"^\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
 
         var match = rgxFn.Match(text);
+
         if (match.Success)
         {
+            //( ab and matches(cd)) => evaluate ab and matches(cd)
             var fn = match.Groups[1].Value;
             var value = match.Groups[2].Value;
-            if (!string.IsNullOrEmpty(fn))
+
+            switch (fn)
             {
-                if (fn == "not")
-                {
-                    var resNot= !EvaluateRule(value);
+                case "not":
+                    var resNot = !EvaluateRule(value);
                     return resNot;
-                }
-                if (fn == "isNull")
-                {                    
-                    var resn= string.IsNullOrEmpty(value);
+                case "isNull":
+                    var resn = string.IsNullOrEmpty(value);
                     return resn;
-                }
-                if (fn == "mathces")
-                {
-                    var resm= value == "found";
+                case "mathces":
+                    var resm = value == "found";
                     return resm;
-                }
-                //should not come here
-                return false;
-                
+                default:
+                    var res = EvaluateRule(value);
+                    return res;
             }
-            //( ab and matches(cd)) => evaluate ab and matches(cd)
-            var res = EvaluateRule(value);
-            return res;
         }
-        
+
 
         var booleanType = text.Contains("and") ? BooleanOperator.IsAnd
             : text.Contains("or") ? BooleanOperator.IsOR
@@ -65,7 +59,8 @@ public class EvaluateRuler
 
         if (booleanType == BooleanOperator.None)
         {
-            return text == "found";
+            var res = text == "found";
+            return res;
         }
 
         if (booleanType == BooleanOperator.IsAnd)
@@ -78,8 +73,9 @@ public class EvaluateRuler
         if (booleanType == BooleanOperator.IsOR)
         {
             var res = text.Split("or", StringSplitOptions.RemoveEmptyEntries);
-            var bres = EvaluateRule(res[0].Trim()) || EvaluateRule(res[1].Trim());
-            return bres;
+            var bres1 = EvaluateRule(res[0].Trim());
+            var bres2 = EvaluateRule(res[1].Trim());
+            return bres1 || bres2;
         }
 
         return false;
