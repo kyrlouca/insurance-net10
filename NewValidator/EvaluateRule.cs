@@ -25,13 +25,47 @@ public class EvaluateRuler
 
         //var paren = 
 
+        var rgxFn = new Regex(@"(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+
+        var match = rgxFn.Match(text);
+        if (match.Success)
+        {
+            var fn = match.Groups[1].Value;
+            var value = match.Groups[2].Value;
+            if (!string.IsNullOrEmpty(fn))
+            {
+                if (fn == "not")
+                {
+                    var resNot= !EvaluateRule(value);
+                    return resNot;
+                }
+                if (fn == "isNull")
+                {                    
+                    var resn= string.IsNullOrEmpty(value);
+                    return resn;
+                }
+                if (fn == "mathces")
+                {
+                    var resm= value == "found";
+                    return resm;
+                }
+                //should not come here
+                return false;
+                
+            }
+            //( ab and matches(cd)) => evaluate ab and matches(cd)
+            var res = EvaluateRule(value);
+            return res;
+        }
+        
+
         var booleanType = text.Contains("and") ? BooleanOperator.IsAnd
             : text.Contains("or") ? BooleanOperator.IsOR
             : BooleanOperator.None;
 
         if (booleanType == BooleanOperator.None)
         {
-            return   text == "found";            
+            return text == "found";
         }
 
         if (booleanType == BooleanOperator.IsAnd)

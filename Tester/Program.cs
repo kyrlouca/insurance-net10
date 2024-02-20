@@ -8,9 +8,11 @@ using NewValidator.Common.FunctionalRoutines;
 
 
 
+//var rc = EvaluateRuler.EvaluateRule("isNull( ab and matches(bc) )");
+//var rc1 = EvaluateRuler.EvaluateRule("(ab and matches(a) )");
 //var yy1 = EvaluateRuler.EvaluateRule("1 and 2 or  found");
-var yy2 = EvaluateRuler.EvaluateRule("found and found or 3");
-
+//var yy2 = EvaluateRuler.EvaluateRule("found and found or 3");
+var zz1 = EvaluateRuler.EvaluateRule(@"(isNull(a) Or ""found"") and (b)");
 
 return;
 
