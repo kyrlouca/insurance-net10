@@ -1,9 +1,9 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Text.RegularExpressions;
 using Shared.SpecialRoutines;
-using NewValidator;
 using System.Linq;
 using NewValidator.Common.FunctionalRoutines;
+using NewValidator.ValidationClasses;
 
 
 

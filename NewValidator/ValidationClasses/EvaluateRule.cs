@@ -6,11 +6,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace NewValidator;
+namespace NewValidator.ValidationClasses;
 
 public class EvaluateRuler
 {
-    private enum BooleanOperator { None, IsAnd, IsOR };
+    private enum TermOperators { None, IsAnd, IsOR };
     public static bool EvaluateRule(string text)
     {
         //check for and, or
@@ -25,8 +25,7 @@ public class EvaluateRuler
 
 
         var rgxFn = new Regex(@"^(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
-        var rgxEmptyParen = new Regex(@"^\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
-
+       
         var match = rgxFn.Match(text);
 
         if (match.Success)
@@ -44,7 +43,7 @@ public class EvaluateRuler
                     var resn = string.IsNullOrEmpty(value);
                     return resn;
                 case "mathces":
-                    var resm = value == "found";
+                    var resm = ValidationFunctions.ValidateMatch(text);
                     return resm;
                 default:
                     var res = EvaluateRule(value);
@@ -53,24 +52,24 @@ public class EvaluateRuler
         }
 
 
-        var booleanType = text.Contains("and") ? BooleanOperator.IsAnd
-            : text.Contains("or") ? BooleanOperator.IsOR
-            : BooleanOperator.None;
+        var termOperator = text.Contains("and") ? TermOperators.IsAnd
+            : text.Contains("or") ? TermOperators.IsOR
+            : TermOperators.None;
 
-        if (booleanType == BooleanOperator.None)
+        if (termOperator == TermOperators.None)
         {
             var res = text == "found";
             return res;
         }
 
-        if (booleanType == BooleanOperator.IsAnd)
+        if (termOperator == TermOperators.IsAnd)
         {
             var resAnd = text.Split("and", StringSplitOptions.RemoveEmptyEntries);
             var res1 = EvaluateRule(resAnd[0].Trim());
             var res2 = EvaluateRule(resAnd[1].Trim());
             return res1 && res2;
         }
-        if (booleanType == BooleanOperator.IsOR)
+        if (termOperator == TermOperators.IsOR)
         {
             var res = text.Split("or", StringSplitOptions.RemoveEmptyEntries);
             var bres1 = EvaluateRule(res[0].Trim());
