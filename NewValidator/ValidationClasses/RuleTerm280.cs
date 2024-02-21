@@ -21,7 +21,7 @@ public record struct TermPairSplit(string Key, string Value);
 
 
 
-public record RuleExpressionTerm280
+public record RuleTerm280
 {
     //{t: S.01.01.07.01, r: R0540, c: C0010}
     //{t: S.01.01.07.01, r: R0540, c: C0010, dv: [Default], seq: False, id: v1, f: solvency, fv: solvency2}
@@ -46,7 +46,7 @@ public record RuleExpressionTerm280
     public string Seq { get; set; } = "";
     public bool IsSeq { get; set; }
 
-    static public List<TermPairSplit> SplitTerm(string text)
+    static public List<TermPairSplit> SplitAttribute(string text)
     {
 
         //split the pairs and TitleCase the key
@@ -72,9 +72,9 @@ public record RuleExpressionTerm280
         //return new ValidationRecord { Table = text, Zet = text, Row = text, Col = text, Solvency = text, };
     }
 
-    public static RuleExpressionTerm280? CreateRawTerm(string letter, string termText)
+    public static RuleTerm280? CreateRawTerm(string letter, string termText)
     {
-        var rec = new RuleExpressionTerm280()
+        var rec = new RuleTerm280()
         {
             Letter = letter,
             TermText = termText
@@ -83,14 +83,15 @@ public record RuleExpressionTerm280
         return rec;
     }
 
-    public static RuleExpressionTerm280? CreateRuleExpressionTerm(string text)
+    public static RuleTerm280? CreateRuleTerm280(string letter, string text)
     {
         //use reflection to update the fields of the record
 
-        var record = new RuleExpressionTerm280();
+        var record = new RuleTerm280();
+        record.Letter = letter;
         var recordType = record.GetType();
 
-        var pairs = SplitTerm(text);
+        var pairs = SplitAttribute(text);
         foreach (var pair in pairs)
         {
             var fieldInfo = recordType.GetProperty(pair.Key, BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.Instance);

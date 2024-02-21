@@ -36,7 +36,7 @@ public class ValidationTermTest
     {
         var text = @"{t: S.02.01.07.01, r: R0690, dv: 0, seq: False, id: v4, f: solvency, fv: solvency2}";
         //var record = RuleTerm280.CreateRuleTerm(text);
-        var record = RuleExpressionTerm280.CreateRuleExpressionTerm(text);
+        var record = RuleTerm280.CreateRuleTerm280(text);
         string[] expectedValues = { "S.02.01.07.01", "", "R0690", "" };
         string[] actualValues = { record.T, record.Z, record.R, record.C };
 
@@ -44,7 +44,7 @@ public class ValidationTermTest
 
 
         var text2 = @"{t: S.23.01.05.01, r: R0570, z: Z0001, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2}";
-        record = RuleExpressionTerm280.CreateRuleExpressionTerm(text2);
+        record = RuleTerm280.CreateRuleTerm280(text2);
         expectedValues = new string[] { "S.23.01.05.01", "Z0001", "R0570", ""
            ,"v1" , "solvency", "solvency2",  };
         actualValues = new string[] { record.T, record.Z, record.R, record.C
