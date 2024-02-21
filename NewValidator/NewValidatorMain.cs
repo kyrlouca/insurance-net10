@@ -19,8 +19,7 @@ public class NewValidatorMain : INewValidatorMain
     private readonly ISqlFunctions _SqlFunctions;
     private IDocumentValidator _documentValidator;
 
-    private MModule _mModule { get; set; } = new MModule();
-    private DocInstance _documentInstance { get; set; } = new DocInstance();
+       
 
 
 
@@ -40,6 +39,8 @@ public class NewValidatorMain : INewValidatorMain
 
     public int Run()
     {
+        //module-code="qrs"
+
 
         Console.WriteLine($"started Validating Document - DocumentId:{_parameterData.DocumentId}");
 
@@ -68,17 +69,7 @@ public class NewValidatorMain : INewValidatorMain
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
         }
-
-        var module = _SqlFunctions.SelectModuleByCode(_documentInstance.ModuleCode);
-        if (module is null)
-        {
-            var message = $"Invalid module :{_parameterData.ModuleCode}";
-            _logger.Error(message);
-            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
-            return 1;
-        }
-        _mModule = module;
-
+        
         _documentValidator.ValidateDocument();
 
 

@@ -61,15 +61,16 @@ public partial class FactsDecorator : IFactsDecorator
         _filings = filings;
         _parameterData = _parameterHandler.GetParameterData();
 
-        _document = _SqlFunctions.SelectDocInstance(documentId);
-        if (_document is null)
+        var document = _SqlFunctions.SelectDocInstance(documentId);
+        if (document is null)
         {
-
             var message = $"Cannot find DocInstance for: docId:{_documentId}, fundId:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
             Console.WriteLine(message);
             Log.Error(message);
             return 1;
         }
+        _document= document;
+
         _moduleCode = _document.ModuleCode.Trim();
         _moduleId = _document.ModuleId;
 

@@ -563,6 +563,7 @@ public class SqlFunctions : ISqlFunctions
 
     public List<VValidationRuleExpressions> SelectModuleValidationRules(int ModuleId)
     {
+        //a rule may apply to more than one table (or to no table), therefore rule may appear twice
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
         var sqlSelect = @"
