@@ -38,7 +38,7 @@ internal class FactDim
 
 }
 
-public class DocumentValidator : IDocumentValidator
+public class OldDocumentValidator : IOldDocumentValidator
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -64,7 +64,7 @@ public class DocumentValidator : IDocumentValidator
 
 
 
-    public DocumentValidator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
+    public OldDocumentValidator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();

@@ -16,12 +16,12 @@ public class ValMainApp : IValMainApp
     private ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
-    private IDocumentValidator _documentValidator;
+    private IOldDocumentValidator _documentValidator;
 
 
 
 
-    public ValMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
+    public ValMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IOldDocumentValidator documentValidator)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();

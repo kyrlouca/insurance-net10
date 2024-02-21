@@ -49,7 +49,7 @@ public class HostCreator
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
-             services.AddScoped<IDocumentValidator, DocumentValidator>();
+             services.AddScoped<IOldDocumentValidator, OldDocumentValidator>();
              services.AddScoped<IValMainApp, ValMainApp>();
              //services.AddScoped<ISignatureMaker,SignatureMaker>();
          })

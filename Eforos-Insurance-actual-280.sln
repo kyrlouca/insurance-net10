@@ -13,11 +13,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tester", "Tester\Tester.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XbrlReader", "XbrlReader\XbrlReader.csproj", "{A129C016-3859-4B46-B8B1-B2D885DBE931}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Validator", "Validator\Validator.csproj", "{2CBCAA6B-908A-4499-9AC6-724296C76531}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OldValidator", "Validator\OldValidator.csproj", "{2CBCAA6B-908A-4499-9AC6-724296C76531}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewValidator", "NewValidator\NewValidator.csproj", "{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewValidator", "NewValidator\NewValidator.csproj", "{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestNewValidations", "TestNewValidations\TestNewValidations.csproj", "{37055BD7-C2A2-4EB9-B4D3-9281929CFE3D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestNewValidations", "TestNewValidations\TestNewValidations.csproj", "{37055BD7-C2A2-4EB9-B4D3-9281929CFE3D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

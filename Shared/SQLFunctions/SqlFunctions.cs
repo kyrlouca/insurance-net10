@@ -94,7 +94,7 @@ public class SqlFunctions : ISqlFunctions
         return sheet;
     }
 
-
+    
     public TemplateSheetInstance? SelectTempateSheetBySheetCodeAllZets(int documentId, string tableCode)
     {
         //assume that for this tableCode there is only one sheet with or withoutzet  
@@ -558,6 +558,24 @@ public class SqlFunctions : ISqlFunctions
         ";
         var res = connectionEiopa.QuerySingleOrDefault<MDimensionModel>(sqlSelect, new { DomainCode, DimensionCode });
         return res;
+    }
+
+
+    public List<VValidationRuleExpressions> SelectModuleValidationRules(int ModuleId)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+
+        var sqlSelect = @"
+            SELECT vrt.TableID, vre.*
+            FROM
+              vValidationRuleTables vrt
+              JOIN vValidationRuleExpressions vre ON vre.ValidationID=vrt.ValidationID
+            WHERE
+              vrt.ModuleID= @ModuleID
+";
+
+        var ctx = connectionEiopa.Query<VValidationRuleExpressions>(sqlSelect, new { ModuleId }).ToList();
+        return ctx;        
     }
 
 

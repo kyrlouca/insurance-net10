@@ -6,6 +6,9 @@ using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.CommonRoutines;
 using Shared.SQLFunctions;
+using System.Reflection.Metadata;
+using System.Reflection;
+using Shared.DataModels;
 
 public class NewValidatorMain : INewValidatorMain
 {
@@ -15,9 +18,10 @@ public class NewValidatorMain : INewValidatorMain
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
     private IDocumentValidator _documentValidator;
-    //private readonly IExcelBookWriter _excelBookWriter;
-    //private readonly IExcelBookDataFiller _excelBookDataFiller;
-    //private readonly IExcelBookMerger _templateMerger;
+
+    private MModule _mModule { get; set; } = new MModule();
+    private DocInstance _documentInstance { get; set; } = new DocInstance();
+
 
 
     public int id = 12;
@@ -28,19 +32,22 @@ public class NewValidatorMain : INewValidatorMain
         _logger = logger;
         _SqlFunctions = sqlFunctions;
         _documentValidator = documentValidator;
-        
-    //_excelBookDataFiller = excelBookDataFiller;
-    //_templateMerger = templateMerger;
-}
+
+    }
+
+
+
+
     public int Run()
     {
-        Console.WriteLine($"started Excel Writer - DocumentId:{_parameterData.DocumentId}");
+
+        Console.WriteLine($"started Validating Document - DocumentId:{_parameterData.DocumentId}");
 
         var doc = _SqlFunctions.SelectDocInstance(_parameterData.DocumentId);
 
         if (doc is null)
         {
-            var message = $"Cannot Find DocInstance for fund:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
+            var message = $"Cannot Find DocInstance  Id:{_parameterData.DocumentId} for fund:{_parameterData.FundId} year:{_parameterData.ApplicableYear} quarter:{_parameterData.ApplicableQuarter} ";
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
@@ -62,30 +69,32 @@ public class NewValidatorMain : INewValidatorMain
             return 1;
         }
 
-
-
-        if (1 == 1)
+        var module = _SqlFunctions.SelectModuleByCode(_documentInstance.ModuleCode);
+        if (module is null)
         {
-            var smessage = $"Validator started documentId:{_parameterData.DocumentId} ";
-            _logger.Information(smessage);
-            _SqlFunctions.CreateTransactionLog(MessageType.INFO, smessage);
-
-            
-
-            //var res = 1;
-            var res = _documentValidator.ValidateDocument();
-            if (res == 0)
-            {
-                var fmessage = $"\nValidator Finished";
-                _logger.Information(fmessage);
-                _SqlFunctions.CreateTransactionLog(MessageType.COMPLETE, fmessage);
-            }
-            return res;
+            var message = $"Invalid module :{_parameterData.ModuleCode}";
+            _logger.Error(message);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
+            return 1;
         }
+        _mModule = module;
+
+        _documentValidator.ValidateDocument();
+
+
+        //_SqlFunctions.UpdateDocumentStatus(DocumentId, "P");
+
+
+        //CreateAllRules();
+
+        //ValidateRules();
 
         return 0;
 
     }
+
+
+
 }
 
 

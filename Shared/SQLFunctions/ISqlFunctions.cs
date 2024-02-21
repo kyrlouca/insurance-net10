@@ -47,4 +47,5 @@ public interface ISqlFunctions
     public List<MTable> SelectTablesInModule280(int moduleId);
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId);
     public MDimensionModel? SelectDimensionByCode(string DomainCode, string DimensionCode);
+    public List<VValidationRuleExpressions> SelectModuleValidationRules(int ModuleId);
 }

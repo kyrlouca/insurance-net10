@@ -2,7 +2,7 @@
 
 namespace Validations
 {
-    public interface IDocumentValidator
+    public interface IOldDocumentValidator
     {
         DbValue GetCellValueFromDbNew(int docId, string tableCode, string row, string col);
         DbValue GetCellValueFromOneSheetDb(string tableCode, int sheetId, string row, string col);
