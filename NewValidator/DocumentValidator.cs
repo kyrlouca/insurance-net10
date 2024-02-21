@@ -58,8 +58,6 @@ public class DocumentValidator : IDocumentValidator
         {
             var tableId = validationRule.TableId;
             var xx=RuleStructure280.CreateRuleStructure(validationRule.Rule);
-
-
         }
         return 1;
     }
