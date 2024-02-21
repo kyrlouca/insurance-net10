@@ -32,6 +32,7 @@ public class DocumentValidator : IDocumentValidator
 }
     public int ValidateDocument()
     {
+        //filters 
 
         var doc = _SqlFunctions.SelectDocInstance(_parameterData.DocumentId);
         if (doc is null)

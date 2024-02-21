@@ -18,7 +18,7 @@ public class RuleComponent280
     public string Expression { get; set; } = "";
     public List<RuleTerm280> RuleTerms { get; set; } = new();
     public string SymbolExpression { get; set; } = "";
-    public static RuleComponent280 CreateRuleComponent(string text)
+    public static RuleComponent280 CreateRuleComponentxx(string text)
     {
         var rc = new RuleComponent280() { IsValid = true, Expression = text };
         return rc;
@@ -31,7 +31,7 @@ public class RuleComponent280
         //{t: S.28.02.01.04, r: R0210, c: C0090 } i+ {t: S.28.02.01.04, r: R0210, c: C0110} i i>= {t: S.12.01.01.01,  fv: solvency2} i- {t: S.12.01.01.01, r: R0020, c: C0020} i+ {t: S.12.01.01.01, r: R0110,} i
         //@"if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)";
         //text = """if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)""";
-        text = """{t: S.28.02.01.04, r: R0210, c: C0090 } i+ {t: S.28.02.01.04, r: R0210, c: C0110} i i>= {t: S.12.01.01.01,  fv: solvency2} i- {t: S.12.01.01.01, r: R0020, c: C0020} i+ {t: S.12.01.01.01, r: R0110,} i""";
+        //text = """{t: S.28.02.01.04, r: R0210, c: C0090 } i+ {t: S.28.02.01.04, r: R0210, c: C0110} i i>= {t: S.12.01.01.01,  fv: solvency2} i- {t: S.12.01.01.01, r: R0020, c: C0020} i+ {t: S.12.01.01.01, r: R0110,} i""";
         //text = """ if matches(dim({d: first}) + {d: second} +[ab] """;
 
         var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
