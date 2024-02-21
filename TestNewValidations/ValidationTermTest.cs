@@ -1,6 +1,5 @@
 namespace TestNewValidations;
 
-using NewValidator.Common.FunctionalRoutines;
 using NewValidator.ValidationClasses;
 
 public class ValidationTermTest

@@ -1,4 +1,4 @@
-﻿namespace NewValidator.Common.FunctionalRoutines;
+﻿namespace NewValidator.ValidationClasses;
 using Shared.DataModels;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections.Grouping;
@@ -14,7 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 
-public enum ValueType{IsNumber, IsString, IsBoolean};
+public enum ValueType { IsNumber, IsString, IsBoolean };
 public record struct TermPairSplit(string Key, string Value);
 //public enum TermKey { Tab, Zet, Row, Col, Met }
 //public record TermPair(TermKey Key, string Value);
@@ -29,7 +29,7 @@ public record RuleExpressionTerm280
     public string Letter { get; set; } = "";
     public string TermText { get; set; } = "";
 
-    public ValueType ValueType {  get; set; }
+    public ValueType ValueType { get; set; }
 
     public string T { get; set; } = "";
     public string Z { get; set; } = string.Empty;
@@ -82,25 +82,25 @@ public record RuleExpressionTerm280
         };
         return rec;
     }
-    
+
     public static RuleExpressionTerm280? CreateRuleExpressionTerm(string text)
     {
         //use reflection to update the fields of the record
 
         var record = new RuleExpressionTerm280();
         var recordType = record.GetType();
-                
+
         var pairs = SplitTerm(text);
         foreach (var pair in pairs)
         {
-            var fieldInfo = recordType.GetProperty(pair.Key,BindingFlags.Public| BindingFlags.IgnoreCase|BindingFlags.Instance); 
-            if(fieldInfo is null)
+            var fieldInfo = recordType.GetProperty(pair.Key, BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.Instance);
+            if (fieldInfo is null)
             {
                 throw new Exception($"Property of RuleTerm does NOT exist: {pair.Key}");
                 continue;
             }
             fieldInfo.SetValue(record, pair.Value);
-        }  
+        }
         return record;
     }
 }

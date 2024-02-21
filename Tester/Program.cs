@@ -2,7 +2,6 @@
 using System.Text.RegularExpressions;
 using Shared.SpecialRoutines;
 using System.Linq;
-using NewValidator.Common.FunctionalRoutines;
 using NewValidator.ValidationClasses;
 
 

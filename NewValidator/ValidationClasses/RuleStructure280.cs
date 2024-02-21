@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NewValidator.Common.FunctionalRoutines;
+namespace NewValidator.ValidationClasses;
 
 public class RuleStructure280
 {
@@ -24,7 +24,7 @@ public class RuleStructure280
         ElseComponent = elseComponent;
     }
 
-    public static ( string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)
+    public static (string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)
     {
         //split if then  else expression            
         //if(A) then B else C => A, B, C (it is complete and NOT plain
@@ -32,7 +32,7 @@ public class RuleStructure280
 
         if (string.IsNullOrEmpty(stringExpression))
         {
-            return ( "", "", "");
+            return ("", "", "");
         }
 
         var rgxIfThenElse = @"if\s*(.*)\s*then(.*)\s*else(.*)";
@@ -40,9 +40,9 @@ public class RuleStructure280
 
         var res = terms.Count switch
         {
-            4 => ( terms[1].Trim(), terms[2].Trim(), terms[3].Trim()),
-            0 => ( stringExpression.Trim(), "", ""),
-            _ => ( "", "", "")//does not happen but i could check for optional then ,els
+            4 => (terms[1].Trim(), terms[2].Trim(), terms[3].Trim()),
+            0 => (stringExpression.Trim(), "", ""),
+            _ => ("", "", "")//does not happen but i could check for optional then ,els
         };
 
         return res;
@@ -57,9 +57,9 @@ public class RuleStructure280
 
         var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
         var isCompleteRule =
-            (ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid)
-            || (ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid);
-            
+            ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid
+            || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
+
 
         var rec = new RuleStructure280(isCompleteRule, isPlainRule, ifComponent, thenComponent, elseComponent);
         return rec;
