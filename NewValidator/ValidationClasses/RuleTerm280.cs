@@ -14,7 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 
-public enum ValueType { IsNumber, IsString, IsBoolean };
+public enum ValueType { Number, String, Boolean,Date,Integer };
 public record struct TermPairSplit(string Key, string Value);
 //public enum TermKey { Tab, Zet, Row, Col, Met }
 //public record TermPair(TermKey Key, string Value);
@@ -29,8 +29,12 @@ public record RuleTerm280
     public string Letter { get; set; } = "";
     public string TermText { get; set; } = "";
 
+    public string ValueStr { get; set; }
+    public double ValueDecimal { get; set; }
+    public DateOnly ValueDate { get; set; }
+    public bool ValueBoolean { get; set; }
+    public int ValueInt { get; set; }
     public ValueType ValueType { get; set; }
-
     public string T { get; set; } = "";
     public string Z { get; set; } = string.Empty;
     public string R { get; set; } = "";

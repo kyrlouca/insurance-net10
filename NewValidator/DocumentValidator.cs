@@ -20,7 +20,7 @@ public class DocumentValidator : IDocumentValidator
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
     private DocInstance _documentInstance = new();
-    private MModule _mModule=new MModule();
+    private MModule _mModule = new MModule();
 
     public DocumentValidator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
     {
@@ -28,8 +28,8 @@ public class DocumentValidator : IDocumentValidator
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
-        
-}
+
+    }
     public int ValidateDocument()
     {
         //filters 
@@ -54,11 +54,24 @@ public class DocumentValidator : IDocumentValidator
         }
         _mModule = module;
         var validationRules = _SqlFunctions.SelectModuleValidationRules(_mModule.ModuleID);
-        validationRules = validationRules.Where(vr => vr.ValidationID == 772).ToList();
-        foreach ( var validationRule in validationRules )
+        validationRules = validationRules.Where(vr => vr.ValidationID == 729).ToList();
+        foreach (var validationRule in validationRules)
         {
-            var tableId = validationRule.TableId;
-            var xx=RuleStructure280.CreateRuleStructure(validationRule.Rule);
+            var tableId = validationRule.TableId;//108
+            var rl = RuleStructure280.CreateRuleStructure(validationRule.Rule);
+            var ifRule = rl.IfComponent;
+
+            foreach (var ruleTerm in ifRule.RuleTerms)
+            {
+                var table = ruleTerm.T; //S.02.01.02.01
+                var zet = ruleTerm.Z;//
+                var row = ruleTerm.R;//R0280
+                var col = ruleTerm.C;//C0050
+                //var termValue = _SqlFunctions.FindFact();
+                var xx = 22;
+                
+            }
+
         }
         return 1;
     }

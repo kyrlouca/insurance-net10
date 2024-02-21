@@ -165,6 +165,8 @@ public class SqlFunctions : ISqlFunctions
         return doc;
     }
 
+
+
     public List<TemplateSheetFactDim> SelectFactDims(int factId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
