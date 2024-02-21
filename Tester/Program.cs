@@ -7,7 +7,7 @@ using NewValidator.ValidationClasses;
 
 
 
-var zz1 = RuleComponent280.ParseRule("a");
+var zz1 = RuleComponent280.CreateComponent("a");
 
 return;
 

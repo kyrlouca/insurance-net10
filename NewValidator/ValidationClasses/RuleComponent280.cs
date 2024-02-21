@@ -18,13 +18,9 @@ public class RuleComponent280
     public string Expression { get; set; } = "";
     public List<RuleTerm280> RuleTerms { get; set; } = new();
     public string SymbolExpression { get; set; } = "";
-    public static RuleComponent280 CreateRuleComponentxx(string text)
-    {
-        var rc = new RuleComponent280() { IsValid = true, Expression = text };
-        return rc;
-    }
+    
 
-    public static RuleComponent280 ParseRule(string text)
+    public static RuleComponent280 CreateComponent(string text)
     {
         //captures terms inside brackets , takes care of inner brackets in match statements
         //\{\s?[a-z]:([^{}]).*?\}

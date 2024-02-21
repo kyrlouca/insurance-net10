@@ -51,9 +51,9 @@ public class RuleStructure280
     public static RuleStructure280 CreateRuleStructure(string text)
     {
         var (ifExpression, thenExpression, elseExpression) = SplitIfThenElse(text);
-        var ifComponent = RuleComponent280.ParseRule(ifExpression);
-        var thenComponent = RuleComponent280.ParseRule(thenExpression);
-        var elseComponent = RuleComponent280.ParseRule(elseExpression);
+        var ifComponent = RuleComponent280.CreateComponent(ifExpression);
+        var thenComponent = RuleComponent280.CreateComponent(thenExpression);
+        var elseComponent = RuleComponent280.CreateComponent(elseExpression);
 
 
         
