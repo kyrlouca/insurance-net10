@@ -16,6 +16,8 @@ public class RuleComponent280
 
     public bool IsValid { get; set; } = true;
     public string Expression { get; set; } = "";
+    
+    public List<RuleTerm> RuleTerms { get; set; }=new();
 
     public static RuleComponent280 CreateRuleComponent(string text)
     {
