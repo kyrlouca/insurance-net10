@@ -55,7 +55,10 @@ public class DocumentValidator : IDocumentValidator
         }
         _mModule = module;
         var validationRules = _SqlFunctions.SelectModuleValidationRules(_mModule.ModuleID);
-        validationRules = validationRules.Where(vr => vr.ValidationID == 729).ToList();
+        //729 simple >
+        //743 simple isnull
+        //4880 matches
+        validationRules = validationRules.Where(vr => vr.ValidationID == 4880).ToList();
         foreach (var validationRule in validationRules)
         {
             var tableId = validationRule.TableId;//108
@@ -70,7 +73,7 @@ public class DocumentValidator : IDocumentValidator
                 var obj= CreateObjectTerm280(fact,ruleTerm.Dv);
                 plainTerms.Add(ruleTerm.Letter, obj);
             }
-            ExpressionEvaluator.EvaluateExpression(ifRule.SymbolExpression, plainTerms);
+            var isValid= ExpressionEvaluator.EvaluateExpression(ifRule.SymbolExpression, plainTerms);
         }
         
 
@@ -87,7 +90,7 @@ public class DocumentValidator : IDocumentValidator
 
         object obj = fact.DataTypeUse.Trim() switch {
             "E" => fact.TextValue,
-            "S" => fact.NumericValue,
+            "S" => fact.TextValue,
             "I" => fact.NumericValue,
             "M" => fact.NumericValue,
             "N" => fact.NumericValue,

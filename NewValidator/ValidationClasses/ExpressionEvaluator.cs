@@ -42,7 +42,8 @@ public class ExpressionEvaluator
                     var resNot = !EvaluateExpression(value,terms);
                     return resNot;
                 case "isNull":
-                    var resn = string.IsNullOrEmpty(value);
+                    //var resn = string.IsNullOrEmpty(value);
+                    var resn= ValidationFunctions.ValidateIsNull(value, terms);
                     return resn;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula,terms);

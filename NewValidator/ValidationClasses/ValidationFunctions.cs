@@ -36,7 +36,7 @@ internal class ValidationFunctions
     public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
     {
         //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
-        var regex = new Regex("""matches\(\"(.*?)\"\s*,\s*\"(.*?)\"\)""");
+        var regex = new Regex(@"matches\((.*?)\s*,\s*\""(.*)\""\)");
         var match = regex.Match(text);
         if (!match.Success)
         {
@@ -44,10 +44,10 @@ internal class ValidationFunctions
         }
 
         var letter = match.Groups[1].Value;
-        var value = terms[letter]?.ToString() ?? "";
+        var value = terms[letter].Obj.ToString()??"";
 
-        var rgxExpression = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
-        var rgx = new Regex(rgxExpression, RegexOptions.IgnoreCase);
+        var rgxFromValue = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
+        var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
         var matchValidation = rgx.Match(value);
         return matchValidation.Success;
     }
@@ -65,8 +65,19 @@ internal class ValidationFunctions
         Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
         var result = Eval.Execute<bool>(symbolFormula,plainObjects);
         return result;
+    }
 
-
+    public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    {
+        var letter = terms[symbolFormula];
+        var xx = letter?.Obj?.ToString();
+        var isEmpty = (letter?.Obj?.ToString() ?? "") == "emptySequence()";
+        if (letter == null ||  letter?.Obj is null || isEmpty)
+        {
+            return true;
+        }
+        return false;
+        
     }
 
 }
