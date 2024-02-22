@@ -58,7 +58,8 @@ public class DocumentValidator : IDocumentValidator
         //729 simple >
         //743 simple isnull
         //4880 matches
-        validationRules = validationRules.Where(vr => vr.ValidationID == 4880).ToList();
+        //787 equality of enumaratin
+        validationRules = validationRules.Where(vr => vr.ValidationID == 787).ToList();
         foreach (var validationRule in validationRules)
         {
             var tableId = validationRule.TableId;//108

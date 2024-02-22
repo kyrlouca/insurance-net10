@@ -25,6 +25,15 @@ public class ExpressionEvaluator
         //and has precedence        
         //var regexOr = new Regex(@"(.*)(or)(.*)");
 
+        //remove outer parenthesis
+        //var rgxOuterParen = new Regex(@"^\((.*)\)$"); //(X=0 and Y=3) => X=0 and Y=3
+        //var matchParen= rgxOuterParen.Match(formula);
+        //if (matchParen.Success )
+        //{            
+        //    var res = EvaluateExpression(matchParen.Groups[1].Value.Trim(), terms);
+        //    return res;
+        //}
+
 
         var rgxFn = new Regex(@"^(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
 
@@ -49,12 +58,13 @@ public class ExpressionEvaluator
                     var resm = ValidationFunctions.ValidateMatch(formula,terms);
                     return resm;
                 default:
+                    //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
                     var res = EvaluateExpression(value,terms);
                     return res;
             }
         }
 
-
+         
         var termOperator = formula.Contains("and") ? TermOperators.IsAnd
             : formula.Contains("or") ? TermOperators.IsOR
             : TermOperators.None;

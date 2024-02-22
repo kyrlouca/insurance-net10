@@ -49,6 +49,8 @@ public class RuleComponent280
             .Where(rt => rt is not null)
             .ToList();
 
+        formula = formula.Replace(" = ", " == ");
+        
         var rc = new RuleComponent280() { Expression = text, SymbolExpression = formula, RuleTerms = ruleTerms };
         return rc;
     }
