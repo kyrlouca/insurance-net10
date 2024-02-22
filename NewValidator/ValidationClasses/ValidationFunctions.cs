@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Z.Expressions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace NewValidator.ValidationClasses;
 internal class ValidationFunctions
@@ -31,10 +32,41 @@ internal class ValidationFunctions
 
     }
 
+
+    public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
+    {
+        //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
+        var regex = new Regex("""matches\(\"(.*?)\"\s*,\s*\"(.*?)\"\)""");
+        var match = regex.Match(text);
+        if (!match.Success)
+        {
+            throw new InvalidOperationException($"invalid match:{text} ");
+        }
+
+        var letter = match.Groups[1].Value;
+        var value = terms[letter]?.ToString() ?? "";
+
+        var rgxExpression = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
+        var rgx = new Regex(rgxExpression, RegexOptions.IgnoreCase);
+        var matchValidation = rgx.Match(value);
+        return matchValidation.Success;
+    }
+
+
     public static bool ValidateArithmetic(string text)
     {
         var result = Eval.Execute<bool>(text);
         return result;
 
     }
+
+    public static bool ValidateArithmetic(string symbolFormula, Dictionary<string,ObjectTerm280> terms)
+    {
+        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
+        var result = Eval.Execute<bool>(symbolFormula,plainObjects);
+        return result;
+
+
+    }
+
 }

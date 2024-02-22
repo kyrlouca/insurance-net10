@@ -20,7 +20,7 @@ public class DocumentValidator : IDocumentValidator
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
     private DocInstance _documentInstance = new();
-    private int DocumentId { get => _documentInstance?.InstanceId ??0; }
+    private int DocumentId { get => _documentInstance?.InstanceId ?? 0; }
     private MModule _mModule = new();
 
     public DocumentValidator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
@@ -62,15 +62,43 @@ public class DocumentValidator : IDocumentValidator
             var rl = RuleStructure280.CreateRuleStructure(validationRule.Rule);
             var ifRule = rl.IfComponent;
 
+            Dictionary<string, ObjectTerm280> plainTerms = new();
             foreach (var ruleTerm in ifRule.RuleTerms)
-            {                
-                var zet = ruleTerm.Z;                
-                var fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, zet, ruleTerm.R, ruleTerm.C);
-                var xx = 22;
-                
+            {
+                var zet = ruleTerm.Z;//todo need to figure out how to add zet to the fact
+                var fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, zet, ruleTerm.R, ruleTerm.C);                
+                var obj= CreateObjectTerm280(fact,ruleTerm.Dv);
+                plainTerms.Add(ruleTerm.Letter, obj);
             }
-
+            ExpressionEvaluator.EvaluateExpression(ifRule.SymbolExpression, plainTerms);
         }
+        
+
         return 1;
     }
+
+    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact,string defaultValue)
+    {
+        if (fact == null)
+        {
+            return  new ObjectTerm280( "S", 0, defaultValue);
+        }
+
+
+        object obj = fact.DataTypeUse.Trim() switch {
+            "E" => fact.TextValue,
+            "S" => fact.NumericValue,
+            "I" => fact.NumericValue,
+            "M" => fact.NumericValue,
+            "N" => fact.NumericValue,
+            "P" => fact.NumericValue,
+            "B" => fact.BooleanValue, 
+            "D" => fact.DateTimeValue,
+            _ => throw new NotImplementedException() 
+        };
+        var objTerm= new ObjectTerm280(fact.DataTypeUse,fact.Decimals,obj);
+        return objTerm;
+    }
+
+
 }
