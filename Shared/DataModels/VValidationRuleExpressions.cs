@@ -19,4 +19,5 @@ public class VValidationRuleExpressions
     public string VariableNames { get; set; }
     public int ConceptID { get; set; }
     public int TableId { get; set; }
+    public string TableCode { get; set; }
 }

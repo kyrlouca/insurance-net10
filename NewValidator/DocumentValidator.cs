@@ -16,11 +16,12 @@ internal enum ValidStatus { Valid, Error, Waring };
 public class DocumentValidator : IDocumentValidator
 {
     private readonly IParameterHandler _parameterHandler;
-    private ParameterData _parameterData = new();
+    private readonly ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
     private DocInstance _documentInstance = new();
-    private MModule _mModule = new MModule();
+    private int DocumentId { get => _documentInstance?.InstanceId ??0; }
+    private MModule _mModule = new();
 
     public DocumentValidator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
     {
@@ -62,12 +63,9 @@ public class DocumentValidator : IDocumentValidator
             var ifRule = rl.IfComponent;
 
             foreach (var ruleTerm in ifRule.RuleTerms)
-            {
-                var table = ruleTerm.T; //S.02.01.02.01
-                var zet = ruleTerm.Z;//
-                var row = ruleTerm.R;//R0280
-                var col = ruleTerm.C;//C0050
-                //var termValue = _SqlFunctions.FindFact();
+            {                
+                var zet = ruleTerm.Z;                
+                var fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, zet, ruleTerm.R, ruleTerm.C);
                 var xx = 22;
                 
             }

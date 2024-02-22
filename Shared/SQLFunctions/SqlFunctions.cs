@@ -8,6 +8,7 @@ using Shared.HostParameters;
 using Shared.SharedHost;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 
 public class SqlFunctions : ISqlFunctions
 {
@@ -78,7 +79,7 @@ public class SqlFunctions : ISqlFunctions
         return docs ?? Enumerable.Empty<DocInstance>();
     }
 
-    public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId, string tableCode,  string sheetCodeZet)
+    public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"
@@ -90,11 +91,11 @@ public class SqlFunctions : ISqlFunctions
                 and sheet.TableCode = @tableCode        
                 and SheetCodeZet = @sheetCodeZet
              ";
-        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId,tableCode, sheetCodeZet });
+        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode, sheetCodeZet });
         return sheet;
     }
 
-    
+
     public TemplateSheetInstance? SelectTempateSheetBySheetCodeAllZets(int documentId, string tableCode)
     {
         //assume that for this tableCode there is only one sheet with or withoutzet  
@@ -127,20 +128,15 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
-    
 
-    public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId,int tableId)
+
+    public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId, int tableId)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlSheets = @"Select * from TemplateSheetInstance sheet where sheet.InstanceId= @documentId and sheet.TableID= @tableId";			
-        var sheets = connectionLocal.Query<TemplateSheetInstance>(sqlSheets, new { documentId,tableId });        
+        var sqlSheets = @"Select * from TemplateSheetInstance sheet where sheet.InstanceId= @documentId and sheet.TableID= @tableId";
+        var sheets = connectionLocal.Query<TemplateSheetInstance>(sqlSheets, new { documentId, tableId });
         return sheets.ToList();
     }
-
-
-
-    
-
 
     public void UpdateTemplateSheetName(int templateSheetId, string sheetTabName)
     {
@@ -165,9 +161,7 @@ public class SqlFunctions : ISqlFunctions
         return doc;
     }
 
-
-
-    public List<TemplateSheetFactDim> SelectFactDims(int factId)
+        public List<TemplateSheetFactDim> SelectFactDims(int factId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
@@ -187,7 +181,6 @@ public class SqlFunctions : ISqlFunctions
         return module;
 
     }
-
 
 
     public void UpdateDocumentStatus(int documentId, string status)
@@ -216,7 +209,7 @@ public class SqlFunctions : ISqlFunctions
         return result;
     }
 
-    
+
 
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mappingOrigin)
     {
@@ -505,6 +498,29 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
+    public TemplateSheetFact? SelectFactByRowCol(int documentId, string tableCode, string zet, string row, string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode
+                  --AND fact.ZetValues= @Zet
+                  AND fact.Row= @Row
+                  AND fact.Col= @Col
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+
+        var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new{documentId,tableCode,zet,row,col });
+        return fact;
+    }
+
     public List<MTable> SelectTablesInModule280(int moduleId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -569,16 +585,17 @@ public class SqlFunctions : ISqlFunctions
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
         var sqlSelect = @"
-            SELECT vrt.TableID, vre.*
-            FROM
-              vValidationRuleTables vrt
-              JOIN vValidationRuleExpressions vre ON vre.ValidationID=vrt.ValidationID
-            WHERE
-              vrt.ModuleID= @ModuleID
+           SELECT vrt.TableID, tab.TableCode, vre.*
+             FROM
+               vValidationRuleTables vrt
+               join mTable tab on tab.TableID = vrt.TableID
+               JOIN vValidationRuleExpressions vre ON vre.ValidationID=vrt.ValidationID   
+             WHERE
+               vrt.ModuleID= @ModuleID
 ";
 
         var ctx = connectionEiopa.Query<VValidationRuleExpressions>(sqlSelect, new { ModuleId }).ToList();
-        return ctx;        
+        return ctx;
     }
 
 
