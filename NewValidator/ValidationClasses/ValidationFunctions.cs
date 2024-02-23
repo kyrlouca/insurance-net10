@@ -63,6 +63,9 @@ internal class ValidationFunctions
     public static bool ValidateArithmetic(string symbolFormula, Dictionary<string,ObjectTerm280> terms)
     {
 
+        symbolFormula = symbolFormula.Replace("or", "||");
+        symbolFormula = symbolFormula.Replace("and", "&&");
+
 
         //Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.ObjectType == "E" ? (object)$"[{item.Value.Obj}]" : item.Value.Obj);
         var rgxTerm = new Regex(@"(X\d\d)");

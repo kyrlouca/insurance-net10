@@ -1,14 +1,19 @@
-﻿using Microsoft.Identity.Client;
+﻿using Microsoft.Extensions.FileSystemGlobbing;
+using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace NewValidator.ValidationClasses;
 
 public record ObjectTerm280(string ObjectType, int Decimals, Object Obj);
+public record ZetTerm(string Letter, string Formula, bool IsPassed);
 
 public class ExpressionEvaluator
 {
@@ -50,11 +55,45 @@ public class ExpressionEvaluator
             }
         }
 
-        var rgxTerm = new Regex(@"^(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+
+        //////////////////////////////// Make new formula with zet 
+        //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) 
+        //replace parenthesis with zet terms. 
+        //evaluate each zet 
+        //reconstruct the formula using results instead of z
+        //try again 
+
+        var rgxTerm = new Regex(@"(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         var xx = 3;
-        /// Make new formula with zet 
-            //var matchesTerms= rgxTerm.
-        ///
+        var matchesTerms = rgxTerm.Matches(formula);
+        var ruleTextZetTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, false)) ?? new List<ZetTerm>();
+
+        var formulaZet = ruleTextZetTerms.Aggregate(formula, (Func<string, ZetTerm, string>)((currentText, val) =>
+            {
+                int index = currentText.IndexOf((string)val.Formula);
+                string replacedString = currentText.Substring(0, index) + " " + val.Letter + " " + currentText.Substring((int)(index + val.Formula.Length));
+                return replacedString;
+            }));
+        
+
+        var updatedZets = ruleTextZetTerms
+        .Select(zz => zz with { IsPassed = EvaluateExpression(zz.Formula, terms) })
+        .ToList();
+
+        if (updatedZets.Any())
+        {
+            var newFormula = updatedZets.Aggregate(formulaZet, (Func<string, ZetTerm, string>)((currentText, val) =>
+            {
+                int index = currentText.IndexOf((string)val.Letter);
+                var replacement = val.IsPassed ? "1==1" : "1==2";
+                string replacedString = currentText.Substring(0, index) + " " + replacement + " " + currentText.Substring((int)(index + val.Letter.Length));
+                return replacedString;
+            }));
+
+            var res = ValidationFunctions.ValidateArithmetic(newFormula, terms);
+            return res;
+        }
+        ////////////////////////////////////////////////////////
 
         var termOperator = formula.Contains("and") ? TermOperators.IsAnd
             : formula.Contains("or") ? TermOperators.IsOR
