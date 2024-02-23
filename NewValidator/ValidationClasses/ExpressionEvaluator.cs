@@ -13,27 +13,13 @@ public record ObjectTerm280(string ObjectType, int Decimals, Object Obj);
 public class ExpressionEvaluator
 {
     private enum TermOperators { None, IsAnd, IsOR };
-    public static bool EvaluateExpression(string formula, Dictionary<string,ObjectTerm280> terms)
+    public static bool EvaluateExpression(string formula, Dictionary<string, ObjectTerm280> terms)
     {
-        //check for and, or
-        //--if found split and call evaluate for both parts
-        //if not found check for function, call evaluate
-        //if not found check for >, = call evaluate
-        //if not found check for +, - 
-        //if found call again the evaluete rule for each
 
         //and has precedence        
         //var regexOr = new Regex(@"(.*)(or)(.*)");
-
-        //remove outer parenthesis
-        //var rgxOuterParen = new Regex(@"^\((.*)\)$"); //(X=0 and Y=3) => X=0 and Y=3
-        //var matchParen= rgxOuterParen.Match(formula);
-        //if (matchParen.Success )
-        //{            
-        //    var res = EvaluateExpression(matchParen.Groups[1].Value.Trim(), terms);
-        //    return res;
-        //}
-
+        //1. outer parenthesi with or without function
+        //2. new--construct new formula to make parenthesis as Zet terms and create the Zet terms
 
         var rgxFn = new Regex(@"^(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
 
@@ -48,30 +34,35 @@ public class ExpressionEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = !EvaluateExpression(value,terms);
+                    var resNot = !EvaluateExpression(value, terms);
                     return resNot;
                 case "isNull":
                     //var resn = string.IsNullOrEmpty(value);
-                    var resn= ValidationFunctions.ValidateIsNull(value, terms);
+                    var resn = ValidationFunctions.ValidateIsNull(value, terms);
                     return resn;
                 case "matches":
-                    var resm = ValidationFunctions.ValidateMatch(formula,terms);
+                    var resm = ValidationFunctions.ValidateMatch(formula, terms);
                     return resm;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
-                    var res = EvaluateExpression(value,terms);
+                    var res = EvaluateExpression(value, terms);
                     return res;
             }
         }
 
-         
+        var rgxTerm = new Regex(@"^(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        var xx = 3;
+        /// Make new formula with zet 
+            //var matchesTerms= rgxTerm.
+        ///
+
         var termOperator = formula.Contains("and") ? TermOperators.IsAnd
             : formula.Contains("or") ? TermOperators.IsOR
             : TermOperators.None;
 
         if (termOperator == TermOperators.None)
         {
-            var res = ValidationFunctions.ValidateArithmetic(formula,terms);
+            var res = ValidationFunctions.ValidateArithmetic(formula, terms);
             return res;
         }
 
@@ -80,24 +71,24 @@ public class ExpressionEvaluator
             var resAnd = formula.Split("and", StringSplitOptions.RemoveEmptyEntries);
             var val1 = resAnd[0].Trim();
             var val2 = resAnd[1].Trim();
-            var res1 = EvaluateExpression(val1,terms);
-            var res2 = EvaluateExpression(val2,terms);
+            var res1 = EvaluateExpression(val1, terms);
+            var res2 = EvaluateExpression(val2, terms);
             return res1 && res2;
         }
         if (termOperator == TermOperators.IsOR)
         {
             var res = formula.Split("or", StringSplitOptions.RemoveEmptyEntries);
-            var bres1 = EvaluateExpression(res[0].Trim(),terms);
+            var bres1 = EvaluateExpression(res[0].Trim(), terms);
             var val2 = res[1].Trim();
-            var bres2 = EvaluateExpression(val2,terms);
+            var bres2 = EvaluateExpression(val2, terms);
             return bres1 || bres2;
         }
 
         return false;
-        
+
 
     }
 
-    
+
 }
 
