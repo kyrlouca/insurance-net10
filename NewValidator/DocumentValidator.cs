@@ -42,7 +42,7 @@ public class DocumentValidator : IDocumentValidator
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
-        }
+        } 
         _documentInstance = doc;
 
         var module = _SqlFunctions.SelectModuleByCode(_documentInstance.ModuleCode);

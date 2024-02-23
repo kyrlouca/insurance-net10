@@ -63,25 +63,23 @@ public class ExpressionEvaluator
         //reconstruct the formula using results instead of z
         //try again 
 
-        var rgxTerm = new Regex(@"(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
-        var xx = 3;
+        var rgxTerm = new Regex(@"(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");        
         var matchesTerms = rgxTerm.Matches(formula);
-        var ruleTextZetTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, false)) ?? new List<ZetTerm>();
+        var ruleTextZetTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, false)) ?? new List<ZetTerm>();        
 
-        var formulaZet = ruleTextZetTerms.Aggregate(formula, (Func<string, ZetTerm, string>)((currentText, val) =>
+        if (ruleTextZetTerms.Any())
+        {
+            var formulaZet = ruleTextZetTerms.Aggregate(formula, (Func<string, ZetTerm, string>)((currentText, val) =>
             {
                 int index = currentText.IndexOf((string)val.Formula);
                 string replacedString = currentText.Substring(0, index) + " " + val.Letter + " " + currentText.Substring((int)(index + val.Formula.Length));
                 return replacedString;
             }));
-        
 
-        var updatedZets = ruleTextZetTerms
-        .Select(zz => zz with { IsPassed = EvaluateExpression(zz.Formula, terms) })
-        .ToList();
 
-        if (updatedZets.Any())
-        {
+            var updatedZets = ruleTextZetTerms
+            .Select(zz => zz with { IsPassed = EvaluateExpression(zz.Formula, terms) })
+            .ToList();
             var newFormula = updatedZets.Aggregate(formulaZet, (Func<string, ZetTerm, string>)((currentText, val) =>
             {
                 int index = currentText.IndexOf((string)val.Letter);
