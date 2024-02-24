@@ -61,35 +61,42 @@ public class DocumentValidator : IDocumentValidator
         //787 equality of enumaratin
         validationRules = validationRules.Where(vr => vr.ValidationID == 787).ToList();
         foreach (var validationRule in validationRules)
-        {
+        {            
             var tableId = validationRule.TableId;//108
             var rl = RuleStructure280.CreateRuleStructure(validationRule.Rule);
-            var ifRule = rl.IfComponent;
-            Dictionary<string, ObjectTerm280> plainTerms = UpdateRuleWithTermsAndFormula(ifRule);
-            var isValid = ExpressionEvaluator.EvaluateExpression(ifRule.SymbolExpression, plainTerms);
+
+            //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
+            var ifComponent = rl.IfComponent;         
+            Dictionary<string, ObjectTerm280> ifObjectTerms = UpdateRuleTermWithFactValues(ifComponent);            
+            var isValidIf = ExpressionEvaluator.EvaluateExpression(ifComponent.SymbolExpression, ifObjectTerms);
+
+            if (1 == 2)
+            {
+                var thenComponent = rl.ThenComponent;
+                Dictionary<string, ObjectTerm280> thenObjectTerms = UpdateRuleTermWithFactValues(thenComponent);
+                var isValidThen = ExpressionEvaluator.EvaluateExpression(thenComponent.SymbolExpression, thenObjectTerms);
+
+                var elseComponent = rl.ElseComponent;
+                Dictionary<string, ObjectTerm280> elseObjectTerms = UpdateRuleTermWithFactValues(elseComponent);
+                var isValidElse = ExpressionEvaluator.EvaluateExpression(elseComponent.SymbolExpression, elseObjectTerms);
+
+                var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
+                var isCompleteRule =
+                    ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid
+                    || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
+            }
+            
         }
 
 
         return 1;
+        
 
-        Dictionary<string, ObjectTerm280> UpdateRuleWithTermsAndFormula(RuleComponent280 ifRule)
+
+        Dictionary<string, ObjectTerm280> UpdateRuleTermWithFactValues(RuleComponent280 ruleComponent)
         {
-            Dictionary<string, ObjectTerm280> plainTerms = new();
-            foreach (var ruleTerm in ifRule.RuleTerms)
-            {
-                var zet = ruleTerm.Z;//todo need to figure out how to add zet to the fact
-                var fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, zet, ruleTerm.R, ruleTerm.C);
-                var obj = CreateObjectTerm280(fact, ruleTerm.Dv, ruleTerm.IsTolerance); //Dv is the default value if the fact is null
-                plainTerms.Add(ruleTerm.Letter, obj);
-            }
 
-            return plainTerms;
-        }
-
-
-        Dictionary<string, ObjectTerm280> UpdateRuleWithTermsAndFormula2(RuleComponent280 ifRule)
-        {
-            Dictionary<string, ObjectTerm280> plainTerms = ifRule.RuleTerms
+            Dictionary<string, ObjectTerm280> plainTerms = ruleComponent.RuleTerms
                 .Select(ruleTerm => new
                 {
                     ruleTerm.Letter,

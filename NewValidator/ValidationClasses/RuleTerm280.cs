@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 
 
-public enum ValueType { Number, String, Boolean,Date,Integer };
+public enum ValueType { Number, String, Boolean, Date, Integer };
 public record TermAttribute(string Key, string Value);
 //public enum TermKey { Tab, Zet, Row, Col, Met }
 //public record TermPair(TermKey Key, string Value);
@@ -19,13 +19,7 @@ public record RuleTerm280
     //{t: S.01.01.07.01, r: R0540, c: C0010, dv: [Default], seq: False, id: v1, f: solvency, fv: solvency2}
     //{ m: [s2md_met:ei1024], seq: False, id: v0} 
     public string Letter { get; set; } = "";
-    public string TermText { get; set; } = "";
-
-    public string ValueStr { get; set; }
-    public double ValueDecimal { get; set; }
-    public DateOnly ValueDate { get; set; }
-    public bool ValueBoolean { get; set; }
-    public int ValueInt { get; set; }
+    public string TermText { get; set; } = "";    
     public ValueType ValueType { get; set; }
     public string T { get; set; } = "";
     public string Z { get; set; } = string.Empty;
@@ -40,8 +34,9 @@ public record RuleTerm280
     public string Fv { get; set; } = "";
     public string Dv { get; set; } = "";
     public string Seq { get; set; } = "";
-    public bool IsSeq { get; set; }
-    public bool IsTolerance { get; set; }
+    public string ToleranceChar { get; set; } = "";
+    public bool IsSequence { get=>Seq.ToLower()=="true";  }
+    public bool IsTolerance { get=>ToleranceChar=="Y"; }
 
     public static RuleTerm280? CreateRuleTerm280(string letter, string text)
     {
@@ -51,20 +46,21 @@ public record RuleTerm280
         record.Letter = letter;
         var recordType = record.GetType();
 
-        var pairs = CreateTermAttributes(text);
-        foreach (var pair in pairs)
+        //the pairs represent the key/value attributes of the specific ruleTerm
+        var propertyPairs = CreateTermProperties(text);
+        foreach (var propertyPair in propertyPairs)
         {
-            var fieldInfo = recordType.GetProperty(pair.Key, BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.Instance);
-            if (fieldInfo is null)
+            var keyValue = recordType.GetProperty(propertyPair.Key, BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.Instance);
+            if (keyValue is null)
             {
-                throw new Exception($"Property of RuleTerm does NOT exist: {pair.Key}");             
-            }
-            fieldInfo.SetValue(record, pair.Value);
-        }
+                throw new Exception($"Property of RuleTerm does NOT exist: {propertyPair.Key}");
+            }            
+            keyValue.SetValue(record, propertyPair.Value);
+        }        
         return record;
     }
 
-    static public List<TermAttribute> CreateTermAttributes(string text)
+    static public List<TermAttribute> CreateTermProperties(string text)
     {
 
         //split each pair (ex. r: R0540) to create term attribute :  key and value
@@ -78,21 +74,20 @@ public record RuleTerm280
         var cleanText = match.Groups[1].Value;
         var terms = cleanText.Split(",").Select(term =>
         {
-            var pair = term.Split(":", StringSplitOptions.RemoveEmptyEntries);            
-            TermAttribute res = pair.Length == 2 ? new TermAttribute(pair[0].Trim(), pair[1].Trim()) : new TermAttribute("","") ;
+            var pair = term.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            TermAttribute res = pair.Length == 2 ? new TermAttribute(pair[0].Trim(), pair[1].Trim()) : new TermAttribute("", "");
             return res;
         })
         .Where(pair => !string.IsNullOrEmpty(pair.Key) && !string.IsNullOrEmpty(pair.Value))
         .ToList();
 
-        //{t: S.02.01.02.01, r: R0100, c: C0010, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i => check the i for Tolerance
+        //{t: S.02.01.02.01, r: R0100, c: C0010, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i => check the i after the term for Tolerance
         var rgxTermi = new Regex(@"\{.*?\}( i)");
         var matchi = rgxTermi.Match(text);
-        var isTolerance = matchi.Success? "Y" : "N";
-        terms.RemoveAt(terms.FindIndex(itm => itm.Key == "IsTolerance"));
-        terms.Add(new TermAttribute("IsTolerance", isTolerance));
+        var ToleranceChar = matchi.Success ? "Y" : "N";        
+        terms.Add(new TermAttribute("ToleranceChar", ToleranceChar));
 
-        return terms;        
+        return terms;
     }
 
 }

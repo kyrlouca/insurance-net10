@@ -15,10 +15,8 @@ public class RuleStructure280
     public RuleComponent280 ThenComponent { get; init; }
     public RuleComponent280 ElseComponent { get; init; }
 
-    private RuleStructure280(bool isComplete, bool isPlainRule, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent)
-    {
-        IsComplete = isComplete;
-        IsPlainRule = isPlainRule;
+    private RuleStructure280(RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent)
+    {        
         IfComponent = ifComponent;
         ThenComponent = thenComponent;
         ElseComponent = elseComponent;
@@ -55,16 +53,9 @@ public class RuleStructure280
         var thenComponent = RuleComponent280.CreateComponent(thenExpression);
         var elseComponent = RuleComponent280.CreateComponent(elseExpression);
 
+               
 
-        
-
-        var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
-        var isCompleteRule =
-            ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid
-            || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
-
-
-        var rec = new RuleStructure280(isCompleteRule, isPlainRule, ifComponent, thenComponent, elseComponent);
+        var rec = new RuleStructure280( ifComponent, thenComponent, elseComponent);
         return rec;
     }
 
