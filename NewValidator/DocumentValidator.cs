@@ -65,27 +65,48 @@ public class DocumentValidator : IDocumentValidator
             var tableId = validationRule.TableId;//108
             var rl = RuleStructure280.CreateRuleStructure(validationRule.Rule);
             var ifRule = rl.IfComponent;
+            Dictionary<string, ObjectTerm280> plainTerms = UpdateRuleWithTermsAndFormula(ifRule);
+            var isValid = ExpressionEvaluator.EvaluateExpression(ifRule.SymbolExpression, plainTerms);
+        }
 
+
+        return 1;
+
+        Dictionary<string, ObjectTerm280> UpdateRuleWithTermsAndFormula(RuleComponent280 ifRule)
+        {
             Dictionary<string, ObjectTerm280> plainTerms = new();
             foreach (var ruleTerm in ifRule.RuleTerms)
             {
                 var zet = ruleTerm.Z;//todo need to figure out how to add zet to the fact
-                var fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, zet, ruleTerm.R, ruleTerm.C);                
-                var obj= CreateObjectTerm280(fact,ruleTerm.Dv);
+                var fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, zet, ruleTerm.R, ruleTerm.C);
+                var obj = CreateObjectTerm280(fact, ruleTerm.Dv, ruleTerm.IsTolerance); //Dv is the default value if the fact is null
                 plainTerms.Add(ruleTerm.Letter, obj);
             }
-            var isValid= ExpressionEvaluator.EvaluateExpression(ifRule.SymbolExpression, plainTerms);
-        }
-        
 
-        return 1;
+            return plainTerms;
+        }
+
+
+        Dictionary<string, ObjectTerm280> UpdateRuleWithTermsAndFormula2(RuleComponent280 ifRule)
+        {
+            Dictionary<string, ObjectTerm280> plainTerms = ifRule.RuleTerms
+                .Select(ruleTerm => new
+                {
+                    ruleTerm.Letter,
+                    Zet = ruleTerm.Z,
+                    Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
+                    ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, ruleTerm.IsTolerance)
+                })
+                .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
+            return plainTerms;
+        }            
     }
 
-    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact,string defaultValue)
+    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact,string defaultValue,bool IsTolerance)
     {
         if (fact == null)
         {
-            return  new ObjectTerm280( "S", 0, defaultValue);
+            return  new ObjectTerm280( "S", 0,  IsTolerance, defaultValue);
         }
 
 
@@ -100,7 +121,7 @@ public class DocumentValidator : IDocumentValidator
             "D" => fact.DateTimeValue,
             _ => throw new NotImplementedException() 
         };
-        var objTerm= new ObjectTerm280(fact.DataTypeUse,fact.Decimals,obj);
+        var objTerm= new ObjectTerm280(fact.DataTypeUse,fact.Decimals,IsTolerance, obj);
         return objTerm;
     }
 

@@ -12,7 +12,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace NewValidator.ValidationClasses;
 
-public record ObjectTerm280(string ObjectType, int Decimals, Object Obj);
+public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj);
 public record ZetTerm(string Letter, string Formula, bool IsPassed);
 
 public class ExpressionEvaluator

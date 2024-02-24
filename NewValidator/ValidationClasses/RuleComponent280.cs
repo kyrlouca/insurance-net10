@@ -30,7 +30,12 @@ public class RuleComponent280
         //text = """{t: S.28.02.01.04, r: R0210, c: C0090 } i+ {t: S.28.02.01.04, r: R0210, c: C0110} i i>= {t: S.12.01.01.01,  fv: solvency2} i- {t: S.12.01.01.01, r: R0020, c: C0020} i+ {t: S.12.01.01.01, r: R0110,} i""";
         //text = """ if matches(dim({d: first}) + {d: second} +[ab] """;
 
-        var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
+
+        var rgxTermi = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
+
+        /////////////////////////////////////////
+        //var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
+        var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
         var matches = rgxTerm.Matches(text);
         if (matches is null)
         {

@@ -36,7 +36,7 @@ public class ValidationTermTest
     {
         var text = @"{t: S.02.01.07.01, r: R0690, dv: 0, seq: False, id: v4, f: solvency, fv: solvency2}";
         //var record = RuleTerm280.CreateRuleTerm(text);
-        var record = RuleTerm280.CreateRuleTerm280(text);
+        var record = RuleTerm280.CreateRuleTerm280("X0",text);
         string[] expectedValues = { "S.02.01.07.01", "", "R0690", "" };
         string[] actualValues = { record.T, record.Z, record.R, record.C };
 
@@ -44,7 +44,7 @@ public class ValidationTermTest
 
 
         var text2 = @"{t: S.23.01.05.01, r: R0570, z: Z0001, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2}";
-        record = RuleTerm280.CreateRuleTerm280(text2);
+        record = RuleTerm280.CreateRuleTerm280("X0",text2);
         expectedValues = new string[] { "S.23.01.05.01", "Z0001", "R0570", ""
            ,"v1" , "solvency", "solvency2",  };
         actualValues = new string[] { record.T, record.Z, record.R, record.C
@@ -55,10 +55,19 @@ public class ValidationTermTest
     [Fact]
     public void TestRuleStructure()
     {
+        var text0 = "{t: S.02.01.01.01, r: R0210, c: C0010, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i= isum({t: S.06.02.01.01, c: C0170, z: Z0001, dv: emptySequence(), seq: True, id: v2, f: solvency, fv: solvency2})";
+        var record0 = RuleStructure280.CreateRuleStructure(text0);
+        var expectedVal0 = "isNull({t: T.99.01.01.01, c: C0100, seq: False, id: v0, f: solvency, fv: solvency2})";
+
+
+
+
         var text = @"if not(isNull({d: [s2c_dim:LG], filter:dim(this(), [s2c_dim:LG]) = [s2c_GA:x113], seq: False, id: v0})) then false() else true()";
         var record = RuleStructure280.CreateRuleStructure(text);        
         var expectedVal = "not(isNull({d: [s2c_dim:LG], filter:dim(this(), [s2c_dim:LG]) = [s2c_GA:x113], seq: False, id: v0}))";
         
+
+
 
         text = "isNull({t: T.99.01.01.01, c: C0100, seq: False, id: v0, f: solvency, fv: solvency2})";
         record = RuleStructure280.CreateRuleStructure(text);

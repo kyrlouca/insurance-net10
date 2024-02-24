@@ -1,21 +1,13 @@
 ﻿namespace NewValidator.ValidationClasses;
-using Shared.DataModels;
-using Syncfusion.XlsIO;
-using Syncfusion.XlsIO.Implementation.Collections.Grouping;
-using Syncfusion.XlsIO.Implementation.XmlSerialization;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 
 public enum ValueType { Number, String, Boolean,Date,Integer };
-public record struct TermPairSplit(string Key, string Value);
+public record TermAttribute(string Key, string Value);
 //public enum TermKey { Tab, Zet, Row, Col, Met }
 //public record TermPair(TermKey Key, string Value);
 
@@ -49,43 +41,7 @@ public record RuleTerm280
     public string Dv { get; set; } = "";
     public string Seq { get; set; } = "";
     public bool IsSeq { get; set; }
-
-    static public List<TermPairSplit> SplitAttribute(string text)
-    {
-
-        //split the pairs and TitleCase the key
-        //{t: S.01.01.07.01, r: R0540, c: C0010}=> { {"T":"S.01.01.07.01"},{"R","R0540"}..
-        TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
-        var rgxPair = new Regex(@"(\w{1,3}):\s*?(.*)");
-        var rgxTerm = new Regex(@"^\{(.*)\}", RegexOptions.Compiled);
-        var match = rgxTerm.Match(text);
-        if (!match.Success) return new();
-
-
-        var cleanText = match.Groups[1].Value;
-        var terms = cleanText.Split(",").Select(term =>
-        {
-            var pair = term.Split(":", StringSplitOptions.RemoveEmptyEntries);
-            //TermPairSplit res = pair.Length == 2 ? new TermPairSplit(textInfo.ToTitleCase( pair[0].Trim()), pair[1].Trim()) : new();
-            TermPairSplit res = pair.Length == 2 ? new TermPairSplit(pair[0].Trim(), pair[1].Trim()) : new();
-            return res;
-        })
-        .Where(pair => !string.IsNullOrEmpty(pair.Key) && !string.IsNullOrEmpty(pair.Value))
-        .ToList();
-        return terms;
-        //return new ValidationRecord { Table = text, Zet = text, Row = text, Col = text, Solvency = text, };
-    }
-
-    public static RuleTerm280? CreateRawTerm(string letter, string termText)
-    {
-        var rec = new RuleTerm280()
-        {
-            Letter = letter,
-            TermText = termText
-
-        };
-        return rec;
-    }
+    public bool IsTolerance { get; set; }
 
     public static RuleTerm280? CreateRuleTerm280(string letter, string text)
     {
@@ -95,17 +51,48 @@ public record RuleTerm280
         record.Letter = letter;
         var recordType = record.GetType();
 
-        var pairs = SplitAttribute(text);
+        var pairs = CreateTermAttributes(text);
         foreach (var pair in pairs)
         {
             var fieldInfo = recordType.GetProperty(pair.Key, BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.Instance);
             if (fieldInfo is null)
             {
-                throw new Exception($"Property of RuleTerm does NOT exist: {pair.Key}");
-                continue;
+                throw new Exception($"Property of RuleTerm does NOT exist: {pair.Key}");             
             }
             fieldInfo.SetValue(record, pair.Value);
         }
         return record;
     }
+
+    static public List<TermAttribute> CreateTermAttributes(string text)
+    {
+
+        //split each pair (ex. r: R0540) to create term attribute :  key and value
+        //{t: S.01.01.07.01, r: R0540, c: C0010}=> { {"T":"S.01.01.07.01"},{"R","R0540"}..        
+        //will also fill the isTolerance at the end
+        var rgxPair = new Regex(@"(\w{1,3}):\s*?(.*)");
+        var rgxTerm = new Regex(@"^\{(.*)\}", RegexOptions.Compiled);
+        var match = rgxTerm.Match(text);
+        if (!match.Success) return new();
+
+        var cleanText = match.Groups[1].Value;
+        var terms = cleanText.Split(",").Select(term =>
+        {
+            var pair = term.Split(":", StringSplitOptions.RemoveEmptyEntries);            
+            TermAttribute res = pair.Length == 2 ? new TermAttribute(pair[0].Trim(), pair[1].Trim()) : new TermAttribute("","") ;
+            return res;
+        })
+        .Where(pair => !string.IsNullOrEmpty(pair.Key) && !string.IsNullOrEmpty(pair.Value))
+        .ToList();
+
+        //{t: S.02.01.02.01, r: R0100, c: C0010, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i => check the i for Tolerance
+        var rgxTermi = new Regex(@"\{.*?\}( i)");
+        var matchi = rgxTermi.Match(text);
+        var isTolerance = matchi.Success? "Y" : "N";
+        terms.RemoveAt(terms.FindIndex(itm => itm.Key == "IsTolerance"));
+        terms.Add(new TermAttribute("IsTolerance", isTolerance));
+
+        return terms;        
+    }
+
 }
