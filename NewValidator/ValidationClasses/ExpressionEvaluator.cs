@@ -47,6 +47,9 @@ public class ExpressionEvaluator
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
                     return resm;
+                case "isum":
+                    var resIsum = ValidationFunctions.ValidateISum(formula, terms);
+                    return resIsum;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
                     var res = EvaluateExpression(value, terms);

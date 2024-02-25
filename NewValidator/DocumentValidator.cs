@@ -59,13 +59,14 @@ public class DocumentValidator : IDocumentValidator
         //743 simple isnull
         //4880 matches
         //787 equality of enumaratin
-        //770 test for iseq
-        validationRules = validationRules.Where(vr => vr.ValidationID == 770).ToList();
+        //157 for simple isum with scope
+
+        validationRules = validationRules.Where(vr => vr.ValidationID == 157).ToList();
         foreach (var validationRule in validationRules)
         {            
             var tableId = validationRule.TableId;//108
             var rl = RuleStructure280.CreateRuleStructure(validationRule.Rule);
-
+            //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
             //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
             var ifComponent = rl.IfComponent;         
             Dictionary<string, ObjectTerm280> ifObjectTerms = UpdateRuleTermWithFactValues(ifComponent);            
