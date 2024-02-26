@@ -63,6 +63,20 @@ public class SqlFunctions : ISqlFunctions
         return doc;
     }
 
+    public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter)
+    {
+        var sqlGetDocument = @"
+            SELECT * 
+			FROM 
+				InsuranceDatabase.dbo.DocInstance doc
+			WHERE
+			  doc.PensionFundId =@fundId AND doc.ApplicableYear=@ApplicableYear AND doc.ApplicableQuarter=@ApplicableQuarter
+			ORDER BY doc.InstanceId DESC
+        ";
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var doc = connectionInsurance.QueryFirstOrDefault<DocInstance>(sqlGetDocument, new { fundId, moduleCode, ApplicableYear, ApplicableQuarter });
+        return doc;
+    }
 
     public IEnumerable<DocInstance> SelectDocInstances(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter)
     {
@@ -77,6 +91,14 @@ public class SqlFunctions : ISqlFunctions
         using var connectionSystem = new SqlConnection(_parameterData.SystemConnectionString);
         var docs = connectionSystem.Query<DocInstance>(sqlGetDocument, new { fundId, moduleCode, ApplicableYear, ApplicableQuarter });
         return docs ?? Enumerable.Empty<DocInstance>();
+    }
+
+
+    public void UpdateDocumentStatus(int documentId, string status)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @documentId;";
+        var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
     }
 
     public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet)
@@ -94,7 +116,6 @@ public class SqlFunctions : ISqlFunctions
         var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode, sheetCodeZet });
         return sheet;
     }
-
 
     public TemplateSheetInstance? SelectTempateSheetBySheetCodeAllZets(int documentId, string tableCode)
     {
@@ -128,8 +149,6 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
-
-
     public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId, int tableId)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -145,21 +164,6 @@ public class SqlFunctions : ISqlFunctions
         var res = connectionInsurance.Execute(sqlUpdate, new { templateSheetId, sheetTabName });
     }
 
-
-    public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter)
-    {
-        var sqlGetDocument = @"
-            SELECT * 
-			FROM 
-				InsuranceDatabase.dbo.DocInstance doc
-			WHERE
-			  doc.PensionFundId =@fundId AND doc.ApplicableYear=@ApplicableYear AND doc.ApplicableQuarter=@ApplicableQuarter
-			ORDER BY doc.InstanceId DESC
-        ";
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var doc = connectionInsurance.QueryFirstOrDefault<DocInstance>(sqlGetDocument, new { fundId, moduleCode, ApplicableYear, ApplicableQuarter });
-        return doc;
-    }
 
         public List<TemplateSheetFactDim> SelectFactDims(int factId)
     {
@@ -183,13 +187,6 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public void UpdateDocumentStatus(int documentId, string status)
-    {
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlUpdate = @"update DocInstance  set status= @status where  InstanceId= @documentId;";
-        var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
-    }
-
     public MMember? SelectMMember(string xbrlCode)
     {
         //memberXbrlCode= s2c_AM:x2 => find mMember
@@ -199,16 +196,6 @@ public class SqlFunctions : ISqlFunctions
         var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { xbrlCode });
         return val;
     }
-    public MTable? SelectTable(string tableCode)
-    {
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var sqlTable = @"SELECT * from mTable mtab   where mtab.TableCode= @tableCode";
-
-
-        var result = connectionEiopa.QueryFirstOrDefault<MTable>(sqlTable, new { tableCode });
-        return result;
-    }
-
 
 
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mappingOrigin)
@@ -479,6 +466,53 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public MTable? SelectTable(string tableCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTable = @"SELECT * from mTable mtab   where mtab.TableCode= @tableCode";
+
+
+        var result = connectionEiopa.QueryFirstOrDefault<MTable>(sqlTable, new { tableCode });
+        return result;
+    }
+
+    public List<MTable> SelectTablesInModule280(int moduleId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelect = @"
+            SELECT tab.*
+            FROM
+              mTemplateOrTable child
+              JOIN mTemplateOrTable par ON par.TemplateOrTableID = child.ParentTemplateOrTableID
+              JOIN mModuleBusinessTemplate mb ON mb.BusinessTemplateID=par.TemplateOrTableID
+              JOIN mTaxonomyTable taxo ON taxo.AnnotatedTableID= child.TemplateOrTableID
+              JOIN mTable tab ON tab.TableID=taxo.TableID
+            WHERE
+              mb.ModuleID= @ModuleID
+            ORDER BY par.TemplateOrTableCode
+            ";
+
+
+        var ctx = connectionInsurance.Query<MTable>(sqlSelect, new { moduleId }).ToList();
+        return ctx;
+    }
+
+    public List<MTable> SelectTablesForValidationRule(int validationRuleId)
+    {
+        //a rule may apply to more than one table (or to no table), therefore rule may appear twice
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+
+        var sqlSelect = @"
+          select 
+            tab.* from mTable tab 
+		    join vValidationRuleTables vrt on vrt.TableID=tab.TableID
+			where vrt.ValidationID= @validationRuleId;
+        ";
+
+        var res = connectionEiopa.Query<MTable>(sqlSelect, new { validationRuleId }).ToList();
+        return res;
+    }
+
     public List<MTableCell> SelectTableCells(int tableId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -521,27 +555,6 @@ public class SqlFunctions : ISqlFunctions
         return fact;
     }
 
-    public List<MTable> SelectTablesInModule280(int moduleId)
-    {
-        using var connectionInsurance = new SqlConnection(_parameterData.EiopaConnectionString);
-        var sqlSelect = @"
-            SELECT tab.*
-            FROM
-              mTemplateOrTable child
-              JOIN mTemplateOrTable par ON par.TemplateOrTableID = child.ParentTemplateOrTableID
-              JOIN mModuleBusinessTemplate mb ON mb.BusinessTemplateID=par.TemplateOrTableID
-              JOIN mTaxonomyTable taxo ON taxo.AnnotatedTableID= child.TemplateOrTableID
-              JOIN mTable tab ON tab.TableID=taxo.TableID
-            WHERE
-              mb.ModuleID= @ModuleID
-            ORDER BY par.TemplateOrTableCode
-            ";
-
-
-        var ctx = connectionInsurance.Query<MTable>(sqlSelect, new { moduleId }).ToList();
-        return ctx;
-    }
-
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -579,16 +592,15 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public List<VValidationRuleExpressions> SelectModuleValidationRules(int ModuleId)
+    public List<VValidationRuleExpressions> SelectValidationRulesForModule(int ModuleId)
     {
         //a rule may apply to more than one table (or to no table), therefore rule may appear twice
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
         var sqlSelect = @"
-           SELECT vrt.TableID, tab.TableCode, vre.*
+           SELECT vre.*
              FROM
-               vValidationRuleTables vrt
-               join mTable tab on tab.TableID = vrt.TableID
+               vValidationRuleTables vrt               
                JOIN vValidationRuleExpressions vre ON vre.ValidationID=vrt.ValidationID   
              WHERE
                vrt.ModuleID= @ModuleID
@@ -598,6 +610,7 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
+    
 
 
 }

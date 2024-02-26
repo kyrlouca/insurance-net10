@@ -24,11 +24,8 @@ public interface ISqlFunctions
 
     public void UpdateDocumentStatus(int documentId, string status);
     public MMember? SelectMMember(string domainString);
-    public MTable? SelectTable(string tableCode);
-
-    
-
-
+  
+  
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mapping);
     public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
@@ -42,12 +39,19 @@ public interface ISqlFunctions
     public List<ContextLine> SelectContextLines(int contextId);
     public FundModel? SelectFund(int fundId);
 
+    //
+    public MTable? SelectTable(string tableCode);
+    public List<MTable> SelectTablesInModule280(int moduleId);
+    public List<MTable> SelectTablesForValidationRule(int validationRuleId);
+    //
+
     public List<MTableCell> SelectTableCells(int tableId);
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public TemplateSheetFact? SelectFactByRowCol(int documentId, string tableCode, string zet, string row, string col);
 
-    public List<MTable> SelectTablesInModule280(int moduleId);
+    
+
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId);
     public MDimensionModel? SelectDimensionByCode(string DomainCode, string DimensionCode);
-    public List<VValidationRuleExpressions> SelectModuleValidationRules(int ModuleId);
+    public List<VValidationRuleExpressions> SelectValidationRulesForModule(int ModuleId);
 }

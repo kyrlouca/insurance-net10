@@ -54,17 +54,19 @@ public class DocumentValidator : IDocumentValidator
             return 1;
         }
         _mModule = module;
-        var validationRules = _SqlFunctions.SelectModuleValidationRules(_mModule.ModuleID);
+        //A ValidationRule may apply to more than one tables and therefore we may have more than one with the same validationID
+        var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
         //729 simple >
         //743 simple isnull
         //4880 matches
         //787 equality of enumaratin
         //157 for simple isum with scope
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 157).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 782).ToList();
         foreach (var validationRule in validationRules)
-        {            
-            var tableId = validationRule.TableId;//108
+        {
+            var tables = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
+            //check if all the tables exist for this rule
             var rl = RuleStructure280.CreateRuleStructure(validationRule.Rule);
             //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
             //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
