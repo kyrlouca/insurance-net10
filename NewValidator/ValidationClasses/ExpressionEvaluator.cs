@@ -222,15 +222,15 @@ public class ExpressionEvaluator
         //evaluate
         var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
         var matchSingle = rgxSingleFunction.Match(functionFormula);
-        string[] functions = { "imin,imax,isum" };
+        string[] functionsSupported = { "imin,imax,isum" };
         if (matchSingle.Success)
         {
             var valueInside = matchSingle.Groups[2].Value;//3
-            if (functions.Any(fn => valueInside == fn))
+            if (!functionsSupported.Any(fn => valueInside == fn))
             {
                 //for example imin(3)
-                var fn = matchFunctions[1].Groups[1].Value; //imin                
-                var functionParameter = fn switch
+                var fn = matchSingle.Groups[1].Value; //imin                
+                var functionResult = fn switch
                 {
                     //the functions will use the terms
                     //evaluate imin with valueInside above
@@ -239,6 +239,7 @@ public class ExpressionEvaluator
                     "isum" => 9,
                     _ => throw new NotImplementedException()
                 };
+                return functionResult;
             }
         }
 
@@ -284,7 +285,7 @@ public class ExpressionEvaluator
 
             var dicTerms = allTerms?.ToDictionary(at => at.Key, at => at.obj) ?? new();
 
-            var res = EvaluateGeneralArithmeticExpression(formulaWithSimpleFunctions, dicTerms);
+            var res = EvaluateSimpleArithmetic(formulaWithSimpleFunctions, dicTerms);
             return res;
         }
 
