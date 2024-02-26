@@ -8,17 +8,19 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Z.Expressions;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace NewValidator.ValidationClasses;
 
 public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj);
 public record ZetTerm(string Letter, string Formula, bool IsPassed);
+public record ArTerm(string Letter, string Formula, double ValueReal, string ValueString);
 
 public class ExpressionEvaluator
 {
     private enum TermOperators { None, IsAnd, IsOR };
-    public static bool EvaluateExpression(string formula, Dictionary<string, ObjectTerm280> terms)
+    public static bool EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
     {
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
         //1. outer parenthesis with or without function =>=> evaluate function or remove parenthesis and recurse
@@ -38,7 +40,7 @@ public class ExpressionEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = !EvaluateExpression(value, terms);
+                    var resNot = !EvaluateGeneralBooleanExpression(value, terms);
                     return resNot;
                 case "isNull":
                     //var resn = string.IsNullOrEmpty(value);
@@ -46,10 +48,10 @@ public class ExpressionEvaluator
                     return resn;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
-                    return resm;                
+                    return resm;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
-                    var res = EvaluateExpression(value, terms);
+                    var res = EvaluateGeneralBooleanExpression(value, terms);
                     return res;
             }
         }
@@ -61,31 +63,34 @@ public class ExpressionEvaluator
         //evaluate each zet 
         //reconstruct the formula using results instead of z
         //try again 
-        var rgxTerm = new Regex(@"(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");        
+        var rgxTerm = new Regex(@"(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         var matchesTerms = rgxTerm.Matches(formula);
-        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, false)) ?? new List<ZetTerm>();        
+        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, false)) ?? new List<ZetTerm>();
 
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis and return the result 1==1 for true 1==2 for false
         if (ruleTextParenTerms.Any())
         {
-            var formulaParen = ruleTextParenTerms.Aggregate(formula, (Func<string, ZetTerm, string>)((currentText, val) =>
+            //build a new formula where the terms(inside parenthesis) are replaced with the letters of the textTersms
+            var formulaParen = ruleTextParenTerms.Aggregate(formula, (currentText, val) =>
             {
-                int index = currentText.IndexOf((string)val.Formula);
-                string replacedString = currentText.Substring(0, index) + " " + val.Letter + " " + currentText.Substring((int)(index + val.Formula.Length));
+                int index = currentText.IndexOf(val.Formula);
+                string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
                 return replacedString;
-            }));
+            });
 
-
-            var updateParen = ruleTextParenTerms
-            .Select(zz => zz with { IsPassed = EvaluateExpression(zz.Formula, terms) })
+            //Evaluate each of these terms 
+            var parenthesisTerms = ruleTextParenTerms
+            .Select(zz => zz with { IsPassed = EvaluateGeneralBooleanExpression(zz.Formula, terms) })
             .ToList();
-            var newFormula = updateParen.Aggregate(formulaParen, (Func<string, ZetTerm, string>)((currentText, val) =>
+
+            //the new formula replaces each term(boolean) with either 1=1 or 1==2
+            var newFormula = parenthesisTerms.Aggregate(formulaParen, (currentText, val) =>
             {
-                int index = currentText.IndexOf((string)val.Letter);
+                int index = currentText.IndexOf(val.Letter);
                 var replacement = val.IsPassed ? "1==1" : "1==2";
-                string replacedString = currentText.Substring(0, index) + " " + replacement + " " + currentText.Substring((int)(index + val.Letter.Length));
+                string replacedString = currentText[..index] + " " + replacement + " " + currentText[(index + val.Letter.Length)..];
                 return replacedString;
-            }));
+            });
 
             var res = ValidationFunctions.ValidateArithmetic(newFormula, terms);
             return res;
@@ -112,22 +117,192 @@ public class ExpressionEvaluator
             var resAnd = formula.Split("and", StringSplitOptions.RemoveEmptyEntries);
             var val1 = resAnd[0].Trim();
             var val2 = resAnd[1].Trim();
-            var res1 = EvaluateExpression(val1, terms);
-            var res2 = EvaluateExpression(val2, terms);
+            var res1 = EvaluateGeneralBooleanExpression(val1, terms);
+            var res2 = EvaluateGeneralBooleanExpression(val2, terms);
             return res1 && res2;
         }
         if (termOperator == TermOperators.IsOR)
         {
             var res = formula.Split("or", StringSplitOptions.RemoveEmptyEntries);
-            var bres1 = EvaluateExpression(res[0].Trim(), terms);
+            var bres1 = EvaluateGeneralBooleanExpression(res[0].Trim(), terms);
             var val2 = res[1].Trim();
-            var bres2 = EvaluateExpression(val2, terms);
+            var bres2 = EvaluateGeneralBooleanExpression(val2, terms);
             return bres1 || bres2;
         }
 
         return false;
 
 
+    }
+
+
+    //***********************arithmetic
+    public static double EvaluateGeneralArithmeticExpression(string formula, Dictionary<string, ObjectTerm280> terms)
+    {
+        //{t: S.23.01.01.01, r: R0540 ... } i= imin(imax({t: S.23.01.01.01, r: R0540, ... }, 0) i* 0.25, {t: S.23.01.01.01, r: R0500,... })
+        //Recursion until no functions. Then call Zexpression to evaluate
+        //1. outer parenthesis with or without function =>=> evaluate function or remove parenthesis and recurse
+        //2. if there are terms in parenthesis, evaluate each term in the parenthesis. (replace each term in parenthesis with Axx 
+        //3. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
+
+        var rgxFn = new Regex(@"^(imin|imax|isum)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+
+        //1. outer parenthesis with or without function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
+        var match = rgxFn.Match(formula);
+        if (match.Success)
+        {
+            //( ab and matches(cd)) => evaluate ab and matches(cd)
+            var fn = match.Groups[1].Value;
+            var value = match.Groups[2].Value;
+
+            //check if the functions have an inner function. If not =>evaluate
+            switch (fn)
+            {
+                case "isum":
+                    var resSum = EvaluateGeneralArithmeticExpression(value, terms);
+                    return resSum;
+                case "imax":
+                    //var resn = string.IsNullOrEmpty(value);
+                    var resMax = EvaluateGeneralArithmeticExpression(value, terms); ;
+                    return resMax;
+                case "imin":
+                    //var resn = string.IsNullOrEmpty(value);
+                    var resMin = 3;
+                    return resMin;
+                default:
+                    //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c)
+                    var res = EvaluateGeneralArithmeticExpression(value, terms);
+                    return res;
+            }
+        }
+
+
+        //////////////////////////////// Make new formula with zet 
+        //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) 
+        //replace parenthesis with  terms. 
+        //evaluate each zet 
+        //reconstruct the formula using results instead of z
+        //try again 
+        var rgxTerm = new Regex(@"(imin|imax|isum)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var matchesTerms = rgxTerm.Matches(formula);
+        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"A{i:D2}", match.Value, false)) ?? new List<ZetTerm>();
+
+
+
+        return 1;
+
+
+    }
+
+
+    //1. is there a function inside formula?
+    //--no evaluate formula (may have terms) 
+    //--call function Evaluator to evaluate each function and modify the formula where each function is replaced with a result
+    //2.Function Evaluator 
+    //--does it have another function inside?
+    //--
+
+    public static double EvaluateArithmeticRecursively(string functionFormula, Dictionary<string, ObjectTerm280> terms)
+    {
+        //initial formula : 5 + imin(3) +imax(4)
+
+        var rgxTerm = new Regex(@"(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var matchFunctions = rgxTerm.Matches(functionFormula);
+        var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();
+
+
+        //1.  just an expression , has no functions and therefore evaluate 
+        if (!matchFunctions.Any())
+        {
+            var resExp = EvaluateSimpleArithmetic(functionFormula, terms);
+            return resExp;
+        }
+
+        //2 the formula is just a single function WITHOUT any nested functions
+        //evaluate
+        var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
+        var matchSingle = rgxSingleFunction.Match(functionFormula);
+        string[] functions = { "imin,imax,isum" };
+        if (matchSingle.Success)
+        {
+            var valueInside = matchSingle.Groups[2].Value;//3
+            if (functions.Any(fn => valueInside == fn))
+            {
+                //for example imin(3)
+                var fn = matchFunctions[1].Groups[1].Value; //imin                
+                var functionParameter = fn switch
+                {
+                    //the functions will use the terms
+                    //evaluate imin with valueInside above
+                    "imin" => 3,
+                    "imax" => 4,
+                    "isum" => 9,
+                    _ => throw new NotImplementedException()
+                };
+            }
+        }
+
+        //3. create a new formula where functions such as imin(x0+4),imax(3,3),isum(x+3)) are replaced with letters (A00,A01,...)
+        //--create the  terms 
+        //--then evaluate each term 
+        
+        if (functionTerms.Any())
+        {
+
+            //build a new formula where the terms(inside of functions) are replaced with the letters of the textTersms
+            //ex:initial formula ://5 + imin(3) +imax(4)  result : 5 +  A00  + A01 
+            var formulaWithSimpleFunctions = functionTerms.Aggregate(functionFormula, (currentText, val) =>
+            {
+                int index = currentText.IndexOf(val.Formula);
+                string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
+                return replacedString;
+            });
+
+            //create the A terms which are now in the formula {A00,imin(3),...}, {A01,imax(4),...}
+            var Aterms = functionTerms
+            .Select(fn => new ArTerm(fn.Letter, fn.Formula, 0, ""))
+            .ToList();
+
+
+            //Evaluate each of these terms and create objectTerms            
+            var nn = Aterms.Select(tm =>
+            {
+                var res3 = EvaluateArithmeticRecursively(tm.Formula, terms);
+                var obj3 = new ObjectTerm280("Real", 0, true, res3);
+
+                return (tm.Letter, obj3);
+            })
+            .ToList();
+
+            var allTerms = terms.Select(tm =>
+            {
+                var obj = tm.Value with { Decimals = -1 };
+                return (tm.Key, obj);
+            })
+            .ToList();  //create new to avoid affecting the old             
+            allTerms.AddRange(nn);
+
+            var dicTerms = allTerms?.ToDictionary(at => at.Key, at => at.obj) ?? new();
+
+            var res = EvaluateGeneralArithmeticExpression(formulaWithSimpleFunctions, dicTerms);
+            return res;
+        }
+
+
+
+
+
+
+        return 0;
+    }
+
+    public static double EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    {
+        var rgxTerm = new Regex(@"([XA]\d\d)");
+        var matchTersm = rgxTerm.Match(symbolFormula);
+        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
+        var result = Eval.Execute<double>(symbolFormula, plainObjects);
+        return result;
     }
 
 

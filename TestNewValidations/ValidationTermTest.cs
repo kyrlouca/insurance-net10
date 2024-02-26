@@ -112,5 +112,18 @@ public class ValidationTermTest
 
     }
 
+    [Fact]
+    public void TestArithmetic()
+    {
+
+        var text = @"5 + imin(3) +imax(4)";
+        var res = ExpressionEvaluator.EvaluateArithmeticRecursively(text,new());
+        Assert.Equal(1,res);
+
+       
+
+    }
+
+
 
 }

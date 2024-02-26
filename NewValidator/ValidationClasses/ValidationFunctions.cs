@@ -85,6 +85,7 @@ internal class ValidationFunctions
         return result;
     }
 
+
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
         var letter = terms[symbolFormula];
@@ -107,6 +108,8 @@ internal class ValidationFunctions
         return 1.0 ;
 
     }
+
+    
 
 
 }

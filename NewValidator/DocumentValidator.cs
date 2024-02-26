@@ -72,17 +72,17 @@ public class DocumentValidator : IDocumentValidator
             //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
             var ifComponent = rl.IfComponent;         
             Dictionary<string, ObjectTerm280> ifObjectTerms = UpdateRuleTermWithFactValues(ifComponent);            
-            var isValidIf = ExpressionEvaluator.EvaluateExpression(ifComponent.SymbolExpression, ifObjectTerms);
+            var isValidIf = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ifComponent.SymbolExpression, ifObjectTerms);
 
             if (1 == 2)
             {
                 var thenComponent = rl.ThenComponent;
                 Dictionary<string, ObjectTerm280> thenObjectTerms = UpdateRuleTermWithFactValues(thenComponent);
-                var isValidThen = ExpressionEvaluator.EvaluateExpression(thenComponent.SymbolExpression, thenObjectTerms);
+                var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(thenComponent.SymbolExpression, thenObjectTerms);
 
                 var elseComponent = rl.ElseComponent;
                 Dictionary<string, ObjectTerm280> elseObjectTerms = UpdateRuleTermWithFactValues(elseComponent);
-                var isValidElse = ExpressionEvaluator.EvaluateExpression(elseComponent.SymbolExpression, elseObjectTerms);
+                var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(elseComponent.SymbolExpression, elseObjectTerms);
 
                 var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
                 var isCompleteRule =
