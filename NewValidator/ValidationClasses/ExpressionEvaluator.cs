@@ -1,15 +1,6 @@
-﻿using Microsoft.Extensions.FileSystemGlobbing;
-using Microsoft.Identity.Client;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
+﻿using System.Data;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Z.Expressions;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace NewValidator.ValidationClasses;
 
@@ -218,15 +209,24 @@ public class ExpressionEvaluator
             return resExp;
         }
 
+        var formulaWithSimpleFunctions = functionTerms.Aggregate(functionFormula, (currentText, val) =>
+        {
+            int index = currentText.IndexOf(val.Formula);
+            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
+            return replacedString;
+        });
+
+
+
         //2 the formula is just a single function WITHOUT any nested functions
         //evaluate
         var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
         var matchSingle = rgxSingleFunction.Match(functionFormula);
-        string[] functionsSupported = { "imin,imax,isum" };
+        string[] functionsSupported = { "imin", "imax", "isum" };
         if (matchSingle.Success)
         {
             var valueInside = matchSingle.Groups[2].Value;//3
-            if (!functionsSupported.Any(fn => valueInside == fn))
+            if (!functionsSupported.Any(fn => valueInside.Contains(fn)))
             {
                 //for example imin(3)
                 var fn = matchSingle.Groups[1].Value; //imin                
@@ -246,18 +246,12 @@ public class ExpressionEvaluator
         //3. create a new formula where functions such as imin(x0+4),imax(3,3),isum(x+3)) are replaced with letters (A00,A01,...)
         //--create the  terms 
         //--then evaluate each term 
-        
+
         if (functionTerms.Any())
         {
 
             //build a new formula where the terms(inside of functions) are replaced with the letters of the textTersms
             //ex:initial formula ://5 + imin(3) +imax(4)  result : 5 +  A00  + A01 
-            var formulaWithSimpleFunctions = functionTerms.Aggregate(functionFormula, (currentText, val) =>
-            {
-                int index = currentText.IndexOf(val.Formula);
-                string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
-                return replacedString;
-            });
 
             //create the A terms which are now in the formula {A00,imin(3),...}, {A01,imax(4),...}
             var Aterms = functionTerms
@@ -265,13 +259,27 @@ public class ExpressionEvaluator
             .ToList();
 
 
-            //Evaluate each of these terms and create objectTerms            
-            var nn = Aterms.Select(tm =>
+            //Evaluate each of these terms with the formula INSIDE the function and create objectTerms
+            
+            var newTerms = Aterms.Select(tm =>
             {
-                var res3 = EvaluateArithmeticRecursively(tm.Formula, terms);
-                var obj3 = new ObjectTerm280("Real", 0, true, res3);
-
-                return (tm.Letter, obj3);
+                //var isNestedTerm = false;
+                var formulaInsideFunction = "";
+                var termValue = 0.0;
+                var functionFormula = tm.Formula;
+                var matchInside = rgxSingleFunction.Match(tm.Formula);
+                if (matchInside.Success)
+                {
+                    formulaInsideFunction = matchInside.Groups[2].Value;
+                    //isNestedTerm = functionsSupported.Any(fn => formulaInsideFunction.Contains(fn));
+                } else
+                {
+                    throw(new NotImplementedException($"term is not matched{functionFormula}"));
+                }                 
+                //There are nested functions inside the formula, evaluate the inside and then the term
+                var resInside = EvaluateArithmeticRecursively(formulaInsideFunction, terms);
+                termValue = resInside;
+                return (tm.Letter, new ObjectTerm280(tm.Letter, 0, false, termValue));
             })
             .ToList();
 
@@ -281,7 +289,7 @@ public class ExpressionEvaluator
                 return (tm.Key, obj);
             })
             .ToList();  //create new to avoid affecting the old             
-            allTerms.AddRange(nn);
+            allTerms.AddRange(newTerms);
 
             var dicTerms = allTerms?.ToDictionary(at => at.Key, at => at.obj) ?? new();
 
