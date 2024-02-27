@@ -334,24 +334,27 @@ public class ExpressionEvaluator
         string[] functionsSupported = { "imin", "imax", "isum" };
         var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
         var rgxTerms = new Regex(@"(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        functionText = functionText.Trim();
 
         var matchFn = rgxSingleFunction.Match(functionText);
         if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
 
-        var functionType = ToFunctionType(matchFn.Groups[1].Value);
-        var matchFunctions = rgxTerms.Matches(matchFn.Groups[2].Value);
+        var funtionTypeStr = matchFn.Groups[1].Value;
+        var functionContent = matchFn.Groups[2].Value;
+        var functionType = ToFunctionType(funtionTypeStr);        
+        var matchFunctions = rgxTerms.Matches(functionContent);
         var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"F{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0));
 
-        var formulaWithSymbols = nestedFunctions.Aggregate(functionText, (currentText, val) =>
+        var contentFormulaWithSymbols = nestedFunctions.Aggregate(functionContent, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.FullText);
             string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.FullText.Length)..];
             return replacedString;
         });
 
-        var functionTerms = formulaWithSymbols.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+        var functionTerms = contentFormulaWithSymbols.Split(",", StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).ToList();
 
-        var regexZet = new Regex(@"^F\d{2}");
+        var regexZet = new Regex(@"^(F\d{2})");
         var functionObjectTerms = new List<ObjectTerm280>();
         foreach (var functionTerm in functionTerms)
         {
@@ -382,7 +385,7 @@ public class ExpressionEvaluator
                 return Convert.ToDouble(min);
 
             case FunctionTypes.Max:
-                var max = terms.Min(item => item.Obj);
+                var max = terms.Max(item => item.Obj);
                 return Convert.ToDouble(max);
 
             case FunctionTypes.Sum:
