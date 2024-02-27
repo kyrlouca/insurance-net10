@@ -1,8 +1,12 @@
-﻿using System.Data;
+﻿using Syncfusion.XlsIO.Implementation.PivotAnalysis;
+using System.Data;
 using System.Text.RegularExpressions;
 using Z.Expressions;
 
 namespace NewValidator.ValidationClasses;
+
+public enum FunctionTypes { Min, Max, Sum };
+public record FunctionObject(string Letter, FunctionTypes FunctionType, string FullText, string Parameter, double Value);
 
 public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj);
 public record ZetTerm(string Letter, string Formula, bool IsPassed);
@@ -260,10 +264,10 @@ public class ExpressionEvaluator
 
 
             //Evaluate each of these terms with the formula INSIDE the function and create objectTerms
-            
+
             var newTerms = Aterms.Select(tm =>
             {
-                //var isNestedTerm = false;
+                var isNestedTerm = false;
                 var formulaInsideFunction = "";
                 var termValue = 0.0;
                 var functionFormula = tm.Formula;
@@ -271,14 +275,25 @@ public class ExpressionEvaluator
                 if (matchInside.Success)
                 {
                     formulaInsideFunction = matchInside.Groups[2].Value;
-                    //isNestedTerm = functionsSupported.Any(fn => formulaInsideFunction.Contains(fn));
-                } else
+                    isNestedTerm = functionsSupported.Any(fn => formulaInsideFunction.Contains(fn));
+                }
+                else
                 {
-                    throw(new NotImplementedException($"term is not matched{functionFormula}"));
-                }                 
+                    throw (new NotImplementedException($"term is not matched{functionFormula}"));
+                }
+
+                if (!isNestedTerm)
+                {
+                    termValue = EvaluateArithmeticRecursively(tm.Formula, terms);
+                }
+                else
+                {
+                    var resInside = EvaluateArithmeticRecursively(formulaInsideFunction, terms);
+                    termValue = EvaluateArithmeticRecursively(tm.Formula, terms);
+
+                }
                 //There are nested functions inside the formula, evaluate the inside and then the term
-                var resInside = EvaluateArithmeticRecursively(formulaInsideFunction, terms);
-                termValue = resInside;
+
                 return (tm.Letter, new ObjectTerm280(tm.Letter, 0, false, termValue));
             })
             .ToList();
@@ -314,6 +329,78 @@ public class ExpressionEvaluator
         return result;
     }
 
+    public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
+    {
+        string[] functionsSupported = { "imin", "imax", "isum" };
+        var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
+        var rgxTerms = new Regex(@"(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
 
+        var matchFn = rgxSingleFunction.Match(functionText);
+        if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
+
+        var functionType = ToFunctionType(matchFn.Groups[1].Value);
+        var matchFunctions = rgxTerms.Matches(matchFn.Groups[2].Value);
+        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"F{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0));
+
+        var formulaWithSymbols = nestedFunctions.Aggregate(functionText, (currentText, val) =>
+        {
+            int index = currentText.IndexOf(val.FullText);
+            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.FullText.Length)..];
+            return replacedString;
+        });
+
+        var functionTerms = formulaWithSymbols.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+
+        var regexZet = new Regex(@"^F\d{2}");
+        var functionObjectTerms = new List<ObjectTerm280>();
+        foreach (var functionTerm in functionTerms)
+        {
+            //X0, Z0, Z1, X0+2, ....
+            if (regexZet.Match(functionTerm).Success)
+            {
+                var fTerm = nestedFunctions.FirstOrDefault(nf => nf.Letter == functionTerm);
+                var value = EvaluateFunction(fTerm!.FullText, terms);
+                functionObjectTerms.Add(new ObjectTerm280("F", 0, false, value));
+            }
+            else
+            {
+                var value = EvaluateSimpleArithmetic(functionTerm, terms);
+                functionObjectTerms.Add(new ObjectTerm280("V", 0, false, value));
+            }
+        }
+
+        var val = EvaluateFullFunction(functionType, functionObjectTerms);
+        return val;
+    }
+
+    static double EvaluateFullFunction(FunctionTypes functionType, IEnumerable<ObjectTerm280> terms)
+    {
+        switch (functionType)
+        {
+            case FunctionTypes.Min:
+                var min = terms.Min(item => item.Obj);
+                return Convert.ToDouble(min);
+
+            case FunctionTypes.Max:
+                var max = terms.Min(item => item.Obj);
+                return Convert.ToDouble(max);
+
+            case FunctionTypes.Sum:
+                return 0;
+            default: return 0;
+
+
+        }
+
+    }
+
+    static FunctionTypes ToFunctionType(string functionType) =>
+        functionType switch
+        {
+            "imin" => FunctionTypes.Min,
+            "imax" => FunctionTypes.Max,
+            "isum" => FunctionTypes.Sum,
+            _ => throw new ArgumentException("Invalid function type"),
+        };
 }
 
