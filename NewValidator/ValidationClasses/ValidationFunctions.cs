@@ -3,6 +3,7 @@ using Shared.CommonRoutines;
 using Shared.GeneralUtils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -80,6 +81,8 @@ internal class ValidationFunctions
             }
             
         }
+        //first i need to split using ">,<,=" and then evaluate each part
+        maybe i need to call EvaluateArithmetic here
         Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
         var result = Eval.Execute<bool>(symbolFormula,plainObjects);
         return result;
