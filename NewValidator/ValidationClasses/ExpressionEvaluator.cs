@@ -320,15 +320,6 @@ public class ExpressionEvaluator
         return 0;
     }
 
-    public static double EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
-    {
-        var rgxTerm = new Regex(@"([XA]\d\d)");
-        var matchTersm = rgxTerm.Match(symbolFormula);
-        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
-        var result = Eval.Execute<double>(symbolFormula, plainObjects);
-        return result;
-    }
-
     public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
     {
         string[] functionsSupported = { "imin", "imax", "isum" };
@@ -372,11 +363,11 @@ public class ExpressionEvaluator
             }
         }
 
-        var val = EvaluateFullFunction(functionType, functionObjectTerms);
+        var val = EvaluateFunctionWithComputedTerms(functionType, functionObjectTerms);
         return val;
     }
 
-    static double EvaluateFullFunction(FunctionTypes functionType, IEnumerable<ObjectTerm280> terms)
+    static double EvaluateFunctionWithComputedTerms(FunctionTypes functionType, IEnumerable<ObjectTerm280> terms)
     {
         switch (functionType)
         {
@@ -405,5 +396,15 @@ public class ExpressionEvaluator
             "isum" => FunctionTypes.Sum,
             _ => throw new ArgumentException("Invalid function type"),
         };
+
+    public static double EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    {
+        var rgxTerm = new Regex(@"([XA]\d\d)");
+        var matchTersm = rgxTerm.Match(symbolFormula);
+        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
+        var result = Eval.Execute<double>(symbolFormula, plainObjects);
+        return result;
+    }
+
 }
 
