@@ -190,13 +190,6 @@ public class ExpressionEvaluator
     }
 
 
-    //1. is there a function inside formula?
-    //--no evaluate formula (may have terms) 
-    //--call function Evaluator to evaluate each function and modify the formula where each function is replaced with a result
-    //2.Function Evaluator 
-    //--does it have another function inside?
-    //--
-
     public static double EvaluateArithmeticRecursively(string functionFormula, Dictionary<string, ObjectTerm280> terms)
     {
         //initial formula : 5 + imin(3) +imax(4)
@@ -213,13 +206,12 @@ public class ExpressionEvaluator
             return resExp;
         }
 
-        var formulaWithSimpleFunctions = functionTerms.Aggregate(functionFormula, (currentText, val) =>
+        var formulaWithSymbols = functionTerms.Aggregate(functionFormula, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.Formula);
             string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
             return replacedString;
         });
-
 
 
         //2 the formula is just a single function WITHOUT any nested functions
@@ -308,7 +300,7 @@ public class ExpressionEvaluator
 
             var dicTerms = allTerms?.ToDictionary(at => at.Key, at => at.obj) ?? new();
 
-            var res = EvaluateSimpleArithmetic(formulaWithSimpleFunctions, dicTerms);
+            var res = EvaluateSimpleArithmetic(formulaWithSymbols, dicTerms);
             return res;
         }
 
@@ -319,6 +311,44 @@ public class ExpressionEvaluator
 
         return 0;
     }
+
+
+
+    public static double EvaluateArithmeticNew(string functionFormula, Dictionary<string, ObjectTerm280> terms)
+    {
+        //initial formula : 5 + imin(3) +imax(4)
+
+        var rgxTerm = new Regex(@"(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
+        var matchFunctions = rgxTerm.Matches(functionFormula);
+        var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();
+        
+
+        var formulaWithSymbols = functionTerms.Aggregate(functionFormula, (currentText, val) =>
+        {
+            int index = currentText.IndexOf(val.Formula);
+            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
+            return replacedString;
+        });
+
+        List<(string,ObjectTerm280)> newObjTerms = new();
+        
+        foreach(var fnTerm in functionTerms)
+        {
+            var val2 = EvaluateFunction(fnTerm.Formula, terms);
+            newObjTerms.Add(new (fnTerm.Letter, new ObjectTerm280("F",0,false,val2)) );             
+        }
+
+
+        var allTermsx = terms.Select(trm  => ( trm.Key, trm.Value with { Decimals=9})  ).ToList();
+        allTermsx.AddRange(newObjTerms);
+        var allObjectsDic = allTermsx.ToDictionary(x => x.Key, x => x.Item2);
+        var val = EvaluateSimpleArithmetic(formulaWithSymbols, allObjectsDic);
+
+          
+        return val;
+    }
+
 
     public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
     {
@@ -332,7 +362,7 @@ public class ExpressionEvaluator
 
         var funtionTypeStr = matchFn.Groups[1].Value;
         var functionContent = matchFn.Groups[2].Value;
-        var functionType = ToFunctionType(funtionTypeStr);        
+        var functionType = ToFunctionType(funtionTypeStr);
         var matchFunctions = rgxTerms.Matches(functionContent);
         var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"F{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0));
 
@@ -343,26 +373,16 @@ public class ExpressionEvaluator
             return replacedString;
         });
 
-        var functionTerms = contentFormulaWithSymbols.Split(",", StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).ToList();
+        var functionTerms = contentFormulaWithSymbols.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
-        var regexZet = new Regex(@"^(F\d{2})");
-        var functionObjectTerms = new List<ObjectTerm280>();
-        foreach (var functionTerm in functionTerms)
-        {
-            //X0, Z0, Z1, X0+2, ....
-            if (regexZet.Match(functionTerm).Success)
-            {
-                var fTerm = nestedFunctions.FirstOrDefault(nf => nf.Letter == functionTerm);
-                var value = EvaluateFunction(fTerm!.FullText, terms);
-                functionObjectTerms.Add(new ObjectTerm280("F", 0, false, value));
-            }
-            else
-            {
-                var value = EvaluateSimpleArithmetic(functionTerm, terms);
-                functionObjectTerms.Add(new ObjectTerm280("V", 0, false, value));
-            }
-        }
-
+        //X0, Z0, F01, X0+2, ....  the F terms will be evaluated recursively
+        var regexZet = new Regex(@"^(F\d{2})");                
+        var functionObjectTerms = functionTerms
+                .Select(functionTerm => regexZet.IsMatch(functionTerm)
+                    ? new ObjectTerm280("F", 0, false, EvaluateFunction(nestedFunctions.FirstOrDefault(nf => nf.Letter == functionTerm)!.FullText, terms))
+                    : new ObjectTerm280("V", 0, false, EvaluateSimpleArithmetic(functionTerm, terms))
+                )
+                .ToList();
         var val = EvaluateFunctionWithComputedTerms(functionType, functionObjectTerms);
         return val;
     }
