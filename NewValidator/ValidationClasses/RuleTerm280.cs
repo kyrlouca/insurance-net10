@@ -81,7 +81,7 @@ public record RuleTerm280
         .Where(pair => !string.IsNullOrEmpty(pair.Key) && !string.IsNullOrEmpty(pair.Value))
         .ToList();
 
-        //{t: S.02.01.02.01, r: R0100, c: C0010, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i => check the i after the term for Tolerance
+        //{t: S.02.01.02.01, r: R0100, c: C0010,  dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i => check the i after the term for Tolerance
         var rgxTermi = new Regex(@"\{.*?\}( i)");
         var matchi = rgxTermi.Match(text);
         var ToleranceChar = matchi.Success ? "Y" : "N";        

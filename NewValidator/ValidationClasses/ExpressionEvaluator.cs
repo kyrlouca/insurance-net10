@@ -5,7 +5,7 @@ using Z.Expressions;
 
 namespace NewValidator.ValidationClasses;
 
-public enum FunctionTypes { Min, Max, Sum };
+public enum FunctionTypes { iMin, iMax, iSum,Max };
 public record FunctionObject(string Letter, FunctionTypes FunctionType, string FullText, string Parameter, double Value);
 
 public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj);
@@ -106,9 +106,22 @@ public class ExpressionEvaluator
             : TermOperators.None;
 
         if (termOperator == TermOperators.None)
-        {            
-            var res = ValidationFunctions.ValidateArithmetic(formula, terms);
-            return res;
+        {
+            var regSplit = new Regex(@"(.+)(>|>=|<|<=|=)(.+)");
+            var matchSplit = regSplit.Match(formula);
+            if (!matchSplit.Success)
+            {
+                throw new ApplicationException($"Formula cannot be split using <,>,= :{formula}");
+            }
+            var left = matchSplit.Groups[1].Value;
+            var resLeft = EvaluateArithmeticNew(left, terms);
+            var op= matchSplit.Groups[2].Value;
+            var right = matchSplit.Groups[3].Value;
+            var resRight = EvaluateArithmeticNew(right, terms);
+
+            //var res = ValidationFunctions.ValidateArithmetic(formula, terms);
+
+            return true;
         }
 
         if (termOperator == TermOperators.IsAnd)
@@ -178,7 +191,7 @@ public class ExpressionEvaluator
         //  --the term is evaluated using simpleArithmetic if no nesting and using recursion if more nested functions
         // At the end all the terms are computed, and it uses the original symbol formula
         //EXAMPLE : imax(imin(3, 7) , 4) 
-        string[] functionsSupported = { "imin", "imax", "isum" };
+        string[] functionsSupported = { "imin", "imax", "isum","max" };
         var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
         var rgxTerms = new Regex(@"(imin|imax|isum)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         functionText = functionText.Trim();
@@ -219,15 +232,15 @@ public class ExpressionEvaluator
     {
         switch (functionType)
         {
-            case FunctionTypes.Min:
+            case FunctionTypes.iMin:
                 var min = terms.Min(item => item.Obj);
                 return Convert.ToDouble(min);
 
-            case FunctionTypes.Max:
+            case FunctionTypes.iMax:
                 var max = terms.Max(item => item.Obj);
                 return Convert.ToDouble(max);
 
-            case FunctionTypes.Sum:
+            case FunctionTypes.iSum:
                 return 0;
             default: return 0;
 
@@ -239,9 +252,10 @@ public class ExpressionEvaluator
     static FunctionTypes ToFunctionType(string functionType) =>
         functionType switch
         {
-            "imin" => FunctionTypes.Min,
-            "imax" => FunctionTypes.Max,
-            "isum" => FunctionTypes.Sum,
+            "imin" => FunctionTypes.iMin,
+            "imax" => FunctionTypes.iMax,
+            "max" => FunctionTypes.Max,
+            "isum" => FunctionTypes.iSum,
             _ => throw new ArgumentException("Invalid function type"),
         };
 
