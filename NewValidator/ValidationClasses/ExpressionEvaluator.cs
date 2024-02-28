@@ -152,7 +152,7 @@ public class ExpressionEvaluator
     {
         // @"5 + imin(3) +imax(4)";
         // @"7 + imin(imax(3,5),4)";
-        var rgxTerm = new Regex(@"(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var rgxTerm = new Regex(@"(imin|imax|max|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
         var matchFunctions = rgxTerm.Matches(functionFormula);
         var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();
@@ -191,8 +191,8 @@ public class ExpressionEvaluator
         //  --the term is evaluated using simpleArithmetic if no nesting and using recursion if more nested functions
         // At the end all the terms are computed, and it uses the original symbol formula
         //EXAMPLE : imax(imin(3, 7) , 4) 
-        string[] functionsSupported = { "imin", "imax", "isum","max" };
-        var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
+        string[] functionsSupported = { "imin", "imax", "isum", "max" };
+        var rgxSingleFunction = new Regex(@"^(imin|imax|max|isum)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
         var rgxTerms = new Regex(@"(imin|imax|isum)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         functionText = functionText.Trim();
 
