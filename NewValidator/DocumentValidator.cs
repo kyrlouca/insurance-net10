@@ -60,9 +60,9 @@ public class DocumentValidator : IDocumentValidator
         //743 simple isnull
         //4880 matches
         //787 equality of enumaratin
-        //157 for simple isum with scope
+        //1809 for min
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 782).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 1809).ToList();
         foreach (var validationRule in validationRules)
         {
             var tables = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);

@@ -81,8 +81,8 @@ internal class ValidationFunctions
             }
             
         }
-        //first i need to split using ">,<,=" and then evaluate each part
-        maybe i need to call EvaluateArithmetic here
+        //todo first i need to split using ">,<,=" and then evaluate each part
+        //maybe i need to call EvaluateArithmetic here
         Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
         var result = Eval.Execute<bool>(symbolFormula,plainObjects);
         return result;

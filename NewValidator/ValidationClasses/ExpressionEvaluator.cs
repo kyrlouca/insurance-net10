@@ -17,6 +17,7 @@ public class ExpressionEvaluator
     private enum TermOperators { None, IsAnd, IsOR };
     public static bool EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
     {
+        
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
         //1. outer parenthesis with or without function =>=> evaluate function or remove parenthesis and recurse
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis. (replace each term in parenthesis with Zxx and its value (1==1 for true, and 1==2 for false)
@@ -24,6 +25,7 @@ public class ExpressionEvaluator
 
         var rgxFn = new Regex(@"^(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
 
+        //Check if this is an outer parenthesis or an Outer function.
         //1. outer parenthesis with or without function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
         var match = rgxFn.Match(formula);
         if (match.Success)
@@ -53,7 +55,7 @@ public class ExpressionEvaluator
 
 
         //////////////////////////////// Make new formula with zet 
-        //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) 
+        //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) => x1<3 or Z00
         //replace parenthesis with zet terms. 
         //evaluate each zet 
         //reconstruct the formula using results instead of z
