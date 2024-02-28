@@ -5,19 +5,19 @@ using Z.Expressions;
 
 namespace NewValidator.ValidationClasses;
 
-public enum FunctionTypes { iMin, iMax, iSum,Max };
-public record FunctionObject(string Letter, FunctionTypes FunctionType, string FullText, string Parameter, double Value);
+public enum FunctionTypes { iMin, iMax, iSum, Max };
+public record FunctionObject(string Letter, FunctionTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj);
 public record ZetTerm(string Letter, string Formula, bool IsPassed);
 public record ArTerm(string Letter, string Formula, double ValueReal, string ValueString);
 
-public class ExpressionEvaluator
+public partial class ExpressionEvaluator
 {
     private enum TermOperators { None, IsAnd, IsOR };
     public static bool EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
     {
-        
+
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
         //1. outer parenthesis with or without function =>=> evaluate function or remove parenthesis and recurse
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis. (replace each term in parenthesis with Zxx and its value (1==1 for true, and 1==2 for false)
@@ -115,7 +115,7 @@ public class ExpressionEvaluator
             }
             var left = matchSplit.Groups[1].Value;
             var resLeft = EvaluateArithmeticNew(left, terms);
-            var op= matchSplit.Groups[2].Value;
+            var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
             var resRight = EvaluateArithmeticNew(right, terms);
 
@@ -150,10 +150,14 @@ public class ExpressionEvaluator
 
     public static double EvaluateArithmeticNew(string functionFormula, Dictionary<string, ObjectTerm280> terms)
     {
+        //will create a list of functions.
+        //Then, it will call evaluateFunction for each
+        //Then , will use EvaluateSimpleArithmetic (formula with symbols and all symbols have a value in a list)
         // @"5 + imin(3) +imax(4)";
         // @"7 + imin(imax(3,5),4)";
-        var rgxTerm = new Regex(@"(imin|imax|max|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
-        var rgxSingleFunction = new Regex(@"^(imin|imax|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
+        // imin(imax(X01, 0) i* 0.25, X02) 
+        var rgxTerm = RgxArithmenticFunction(); //"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
+        var rgxSingleFunction = RgxArithmeticFunctionSingle(); //"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")
         var matchFunctions = rgxTerm.Matches(functionFormula);
         var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();
 
@@ -165,12 +169,15 @@ public class ExpressionEvaluator
             string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
             return replacedString;
         });
-        
+
+        formulaWithSymbols = ReplaceIntervalOperators(formulaWithSymbols);
+
         var newObjTerms = functionTerms
-            .Select(ft => {
+            .Select(ft =>
+            {
                 var val = EvaluateFunction(ft.Formula, terms);
                 return (ft.Letter, new ObjectTerm280("F", 0, false, val));
-             });
+            });
 
 
         var allTermsx = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 9 })).ToList();
@@ -181,6 +188,21 @@ public class ExpressionEvaluator
         return val;
     }
 
+    static string ReplaceIntervalOperators(string input)
+    {
+        // imin(imax(X01, 0) i* 0.25, X02) =>// imin(imax(X01, 0) * 0.25, X02) 
+        // Define the regular expressions
+        Regex rgxStar = new Regex(@"i\*");
+        Regex rgxPlus = new Regex(@"i\+");
+        Regex rgxMinus = new Regex(@"i\-");
+
+        // Replace occurrences of "i*" and "i+"
+        string result = rgxStar.Replace(input, "*");
+        result = rgxPlus.Replace(result, "+");
+        result = rgxMinus.Replace(result, "-");
+
+        return result;
+    }
 
     public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
     {
@@ -192,8 +214,11 @@ public class ExpressionEvaluator
         // At the end all the terms are computed, and it uses the original symbol formula
         //EXAMPLE : imax(imin(3, 7) , 4) 
         string[] functionsSupported = { "imin", "imax", "isum", "max" };
-        var rgxSingleFunction = new Regex(@"^(imin|imax|max|isum)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$");
-        var rgxTerms = new Regex(@"(imin|imax|isum)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        
+        functionText= ReplaceIntervalOperators(functionText);
+
+        var rgxSingleFunction = RgxArithmeticFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")
+        var rgxTerms = RgxArithmenticFunction();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         functionText = functionText.Trim();
 
         var matchFn = rgxSingleFunction.Match(functionText);
@@ -218,6 +243,18 @@ public class ExpressionEvaluator
 
         //the F terms will be evaluated recursively such as the F00 and terms without functions such as the "4" will be evaluated immediateley with EvaluateSimpleArithmetic
         var regexZet = new Regex(@"^(F\d{2})");
+
+        foreach(var functionTerm in functionTerms)
+        {
+            var mma = regexZet.IsMatch(functionTerm);
+            if (mma)
+            {
+                var xx = nestedFunctions.FirstOrDefault(nf => nf.Letter == functionTerm);
+                var xxxx = EvaluateFunction(xx.FullText, terms);
+            }
+            
+        }
+
         var functionObjectTerms = functionTerms
                 .Select(functionTerm => regexZet.IsMatch(functionTerm)
                     ? new ObjectTerm280("F", 0, false, EvaluateFunction(nestedFunctions.FirstOrDefault(nf => nf.Letter == functionTerm)!.FullText, terms))
@@ -268,5 +305,14 @@ public class ExpressionEvaluator
         return result;
     }
 
+    [GeneratedRegex("^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")]
+    private static partial Regex RgxArithmeticFunctionSingle();
+
+    [GeneratedRegex("(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)")]
+    private static partial Regex RgxArithmenticFunction();
+    
+    
+    
+    
 }
 
