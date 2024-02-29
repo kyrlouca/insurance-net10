@@ -148,7 +148,7 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static double EvaluateArithmeticNew(string functionFormula, Dictionary<string, ObjectTerm280> terms)
+    public static double EvaluateArithmeticNew(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
     {
         //will create a list of functions.
         //Then, it will call evaluateFunction for each
@@ -156,14 +156,14 @@ public partial class ExpressionEvaluator
         // @"5 + imin(3) +imax(4)";
         // @"7 + imin(imax(3,5),4)";
         // imin(imax(X01, 0) i* 0.25, X02) 
-        var rgxTerm = RgxArithmenticFunction(); //"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
-        var rgxSingleFunction = RgxArithmeticFunctionSingle(); //"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")
-        var matchFunctions = rgxTerm.Matches(functionFormula);
+        var rgxTerm = RgxAggregateFunctions(); //"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
+        var rgxSingleFunction = RgxAggregateFunctionSingle(); //"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")
+        var matchFunctions = rgxTerm.Matches(arithmeticExpression);
         var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();
 
         //5 +  A00  + A01
         //7 +  A00 
-        var formulaWithSymbols = functionTerms.Aggregate(functionFormula, (currentText, val) =>
+        var formulaWithSymbols = functionTerms.Aggregate(arithmeticExpression, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.Formula);
             string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
@@ -206,63 +206,49 @@ public partial class ExpressionEvaluator
 
     public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
     {
-        //uses recursion.
-        //Takes the content of the function and
+        //uses recursion to evaluate a SINGLE function.
+        //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
+        //EXAMPLE withREAL  : imin(imax(X01, 0) * 0.25, X02)
+        //Takes the inside content of the function and
         //  --construct a List of the nested Functions terms (nestedFunctions) 
         //  --builds a new formula (contentFormulaWithSymbols) and evaluates each term
         //  --the term is evaluated using simpleArithmetic if no nesting and using recursion if more nested functions
         // At the end all the terms are computed, and it uses the original symbol formula
-        //EXAMPLE : imax(imin(3, 7) , 4) 
+
         string[] functionsSupported = { "imin", "imax", "isum", "max" };
         
         functionText= ReplaceIntervalOperators(functionText);
-
-        var rgxSingleFunction = RgxArithmeticFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")
-        var rgxTerms = RgxArithmenticFunction();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
+        var rgxSingleFunction = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         functionText = functionText.Trim();
 
         var matchFn = rgxSingleFunction.Match(functionText);
         if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
 
-        var funtionTypeStr = matchFn.Groups[1].Value;
+        
         var functionContent = matchFn.Groups[2].Value;
-        var functionType = ToFunctionType(funtionTypeStr);
-        var matchFunctions = rgxTerms.Matches(functionContent);
-        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"F{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0));
-
-        // F00  , 4   
-        var contentFormulaWithSymbols = nestedFunctions.Aggregate(functionContent, (currentText, val) =>
+        var functionType = ToFunctionType(matchFn.Groups[1].Value);
+        // the function contents is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02
+        // need to split the expressions but it is difficult because inside the functions there are commas also
+        // so replace the functions with letters and then put them back again
+        var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
+        var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
+        var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
+        var innerResults = innerArguments.Select(r =>
         {
-            int index = currentText.IndexOf(val.FullText);
-            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.FullText.Length)..];
-            return replacedString;
-        });
-
-        //F00, 4
-        var functionTerms = contentFormulaWithSymbols.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-
-        //the F terms will be evaluated recursively such as the F00 and terms without functions such as the "4" will be evaluated immediateley with EvaluateSimpleArithmetic
-        var regexZet = new Regex(@"^(F\d{2})");
-
-        foreach(var functionTerm in functionTerms)
-        {
-            var mma = regexZet.IsMatch(functionTerm);
-            if (mma)
+            foreach(var ft in innerFunctionTerms)
             {
-                var xx = nestedFunctions.FirstOrDefault(nf => nf.Letter == functionTerm);
-                var xxxx = EvaluateFunction(xx.FullText, terms);
+                r = r.Replace(ft.Letter, ft.FullText);
             }
-            
-        }
+            //var innerText= 
+            var res = EvaluateArithmeticNew(r, terms);
+            var xx = new ObjectTerm280("FI", 0, false, res);
+            return xx;
+        });
+        var final2 = EvaluateFunctionWithComputedTerms(functionType, innerResults);//at the end =>functionType:Max and the terms are : 3, 4 
+        return final2;
+        //*****************************************
 
-        var functionObjectTerms = functionTerms
-                .Select(functionTerm => regexZet.IsMatch(functionTerm)
-                    ? new ObjectTerm280("F", 0, false, EvaluateFunction(nestedFunctions.FirstOrDefault(nf => nf.Letter == functionTerm)!.FullText, terms))
-                    : new ObjectTerm280("V", 0, false, EvaluateSimpleArithmetic(functionTerm, terms))
-                )
-                .ToList();
-        var val = EvaluateFunctionWithComputedTerms(functionType, functionObjectTerms);//at the end =>functionType:Max and the terms are : 3, 4 
-        return val;
+        
     }
 
     static double EvaluateFunctionWithComputedTerms(FunctionTypes functionType, IEnumerable<ObjectTerm280> terms)
@@ -305,11 +291,27 @@ public partial class ExpressionEvaluator
         return result;
     }
 
-    [GeneratedRegex("^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")]
-    private static partial Regex RgxArithmeticFunctionSingle();
 
-    [GeneratedRegex("(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)")]
-    private static partial Regex RgxArithmenticFunction();
+    public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text,Regex regex, string letter)
+    {        
+        var matchFunctions = regex.Matches(text);
+        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();        
+        var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
+        {
+            int index = currentText.IndexOf(val.FullText);
+            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.FullText.Length)..];
+            return replacedString;
+        });
+
+        return (contentFormulaWithSymbols,nestedFunctions);
+    }
+
+
+    [GeneratedRegex(@"^(imin|imax|max|isum)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
+    private static partial Regex RgxAggregateFunctionSingle();
+
+    [GeneratedRegex(@"(imin|imax|max|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
+    private static partial Regex RgxAggregateFunctions();
     
     
     
