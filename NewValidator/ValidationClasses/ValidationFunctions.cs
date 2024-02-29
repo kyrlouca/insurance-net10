@@ -49,8 +49,7 @@ internal class ValidationFunctions
 
         //in real life the first term in the text would be X/d/d but take the actual value for testing 
         
-        var letter = match.Groups[1].Value;
-        var rgxForTest = new Regex(@"X\d{2");
+        var letter = match.Groups[1].Value;        
         var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");
 
         var value = rgxForTestQ.IsMatch(letter) ? rgxForTestQ.Match(letter).Groups[1].Value : terms[letter].Obj.ToString() ?? "";

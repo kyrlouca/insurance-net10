@@ -106,14 +106,15 @@ public class ValidationTermTest
         var x = "{";
         var y = "}";
 
-        text = @$"(1>2 or matches({qt}LEI/12301{qt}, {qt}^LEI/[A-Z0-9]x(01|00)${qt})) and not(1>2)";
+        //text = @"(1>2 or matches(""LEI/12301"", ""^LEI/[A-Z0-9]{3}(01|00)$"")) and not(1>2)";
+        text = @$"(1>2 or matches({qt}LEI/12301{qt}, {qt}^LEI/[A-Z0-9]{x}3{y}(01|00)${qt})) and not(1>2)";
         res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
         Assert.True(res);
 
 
-        text = @"(1>2 or matches(""LEI/12301"", ""^LEI/[A-Z0-9]{3}(01|00)$"")) and not(matches(""Lei123"",""Lei\d{3}""))";
+        text = @$"(1>2 or matches({qt}LEI/12301{qt}, {qt}^LEI/[A-Z0-9]{x}3{y}(01|00)${qt})) and (matches({qt}Lei248{qt},{qt}Lei\d\d\d{qt}))";
         res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
-        Assert.False(res);
+        Assert.True(res);
 
     }
 
