@@ -14,7 +14,7 @@ public record ArTerm(string Letter, string Formula, double ValueReal, string Val
 
 public partial class ExpressionEvaluator
 {
-    private enum TermOperators { None, IsAnd, IsOR };
+    private enum BooleanOperators { None, IsAnd, IsOR };
     public static bool EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
     {
 
@@ -101,11 +101,11 @@ public partial class ExpressionEvaluator
         // a. If there is an "and" evaluate the two terms around end,
         // b. if there is an "or" evaluate the two terms around "or"
         // c. if there is  no "and" , "or" evaluate the terms
-        var termOperator = formula.Contains("and") ? TermOperators.IsAnd
-            : formula.Contains("or") ? TermOperators.IsOR
-            : TermOperators.None;
+        var termOperator = formula.Contains("and") ? BooleanOperators.IsAnd
+            : formula.Contains("or") ? BooleanOperators.IsOR
+            : BooleanOperators.None;
 
-        if (termOperator == TermOperators.None)
+        if (termOperator == BooleanOperators.None)
         {
             var regSplit = new Regex(@"(.+)(>|>=|<|<=|=)(.+)");
             var matchSplit = regSplit.Match(formula);
@@ -119,12 +119,18 @@ public partial class ExpressionEvaluator
             var right = matchSplit.Groups[3].Value;
             var resRight = EvaluateArithmeticNew(right, terms);
 
-            //var res = ValidationFunctions.ValidateArithmetic(formula, terms);
 
-            return true;
+            var formulaLR = $"L0 {op} R0";
+            var formulaLRObjects = new Dictionary<string, object>
+            {
+                { "L0", resLeft },
+                { "R0", resRight }
+            };
+            var res = Eval.Execute<bool>(formulaLR, formulaLRObjects); 
+            return res;
         }
 
-        if (termOperator == TermOperators.IsAnd)
+        if (termOperator == BooleanOperators.IsAnd)
         {
             var resAnd = formula.Split("and", StringSplitOptions.RemoveEmptyEntries);
             var val1 = resAnd[0].Trim();
@@ -133,7 +139,7 @@ public partial class ExpressionEvaluator
             var res2 = EvaluateGeneralBooleanExpression(val2, terms);
             return res1 && res2;
         }
-        if (termOperator == TermOperators.IsOR)
+        if (termOperator == BooleanOperators.IsOR)
         {
             var res = formula.Split("or", StringSplitOptions.RemoveEmptyEntries);
             var bres1 = EvaluateGeneralBooleanExpression(res[0].Trim(), terms);

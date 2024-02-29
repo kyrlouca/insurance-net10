@@ -37,15 +37,23 @@ internal class ValidationFunctions
     public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
     {
         //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
-        var regex = new Regex(@"matches\((.*?)\s*,\s*\""(.*)\""\)");
+
+        var qt= "\"";
+        var pattern = @$"matches\((.*?)\s*,\s*\{qt}(.*)\{qt}\)";
+        var regex = new Regex(pattern);
         var match = regex.Match(text);
         if (!match.Success)
         {
             throw new InvalidOperationException($"invalid match:{text} ");
         }
 
+        //in real life the first term in the text would be X/d/d but take the actual value for testing 
+        
         var letter = match.Groups[1].Value;
-        var value = terms[letter].Obj.ToString()??"";
+        var rgxForTest = new Regex(@"X\d{2");
+        var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");
+
+        var value = rgxForTestQ.IsMatch(letter) ? rgxForTestQ.Match(letter).Groups[1].Value : terms[letter].Obj.ToString() ?? "";
 
         var rgxFromValue = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
         var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);

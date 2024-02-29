@@ -81,36 +81,42 @@ public class ValidationTermTest
     }
 
 
+
     [Fact]
-    public void TestEvaluator()
+    public void TestEvaluateGeneralBooleanExpression()
     {
 
-        var text = @"5>2 and 4>3";      
-        var res = RuleEvaluatorForSimpleTesting.EvaluateRuleForSimpleTesting(text);
+        var text = @"5>2 and 4>3";
+        var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text,new());
         Assert.True(res);
-        
+
         text = @"(2>1 or 1<2) and (2>1)";
-        res = RuleEvaluatorForSimpleTesting.EvaluateRuleForSimpleTesting(text);
+        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text,new());
         Assert.True(res);
 
         text = @"(2>1 or 1<2) and (1>2)";
-        res = RuleEvaluatorForSimpleTesting.EvaluateRuleForSimpleTesting(text);
+        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
         Assert.False(res);
 
         text = @"(2>1 or 1<2) and not(1>2)";
-        res = RuleEvaluatorForSimpleTesting.EvaluateRuleForSimpleTesting(text);
+        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
         Assert.True(res);
 
-        text = @"(1>2 or matches(""LEI/12301"", ""^LEI/[A-Z0-9]{3}(01|00)$"")) and not(1>2)";
-        res = RuleEvaluatorForSimpleTesting.EvaluateRuleForSimpleTesting(text);
+        var qt = "\"";
+        var x = "{";
+        var y = "}";
+
+        text = @$"(1>2 or matches({qt}LEI/12301{qt}, {qt}^LEI/[A-Z0-9]x(01|00)${qt})) and not(1>2)";
+        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
         Assert.True(res);
 
 
         text = @"(1>2 or matches(""LEI/12301"", ""^LEI/[A-Z0-9]{3}(01|00)$"")) and not(matches(""Lei123"",""Lei\d{3}""))";
-        res = RuleEvaluatorForSimpleTesting.EvaluateRuleForSimpleTesting(text);
+        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
         Assert.False(res);
 
     }
+
 
 
     [Fact]
