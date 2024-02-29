@@ -22,14 +22,11 @@ public class RuleComponent280
 
     public static RuleComponent280 CreateComponent(string text)
     {
-        //captures terms inside brackets , takes care of inner brackets in match statements
-        //\{\s?[a-z]:([^{}]).*?\}
-        //{t: S.28.02.01.04, r: R0210, c: C0090 } i+ {t: S.28.02.01.04, r: R0210, c: C0110} i i>= {t: S.12.01.01.01,  fv: solvency2} i- {t: S.12.01.01.01, r: R0020, c: C0020} i+ {t: S.12.01.01.01, r: R0110,} i
-        //@"if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)";
-        //text = """if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)""";
-        //text = """{t: S.28.02.01.04, r: R0210, c: C0090 } i+ {t: S.28.02.01.04, r: R0210, c: C0110} i i>= {t: S.12.01.01.01,  fv: solvency2} i- {t: S.12.01.01.01, r: R0020, c: C0020} i+ {t: S.12.01.01.01, r: R0110,} i""";
-        //text = """ if matches(dim({d: first}) + {d: second} +[ab] """;
-
+        //captures terms inside brackets , takes care of inner brackets in match statements        
+        //text : {t: S.28.02.01.04, r: R0210, c: C0090 ... } i+ {t: S.28.02.01.04, r: R0210, c: C0110 ...}   i>= {t: S.12.01.01.01,  fv: solvency2} i- {t: S.12.01.01.01, r: R0020, c: C0020} i+ {t: S.12.01.01.01, r: R0110,} i
+        //=> X01 + X02 >= X03 - X04 + X05  
+        //=> creates the RuleTerms280
+        //also checks for the i interval and marks the term as interval          
 
         var rgxTermi = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
 

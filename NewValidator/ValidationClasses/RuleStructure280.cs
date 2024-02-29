@@ -48,6 +48,10 @@ public class RuleStructure280
 
     public static RuleStructure280 CreateRuleStructure(string text)
     {
+        //text = """if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)""";
+        //@"if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)";
+
+        //create three components (if, then, else)
         var (ifExpression, thenExpression, elseExpression) = SplitIfThenElse(text);
         var ifComponent = RuleComponent280.CreateComponent(ifExpression);
         var thenComponent = RuleComponent280.CreateComponent(thenExpression);
