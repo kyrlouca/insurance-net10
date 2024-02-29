@@ -8,13 +8,42 @@ namespace NewValidator.ValidationClasses;
 public enum FunctionTypes { iMin, iMax, iSum, Max };
 public record FunctionObject(string Letter, FunctionTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
-public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj);
+public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj, bool IsNullFact);
 public record ZetTerm(string Letter, string Formula, bool IsPassed);
 public record ArTerm(string Letter, string Formula, double ValueReal, string ValueString);
 
 public partial class ExpressionEvaluator
 {
     private enum BooleanOperators { None, IsAnd, IsOR };
+
+    public static bool ValidateRuleStructure(RuleStructure280 ruleStructure)
+    {
+        //if no left or right, it is a match 
+        var regSplit = new Regex(@"(.+)(>|>=|<|<=|=)(.+)");
+        var formula = ruleStructure.RuleFormula;
+        var matchSplit = regSplit.Match(formula);
+        if (!matchSplit.Success)
+        {
+            var resSingle = EvaluateGeneralBooleanExpression(formula, terms);
+            return resSingle;
+        }
+        var leftFormula = matchSplit.Groups[1].Value;
+        var resLeft = EvaluateGeneralBooleanExpression(leftFormula, terms);
+        var op = matchSplit.Groups[2].Value;
+        var rightFormula = matchSplit.Groups[3].Value;
+        var resRight = EvaluateGeneralBooleanExpression(rightFormula, terms);
+
+
+        var formulaLR = $"L0 {op} R0";
+        var formulaLRObjects = new Dictionary<string, object>
+            {
+                { "L0", resLeft },
+                { "R0", resRight }
+            };
+        var res = Eval.Execute<bool>(formulaLR, formulaLRObjects);
+        return res;        
+
+    }
     public static bool EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
     {
 
@@ -126,7 +155,7 @@ public partial class ExpressionEvaluator
                 { "L0", resLeft },
                 { "R0", resRight }
             };
-            var res = Eval.Execute<bool>(formulaLR, formulaLRObjects); 
+            var res = Eval.Execute<bool>(formulaLR, formulaLRObjects);
             return res;
         }
 
@@ -182,7 +211,7 @@ public partial class ExpressionEvaluator
             .Select(ft =>
             {
                 var val = EvaluateFunction(ft.Formula, terms);
-                return (ft.Letter, new ObjectTerm280("F", 0, false, val));
+                return (ft.Letter, new ObjectTerm280("F", 0, false, val, false));
             });
 
 
@@ -222,15 +251,15 @@ public partial class ExpressionEvaluator
         // At the end all the terms are computed, and it uses the original symbol formula
 
         string[] functionsSupported = { "imin", "imax", "isum", "max" };
-        
-        functionText= ReplaceIntervalOperators(functionText);
+
+        functionText = ReplaceIntervalOperators(functionText);
         var rgxSingleFunction = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         functionText = functionText.Trim();
 
         var matchFn = rgxSingleFunction.Match(functionText);
         if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
 
-        
+
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
         // the function contents is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02
@@ -241,20 +270,20 @@ public partial class ExpressionEvaluator
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
         var innerResults = innerArguments.Select(r =>
         {
-            foreach(var ft in innerFunctionTerms)
+            foreach (var ft in innerFunctionTerms)
             {
                 r = r.Replace(ft.Letter, ft.FullText);
             }
             //var innerText= 
             var res = EvaluateArithmeticNew(r, terms);
-            var xx = new ObjectTerm280("FI", 0, false, res);
+            var xx = new ObjectTerm280("FI", 0, false, res, false);
             return xx;
         });
         var final2 = EvaluateFunctionWithComputedTerms(functionType, innerResults);//at the end =>functionType:Max and the terms are : 3, 4 
         return final2;
         //*****************************************
 
-        
+
     }
 
     static double EvaluateFunctionWithComputedTerms(FunctionTypes functionType, IEnumerable<ObjectTerm280> terms)
@@ -298,10 +327,10 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text,Regex regex, string letter)
-    {        
+    public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
+    {
         var matchFunctions = regex.Matches(text);
-        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();        
+        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
         var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.FullText);
@@ -309,7 +338,7 @@ public partial class ExpressionEvaluator
             return replacedString;
         });
 
-        return (contentFormulaWithSymbols,nestedFunctions);
+        return (contentFormulaWithSymbols, nestedFunctions);
     }
 
 
@@ -318,9 +347,9 @@ public partial class ExpressionEvaluator
 
     [GeneratedRegex(@"(imin|imax|max|isum)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     private static partial Regex RgxAggregateFunctions();
-    
-    
-    
-    
+
+
+
+
 }
 

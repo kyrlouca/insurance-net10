@@ -67,27 +67,27 @@ public class DocumentValidator : IDocumentValidator
         {
             var tables = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
             //check if all the tables exist for this rule
-            var rl = RuleStructure280.CreateRuleStructure(validationRule.Rule);
+            var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule);
             //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
             //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-            var ifComponent = rl.IfComponent;         
-            Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ifComponent);            
-            var isValidIf = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ifComponent.SymbolExpression, ifObjectTerms);
-
+            //var ifComponent = rl.IfComponent;         
+            //Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ifComponent);            
+            //var isValidIf = ExpressionEvaluator.ValidateRuleStructure(ifComponent.SymbolExpression, ifObjectTerms);
+            var isValidRule = ExpressionEvaluator.ValidateRuleStructure(rule);
             if (1 == 2)
             {
-                var thenComponent = rl.ThenComponent;
-                Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(thenComponent);
-                var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(thenComponent.SymbolExpression, thenObjectTerms);
+                //var thenComponent = rule.ThenComponent;
+                //Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(thenComponent);
+                //var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(thenComponent.SymbolExpression, thenObjectTerms);
 
-                var elseComponent = rl.ElseComponent;
-                Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(elseComponent);
-                var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(elseComponent.SymbolExpression, elseObjectTerms);
+                //var elseComponent = rule.ElseComponent;
+                //Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(elseComponent);
+                //var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(elseComponent.SymbolExpression, elseObjectTerms);
 
-                var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
-                var isCompleteRule =
-                    ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid
-                    || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
+                //var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
+                //var isCompleteRule =
+                //    ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid
+                //    || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
             }
             
         }
@@ -118,7 +118,7 @@ public class DocumentValidator : IDocumentValidator
     {
         if (fact == null)
         {
-            return  new ObjectTerm280( "S", 0,  IsTolerance, defaultValue);
+            return  new ObjectTerm280( "S", 0,  IsTolerance, defaultValue,true);
         }
 
 
@@ -133,7 +133,7 @@ public class DocumentValidator : IDocumentValidator
             "D" => fact.DateTimeValue,
             _ => throw new NotImplementedException() 
         };
-        var objTerm= new ObjectTerm280(fact.DataTypeUse,fact.Decimals,IsTolerance, obj);
+        var objTerm= new ObjectTerm280(fact.DataTypeUse,fact.Decimals,IsTolerance, obj,false);
         return objTerm;
     }
 
