@@ -55,13 +55,14 @@ public class DocumentValidator : IDocumentValidator
         }
         _mModule = module;
         //A ValidationRule may apply to more than one tables and therefore we may have more than one with the same validationID
-        var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
+
         //729 simple >
         //743 simple isnull
         //4880 matches
         //787 equality of enumaratin
         //1809 for min
 
+        var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
         validationRules = validationRules.Where(vr => vr.ValidationID == 1809).ToList();
         foreach (var validationRule in validationRules)
         {
