@@ -530,6 +530,14 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public MTableKyrKeys? SelectTableKyrKeys(string tableCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTable = @"select * from mTableKyrKeys tk where tk.TableCode= @tableCode";
+
+        var result = connectionEiopa.QueryFirstOrDefault<MTableKyrKeys>(sqlTable, new { tableCode });
+        return result;
+    }
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);

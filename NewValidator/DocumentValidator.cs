@@ -91,11 +91,12 @@ public class DocumentValidator : IDocumentValidator
                 if (seqTableTerm != null)
                 {
                     var seqTable = tables.FirstOrDefault(tb => tb.TableCode.Trim() == seqTableTerm.T.Trim());
+                    var seqTableKey = _SqlFunctions.SelectTableKyrKeys(seqTable!.TableCode);
                     var facts = _SqlFunctions.SelectFactForAllRowsSeq(DocumentId, seqTable!.TableCode ,seqTableTerm.Z, seqTableTerm.C);
                     foreach(var fact in facts)
                     {
                         var row = fact.Row;
-                        var fkKeyValue= 
+                        var fkKeyValue = _SqlFunctions.SelectFactByRowCol(DocumentId, seqTable.TableCode, fact.Zet, fact.Row, seqTableKey?.FK_TableCol??"");
                         //now go through the filter 
                     }
 
