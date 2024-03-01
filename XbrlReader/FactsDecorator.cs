@@ -94,6 +94,7 @@ public partial class FactsDecorator : IFactsDecorator
         {
             ModuleTables = ModuleTables.Where(table => table.TableID == _testingTableId).ToList();
         }
+        ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
 
         var moduleZets = new List<string>();  
         foreach (var table in ModuleTables)
@@ -612,31 +613,47 @@ public partial class FactsDecorator : IFactsDecorator
 
     private void UpdateForeignKeysOfChildTablesNN()
     {
+        //we need to update sheets with the SAME zet.
+        //the ZET is on the sheet but it can also be on the fact
+
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
-        var sqlKyrTables = @"select * from mTableKyrKeys";
+        var sqlKyrTables = @"select * from mTableKyrKeys tk where tk.FK_TableCode is not null";
         var kyrTables = connectionEiopa.Query<MTableKyrKeys>(sqlKyrTables);//S.06.02.01.01       
         kyrTables = kyrTables.Where(kt => kt.TableCode.Trim() == "S.06.02.01.01");
 
         foreach (var kyrTable in kyrTables)
-        {
-            var sqlChild = @"select * from TemplateSheetInstance sheet where sheet.InstanceId= @docId and TableCode=@tableCode ";
-            var childSheet = connectionLocal.QueryFirstOrDefault<TemplateSheetInstance>(sqlChild, new { docId = _documentId, tableCode = kyrTable.TableCode });
-            if (childSheet is null) continue;
+        {            
+            var childSheets = _SqlFunctions.SelectTempateSheetByTableCodeAllZets(_documentId, kyrTable.TableCode);
+            foreach (var childSeet in childSheets)
+            {
+                var masterSheet= _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, kyrTable.TableCode,childSeet.SheetCodeZet);
+                if(masterSheet is null)
+                {
+                    continue;
+                }
+                //find the single fact in each row  to get the Foreign key value 'ISIN/CAN...'
+                var childFactsWithForeignKey = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.TableCode, childSeet.SheetCodeZet, kyrTable.FK_TableCol);
+                foreach (var childRowFact in childFactsWithForeignKey)
+                {
+                    //one fact in each row has the key also present in the master table
+                    //find the fact in the master table 
+                    var masterFacts = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.FK_TableCode, childSeet.SheetCodeZet, kyrTable.FK_TableCol);
+                    var masterFact = masterFacts.FirstOrDefault(fct => fct.TextValue.Trim().Equals(childRowFact.TextValue.Trim()));
 
-            var parentSheet = connectionLocal.Query<TemplateSheetInstance>(sqlChild, new { docId = _documentId, tableCode = kyrTable.FK_TableCode })
-                    .Where(sh => sh.SheetCodeZet == childSheet.SheetCodeZet)
-                    .FirstOrDefault();
-            if (parentSheet is null) continue;
+                    var sqlUpd = @"
+                                update TemplateSheetFact set RowForeign = @RowForeign 
+                                where InstanceId= @documentId and TemplateSheetId=@TemplateSheetId and Row=@Row;
+                                ";
+                    
+                    connectionLocal.Execute(sqlUpd, new { documentId = _documentId, TemplateSheetId = kyrTable.TableCode, Row= childRowFact.Row, RowForeign =masterFact.Row});
+                }
+            }
+            
+            
+            
 
-            //var dimLike = $"%:{kyrTable.FK_TableDim.Trim()}%";
-            //var sqlMapping = @"select * from MAPPING where TABLE_VERSION_ID= @tableId  and DIM_CODE like @dimLike";
-
-            //var commonCol = connectionEiopa.QueryFirstOrDefault<MAPPING>(sqlMapping, new { parentSheet.TableID, dimLike });
-            //if (commonCol is null) continue;
-
-            UpdateFactsWithMasterRowNN(childSheet.TemplateSheetId, parentSheet.TemplateSheetId, "UI");
 
 
         }

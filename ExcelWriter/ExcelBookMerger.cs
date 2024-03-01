@@ -286,7 +286,7 @@ public class ExcelBookMerger : IExcelBookMerger
     {
         var dbSheet = isZetImportant
             ? _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, tableCode, sheetCodeZet)
-            : _SqlFunctions.SelectTempateSheetBySheetCodeAllZets(_documentId, tableCode);
+            : _SqlFunctions.SelectTempateSheetByTableCodeAllZets(_documentId, tableCode).FirstOrDefault();
 
         var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";

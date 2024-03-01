@@ -117,7 +117,7 @@ public class SqlFunctions : ISqlFunctions
         return sheet;
     }
 
-    public TemplateSheetInstance? SelectTempateSheetBySheetCodeAllZets(int documentId, string tableCode)
+    public List<TemplateSheetInstance> SelectTempateSheetByTableCodeAllZets(int documentId, string tableCode)    
     {
         //assume that for this tableCode there is only one sheet with or withoutzet  
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -129,7 +129,7 @@ public class SqlFunctions : ISqlFunctions
                 sheet.InstanceId = @documentId        
                 and sheet.TableCode = @tableCode                        
              ";
-        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode });
+        var sheet = connectionLocal.Query<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode }).ToList();
         return sheet;
     }
     public List<TemplateSheetInstance> SelectTempateSheets(int documentId)
@@ -568,6 +568,28 @@ public class SqlFunctions : ISqlFunctions
 
         var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
         return fact;
+    }
+
+    public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet,  string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode
+                  --AND fact.ZetValues= @Zet                  
+                  AND fact.Col= @Col
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, col }).ToList();
+        return facts;
     }
 
     public List<TemplateSheetFact> SelectFactForAllRowsSeq(int documentId, string tableCode, string zet, string col)
