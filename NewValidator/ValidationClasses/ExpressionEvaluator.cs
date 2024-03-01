@@ -1,5 +1,7 @@
-﻿using Syncfusion.XlsIO.Implementation.PivotAnalysis;
+﻿using Syncfusion.XlsIO.Implementation.Collections.Grouping;
+using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 using System.Data;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using Z.Expressions;
 
@@ -321,9 +323,19 @@ public partial class ExpressionEvaluator
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
-        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
+        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => stringToDouble(item.Value.Obj));
+
         var result = Eval.Execute<double>(symbolFormula, plainObjects);
         return result;
+
+
+        static object stringToDouble(object obj)
+        {
+            var type = obj.GetType();
+            var result = type==typeof(string) ? Convert.ToDouble(obj) : obj;
+            return result;
+        }
+
     }
 
 
