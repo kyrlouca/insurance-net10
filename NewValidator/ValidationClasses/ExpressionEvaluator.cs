@@ -184,18 +184,14 @@ public partial class ExpressionEvaluator
 
     public static double EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
     {
-        //will create a list of functions.
+        //will create a list of OUTER arithmetic functions (imin,imax,...).
         //Then, it will call evaluateFunction for each
         //Then , will use EvaluateSimpleArithmetic (formula with symbols and all symbols have a value in a list)
         // @"5 + imin(3) +imax(4)";
         // @"7 + imin(imax(3,5),4)";
         // imin(imax(X01, 0) i* 0.25, X02) 
         var rgxTerm = RgxAggregateFunctions(); //"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
-        //var rgxSingleFunction = RgxAggregateFunctionSingle(); //"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")
         var matchFunctions = rgxTerm.Matches(arithmeticExpression);
-
-        //5 +  A00  + A01
-        //7 +  A00 
 
         //var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();        
         //var formulaWithSymbols = functionTerms.Aggregate(arithmeticExpression, (currentText, val) =>
@@ -205,21 +201,18 @@ public partial class ExpressionEvaluator
         //    return replacedString;
         //});
 
-        //the one below creates FunctionObjects, and above we create arObjects. We need to change it 
-        var (formulaWithSymbols, functionTerms) = ToFunctionObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
-
-
+        //5 +  A00  + A01
+        //7 +  A00 
+        var (formulaWithSymbols, functionObjects) = ToFunctionObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
 
         formulaWithSymbols = ReplaceIntervalOperators(formulaWithSymbols);
 
-        var newObjTerms = functionTerms
+        var newObjTerms = functionObjects
             .Select(ft =>
-            {
-                //var val = EvaluateFunction(ft.Formula, terms);
-                var val = EvaluateFunction(ft., terms);
+            {                
+                var val = EvaluateFunction(ft.FullText, terms);
                 return (ft.Letter, new ObjectTerm280("F", 0, false, val, false));
             });
-
 
         var allTermsx = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 9 })).ToList();
         allTermsx.AddRange(newObjTerms);
@@ -247,11 +240,11 @@ public partial class ExpressionEvaluator
 
     public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
     {
-        //uses recursion to evaluate a SINGLE function.
+        //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
         //EXAMPLE withREAL  : imin(imax(X01, 0) * 0.25, X02)
         //Takes the inside content of the function and
-        //  --construct a List of the nested Functions terms (nestedFunctions) 
+        //  --construct a List of the nested Functions objects (nestedFunctions) 
         //  --builds a new formula (contentFormulaWithSymbols) and evaluates each term
         //  --the term is evaluated using simpleArithmetic if no nesting and using recursion if more nested functions
         // At the end all the terms are computed, and it uses the original symbol formula
@@ -269,8 +262,9 @@ public partial class ExpressionEvaluator
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
         // the function contents is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02
-        // need to split the expressions but it is difficult because inside the functions there are commas also
-        // so replace the functions with letters and then put them back again
+        // *** I have a trick here
+        // *** need to split the expressions but it is difficult because inside the functions there are commas also
+        // *** so replace the functions with letters to be able to split with comma and then replace the letters with function text again
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
@@ -282,7 +276,7 @@ public partial class ExpressionEvaluator
             }
             //var innerText= 
             var res = EvaluateArithmeticRecursively(r, terms);
-            var xx = new ObjectTerm280("FI", 0, false, res, false);
+            var xx = new ObjectTerm280("F", 0, false, res, false);
             return xx;
         });
         var final2 = EvaluateFunctionWithComputedTerms(functionType, innerResults);//at the end =>functionType:Max and the terms are : 3, 4 
