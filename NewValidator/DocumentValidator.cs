@@ -99,21 +99,6 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
-    Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(RuleComponent280 ruleComponent)
-    {
-
-        Dictionary<string, ObjectTerm280> plainTerms = ruleComponent.RuleTerms
-            .Select(ruleTerm => new
-            {
-                ruleTerm.Letter,
-                Zet = ruleTerm.Z,
-                Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, ruleTerm.IsTolerance)
-            })
-            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
-        return plainTerms;
-    }
-
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact,string defaultValue,bool IsTolerance)
     {
         if (fact == null)
@@ -137,5 +122,12 @@ public class DocumentValidator : IDocumentValidator
         return objTerm;
     }
 
-
+    private void RuleStructureFiller(RuleStructure280 ruleStructure)
+    {
+        //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
+        //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
+        var ifComponent = ruleStructure.IfComponent;         
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ifComponent);            
+        //var isValidIf = ExpressionEvaluator.ValidateRuleStructure(ifComponent.SymbolExpression, ifObjectTerms);
+    }
 }

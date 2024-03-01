@@ -18,32 +18,16 @@ public partial class ExpressionEvaluator
 
     public static bool ValidateRuleStructure(RuleStructure280 ruleStructure)
     {
-        //if no left or right, it is a match 
-        var regSplit = new Regex(@"(.+)(>|>=|<|<=|=)(.+)");
-        var formula = ruleStructure.RuleFormula;
-        var matchSplit = regSplit.Match(formula);
-        if (!matchSplit.Success)
-        {
-            var resSingle = EvaluateGeneralBooleanExpression(formula, terms);
-            return resSingle;
-        }
-        var leftFormula = matchSplit.Groups[1].Value;
-        var resLeft = EvaluateGeneralBooleanExpression(leftFormula, terms);
-        var op = matchSplit.Groups[2].Value;
-        var rightFormula = matchSplit.Groups[3].Value;
-        var resRight = EvaluateGeneralBooleanExpression(rightFormula, terms);
+        //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
+        //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
+        var ifComponent = ruleStructure.IfComponent;         
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ifComponent);            
+        var isValidIf = ExpressionEvaluator.ValidateRuleStructure(ifComponent.SymbolExpression, ifObjectTerms);
 
-
-        var formulaLR = $"L0 {op} R0";
-        var formulaLRObjects = new Dictionary<string, object>
-            {
-                { "L0", resLeft },
-                { "R0", resRight }
-            };
-        var res = Eval.Execute<bool>(formulaLR, formulaLRObjects);
-        return res;        
 
     }
+
+
     public static bool EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
     {
 

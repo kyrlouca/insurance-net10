@@ -10,22 +10,20 @@ namespace NewValidator.ValidationClasses;
 public class RuleStructure280
 {
     public string  RuleFormula {get;init;}
-    public bool IsComplete { get; init; }
-    public bool IsBooleanRule { get; init; }
+    public bool IsComplete { get; init; }    
     public RuleComponent280 IfComponent { get; init; }
     public RuleComponent280 ThenComponent { get; init; }
     public RuleComponent280 ElseComponent { get; init; }
 
-    private RuleStructure280(string ruleFormula, bool isBooleanRule, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent)
+    private RuleStructure280(string ruleFormula,  RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent)
     {        
-        RuleFormula = ruleFormula;
-        IsBooleanRule = isBooleanRule;
+        RuleFormula = ruleFormula;        
         IfComponent = ifComponent;
         ThenComponent = thenComponent;
         ElseComponent = elseComponent;
     }
 
-    public static (bool isBooleanRule, string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)
+    public static (string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)
     {
         //split if then  else expression
         //we may have an "if" , "then" without "else"
@@ -35,7 +33,7 @@ public class RuleStructure280
 
         if (string.IsNullOrEmpty(stringExpression))
         {
-            return (false,"", "", "");
+            return ("", "", "");
         }
 
         var rgxIfThenElse = @"if\s*(.*)\s*then(.*)\s*else(.*)";
@@ -43,10 +41,10 @@ public class RuleStructure280
 
         var res = terms.Count switch
         {
-            4 => (true,terms[1].Trim(), terms[2].Trim(), terms[3].Trim()),
-            3 => (true, terms[1].Trim(), terms[2].Trim(), ""),
-            0 => (false, stringExpression.Trim(), "", ""),
-            _ => (false, "", "", "")//does not happen but i could check for optional then ,els
+            4 => (terms[1].Trim(), terms[2].Trim(), terms[3].Trim()),
+            3 => (terms[1].Trim(), terms[2].Trim(), ""),
+            0 => (stringExpression.Trim(), "", ""),
+            _ => ("", "", "")//does not happen but i could check for optional then ,els
         };
 
         return res;
@@ -58,14 +56,14 @@ public class RuleStructure280
         //@"if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)";
 
         //create three components (if, then, else)
-        var (isBoolean, ifExpression, thenExpression, elseExpression) = SplitIfThenElse(ruleFormula);
+        var ( ifExpression, thenExpression, elseExpression) = SplitIfThenElse(ruleFormula);
         var ifComponent = RuleComponent280.CreateComponent(ifExpression);
         var thenComponent = RuleComponent280.CreateComponent(thenExpression);
         var elseComponent = RuleComponent280.CreateComponent(elseExpression);
 
                
 
-        var rec = new RuleStructure280(ruleFormula, isBoolean, ifComponent, thenComponent, elseComponent);
+        var rec = new RuleStructure280( ruleFormula, ifComponent, thenComponent, elseComponent);
         return rec;
     }
 

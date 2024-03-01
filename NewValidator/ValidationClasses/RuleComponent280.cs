@@ -14,13 +14,15 @@ public class RuleComponent280
 {
     //Either the component of the if, else, then
 
+    public bool IsEmpty { get; set; } = true;
     public bool IsValid { get; set; } = true;
     public string Expression { get; set; } = "";
     public List<RuleTerm280> RuleTerms { get; set; } = new();
     public string SymbolExpression { get; set; } = "";
-    
+    public string TextExpression { get; init; }
 
-    public static RuleComponent280 CreateComponent(string text)
+
+    public static RuleComponent280 CreateComponent(string textExpression)
     {
         //captures terms inside brackets , takes care of inner brackets in match statements        
         //text : {t: S.28.02.01.04, r: R0210, c: C0090 ... } i+ {t: S.28.02.01.04, r: R0210, c: C0110 ...}   i>= {t: S.12.01.01.01,  fv: solvency2} i- {t: S.12.01.01.01, r: R0020, c: C0020} i+ {t: S.12.01.01.01, r: R0110,} i
@@ -28,19 +30,24 @@ public class RuleComponent280
         //=> creates the RuleTerms280
         //also checks for the i interval and marks the term as interval          
 
+        if (string.IsNullOrEmpty(textExpression))
+        {
+            return new RuleComponent280();
+        }
+
         var rgxTermi = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
 
         /////////////////////////////////////////
         //var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
         var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
-        var matches = rgxTerm.Matches(text);
+        var matches = rgxTerm.Matches(textExpression);
         if (matches is null)
         {
-            return new RuleComponent280() { Expression = text, SymbolExpression = "", RuleTerms = new List<RuleTerm280>() };
+            return new RuleComponent280() {IsEmpty=false,IsValid=false, Expression = textExpression, SymbolExpression = "", RuleTerms = new List<RuleTerm280>() };
         }
 
         var ruleTextTerms = matches.Select((match, i) => new RuleTextTerm($"X{i:D2}", match.Value)) ?? new List<RuleTextTerm>();
-        var formula = ruleTextTerms.Aggregate(text, (currentText, val) =>
+        var formula = ruleTextTerms.Aggregate(textExpression, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.TermText);
             string replacedString = currentText.Substring(0, index) + val.Letter + currentText.Substring(index + val.TermText.Length);
@@ -53,7 +60,7 @@ public class RuleComponent280
 
         formula = formula.Replace(" = ", " == ");
         
-        var rc = new RuleComponent280() { Expression = text, SymbolExpression = formula, RuleTerms = ruleTerms };
+        var rc = new RuleComponent280() {IsEmpty=false, Expression = textExpression, SymbolExpression = formula, RuleTerms = ruleTerms };
         return rc;
     }
 
