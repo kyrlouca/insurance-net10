@@ -41,6 +41,8 @@ public interface ISqlFunctions
 
     //
     public MTable? SelectTable(string tableCode);
+
+    public bool IsOpenTable(int tableId);
     public List<MTable> SelectTablesInModule280(int moduleId);
     public List<MTable> SelectTablesForValidationRule(int validationRuleId);
     //
@@ -48,8 +50,9 @@ public interface ISqlFunctions
     public List<MTableCell> SelectTableCells(int tableId);
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public TemplateSheetFact? SelectFactByRowCol(int documentId, string tableCode, string zet, string row, string col);
+    public List<TemplateSheetFact> SelectFactForAllRowsSeq(int documentId, string tableCode, string zet, string col);
 
-    
+
 
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId);
     public MDimensionModel? SelectDimensionByCode(string DomainCode, string DimensionCode);

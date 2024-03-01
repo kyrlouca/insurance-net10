@@ -61,17 +61,48 @@ public class DocumentValidator : IDocumentValidator
         //4880 matches
         //787 equality of enumaratin
         //1809 for min
+        //783 for sum
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
-        validationRules = validationRules.Where(vr => vr.ValidationID == 1809).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 783).ToList();
         foreach (var validationRule in validationRules)
         {
             var tables = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
-            //check if all the tables exist for this rule
-
+            var HasOpenTable = tables.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
+            //**check if all the tables exist for this rule??
             var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule);
-            rule = FillRuleStructureWithFactValues(rule);
-            var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+            if (!HasOpenTable)
+            {             
+                rule = FillRuleStructureWithFactValues(rule);
+                var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+            }
+            else if (HasOpenTable)
+            {
+
+
+                //if there is an open table involved and there is NO seq then start from the master
+                //-- start creating a rule for each row of the master (so you have the row )
+                //--- fill the row of the slave by using the key
+                //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
+                //--- for each row of the seq, check the filter using the row of the slave . 
+                //--- the resulting object will have both the sum and the count because the function is not known  at the time 
+                var seqTableTerm = rule.IfComponent.RuleTerms.FirstOrDefault(rt => rt.IsSequence);
+                
+                if (seqTableTerm != null)
+                {
+                    var seqTable = tables.FirstOrDefault(tb => tb.TableCode.Trim() == seqTableTerm.T.Trim());
+                    var facts = _SqlFunctions.SelectFactForAllRowsSeq(DocumentId, seqTable!.TableCode ,seqTableTerm.Z, seqTableTerm.C);
+                    foreach(var fact in facts)
+                    {
+                        var row = fact.Row;
+                        var fkKeyValue= 
+                        //now go through the filter 
+                    }
+
+                }
+                
+
+            }
 
         }
 
@@ -86,7 +117,7 @@ public class DocumentValidator : IDocumentValidator
     {
         if (fact == null)
         {
-            return new ObjectTerm280("E", 0, IsTolerance, defaultValue, true);
+            return new ObjectTerm280("E", 0, IsTolerance, defaultValue, true, new List<TemplateSheetFact>());
         }
 
 
@@ -102,14 +133,14 @@ public class DocumentValidator : IDocumentValidator
             "D" => fact.DateTimeValue,
             _ => throw new NotImplementedException()
         };
-        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, false);
+        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, false, new List<TemplateSheetFact>());
         return objTerm;
     }
 
-    //Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(RuleComponent280 ruleComponent)
     Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms)
     {
         Dictionary<string, ObjectTerm280> plainTerms = ruleTerms
+            .Where(pt => !pt.IsSequence)
             .Select(ruleTerm => new
             {
                 ruleTerm.Letter,
@@ -118,6 +149,20 @@ public class DocumentValidator : IDocumentValidator
                 ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, ruleTerm.IsTolerance)
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
+
+        Dictionary<string, ObjectTerm280> sequenceTerms = ruleTerms
+            .Where(pt => pt.IsSequence)
+            .Select(ruleTerm => new
+            {
+                ruleTerm.Letter,
+                Zet = ruleTerm.Z,
+                Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
+                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, ruleTerm.IsTolerance)
+            })
+            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
+
+
+
         return plainTerms;
     }
 

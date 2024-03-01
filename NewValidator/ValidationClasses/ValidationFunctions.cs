@@ -110,15 +110,6 @@ internal class ValidationFunctions
     }
 
 
-    public static double ValidateISum(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
-    {
-        var letter = terms[symbolFormula];
-        var xx = letter?.Obj?.ToString();
-
-        return 1.0 ;
-
-    }
-
     
 
 

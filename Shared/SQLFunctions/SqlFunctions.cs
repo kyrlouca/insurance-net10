@@ -165,7 +165,7 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-        public List<TemplateSheetFactDim> SelectFactDims(int factId)
+    public List<TemplateSheetFactDim> SelectFactDims(int factId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
@@ -476,6 +476,13 @@ public class SqlFunctions : ISqlFunctions
         return result;
     }
 
+    public bool IsOpenTable(int tableId)
+    {
+        var yOrdinatesForKeys = SelectTableAxisOrdinateInfo(tableId)
+            .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
+        return yOrdinatesForKeys.Any();
+    }
+
     public List<MTable> SelectTablesInModule280(int moduleId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -551,9 +558,32 @@ public class SqlFunctions : ISqlFunctions
                 "
         ;
 
-        var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new{documentId,tableCode,zet,row,col });
+        var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
         return fact;
     }
+
+    public List<TemplateSheetFact> SelectFactForAllRowsSeq(int documentId, string tableCode, string zet, string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+                SELECT  fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @tableCode
+                  --AND fact.ZetValues= @Zet                  
+                  AND fact.Col= @col
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, col }).ToList();
+        return facts;
+    }
+
+
 
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId)
     {
@@ -610,7 +640,7 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
-    
+
 
 
 }

@@ -1,4 +1,5 @@
-﻿using Syncfusion.XlsIO.Implementation.Collections.Grouping;
+﻿using Shared.DataModels;
+using Syncfusion.XlsIO.Implementation.Collections.Grouping;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 using System.Data;
 using System.Net.Http.Headers;
@@ -10,7 +11,7 @@ namespace NewValidator.ValidationClasses;
 public enum FunctionTypes { iMin, iMax, iSum, Max };
 public record FunctionObject(string Letter, FunctionTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
-public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj, bool IsNullFact);
+public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj, bool IsNullFact, List<TemplateSheetFact> SeqFacts);
 public record ZetTerm(string Letter, string Formula, bool IsPassed);
 public record ArTerm(string Letter, string Formula, double ValueReal, string ValueString);
 
@@ -213,7 +214,7 @@ public partial class ExpressionEvaluator
             .Select(ft =>
             {                
                 var val = EvaluateFunction(ft.FullText, terms);
-                return (ft.Letter, new ObjectTerm280("F", 0, false, val, false));
+                return (ft.Letter, new ObjectTerm280("F", 0, false, val, false,new List<TemplateSheetFact>()));
             });
 
         var allTermsx = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 9 })).ToList();
@@ -275,11 +276,10 @@ public partial class ExpressionEvaluator
             foreach (var ft in innerFunctionTerms)
             {
                 r = r.Replace(ft.Letter, ft.FullText);
-            }
-            //var innerText= 
+            }            
             var res = EvaluateArithmeticRecursively(r, terms);
-            var xx = new ObjectTerm280("F", 0, false, res, false);
-            return xx;
+            var obj = new ObjectTerm280("F", 0, false, res, false,new List<TemplateSheetFact>());
+            return obj;
         });
         var final2 = EvaluateFunctionWithComputedTerms(functionType, innerResults);//at the end =>functionType:Max and the terms are : 3, 4 
         return final2;

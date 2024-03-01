@@ -100,7 +100,7 @@ public partial class FactsDecorator : IFactsDecorator
         {            
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
 
-            table.IsOpenTable = IsOpenTable(table.TableID);
+            table.IsOpenTable = _SqlFunctions.IsOpenTable(table.TableID);
 
             //*********** Select the facts for a template and update their zetvalues, RowSignatures and currencyDimValue            
             var tableFacts = SelectFactsForTempateTable280(table);
@@ -157,14 +157,7 @@ public partial class FactsDecorator : IFactsDecorator
             _SqlFunctions.UpdateTemplateSheetName(sheet.TemplateSheetId,sheetName);
         }
 
-    }
-    private bool IsOpenTable(int tableId)
-    {        
-        var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(tableId)
-            .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
-
-        return yOrdinatesForKeys.Any();
-    }
+    }    
     private List<string> UpdateRowForOpenTables(int sheetId)
     {
         //only open tables have row signatures
