@@ -143,12 +143,12 @@ public class ValidationTermTest
     {
 
         var text = @"5 + imin(3) +imax(4)";
-        var res = ExpressionEvaluator.EvaluateArithmeticNew(text, new());
+        var res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
         Assert.Equal(12, res);
 
 
         text = @"7 + imin(imax(3,5),4)";
-        res = ExpressionEvaluator.EvaluateArithmeticNew(text, new());
+        res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
         Assert.Equal(11, res);
 
 

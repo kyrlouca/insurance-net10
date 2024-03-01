@@ -142,10 +142,10 @@ public partial class ExpressionEvaluator
                 throw new ApplicationException($"Formula cannot be split using <,>,= :{formula}");
             }
             var left = matchSplit.Groups[1].Value;
-            var resLeft = EvaluateArithmeticNew(left, terms);
+            var resLeft = EvaluateArithmeticRecursively(left, terms);
             var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
-            var resRight = EvaluateArithmeticNew(right, terms);
+            var resRight = EvaluateArithmeticRecursively(right, terms);
 
 
             var formulaLR = $"L0 {op} R0";
@@ -182,7 +182,7 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static double EvaluateArithmeticNew(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
+    public static double EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
     {
         //will create a list of functions.
         //Then, it will call evaluateFunction for each
@@ -274,7 +274,7 @@ public partial class ExpressionEvaluator
                 r = r.Replace(ft.Letter, ft.FullText);
             }
             //var innerText= 
-            var res = EvaluateArithmeticNew(r, terms);
+            var res = EvaluateArithmeticRecursively(r, terms);
             var xx = new ObjectTerm280("FI", 0, false, res, false);
             return xx;
         });

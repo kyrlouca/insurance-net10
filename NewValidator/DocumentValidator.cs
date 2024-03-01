@@ -42,7 +42,7 @@ public class DocumentValidator : IDocumentValidator
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
-        } 
+        }
         _documentInstance = doc;
 
         var module = _SqlFunctions.SelectModuleByCode(_documentInstance.ModuleCode);
@@ -70,46 +70,46 @@ public class DocumentValidator : IDocumentValidator
             //check if all the tables exist for this rule
 
             var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule);
-            rule = FillRuleStructureWithFactValues(rule);            
+            rule = FillRuleStructureWithFactValues(rule);
             var isValidRule = ExpressionEvaluator.ValidateRule(rule);
-            
+
         }
 
 
         return 1;
 
-        
+
 
     }
 
-    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact,string defaultValue,bool IsTolerance)
+    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, bool IsTolerance)
     {
         if (fact == null)
         {
-            return  new ObjectTerm280( "S", 0,  IsTolerance, defaultValue,true);
+            return new ObjectTerm280("E", 0, IsTolerance, defaultValue, true);
         }
 
 
-        object obj = fact.DataTypeUse.Trim() switch {
+        object obj = fact.DataTypeUse.Trim() switch
+        {
             "E" => fact.TextValue,
             "S" => fact.TextValue,
             "I" => fact.NumericValue,
             "M" => fact.NumericValue,
             "N" => fact.NumericValue,
             "P" => fact.NumericValue,
-            "B" => fact.BooleanValue, 
+            "B" => fact.BooleanValue,
             "D" => fact.DateTimeValue,
-            _ => throw new NotImplementedException() 
+            _ => throw new NotImplementedException()
         };
-        var objTerm= new ObjectTerm280(fact.DataTypeUse,fact.Decimals,IsTolerance, obj,false);
+        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, false);
         return objTerm;
     }
 
-
-    Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(RuleComponent280 ruleComponent)
+    //Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(RuleComponent280 ruleComponent)
+    Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms)
     {
-
-        Dictionary<string, ObjectTerm280> plainTerms = ruleComponent.RuleTerms
+        Dictionary<string, ObjectTerm280> plainTerms = ruleTerms
             .Select(ruleTerm => new
             {
                 ruleTerm.Letter,
@@ -126,16 +126,16 @@ public class DocumentValidator : IDocumentValidator
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent);    
-        ruleStructure.IfComponent.ObjectTerms= ifObjectTerms;
-        
-        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent);
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms);
+        ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
+
+        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms);
         ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
 
-        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent);
+        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms);
         ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
 
         return ruleStructure;
-        
+
     }
 }
