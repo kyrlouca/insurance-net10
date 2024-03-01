@@ -14,12 +14,12 @@ public class RuleComponent280
 {
     //Either the component of the if, else, then
 
-    public bool IsEmpty { get; set; } = true;
+    public bool IsEmpty { get; init; }
     public bool IsValid { get; set; } = true;
-    public string Expression { get; set; } = "";
+    public string Expression { get; init; } 
     public List<RuleTerm280> RuleTerms { get; set; } = new();
     public string SymbolExpression { get; set; } = "";
-    public string TextExpression { get; init; }
+    public Dictionary<string, ObjectTerm280> ObjectTerms { get; set; } = new();
 
 
     public static RuleComponent280 CreateComponent(string textExpression)
@@ -29,10 +29,11 @@ public class RuleComponent280
         //=> X01 + X02 >= X03 - X04 + X05  
         //=> creates the RuleTerms280
         //also checks for the i interval and marks the term as interval          
+        
 
         if (string.IsNullOrEmpty(textExpression))
         {
-            return new RuleComponent280();
+            return new RuleComponent280() {IsEmpty=true, Expression=textExpression};
         }
 
         var rgxTermi = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");

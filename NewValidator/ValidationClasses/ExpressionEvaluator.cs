@@ -16,14 +16,29 @@ public partial class ExpressionEvaluator
 {
     private enum BooleanOperators { None, IsAnd, IsOR };
 
-    public static bool ValidateRuleStructure(RuleStructure280 ruleStructure)
+    public static bool ValidateRule(RuleStructure280 ruleStructure280)
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-        var ifComponent = ruleStructure.IfComponent;         
-        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ifComponent);            
-        var isValidIf = ExpressionEvaluator.ValidateRuleStructure(ifComponent.SymbolExpression, ifObjectTerms);
+        var ifComponent = ruleStructure280.IfComponent;         
+        var isValidIf = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ifComponent.SymbolExpression, ifComponent.ObjectTerms);
+        return isValidIf;
 
+        if (1 == 2)
+        {
+            //var thenComponent = rule.ThenComponent;
+            //Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(thenComponent);
+            //var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(thenComponent.SymbolExpression, thenObjectTerms);
+
+            //var elseComponent = rule.ElseComponent;
+            //Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(elseComponent);
+            //var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(elseComponent.SymbolExpression, elseObjectTerms);
+
+            //var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
+            //var isCompleteRule =
+            //    ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid
+            //    || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
+        }
 
     }
 

@@ -67,28 +67,10 @@ public class DocumentValidator : IDocumentValidator
         {
             var tables = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
             //check if all the tables exist for this rule
+
             var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule);
-            //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
-            //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-            //var ifComponent = rl.IfComponent;         
-            //Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ifComponent);            
-            //var isValidIf = ExpressionEvaluator.ValidateRuleStructure(ifComponent.SymbolExpression, ifObjectTerms);
-            var isValidRule = ExpressionEvaluator.ValidateRuleStructure(rule);
-            if (1 == 2)
-            {
-                //var thenComponent = rule.ThenComponent;
-                //Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(thenComponent);
-                //var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(thenComponent.SymbolExpression, thenObjectTerms);
-
-                //var elseComponent = rule.ElseComponent;
-                //Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(elseComponent);
-                //var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(elseComponent.SymbolExpression, elseObjectTerms);
-
-                //var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
-                //var isCompleteRule =
-                //    ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid
-                //    || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
-            }
+            rule = FillRuleStructureWithFactValues(rule);            
+            var isValidRule = ExpressionEvaluator.ValidateRule(rule);
             
         }
 
@@ -122,12 +104,37 @@ public class DocumentValidator : IDocumentValidator
         return objTerm;
     }
 
-    private void RuleStructureFiller(RuleStructure280 ruleStructure)
+
+    Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(RuleComponent280 ruleComponent)
+    {
+
+        Dictionary<string, ObjectTerm280> plainTerms = ruleComponent.RuleTerms
+            .Select(ruleTerm => new
+            {
+                ruleTerm.Letter,
+                Zet = ruleTerm.Z,
+                Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
+                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, ruleTerm.IsTolerance)
+            })
+            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
+        return plainTerms;
+    }
+
+    private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-        var ifComponent = ruleStructure.IfComponent;         
-        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ifComponent);            
-        //var isValidIf = ExpressionEvaluator.ValidateRuleStructure(ifComponent.SymbolExpression, ifObjectTerms);
+
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent);    
+        ruleStructure.IfComponent.ObjectTerms= ifObjectTerms;
+        
+        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent);
+        ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
+
+        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent);
+        ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
+
+        return ruleStructure;
+        
     }
 }
