@@ -197,16 +197,16 @@ public partial class ExpressionEvaluator
         //5 +  A00  + A01
         //7 +  A00 
 
-        var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();        
-        var formulaWithSymbols = functionTerms.Aggregate(arithmeticExpression, (currentText, val) =>
-        {
-            int index = currentText.IndexOf(val.Formula);
-            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
-            return replacedString;
-        });
+        //var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();        
+        //var formulaWithSymbols = functionTerms.Aggregate(arithmeticExpression, (currentText, val) =>
+        //{
+        //    int index = currentText.IndexOf(val.Formula);
+        //    string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
+        //    return replacedString;
+        //});
 
         //the one below creates FunctionObjects, and above we create arObjects. We need to change it 
-        var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
+        var (formulaWithSymbols, functionTerms) = ToFunctionObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
 
 
 
@@ -215,7 +215,8 @@ public partial class ExpressionEvaluator
         var newObjTerms = functionTerms
             .Select(ft =>
             {
-                var val = EvaluateFunction(ft.Formula, terms);
+                //var val = EvaluateFunction(ft.Formula, terms);
+                var val = EvaluateFunction(ft., terms);
                 return (ft.Letter, new ObjectTerm280("F", 0, false, val, false));
             });
 
