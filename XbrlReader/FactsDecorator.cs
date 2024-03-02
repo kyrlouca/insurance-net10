@@ -132,13 +132,14 @@ public partial class FactsDecorator : IFactsDecorator
 
             CreateYFactsForOpenTables280(sheetsInfo);
 
-            //***********  todo update foreing keys
-            if (table.IsOpenTable)
-            {             
-                UpdateForeignKeysOfChildTablesNN();
-            }
+            
         }
-
+        //***********  update foreing keys
+        foreach(var openTable in ModuleTables.Where(tbl=>tbl.IsOpenTable))
+        {
+            UpdateForeignKeysOfChildTablesNN();
+        }
+        
         //update tableSheetNames
         UpdateTableSheetNames(moduleZets);
         Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
@@ -621,7 +622,7 @@ public partial class FactsDecorator : IFactsDecorator
 
         var sqlKyrTables = @"select * from mTableKyrKeys tk where tk.FK_TableCode is not null";
         var kyrTables = connectionEiopa.Query<MTableKyrKeys>(sqlKyrTables);//S.06.02.01.01       
-        kyrTables = kyrTables.Where(kt => kt.TableCode.Trim() == "S.06.02.01.01");
+        //kyrTables = kyrTables.Where(kt => kt.TableCode.Trim() == "S.06.02.01.01");
 
         foreach (var kyrTable in kyrTables)
         {            
@@ -633,21 +634,22 @@ public partial class FactsDecorator : IFactsDecorator
                 {
                     continue;
                 }
+                var masterFacts = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.FK_TableCode, childSeet.SheetCodeZet, kyrTable.FK_TableCol);
                 //find the single fact in each row  to get the Foreign key value 'ISIN/CAN...'
                 var childFactsWithForeignKey = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.TableCode, childSeet.SheetCodeZet, kyrTable.FK_TableCol);
-                foreach (var childRowFact in childFactsWithForeignKey)
+                foreach (var childRowKeyFact in childFactsWithForeignKey)
                 {
                     //one fact in each row has the key also present in the master table
                     //find the fact in the master table 
-                    var masterFacts = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.FK_TableCode, childSeet.SheetCodeZet, kyrTable.FK_TableCol);
-                    var masterFact = masterFacts.FirstOrDefault(fct => fct.TextValue.Trim().Equals(childRowFact.TextValue.Trim()));
+                    
+                    var masterFact = masterFacts.FirstOrDefault(fct => fct.TextValue.Trim().Equals(childRowKeyFact.TextValue.Trim()));
 
-                    var sqlUpd = @"
+                    var sqlUpdCHildFacts = @"
                                 update TemplateSheetFact set RowForeign = @RowForeign 
                                 where InstanceId= @documentId and TemplateSheetId=@TemplateSheetId and Row=@Row;
                                 ";
                     
-                    connectionLocal.Execute(sqlUpd, new { documentId = _documentId, TemplateSheetId = kyrTable.TableCode, Row= childRowFact.Row, RowForeign =masterFact.Row});
+                   connectionLocal.Execute(sqlUpdCHildFacts, new { documentId = _documentId, TemplateSheetId = childSeet.TemplateSheetId, Row= childRowKeyFact.Row, RowForeign =masterFact.Row});
                 }
             }
             

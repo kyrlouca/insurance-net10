@@ -10,17 +10,17 @@ public class ReaderMainApp : IReaderMainApp
     private readonly IParameterHandler _parameterHandler;
     private ParameterData _parameterData = new();
     private readonly ILogger _logger;
-    private readonly ISqlFunctions _SqlFunctions; 
+    private readonly ISqlFunctions _SqlFunctions;
     private readonly IFactsCreator _factsCreator;
     private readonly IFactsDecorator _factsDecorator;
 
 
     public int id = 12;
-    public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator,  IFactsDecorator factsDecorator)
+    public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator, IFactsDecorator factsDecorator)
     {
         _parameterHandler = getParameters;
         _logger = logger;
-        _SqlFunctions = sqlFunctions;        
+        _SqlFunctions = sqlFunctions;
         _factsCreator = factsCreator;
         _factsDecorator = factsDecorator;
 
@@ -29,7 +29,7 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 2;
+        var _documentId = 9;
         var filingsSubmitted = new List<string>()
         {
             "S.01.01",
@@ -49,9 +49,9 @@ public class ReaderMainApp : IReaderMainApp
         };
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
-        
 
-        var filingsSubmittedxx = new List<string>()
+
+        var filingsSubmitted3 = new List<string>()
         {
 
             "S.01.01",
@@ -66,9 +66,9 @@ public class ReaderMainApp : IReaderMainApp
             "S.28.01",
         };
 
-        if (1 ==2)
+        if (1 == 2)
         {
-            var (isHandleSuccess,handleMessage) = _factsCreator.HandleExistingDocuments();
+            var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
             {
                 _logger.Information(handleMessage);
@@ -79,17 +79,17 @@ public class ReaderMainApp : IReaderMainApp
 
         if (1 == 2)
         {
-            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
+            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)
             {
                 return 1;
             }
         }
 
-         filingsSubmitted = new List<string>()
+        var filingsSubmittedxx = new List<string>()
         {
-                
-            "S.06.02",        
+
+            "S.06.02",
         };
         if (1 == 1)
         {
@@ -97,8 +97,8 @@ public class ReaderMainApp : IReaderMainApp
             if (res != 0)
             {
                 return res;
-            }             
-        }                 
+            }
+        }
 
         _SqlFunctions.UpdateDocumentStatus(_documentId, "L");
         var message = $"Xbrl Document Loaded Successfully:DocumentId= {_documentId}";
