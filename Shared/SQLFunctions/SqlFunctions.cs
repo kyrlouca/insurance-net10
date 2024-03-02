@@ -530,7 +530,7 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public MTableKyrKeys? SelectTableKyrKeys(string tableCode)
+    public MTableKyrKeys? SelectTableKyrKey(string tableCode)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlTable = @"select * from mTableKyrKeys tk where tk.TableCode= @tableCode";
@@ -592,7 +592,7 @@ public class SqlFunctions : ISqlFunctions
         return facts;
     }
 
-    public List<TemplateSheetFact> SelectFactForAllRowsSeq(int documentId, string tableCode, string zet, string col)
+    public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelect = @"

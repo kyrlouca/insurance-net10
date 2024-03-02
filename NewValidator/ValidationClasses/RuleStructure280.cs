@@ -15,13 +15,15 @@ public class RuleStructure280
     public RuleComponent280 ThenComponent { get; init; }
     public RuleComponent280 ElseComponent { get; init; }
 
-    private RuleStructure280(string ruleFormula,  RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent)
-    {        
-        RuleFormula = ruleFormula;        
+    public RuleComponent280 FilterComponent { get; init; }
+    private RuleStructure280(string ruleFormula,  RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent, RuleComponent280 filter)
+    {
+        RuleFormula = ruleFormula;
         IfComponent = ifComponent;
         ThenComponent = thenComponent;
         ElseComponent = elseComponent;
-    }
+        FilterComponent = filter;
+     }
 
     public static (string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)
     {
@@ -50,7 +52,7 @@ public class RuleStructure280
         return res;
     }
 
-    public static RuleStructure280 CreateRuleStructure(string ruleFormula)
+    public static RuleStructure280 CreateRuleStructure(string ruleFormula,string filterFormula)
     {
         //text = """if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)""";
         //@"if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)";
@@ -60,10 +62,10 @@ public class RuleStructure280
         var ifComponent = RuleComponent280.CreateComponent(ifExpression);
         var thenComponent = RuleComponent280.CreateComponent(thenExpression);
         var elseComponent = RuleComponent280.CreateComponent(elseExpression);
+        var filter = RuleComponent280.CreateComponent(filterFormula);
 
-               
 
-        var rec = new RuleStructure280( ruleFormula, ifComponent, thenComponent, elseComponent);
+        var rec = new RuleStructure280( ruleFormula, ifComponent, thenComponent, elseComponent,filter);
         return rec;
     }
 

@@ -4,8 +4,10 @@ using Shared.DataModels;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
+using Syncfusion.XlsIO.Implementation;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -67,12 +69,12 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => vr.ValidationID == 783).ToList();
         foreach (var validationRule in validationRules)
         {
-            var tables = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
-            var HasOpenTable = tables.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
+            var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
+            var HasOpenTable = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
             //**check if all the tables exist for this rule??
-            var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule);
+            var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
             if (!HasOpenTable)
-            {             
+            {
                 rule = FillRuleStructureWithFactValues(rule);
                 var isValidRule = ExpressionEvaluator.ValidateRule(rule);
             }
@@ -87,21 +89,10 @@ public class DocumentValidator : IDocumentValidator
                 //--- for each row of the seq, check the filter using the row of the slave . 
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
                 var seqTableTerm = rule.IfComponent.RuleTerms.FirstOrDefault(rt => rt.IsSequence);
-                
                 if (seqTableTerm != null)
                 {
-                    var seqTable = tables.FirstOrDefault(tb => tb.TableCode.Trim() == seqTableTerm.T.Trim());
-                    var seqTableKey = _SqlFunctions.SelectTableKyrKeys(seqTable!.TableCode);
-                    var facts = _SqlFunctions.SelectFactForAllRowsSeq(DocumentId, seqTable!.TableCode ,seqTableTerm.Z, seqTableTerm.C);
-                    foreach(var fact in facts)
-                    {
-                        var row = fact.Row;
-                        var fkKeyValue = _SqlFunctions.SelectFactByRowCol(DocumentId, seqTable.TableCode, fact.Zet, fact.Row, seqTableKey?.FK_TableCol??"");
-                        //now go through the filter 
-                    }
-
+                    var res = CalculateSumofSequenceTerm(seqTableTerm, rule.FilterComponent);
                 }
-                
 
             }
 
@@ -109,9 +100,6 @@ public class DocumentValidator : IDocumentValidator
 
 
         return 1;
-
-
-
     }
 
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, bool IsTolerance)
@@ -141,7 +129,7 @@ public class DocumentValidator : IDocumentValidator
     Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms)
     {
         Dictionary<string, ObjectTerm280> plainTerms = ruleTerms
-            .Where(pt => !pt.IsSequence)
+            //.Where(pt => !pt.IsSequence)
             .Select(ruleTerm => new
             {
                 ruleTerm.Letter,
@@ -183,5 +171,48 @@ public class DocumentValidator : IDocumentValidator
 
         return ruleStructure;
 
+    }
+
+    private (decimal sum, int count) CalculateSumofSequenceTerm(RuleTerm280 seqTableTerm, RuleComponent280 filterComponent)
+    {
+
+        var seqTable = seqTableTerm.T;
+        var kyrTable = _SqlFunctions.SelectTableKyrKey(seqTableTerm.T);
+        var relatedTable = kyrTable?.FK_TableCode ?? "";
+        //from the sqTableTErms
+        //find the related table.
+
+        var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqTableTerm.T, seqTableTerm.Z, seqTableTerm.C); ;
+        decimal sum = 0;
+        var count = 0;
+        foreach (var fact in facts)
+        {
+            var row = fact.Row;
+            var foreignKeyRow = fact.RowForeign;
+            var isFilterValid = EvaluateFilterRow(filterComponent, relatedTable, fact.Row, fact.RowForeign);
+            if (isFilterValid)
+            {
+                sum += fact.NumericValue;
+                count++;
+            }
+        }
+        return (0, 0);
+    }
+
+
+
+    private bool EvaluateFilterRow(RuleComponent280 filterComponent,string relatedTable, string row, string foreignRow)
+    {
+        foreach (var filterTerm in filterComponent.RuleTerms)
+        {
+            filterTerm.R = filterTerm.T.Trim() == relatedTable.Trim()
+                ? foreignRow
+                : row;
+            var term = 1;          
+        }
+        Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
+        var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(filterComponent.SymbolExpression, filterTerms);
+
+        return res;
     }
 }

@@ -14,6 +14,8 @@ public class TemplateSheetFact
     public string Row { get; set; }
     public string Col { get; set; }
     public string Zet { get; set; }
+    public string RowForeign { get; set; }
+    
     public int InternalRow { get; set; }
     public int InternalCol { get; set; }
     public string DataPointSignature { get; set; }

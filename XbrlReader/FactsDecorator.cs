@@ -661,40 +661,6 @@ public partial class FactsDecorator : IFactsDecorator
         }
 
     }
-    private int UpdateFactsWithMasterRowNN(int childSheetId, int parentSheedId, string commonCol)
-    {
-        //update the RowForeign of the main table with the row of a related table.
-        //For example, S.06.02.01.01 has links with S.06.02.01.02 on the "UI" dim. (SEVERAL rows of S.06.02.01.01 may correspond to a row of S.06.02.01.02 ** checked and true)       
-        //  Therefore, each cell of the S.06.02.01 has a rowForeign which points to a cell of S.06.02.01.02        
-        //  ---------------------------------------------------------------------------------------------        
-
-        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-
-        //the sql will update ALL the columns of the child table 
-        var sqlUpdate = @"
-                WITH jq AS (
-                SELECT child.Row AS child_row, parent.TextValue AS key_value, parent.Row AS parent_row
-                    FROM TemplateSheetFact child
-                    LEFT OUTER JOIN TemplateSheetFact parent ON parent.TextValue=child.TextValue
-                  WHERE child.InstanceId=@docId
-                  AND child.TemplateSheetId=@child
-                  AND child.Col=@commonCol
-                  AND parent.InstanceId=@docId
-                  AND parent.TemplateSheetId=@parent
-                  AND parent.Col=@commonCol
-                )
-                UPDATE TemplateSheetFact
-                SET RowForeign= jq.parent_row
-                FROM TemplateSheetFact fact
-                  JOIN jq ON fact.Row= jq.child_row
-                WHERE InstanceId=@docId
-                AND TemplateSheetId=@child
-                -- ALL the cols in the UPDATE not just the commonCol
-            ";
-        var count = connectionLocal.Execute(sqlUpdate, new { docId = _documentId, child = childSheetId, parent = parentSheedId, commonCol });
-        return count;
-
-    }
-
+    
 
 }

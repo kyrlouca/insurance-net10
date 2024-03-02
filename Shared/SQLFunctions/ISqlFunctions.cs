@@ -49,11 +49,11 @@ public interface ISqlFunctions
 
     public List<MTableCell> SelectTableCells(int tableId);
 
-    public MTableKyrKeys? SelectTableKyrKeys(string tableCode);
+    public MTableKyrKeys? SelectTableKyrKey(string tableCode);
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet, string col);
     public TemplateSheetFact? SelectFactByRowCol(int documentId, string tableCode, string zet, string row, string col);
-    public List<TemplateSheetFact> SelectFactForAllRowsSeq(int documentId, string tableCode, string zet, string col);
+    public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col);
 
 
 
