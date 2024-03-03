@@ -75,12 +75,10 @@ public class DocumentValidator : IDocumentValidator
             var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
             if (!HasOpenTable)
             {
-                rule = FillRuleStructureWithFactValues(rule);
-                var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+                rule = FillRuleStructureWithFactValues(rule);             
             }
             else if (HasOpenTable)
             {
-
 
                 //if there is an open table involved and there is NO seq then start from the master
                 //-- start creating a rule for each row of the master (so you have the row )
@@ -88,18 +86,40 @@ public class DocumentValidator : IDocumentValidator
                 //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
                 //--- for each row of the seq, check the filter using the row of the slave . 
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
-                var seqTableTerm = rule.IfComponent.RuleTerms.FirstOrDefault(rt => rt.IsSequence);
-                if (seqTableTerm != null)
+
+                rule = FillRuleStructureWithFactValues(rule);
+                var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);
+                foreach(var ifSeqTerm in ifSeqTerms)
                 {
-                    var res = CalculateSumofSequenceTerm(seqTableTerm, rule.FilterComponent);
+                    var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
+                    ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, sum);                    
                 }
+                var thenSeqTerms = rule.ThenComponent.RuleTerms.Where(rt => rt.IsSequence);
+                foreach (var thenSeqTerm in thenSeqTerms)
+                {
+                    var res = CalculateSumofSequenceTerm(thenSeqTerm, rule.FilterComponent);
+                    ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, res.sum);
+                }
+                var isValidRule = ExpressionEvaluator.ValidateRule(rule);
 
             }
 
         }
 
-
         return 1;
+        
+        ObjectTerm280 ReplaceObjTerm(Dictionary<string,ObjectTerm280> objTerms, string objKey, object value)
+        {
+            //var objTerm = rule.IfComponent.ObjectTerms[ifSeqTerm.Letter];
+            var objTerm = objTerms[objKey];
+            var newObjTerm = objTerm with { Obj = value };
+            objTerms.Remove(objKey);
+            objTerms.Add(objKey, newObjTerm);
+            return newObjTerm;
+        }
+        
+
+        
     }
 
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, bool IsTolerance)
@@ -210,9 +230,20 @@ public class DocumentValidator : IDocumentValidator
                 : row;
             var term = 1;          
         }
-        Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
-        var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(filterComponent.SymbolExpression, filterTerms);
-
-        return res;
+        try
+        {
+            Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
+            if (filterTerms.Any())
+            {
+                var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(filterComponent.SymbolExpression, filterTerms);
+                return res;
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"EvaluateFilterRow : relatedTable:{relatedTable} row:{row} foreignRow:{foreignRow} ---- {ex}");
+        }
+        
     }
 }

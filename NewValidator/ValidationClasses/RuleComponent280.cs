@@ -13,6 +13,10 @@ public record RuleTextTerm(string Letter, string TermText);
 public class RuleComponent280
 {
     //Either the component of the if, else, then
+    //It has the original Expression and the symbolExpression X01 + X02 >= X03 - X04 + X05  
+    //it has a list of RuleTerms {t: S.28.02.01.04, r: R0210, c: C0090 ... }
+    //it has a Dictionary of ObjectTerms which correspond to each ruleTerm but they get the value from the fact (or from the sum/count if the ruleterm is seq:true)
+    //The key of each objectTerm is the same as the letter of the corresponding RuleTerm
 
     public bool IsEmpty { get; init; }
     public bool IsValid { get; set; } = true;
