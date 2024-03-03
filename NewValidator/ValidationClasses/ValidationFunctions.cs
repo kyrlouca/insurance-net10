@@ -83,8 +83,9 @@ internal class ValidationFunctions
             var term = terms[matchTersm.Value];
             if (term.ObjectType == "E")
             {
-                symbolFormula = symbolFormula.Replace("[", "\"");
-                symbolFormula= symbolFormula.Replace("]", "\"");
+                //todo is this right??
+                //symbolFormula = symbolFormula.Replace("[", "\"");
+                //symbolFormula= symbolFormula.Replace("]", "\"");
             }
             
         }

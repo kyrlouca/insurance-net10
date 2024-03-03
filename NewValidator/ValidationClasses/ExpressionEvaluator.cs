@@ -138,24 +138,35 @@ public partial class ExpressionEvaluator
 
         if (termOperator == BooleanOperators.None)
         {
-            var regSplit = new Regex(@"(.+)(>|>=|<|<=|=)(.+)");
+            var regSplit = new Regex(@"(.+?)\s*(>=|>|<=|<|==|=)\s*(.+)");
+            var xxx = regSplit.Split(formula);
             var matchSplit = regSplit.Match(formula);
             if (!matchSplit.Success)
             {
                 throw new ApplicationException($"Formula cannot be split using <,>,= :{formula}");
             }
             var left = matchSplit.Groups[1].Value;
-            var resLeft = EvaluateArithmeticRecursively(left, terms);
             var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
-            var resRight = EvaluateArithmeticRecursively(right, terms);
+
+            var isExpressionWithStrings = terms.Any(t => t.Value.ObjectType == "S");
+            if (isExpressionWithStrings)
+            {
+                var resStr = EvaluateSimpleString(formula, terms);
+                return resStr;                
+            }
+
+            
+            var resLeftDbl = isExpressionWithStrings? 0: EvaluateArithmeticRecursively(left, terms);            
+            var resRightDbl = isExpressionWithStrings? 0: EvaluateArithmeticRecursively(right, terms);
+            
 
 
             var formulaLR = $"L0 {op} R0";
             var formulaLRObjects = new Dictionary<string, object>
             {
-                { "L0", resLeft },
-                { "R0", resRight }
+                { "L0",  resLeftDbl },
+                { "R0",  resRightDbl }
             };
             var res = Eval.Execute<bool>(formulaLR, formulaLRObjects);
             return res;
@@ -217,9 +228,11 @@ public partial class ExpressionEvaluator
                 return (ft.Letter, new ObjectTerm280("F", 0, false, val, false,new List<TemplateSheetFact>()));
             });
 
-        var allTermsx = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 9 })).ToList();
-        allTermsx.AddRange(newObjTerms);
-        var allObjectsDic = allTermsx.ToDictionary(x => x.Key, x => x.Item2);
+        var allTerms = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 9 })).ToList();        
+        allTerms.AddRange(newObjTerms);        
+        var allObjectsDic = allTerms.ToDictionary(x => x.Key, x => x.Item2);
+               
+
         var val = EvaluateSimpleArithmetic(formulaWithSymbols, allObjectsDic);
 
         return val;
@@ -335,6 +348,23 @@ public partial class ExpressionEvaluator
             var result = type==typeof(string) ? Convert.ToDouble(obj) : obj;
             return result;
         }
+
+    }
+
+    public static bool EvaluateSimpleString(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    {
+        var rgxTerm = new Regex(@"([XA]\d\d)");
+        var matchTersm = rgxTerm.Match(symbolFormula);
+
+        var rgxEnum = new Regex(@"\[(.*?)\]");        
+        string cleanFormula = rgxEnum.Replace(symbolFormula, match => $"\"{match.Groups[1].Value}\"");        
+        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item =>  item.Value.Obj );
+               
+
+        var result = Eval.Execute<bool>(cleanFormula, plainObjects);
+        return result;        
+
+                
 
     }
 
