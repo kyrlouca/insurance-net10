@@ -206,14 +206,7 @@ public partial class ExpressionEvaluator
         // imin(imax(X01, 0) i* 0.25, X02) 
         var rgxTerm = RgxAggregateFunctions(); //"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var matchFunctions = rgxTerm.Matches(arithmeticExpression);
-
-        //var functionTerms = matchFunctions.Select((match, i) => new ArTerm($"A{i:D2}", match.Value, 0, "")) ?? new List<ArTerm>();        
-        //var formulaWithSymbols = functionTerms.Aggregate(arithmeticExpression, (currentText, val) =>
-        //{
-        //    int index = currentText.IndexOf(val.Formula);
-        //    string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
-        //    return replacedString;
-        //});
+        
 
         //5 +  A00  + A01
         //7 +  A00 

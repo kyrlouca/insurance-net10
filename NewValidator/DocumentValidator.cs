@@ -196,7 +196,7 @@ public class DocumentValidator : IDocumentValidator
                 count++;
             }
         }
-        return (0, 0);
+        return (sum, count);
     }
 
 
