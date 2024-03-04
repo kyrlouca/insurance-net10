@@ -112,7 +112,7 @@ public class DocumentValidator : IDocumentValidator
         {
             //var objTerm = rule.IfComponent.ObjectTerms[ifSeqTerm.Letter];
             var objTerm = objTerms[objKey];
-            var newObjTerm = objTerm with { Obj = value };
+            var newObjTerm = objTerm with { Obj = value,ObjectType="N" };
             objTerms.Remove(objKey);
             objTerms.Add(objKey, newObjTerm);
             return newObjTerm;

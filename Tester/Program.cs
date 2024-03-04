@@ -6,8 +6,13 @@ using NewValidator.ValidationClasses;
 
 
 
+var left = 22.1;
+var leftDecimals = 2;
+var x2x = 1 / Math.Pow(10, leftDecimals) / 2;
+var rightSide = (left + 1 / Math.Pow(10, leftDecimals) / 2);
 
-var zz1 = RuleComponent280.CreateComponent("a");
+var xminus3 = 1 / Math.Pow(10, -3) / 2;
+//var zz1 = RuleComponent280.CreateComponent("a");
 
 return;
 
