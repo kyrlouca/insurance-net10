@@ -157,8 +157,8 @@ public partial class ExpressionEvaluator
             }
 
             
-            var resLeftDbl = isExpressionWithStrings? 0: EvaluateArithmeticRecursively(left, terms);            
-            var resRightDbl = isExpressionWithStrings? 0: EvaluateArithmeticRecursively(right, terms);
+            var resLeftDbl =  EvaluateArithmeticRecursively(left, terms);            
+            var resRightDbl = EvaluateArithmeticRecursively(right, terms);
             
 
 
@@ -307,8 +307,8 @@ public partial class ExpressionEvaluator
                 return Convert.ToDouble(max);
 
             case FunctionTypes.iSum:
-                return 0;
-            default: return 0;
+                return Convert.ToDouble(terms.FirstOrDefault()?.Obj??0);
+            default:   return 0;
 
 
         }
