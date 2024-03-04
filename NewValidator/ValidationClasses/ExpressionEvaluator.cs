@@ -156,20 +156,16 @@ public partial class ExpressionEvaluator
                 return resStr;                
             }
 
-            
+            var leftDecimals = terms.ContainsKey(left) ? terms[left].Decimals : 0;
+            var rightDecimals = terms.ContainsKey(right) ? terms[right].Decimals : 0;
+
             var resLeftDbl =  EvaluateArithmeticRecursively(left, terms);            
             var resRightDbl = EvaluateArithmeticRecursively(right, terms);
+
+            var intervalResult= IntervalFunctions.IsIntervalExpressionValid(op, resLeftDbl,leftDecimals,resRightDbl,rightDecimals);
+
             
-
-
-            var formulaLR = $"L0 {op} R0";
-            var formulaLRObjects = new Dictionary<string, object>
-            {
-                { "L0",  resLeftDbl },
-                { "R0",  resRightDbl }
-            };
-            var res = Eval.Execute<bool>(formulaLR, formulaLRObjects);
-            return res;
+            return intervalResult;
         }
 
         if (termOperator == BooleanOperators.IsAnd)
