@@ -64,6 +64,7 @@ public class DocumentValidator : IDocumentValidator
         //787 equality of enumaratin
         //1809 for min
         //783 for sum
+        //1809 for max and sequence
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
         validationRules = validationRules.Where(vr => vr.ValidationID == 783).ToList();
@@ -88,31 +89,41 @@ public class DocumentValidator : IDocumentValidator
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
 
                 rule = FillRuleStructureWithFactValues(rule);
-                var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);
-                foreach(var ifSeqTerm in ifSeqTerms)
+                
+                var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);                              
+                var hasAggregateFunction = new[] {"sum","count"}.Any(f=>rule.RuleFormula.Contains(f));
+                if (ifSeqTerms.Any() && hasAggregateFunction)
                 {
-                    var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
-                    ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, sum);                    
-                }
-                var thenSeqTerms = rule.ThenComponent.RuleTerms.Where(rt => rt.IsSequence);
-                foreach (var thenSeqTerm in thenSeqTerms)
-                {
-                    var res = CalculateSumofSequenceTerm(thenSeqTerm, rule.FilterComponent);
-                    ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, res.sum);
-                }
-                var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+                    foreach (var ifSeqTerm in ifSeqTerms)
+                    {
+                        var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
+                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, sum,sum,count);
+                    }
 
+                    var thenSeqTerms = rule.ThenComponent.RuleTerms.Where(rt => rt.IsSequence);
+                    foreach (var thenSeqTerm in thenSeqTerms)
+                    {
+                        var res = CalculateSumofSequenceTerm(thenSeqTerm, rule.FilterComponent);
+                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, res.sum,res.sum,res.count);
+                    }
+                    var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+                }
+                else
+                {
+
+                }
+                
             }
 
         }
 
         return 1;
         
-        ObjectTerm280 ReplaceObjTerm(Dictionary<string,ObjectTerm280> objTerms, string objKey, object value)
+        ObjectTerm280 ReplaceObjTerm(Dictionary<string,ObjectTerm280> objTerms, string objKey, decimal sum, int count )
         {
             //var objTerm = rule.IfComponent.ObjectTerms[ifSeqTerm.Letter];
             var objTerm = objTerms[objKey];
-            var newObjTerm = objTerm with { Obj = value };
+            var newObjTerm = objTerm with { Obj = sum,sumValue= Convert.ToDouble( sum),countValue=count };
             objTerms.Remove(objKey);
             objTerms.Add(objKey, newObjTerm);
             return newObjTerm;
@@ -122,11 +133,11 @@ public class DocumentValidator : IDocumentValidator
         
     }
 
-    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, bool IsTolerance)
+    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue,double sumValue,int countValue, bool IsTolerance)
     {
         if (fact == null)
         {
-            return new ObjectTerm280("E", 0, IsTolerance, defaultValue, true, new List<TemplateSheetFact>());
+            return new ObjectTerm280("E", 0, IsTolerance, defaultValue,0,0, true);
         }
 
 
@@ -142,7 +153,7 @@ public class DocumentValidator : IDocumentValidator
             "D" => fact.DateTimeValue,
             _ => throw new NotImplementedException()
         };
-        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, false, new List<TemplateSheetFact>());
+        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue,countValue, false);
         return objTerm;
     }
 
@@ -155,21 +166,11 @@ public class DocumentValidator : IDocumentValidator
                 ruleTerm.Letter,
                 Zet = ruleTerm.Z,
                 Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, ruleTerm.IsTolerance)
+                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv,0,0, ruleTerm.IsTolerance)
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
 
-        Dictionary<string, ObjectTerm280> sequenceTerms = ruleTerms
-            .Where(pt => pt.IsSequence)
-            .Select(ruleTerm => new
-            {
-                ruleTerm.Letter,
-                Zet = ruleTerm.Z,
-                Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, ruleTerm.IsTolerance)
-            })
-            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
-
+      
 
 
         return plainTerms;
@@ -218,8 +219,6 @@ public class DocumentValidator : IDocumentValidator
         }
         return (sum, count);
     }
-
-
 
     private bool EvaluateFilterRow(RuleComponent280 filterComponent,string relatedTable, string row, string foreignRow)
     {
