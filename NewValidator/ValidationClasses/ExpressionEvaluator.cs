@@ -264,27 +264,42 @@ public partial class ExpressionEvaluator
         var matchFn = rgxSingleFunction.Match(functionText);
         if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
 
-
+        //Function Content
+        //Evaluate each term of the function CONTENT (arguments) and then the function.
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
-        // the function contents is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02
-        // *** I have a trick here
-        // *** need to split the expressions but it is difficult because inside the functions there are commas also
-        // *** so replace the functions with letters to be able to split with comma and then replace the letters with function text again
+        // the function contents is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02 and => two expressions: imax(X01, 0) * 0.25  AND   X02
+        // the proper solution would be to split each expression, call the arithmetic evaluater for each but due to commas inside functions, I cannot do the split
+        // *** So I do this  trick. Replace the functions inside the function with terms ("F") to do the split and then back to their value        
+        // *** in, call each function EvaluateFunctionWithComputedTerms since all the function terms were computed
+        //---
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
-        var innerResults = innerArguments.Select(r =>
+        var innerFunctionArguments = innerArguments.Select(argSplit =>
         {
+            //here, we are processing each inner term (which are expressions) of the function. For example , x2+3, or even max(x3)+3
+            //When all the inner terms are evaluated, we will evalueate the actual function
+            //for isum and icount do not recurse 
             foreach (var ft in innerFunctionTerms)
             {
-                r = r.Replace(ft.Letter, ft.FullText);
+                //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
+                argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
-            var res = EvaluateArithmeticRecursively(r, terms);
+            //if isum or icount do not recurse. you just need to keep the value of the old terms which has the sum and count
+            //return the same term 
+            //they should only have one term
+            if (functionType== FunctionAggregateTypes.iSum || functionType== FunctionAggregateTypes.iCount)
+            {
+                var sameObj = terms.FirstOrDefault(tr=>tr.Key==functionContent).Value;
+                var objc = new ObjectTerm280("F", 0, false, sameObj.Obj, sameObj.sumValue, sameObj.countValue, false);
+                return objc;
+            }
+            var res = EvaluateArithmeticRecursively(argSplit, terms);            
             var obj = new ObjectTerm280("F", 0, false, res,0,0, false);
             return obj;
         });
-        var final2 = EvaluateFunctionWithComputedTerms(functionType, innerResults);//at the end =>functionType:Max and the terms are : 3, 4 
+        var final2 = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
         return final2;
         //*****************************************
 
