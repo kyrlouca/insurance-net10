@@ -98,14 +98,14 @@ public class DocumentValidator : IDocumentValidator
                     {
                         var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
                         // ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, sum);                    
-                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, sum,sum,count);
+                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, -999,sum,count);
                     }
 
                     var thenSeqTerms = rule.ThenComponent.RuleTerms.Where(rt => rt.IsSequence);
                     foreach (var thenSeqTerm in thenSeqTerms)
                     {
                         var res = CalculateSumofSequenceTerm(thenSeqTerm, rule.FilterComponent);
-                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, res.sum,res.sum,res.count);
+                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, -999,res.sum,res.count);
                     }
                     var isValidRule = ExpressionEvaluator.ValidateRule(rule);
                 }
@@ -119,10 +119,11 @@ public class DocumentValidator : IDocumentValidator
         }
 
         return 1;
+
         
-        ObjectTerm280 ReplaceObjTerm(Dictionary<string,ObjectTerm280> objTerms, string objKey, decimal sum, int count )
+        ObjectTerm280 ReplaceObjTerm(Dictionary<string,ObjectTerm280> objTerms, string objKey,object value, decimal sum, int count )
         {
-            //var objTerm = rule.IfComponent.ObjectTerms[ifSeqTerm.Letter];
+            //maybe I need to set obj to zero instead of sum
             var objTerm = objTerms[objKey];
             var newObjTerm = objTerm with { Obj = sum,sumValue= Convert.ToDouble( sum),countValue=count };
             objTerms.Remove(objKey);

@@ -209,7 +209,7 @@ public partial class ExpressionEvaluator
         //7 +  A00 
         var (formulaWithSymbols, functionObjects) = ToFunctionObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
 
-        formulaWithSymbols = ReplaceIntervalOperators(formulaWithSymbols);
+        formulaWithSymbols = ReplaceIntervalCharacters(formulaWithSymbols);
 
         var newObjTerms = functionObjects
             .Select(ft =>
@@ -218,7 +218,7 @@ public partial class ExpressionEvaluator
                 return (ft.Letter, new ObjectTerm280("F", 0, false, val,0,0, false));
             });
 
-        var allTerms = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 9 })).ToList();
+        var allTerms = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 0 })).ToList();
         allTerms.AddRange(newObjTerms);
         var allObjectsDic = allTerms.ToDictionary(x => x.Key, x => x.Item2);
 
@@ -228,7 +228,7 @@ public partial class ExpressionEvaluator
         return val;
     }
 
-    static string ReplaceIntervalOperators(string input)
+    static string ReplaceIntervalCharacters(string input)
     {
         // imin(imax(X01, 0) i* 0.25, X02) =>// imin(imax(X01, 0) * 0.25, X02) 
         // Define the regular expressions
@@ -257,7 +257,7 @@ public partial class ExpressionEvaluator
 
         //string[] functionsSupported = { "imin", "imax", "isum", "icount", "max" };
 
-        functionText = ReplaceIntervalOperators(functionText);
+        functionText = ReplaceIntervalCharacters(functionText);
         var rgxSingleFunction = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         functionText = functionText.Trim();
 
@@ -293,6 +293,7 @@ public partial class ExpressionEvaluator
 
     static double EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ObjectTerm280> terms)
     {
+        
         switch (functionType)
         {
             case FunctionAggregateTypes.iMin:
@@ -302,11 +303,11 @@ public partial class ExpressionEvaluator
             case FunctionAggregateTypes.iMax:
                 var max = terms.Max(item => item.Obj);
                 return Convert.ToDouble(max);
-
             case FunctionAggregateTypes.iSum:
-                return Convert.ToDouble(terms.FirstOrDefault()?.Obj ?? 0);
+                //there is only ONE terms inside a isum/icount so no worries
+                return Convert.ToDouble(terms.FirstOrDefault()?.sumValue ?? 0);
             case FunctionAggregateTypes.iCount:
-                return -999;
+                return Convert.ToDouble(terms.FirstOrDefault()?.countValue ?? 0);
             default: return 0;
 
 
@@ -373,7 +374,7 @@ public partial class ExpressionEvaluator
             return replacedString;
         });
 
-        return (contentFormulaWithSymbols, nestedFunctions);
+         return (contentFormulaWithSymbols, nestedFunctions);
     }
 
 
