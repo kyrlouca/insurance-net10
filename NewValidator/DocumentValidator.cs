@@ -97,6 +97,7 @@ public class DocumentValidator : IDocumentValidator
                     foreach (var ifSeqTerm in ifSeqTerms)
                     {
                         var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
+                        // ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, sum);                    
                         ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, sum,sum,count);
                     }
 
