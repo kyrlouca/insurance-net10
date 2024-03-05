@@ -101,7 +101,7 @@ public class SqlFunctions : ISqlFunctions
         var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
     }
 
-    public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet)
+    public TemplateSheetInstance? SelectTemplateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"
@@ -117,7 +117,7 @@ public class SqlFunctions : ISqlFunctions
         return sheet;
     }
 
-    public List<TemplateSheetInstance> SelectTempateSheetByTableCodeAllZets(int documentId, string tableCode)    
+    public List<TemplateSheetInstance> SelectTemplateSheetByTableCodeAllZets(int documentId, string tableCode)    
     {
         //assume that for this tableCode there is only one sheet with or withoutzet  
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -132,7 +132,7 @@ public class SqlFunctions : ISqlFunctions
         var sheet = connectionLocal.Query<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode }).ToList();
         return sheet;
     }
-    public List<TemplateSheetInstance> SelectTempateSheets(int documentId)
+    public List<TemplateSheetInstance> SelectTemplateSheets(int documentId)
     {
 
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -149,7 +149,7 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
-    public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId, int tableId)
+    public List<TemplateSheetInstance> SelectTemplateSheetsByTableId(int documentId, int tableId)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"Select * from TemplateSheetInstance sheet where sheet.InstanceId= @documentId and sheet.TableID= @tableId";
@@ -570,6 +570,29 @@ public class SqlFunctions : ISqlFunctions
         return fact;
     }
 
+
+    public TemplateSheetFact? SelectFactByRowCol(int documentId, int sheetId,  string row, string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TemplateSheetId=@sheetId
+                  AND fact.Row= @Row
+                  AND fact.Col= @Col
+                "
+        ;
+
+        var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { documentId, sheetId, row, col });
+        return fact;
+    }
+
+
     public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet,  string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -592,6 +615,8 @@ public class SqlFunctions : ISqlFunctions
         return facts;
     }
 
+    
+
     public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -610,6 +635,24 @@ public class SqlFunctions : ISqlFunctions
                 "
         ;
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, col }).ToList();
+        return facts;
+    }
+
+    public List<string> SelectDistinctRowsInSheet(int documentId, int sheetId)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+                SELECT  distinct fact.Row
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TemplateSheetId=@sheetId    
+                ORDER BY fact.Row
+                ";
+        var facts = connectionLocal.Query<string>(sqlSelect, new { documentId, sheetId }).ToList();
         return facts;
     }
 

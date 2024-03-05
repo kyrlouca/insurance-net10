@@ -10,22 +10,30 @@ public interface ISqlFunctions
 {
     public void CreateTransactionLog(MessageType messageType, string message);
     DocInstance? SelectDocInstance(int documentId);
+    public void UpdateDocumentStatus(int documentId, string status);
     public IEnumerable<DocInstance> SelectDocInstances(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
-
-    public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId,string tableCode, string sheetCodeZet);
-    public List<TemplateSheetInstance> SelectTempateSheetByTableCodeAllZets(int documentId, string tableCode);
-
-    List<TemplateSheetInstance> SelectTempateSheets(int documentId);
-    public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId, int tableId);
-    public void UpdateTemplateSheetName(int templateSheetId, string sheetTabName);
     public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
+    //**********sheets
+    public TemplateSheetInstance? SelectTemplateSheetBySheetCodeZet(int documentId,string tableCode, string sheetCodeZet);
+    public List<TemplateSheetInstance> SelectTemplateSheetByTableCodeAllZets(int documentId, string tableCode);
+
+    List<TemplateSheetInstance> SelectTemplateSheets(int documentId);
+    public List<TemplateSheetInstance> SelectTemplateSheetsByTableId(int documentId, int tableId);
+    public void UpdateTemplateSheetName(int templateSheetId, string sheetTabName);
+    //*********facts
+    public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
+    public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet, string col);
+    public TemplateSheetFact? SelectFactByRowCol(int documentId, string tableCode, string zet, string row, string col);
+    public TemplateSheetFact? SelectFactByRowCol(int documentId, int sheetId, string row, string col);
+    public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col);
+    
+    public List<string> SelectDistinctRowsInSheet(int documentId, int sheetId);
+
+
     public List<TemplateSheetFactDim> SelectFactDims(int factId);
     MModule? SelectModuleByCode(string moduleCode);
 
-    public void UpdateDocumentStatus(int documentId, string status);
-    public MMember? SelectMMember(string domainString);
-  
-  
+    public MMember? SelectMMember(string domainString);   
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mapping);
     public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
@@ -50,12 +58,7 @@ public interface ISqlFunctions
     public List<MTableCell> SelectTableCells(int tableId);
 
     public MTableKyrKeys? SelectTableKyrKey(string tableCode);
-    public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
-    public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet, string col);
-    public TemplateSheetFact? SelectFactByRowCol(int documentId, string tableCode, string zet, string row, string col);
-    public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col);
-
-
+    
 
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId);
     public MDimensionModel? SelectDimensionByCode(string DomainCode, string DimensionCode);

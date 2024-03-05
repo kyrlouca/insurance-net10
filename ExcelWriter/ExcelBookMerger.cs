@@ -285,8 +285,8 @@ public class ExcelBookMerger : IExcelBookMerger
     private SheetExtensiveInfo CreateSheetExtensiveInfo(string tableCode, string sheetCodeZet, bool isZetImportant)
     {
         var dbSheet = isZetImportant
-            ? _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, tableCode, sheetCodeZet)
-            : _SqlFunctions.SelectTempateSheetByTableCodeAllZets(_documentId, tableCode).FirstOrDefault();
+            ? _SqlFunctions.SelectTemplateSheetBySheetCodeZet(_documentId, tableCode, sheetCodeZet)
+            : _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode).FirstOrDefault();
 
         var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";

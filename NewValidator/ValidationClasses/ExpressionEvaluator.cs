@@ -265,17 +265,15 @@ public partial class ExpressionEvaluator
         var matchFn = rgxSingleFunction.Match(functionText);
         if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
 
-        //Function Content
-        //Evaluate each term of the function CONTENT (arguments) and then the function.
-        var functionContent = matchFn.Groups[2].Value;
-        var functionType = ToFunctionType(matchFn.Groups[1].Value);
         // the function CONTENT is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02 and => two expressions: imax(X01, 0) * 0.25  AND   X02
         // 1. Split the terms inside the function 
         // --the proper solution would be to split each expression, call the arithmeticExpressionEvaluator for each BUT due to commas inside functions, I cannot do the split
         // *** So I do this  trick. Replace the functions inside the function with terms ("F") to do the split and then back to their value        
         // 2.Evalueate each function term
         // 3.Finally, call  EvaluateFunctionWithComputedTerms since all the function terms were computed
-        //---
+
+        var functionContent = matchFn.Groups[2].Value;
+        var functionType = ToFunctionType(matchFn.Groups[1].Value);
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
@@ -289,8 +287,7 @@ public partial class ExpressionEvaluator
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
                 argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
-            //if isum or icount do not recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count
-            //return their initial term             
+            //if isum or icount do NOT recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count            
             if (functionType== FunctionAggregateTypes.iSum || functionType== FunctionAggregateTypes.iCount)
             {
                 var sameObj = terms.FirstOrDefault(tr=>tr.Key==functionContent).Value;                
@@ -302,9 +299,7 @@ public partial class ExpressionEvaluator
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
         return finalFunctionValue;
-        //*****************************************
-
-
+        
     }
 
     static double EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ObjectTerm280> terms)

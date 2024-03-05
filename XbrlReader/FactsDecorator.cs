@@ -151,7 +151,7 @@ public partial class FactsDecorator : IFactsDecorator
     {
         //since excel tabsheet names cannot exceed 30 characters, map each table zet to a unique number
         var uniqueModuleZets = ModuleZets.Distinct().ToList();
-        var sheets = _SqlFunctions.SelectTempateSheets(_documentId);
+        var sheets = _SqlFunctions.SelectTemplateSheets(_documentId);
         foreach(var sheet in sheets)
         {            
             var idx = uniqueModuleZets.IndexOf(sheet.SheetCodeZet);
@@ -626,10 +626,10 @@ public partial class FactsDecorator : IFactsDecorator
 
         foreach (var kyrTable in kyrTables)
         {            
-            var childSheets = _SqlFunctions.SelectTempateSheetByTableCodeAllZets(_documentId, kyrTable.TableCode);
+            var childSheets = _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, kyrTable.TableCode);
             foreach (var childSeet in childSheets)
             {
-                var masterSheet= _SqlFunctions.SelectTempateSheetBySheetCodeZet(_documentId, kyrTable.TableCode,childSeet.SheetCodeZet);
+                var masterSheet= _SqlFunctions.SelectTemplateSheetBySheetCodeZet(_documentId, kyrTable.TableCode,childSeet.SheetCodeZet);
                 if(masterSheet is null)
                 {
                     continue;

@@ -103,7 +103,7 @@ public class ExcelBookCreator : IExcelBookWriter
             
             if (table is null)
                 continue;
-            var sheetsIndb = _SqlFunctions.SelectTempateSheetsByTableId(_documentId, table.TableID);
+            var sheetsIndb = _SqlFunctions.SelectTemplateSheetsByTableId(_documentId, table.TableID);
             foreach (var sheetDb in sheetsIndb)
             {
                 var originSheet = _originWorkbook.Worksheets[table.TableCode.Trim()];

@@ -4,6 +4,7 @@ using Shared.DataModels;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
+using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation;
 using System;
 using System.Collections.Generic;
@@ -65,24 +66,26 @@ public class DocumentValidator : IDocumentValidator
         //1809 for min
         //783 for sum
         //1809 for max and sequence
+        //702 dim
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
-        validationRules = validationRules.Where(vr => vr.ValidationID == 783).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 702).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
             var HasOpenTable = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
             //**check if all the tables exist for this rule??
-            var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
+            
             if (!HasOpenTable)
             {
-                rule = FillRuleStructureWithFactValues(rule);             
+                var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
+                ruleClosed = FillRuleStructureWithFactValues(ruleClosed);             
             }
             else if (HasOpenTable)
             {
-
+                var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
                 //if there is an open table involved and there is NO seq then start from the master
-                //-- start creating a rule for each row of the master (so you have the row )
+                //--  create a rule for each row of the m aster (so you have the row )
                 //--- fill the row of the slave by using the key
                 //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
                 //--- for each row of the seq, check the filter using the row of the slave . 
@@ -108,9 +111,45 @@ public class DocumentValidator : IDocumentValidator
                         ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, -999,res.sum,res.count);
                     }
                     var isValidRule = ExpressionEvaluator.ValidateRule(rule);
-                }
-                else
+                };
+                
+                if (!ifSeqTerms.Any() )
                 {
+                    
+                    var slaveTbl = tablesInValidation.FirstOrDefault(tbl=> _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is null );
+                    var kyrTable = _SqlFunctions.SelectTableKyrKey(slaveTbl?.TableCode ?? "");
+                    var specialCol = kyrTable?.FK_TableCol ?? "";
+
+
+                    var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, slaveTbl!.TableID);
+                    foreach(var sheet in sheets)
+                    {
+                        var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
+
+                        foreach(var row in rows)
+                        {
+                            //find the foreign key 
+                            var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, specialCol)?.Row??"";
+
+                            foreach (var term in rule.IfComponent.RuleTerms)
+                            {
+                                if(string.IsNullOrEmpty(term.R))
+                                {
+                                    term.R = term.T.Trim() == slaveTbl.TableCode ? row : relatedRow;                                        
+                                }
+                                var rule    
+
+
+                                //term.R = string.IsNullOrEmpty(term.R)?
+                                //    filterTerm.T.Trim() == relatedTable.Trim()
+                                //    ? foreignRow
+                                //    : row;
+                                //var term = 1;
+                            }
+
+                        }
+                    }
+                    
 
                 }
                 
@@ -161,8 +200,7 @@ public class DocumentValidator : IDocumentValidator
 
     Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms)
     {
-        Dictionary<string, ObjectTerm280> plainTerms = ruleTerms
-            //.Where(pt => !pt.IsSequence)
+        Dictionary<string, ObjectTerm280> plainTerms = ruleTerms            
             .Select(ruleTerm => new
             {
                 ruleTerm.Letter,
@@ -170,11 +208,7 @@ public class DocumentValidator : IDocumentValidator
                 Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
                 ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv,0,0, ruleTerm.IsTolerance)
             })
-            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
-
-      
-
-
+            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);      
         return plainTerms;
     }
 
@@ -247,4 +281,30 @@ public class DocumentValidator : IDocumentValidator
         }
         
     }
+
+
+    private RuleStructure280 FillRuleStructureOpenTablesWithFactValues(RuleStructure280 ruleStructure,MTable slaveTable)
+    {
+        //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
+        //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
+
+        var ifObjectTermsRelated = ruleStructure.IfComponent.RuleTerms.Where(rt=>rt.T==slaveTable.TableCode).ToList();
+        Dictionary<string, ObjectTerm280> ifObjectTermsxxx = ToOjectTerm280UsingFactValues(ifObjectTermsRelated);
+        ruleStructure.IfComponent.ObjectTerms = ifObjectTermsxxx;
+        //find the foreign key of the first object;
+
+        //Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms);
+        //ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
+
+        //Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms);
+        //ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
+
+        //Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms);
+        //ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
+
+        return ruleStructure;
+
+    }
+
+
 }

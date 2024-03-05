@@ -68,7 +68,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         ///////////////////////////////////////////////////////////////////
         ///
-        var dbClosedSheets = _SqlFunctions.SelectTempateSheets(_documentId)
+        var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
 
         //var debugClosedTableCode = "S.06.02.01.01";
@@ -88,7 +88,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
 
 
-        var dbOpenSheets = _SqlFunctions.SelectTempateSheets(_documentId)
+        var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
         //var debugOpenTableCode = "S.06.02.01.01";
