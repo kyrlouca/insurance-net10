@@ -195,11 +195,13 @@ public partial class ExpressionEvaluator
 
     public static double EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
     {
-        //will create a list of OUTER arithmetic functions (imin,imax,...).
-        //Then, it will call evaluateFunction for each
-        //Then , will use EvaluateSimpleArithmetic (formula with symbols and all symbols have a value in a list)
-        // @"5 + imin(3) +imax(4)";
-        // @"7 + imin(imax(3,5),4)";
+        // 1.Create a list of OUTER arithmetic functions (imin,imax,...).
+        //  --call evaluateFunction for each
+        //  --each function will become a symbol in the formula and a term with a value will be created
+        // 2.Add the new terms to the exisiting ones        
+        // 3.Use EvaluateSimpleArithmetic (formula with symbols and all symbols have a value in a list)
+        //  --@"5 + imin(3) +imax(4)";
+        //  --@"7 + imin(imax(3,5),4)";
         // imin(imax(X01, 0) i* 0.25, X02) 
         var rgxTerm = RgxAggregateFunctions(); //"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var matchFunctions = rgxTerm.Matches(arithmeticExpression);
@@ -217,11 +219,9 @@ public partial class ExpressionEvaluator
                 var val = EvaluateFunction(ft.FullText, terms);
                 return (ft.Letter, new ObjectTerm280("F", 0, false, val,0,0, false));
             });
-
         var allTerms = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 0 })).ToList();
         allTerms.AddRange(newObjTerms);
         var allObjectsDic = allTerms.ToDictionary(x => x.Key, x => x.Item2);
-
 
         var val = EvaluateSimpleArithmetic(formulaWithSymbols, allObjectsDic);
 
@@ -257,10 +257,11 @@ public partial class ExpressionEvaluator
 
         //string[] functionsSupported = { "imin", "imax", "isum", "icount", "max" };
 
-        functionText = ReplaceIntervalCharacters(functionText);
+        functionText = ReplaceIntervalCharacters(functionText);//max(x01,0) i => remove the i. the function has already been marked as interval
         var rgxSingleFunction = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         functionText = functionText.Trim();
 
+        //we have a SINGLE function 
         var matchFn = rgxSingleFunction.Match(functionText);
         if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
 
@@ -268,10 +269,12 @@ public partial class ExpressionEvaluator
         //Evaluate each term of the function CONTENT (arguments) and then the function.
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
-        // the function contents is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02 and => two expressions: imax(X01, 0) * 0.25  AND   X02
-        // the proper solution would be to split each expression, call the arithmetic evaluater for each but due to commas inside functions, I cannot do the split
+        // the function CONTENT is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02 and => two expressions: imax(X01, 0) * 0.25  AND   X02
+        // 1. Split the terms inside the function 
+        // --the proper solution would be to split each expression, call the arithmeticExpressionEvaluator for each BUT due to commas inside functions, I cannot do the split
         // *** So I do this  trick. Replace the functions inside the function with terms ("F") to do the split and then back to their value        
-        // *** in, call each function EvaluateFunctionWithComputedTerms since all the function terms were computed
+        // 2.Evalueate each function term
+        // 3.Finally, call  EvaluateFunctionWithComputedTerms since all the function terms were computed
         //---
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
@@ -286,21 +289,19 @@ public partial class ExpressionEvaluator
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
                 argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
-            //if isum or icount do not recurse. you just need to keep the value of the old terms which has the sum and count
-            //return the same term 
-            //they should only have one term
+            //if isum or icount do not recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count
+            //return their initial term             
             if (functionType== FunctionAggregateTypes.iSum || functionType== FunctionAggregateTypes.iCount)
             {
-                var sameObj = terms.FirstOrDefault(tr=>tr.Key==functionContent).Value;
-                var objc = new ObjectTerm280("F", 0, false, sameObj.Obj, sameObj.sumValue, sameObj.countValue, false);
-                return objc;
+                var sameObj = terms.FirstOrDefault(tr=>tr.Key==functionContent).Value;                
+                return sameObj;
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);            
             var obj = new ObjectTerm280("F", 0, false, res,0,0, false);
             return obj;
         });
-        var final2 = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
-        return final2;
+        var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
+        return finalFunctionValue;
         //*****************************************
 
 
