@@ -162,9 +162,9 @@ public class DocumentValidator : IDocumentValidator
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
                             var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, fkCol)?.Row ?? "";
-                            UpdateRuleTermsWithRow(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow,ScopeType.Rows);
-                            UpdateRuleTermsWithRow(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow,ScopeType.Rows);
-                            UpdateRuleTermsWithRow(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow,ScopeType.Rows);
+                            UpdateRuleTermsWithRow(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+                            UpdateRuleTermsWithRow(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+                            UpdateRuleTermsWithRow(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
                             var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
                         }
@@ -179,7 +179,7 @@ public class DocumentValidator : IDocumentValidator
 
         return 1;
 
-
+    }
         ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, decimal sum, int count)
         {
             //maybe I need to set obj to zero instead of sum
@@ -346,4 +346,3 @@ public class DocumentValidator : IDocumentValidator
 
 
     }
-}
