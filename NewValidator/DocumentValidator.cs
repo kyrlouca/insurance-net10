@@ -250,7 +250,7 @@ public class DocumentValidator : IDocumentValidator
             return plainTerms;
         }
 
-         private  RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
+         RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
         {
             //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
             //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
@@ -268,7 +268,7 @@ public class DocumentValidator : IDocumentValidator
 
         }
 
-        private (decimal sum, int count) CalculateSumofSequenceTerm(RuleTerm280 seqTableTerm, RuleComponent280 filterComponent)
+        (decimal sum, int count) CalculateSumofSequenceTerm(RuleTerm280 seqTableTerm, RuleComponent280 filterComponent)
         {
 
             var seqTable = seqTableTerm.T;
@@ -294,7 +294,7 @@ public class DocumentValidator : IDocumentValidator
             return (sum, count);
         }
 
-        private bool EvaluateFilterRow(RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow)
+        bool EvaluateFilterRow(RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow)
         {
             foreach (var filterTerm in filterComponent.RuleTerms)
             {
@@ -321,7 +321,7 @@ public class DocumentValidator : IDocumentValidator
         }
 
 
-        private RuleStructure280 FillRuleStructureOpenTablesWithFactValues(RuleStructure280 ruleStructure, MTable slaveTable)
+        RuleStructure280 FillRuleStructureOpenTablesWithFactValues(RuleStructure280 ruleStructure, MTable slaveTable)
         {
             //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
             //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
