@@ -74,8 +74,9 @@ public class DocumentValidator : IDocumentValidator
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
             var HasOpenTable = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
+            var hasAggregateFunction = new[] { "sum", "count" }.Any(f => validationRule.Rule.Contains(f));
             //**check if all the tables exist for this rule??
-            
+
             if (!HasOpenTable)
             {
                 var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
@@ -90,12 +91,12 @@ public class DocumentValidator : IDocumentValidator
                 //--- for each row of the seq, check the filter using the row of the slave . 
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
                 var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
-                rule = FillRuleStructureWithFactValues(rule);
                 
-                var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);                              
-                var hasAggregateFunction = new[] {"sum","count"}.Any(f=>rule.RuleFormula.Contains(f));
+                //todo *****  maybe the else has a sequence
+                var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);                                              
                 if (ifSeqTerms.Any() && hasAggregateFunction)
                 {
+                    rule = FillRuleStructureWithFactValues(rule);
                     foreach (var ifSeqTerm in ifSeqTerms)
                     {
                         var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);                        
@@ -138,10 +139,11 @@ public class DocumentValidator : IDocumentValidator
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
                             
                             var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, fkCol)?.Row ?? "";
-                            UpdateTermsRow(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
-                            UpdateTermsRow(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
-                            UpdateTermsRow(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
-                            var isValidRowRule = ExpressionEvaluator.ValidateRule(rule);
+                            UpdateRuleTermsWithRow(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
+                            UpdateRuleTermsWithRow(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
+                            UpdateRuleTermsWithRow(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
+                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
+                            var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
                         }
                     }
                     
@@ -165,7 +167,7 @@ public class DocumentValidator : IDocumentValidator
             return newObjTerm;
         }
 
-        static void UpdateTermsRow(List<RuleTerm280> ruleTerms, string slaveTalbeCode, string row, string relatedRow)
+        static void UpdateRuleTermsWithRow(List<RuleTerm280> ruleTerms, string slaveTalbeCode, string row, string relatedRow)
         {
             foreach (var term in ruleTerms.Where(term => string.IsNullOrEmpty(term.R)))
             {
@@ -180,7 +182,7 @@ public class DocumentValidator : IDocumentValidator
     {
         if (fact == null)
         {
-            return new ObjectTerm280("E", 0, IsTolerance, defaultValue,0,0, true);
+            return new ObjectTerm280("E", 0, IsTolerance, defaultValue,0,0,null, true);
         }
 
 
@@ -196,7 +198,7 @@ public class DocumentValidator : IDocumentValidator
             "D" => fact.DateTimeValue,
             _ => throw new NotImplementedException()
         };
-        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue,countValue, false);
+        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue,countValue,fact , false);
         return objTerm;
     }
 

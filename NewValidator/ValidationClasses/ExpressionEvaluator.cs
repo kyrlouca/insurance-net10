@@ -12,7 +12,7 @@ public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 //public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj,double sum,int count, bool IsNullFact, List<TemplateSheetFact> SeqFacts);
-public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj,double sumValue,int countValue, bool IsNullFact);
+public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj,double sumValue,int countValue, TemplateSheetFact? fact , bool IsNullFact);
 public record ZetTerm(string Letter, string Formula, bool IsPassed);
 public record ArTerm(string Letter, string Formula, double ValueReal, string ValueString);
 
@@ -219,7 +219,7 @@ public partial class ExpressionEvaluator
             .Select(ft =>
             {
                 var val = EvaluateFunction(ft.FullText, terms);
-                return (ft.Letter, new ObjectTerm280("F", 0, false, val,0,0, false));
+                return (ft.Letter, new ObjectTerm280("F", 0, false, val,0,0,null, false));
             });
         var allTerms = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 0 })).ToList();
         allTerms.AddRange(newObjTerms);
@@ -296,7 +296,7 @@ public partial class ExpressionEvaluator
                 return sameObj;
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);            
-            var obj = new ObjectTerm280("F", 0, false, res,0,0, false);
+            var obj = new ObjectTerm280("F", 0, false, res,0,0,null, false);
             return obj;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 

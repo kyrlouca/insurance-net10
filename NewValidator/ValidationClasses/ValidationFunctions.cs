@@ -61,12 +61,19 @@ internal class ValidationFunctions
     }
 
 
-    public static bool ValidateDim(string text, Dictionary<string, ObjectTerm280> terms)
-    {
-        //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
-
-
-        return false;
+    public static bool ValidateDim(string dimFunction, Dictionary<string, ObjectTerm280> terms)
+    {        
+        //regex the dimfunction: dim(X00,[s2c_dim:NF])=> X00 and s2c_dim:NF .
+        //then check if the fact signature contains the dim
+        var rgxDim = new Regex(@"dim\((.*),\[(.*)\]");
+        var match = rgxDim.Match(dimFunction);
+        if (!match.Success)
+        {
+            throw (new Exception($"Invalid dimFunction : {dimFunction}"));
+        }
+        var term =  terms.SingleOrDefault( tm=> tm.Key== match.Groups[1].Value);
+        return term.Value?.fact?.DataPointSignature.Contains(match.Groups[2].Value) ?? false ;
+        
     }
 
 
