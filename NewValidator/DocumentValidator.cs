@@ -83,14 +83,13 @@ public class DocumentValidator : IDocumentValidator
             }
             else if (HasOpenTable)
             {
-                var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
                 //if there is an open table involved and there is NO seq then start from the master
                 //--  create a rule for each row of the m aster (so you have the row )
                 //--- fill the row of the slave by using the key
                 //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
                 //--- for each row of the seq, check the filter using the row of the slave . 
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
-
+                var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
                 rule = FillRuleStructureWithFactValues(rule);
                 
                 var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);                              
@@ -99,8 +98,7 @@ public class DocumentValidator : IDocumentValidator
                 {
                     foreach (var ifSeqTerm in ifSeqTerms)
                     {
-                        var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
-                        // ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, sum);                    
+                        var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);                        
                         ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, -999,sum,count);
                     }
 
@@ -110,43 +108,40 @@ public class DocumentValidator : IDocumentValidator
                         var res = CalculateSumofSequenceTerm(thenSeqTerm, rule.FilterComponent);
                         ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, -999,res.sum,res.count);
                     }
+
+                    var elseSeqTerms = rule.ElseComponent.RuleTerms.Where(rt => rt.IsSequence);
+                    foreach (var elseSeqTerm in elseSeqTerms)
+                    {
+                        var res = CalculateSumofSequenceTerm(elseSeqTerm, rule.FilterComponent);
+                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, elseSeqTerm.Letter, -999, res.sum, res.count);
+                    }
+
                     var isValidRule = ExpressionEvaluator.ValidateRule(rule);
                 };
                 
                 if (!ifSeqTerms.Any() )
                 {
-                    
-                    var slaveTbl = tablesInValidation.FirstOrDefault(tbl=> _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is null );
-                    var kyrTable = _SqlFunctions.SelectTableKyrKey(slaveTbl?.TableCode ?? "");
-                    var specialCol = kyrTable?.FK_TableCol ?? "";
+                     
 
+                    var mainTable = tablesInValidation.FirstOrDefault(tbl=> _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null );
+                    var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
+                    var fklTable = kyrTable?.FK_TableCol ?? "";
+                    var fkCol = kyrTable?.FK_TableCol ?? "";
 
-                    var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, slaveTbl!.TableID);
+                    var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach(var sheet in sheets)
                     {
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
-
                         foreach(var row in rows)
                         {
-                            //find the foreign key 
-                            var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, specialCol)?.Row??"";
-
-                            foreach (var term in rule.IfComponent.RuleTerms)
-                            {
-                                if(string.IsNullOrEmpty(term.R))
-                                {
-                                    term.R = term.T.Trim() == slaveTbl.TableCode ? row : relatedRow;                                        
-                                }
-                                var rule    
-
-
-                                //term.R = string.IsNullOrEmpty(term.R)?
-                                //    filterTerm.T.Trim() == relatedTable.Trim()
-                                //    ? foreignRow
-                                //    : row;
-                                //var term = 1;
-                            }
-
+                            //find the row from the column that has the foreign key
+                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
+                            
+                            var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, fkCol)?.Row ?? "";
+                            UpdateTermsRow(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
+                            UpdateTermsRow(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
+                            UpdateTermsRow(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
+                            var isValidRowRule = ExpressionEvaluator.ValidateRule(rule);
                         }
                     }
                     
@@ -169,9 +164,16 @@ public class DocumentValidator : IDocumentValidator
             objTerms.Add(objKey, newObjTerm);
             return newObjTerm;
         }
-        
 
-        
+        static void UpdateTermsRow(List<RuleTerm280> ruleTerms, string slaveTalbeCode, string row, string relatedRow)
+        {
+            foreach (var term in ruleTerms.Where(term => string.IsNullOrEmpty(term.R)))
+            {
+                term.R = term.T.Trim() == slaveTalbeCode ? row : relatedRow;
+            }
+        }
+
+
     }
 
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue,double sumValue,int countValue, bool IsTolerance)

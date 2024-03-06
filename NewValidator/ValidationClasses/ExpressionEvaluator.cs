@@ -54,9 +54,8 @@ public partial class ExpressionEvaluator
         //1. outer parenthesis with or without function =>=> evaluate function or remove parenthesis and recurse
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis. (replace each term in parenthesis with Zxx and its value (1==1 for true, and 1==2 for false)
         //3. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
-
-        //var rgxFn = new Regex(@"^(isNull|matches|not)?\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");        
-        var rgxFn = new Regex(@"^(isNull|matches|not|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        
+        var rgxFn = new Regex(@"^(isNull|matches|not|dim|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
 
         //Check if this is an outer parenthesis or an Outer function.
         //1. outer parenthesis with or without function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
@@ -73,12 +72,15 @@ public partial class ExpressionEvaluator
                     var resNot = !EvaluateGeneralBooleanExpression(value, terms);
                     return resNot;
                 case "isNull":
-                    //var resn = string.IsNullOrEmpty(value);
-                    var resn = ValidationFunctions.ValidateIsNull(value, terms);
+                    //var resn = ValidationFunctions.ValidateIsNull(value, terms);
+                    var resn = !EvaluateGeneralBooleanExpression(value, terms);                    
                     return resn;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
                     return resm;
+                case "dim":
+                    var resdim = ValidationFunctions.ValidateDim(formula, terms);
+                    return resdim;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
                     var res = EvaluateGeneralBooleanExpression(value, terms);
@@ -93,7 +95,7 @@ public partial class ExpressionEvaluator
         //evaluate each zet 
         //reconstruct the formula using results instead of z        
         //lookahead (?<!\S) is there to avoid matching imax(, imin( but to match 
-        var rgxTerm = new Regex(@"(isNull|matches|not|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var rgxTerm = new Regex(@"(isNull|matches|not|dim|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
 
         var matchesTerms = rgxTerm.Matches(formula.Trim());
         var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, false)) ?? new List<ZetTerm>();

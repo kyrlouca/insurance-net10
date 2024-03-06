@@ -61,6 +61,16 @@ internal class ValidationFunctions
     }
 
 
+    public static bool ValidateDim(string text, Dictionary<string, ObjectTerm280> terms)
+    {
+        //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
+
+
+        return false;
+    }
+
+
+
     public static bool ValidateArithmetic(string text)
     {
         var result = Eval.Execute<bool>(text);
