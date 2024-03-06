@@ -44,7 +44,7 @@ public partial class ExpressionEvaluator
             //    || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
         }
 
-    }
+     }
 
 
     public static bool EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)

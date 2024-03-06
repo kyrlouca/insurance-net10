@@ -67,9 +67,10 @@ public class DocumentValidator : IDocumentValidator
         //783 for sum
         //1809 for max and sequence
         //702 dim
+        //2050 scope
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
-        validationRules = validationRules.Where(vr => vr.ValidationID == 702).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 2050).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
@@ -79,7 +80,13 @@ public class DocumentValidator : IDocumentValidator
 
             if (!HasOpenTable)
             {
-                var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
+                if(validationRule.Scope is not null)
+                {
+                    var ruleScoped = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter,validationRule.Scope);
+
+                }
+
+                var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter,validationRule.Scope);
                 ruleClosed = FillRuleStructureWithFactValues(ruleClosed);             
             }
             else if (HasOpenTable)
@@ -90,7 +97,7 @@ public class DocumentValidator : IDocumentValidator
                 //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
                 //--- for each row of the seq, check the filter using the row of the slave . 
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
-                var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
+                var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter,validationRule.Scope);
                 
                 //todo *****  maybe the else has a sequence
                 var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);                                              
@@ -136,7 +143,7 @@ public class DocumentValidator : IDocumentValidator
                         foreach(var row in rows)
                         {
                             //find the row from the column that has the foreign key
-                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter);
+                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter,validationRule.Scope);
                             
                             var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, fkCol)?.Row ?? "";
                             UpdateRuleTermsWithRow(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow);
