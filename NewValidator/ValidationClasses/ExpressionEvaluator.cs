@@ -24,26 +24,18 @@ public partial class ExpressionEvaluator
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-        var ifComponent = ruleStructure280.IfComponent;
-        var isValidIf = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ifComponent.SymbolExpression, ifComponent.ObjectTerms);
-        return isValidIf;
-
-        if (1 == 2)
+        
+        var isValidIf = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.IfComponent.SymbolExpression,ruleStructure280.IfComponent.ObjectTerms);
+        if (isValidIf)
         {
-            //var thenComponent = rule.ThenComponent;
-            //Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(thenComponent);
-            //var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(thenComponent.SymbolExpression, thenObjectTerms);
-
-            //var elseComponent = rule.ElseComponent;
-            //Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(elseComponent);
-            //var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(elseComponent.SymbolExpression, elseObjectTerms);
-
-            //var isPlainRule = ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
-            //var isCompleteRule =
-            //    ifComponent.IsValid && elseComponent.IsValid && thenComponent.IsValid
-            //    || ifComponent.IsValid && !elseComponent.IsValid && !thenComponent.IsValid;
+            var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
+            return isValidThen;
         }
-
+        else
+        {
+            var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
+            return isValidElse;
+        }      
      }
 
 
@@ -55,7 +47,7 @@ public partial class ExpressionEvaluator
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis. (replace each term in parenthesis with Zxx and its value (1==1 for true, and 1==2 for false)
         //3. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
         
-        var rgxFn = new Regex(@"^(isNull|matches|not|dim|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
 
         //Check if this is an outer parenthesis or an Outer function.
         //1. outer parenthesis with or without function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
@@ -95,7 +87,7 @@ public partial class ExpressionEvaluator
         //evaluate each zet 
         //reconstruct the formula using results instead of z        
         //lookahead (?<!\S) is there to avoid matching imax(, imin( but to match 
-        var rgxTerm = new Regex(@"(isNull|matches|not|dim|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var rgxTerm = new Regex(@"(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
 
         var matchesTerms = rgxTerm.Matches(formula.Trim());
         var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, false)) ?? new List<ZetTerm>();

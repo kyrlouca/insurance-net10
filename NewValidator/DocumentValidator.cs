@@ -68,6 +68,7 @@ public class DocumentValidator : IDocumentValidator
         //1809 for max and sequence
         //702 dim
         //2050 scope
+        //4373 else
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
         validationRules = validationRules.Where(vr => vr.ValidationID == 2050).ToList();
@@ -99,14 +100,13 @@ public class DocumentValidator : IDocumentValidator
                     if (scopeType != ScopeType.None)
                     {
                         UpdateRuleTermsWithRowCol(ruleScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleScope.ScopeType);
+                        UpdateRuleTermsWithRowCol(ruleScope.ThenComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleScope.ScopeType);
+                        UpdateRuleTermsWithRowCol(ruleScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleScope.ScopeType);
                         ruleScope = FillRuleStructureWithFactValues(ruleScope);
                         var isValidRule = ExpressionEvaluator.ValidateRule(ruleScope);
                     }                    
                 }
-                
-
-                
-                
+                                                
             }
             else if (HasOpenTable)
             {
@@ -117,8 +117,7 @@ public class DocumentValidator : IDocumentValidator
                 //--- for each row of the seq, check the filter using the row of the slave . 
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
                 var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter, validationRule.Scope);
-
-                //todo *****  maybe the else has a sequence
+                
                 var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);
                 if (ifSeqTerms.Any() && hasAggregateFunction)
                 {
