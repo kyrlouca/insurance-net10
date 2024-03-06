@@ -11,6 +11,7 @@ public class IntervalFunctions
 
     public static bool IsIntervalExpressionValid(string operatorI, double left, int leftDecimals, double right, int rightDecimals)
     {
+        //todo if any operand is null the result is NULL
         var resInterval = operatorI switch
         {
             "=" => IntervalFunctions.IsIntervalEQ(left, leftDecimals, right, rightDecimals),

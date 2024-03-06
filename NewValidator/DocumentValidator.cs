@@ -183,7 +183,7 @@ public class DocumentValidator : IDocumentValidator
         return 1;
 
     }
-    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, decimal sum, int count)
+    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count)
     {
         //maybe I need to set obj to zero instead of sum
         var objTerm = objTerms[objKey];
@@ -271,7 +271,7 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
-    private (decimal sum, int count) CalculateSumofSequenceTerm(RuleTerm280 seqTableTerm, RuleComponent280 filterComponent)
+    private (double sum, int count) CalculateSumofSequenceTerm(RuleTerm280 seqTableTerm, RuleComponent280 filterComponent)
     {
 
         var seqTable = seqTableTerm.T;
@@ -281,7 +281,7 @@ public class DocumentValidator : IDocumentValidator
         //find the related table.
 
         var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqTableTerm.T, seqTableTerm.Z, seqTableTerm.C); ;
-        decimal sum = 0;
+        double sum = 0;
         var count = 0;
         foreach (var fact in facts)
         {
