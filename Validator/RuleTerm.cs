@@ -22,7 +22,7 @@ public class RuleTerm
     public bool BooleanValue { get; set; }
     public string TextValue { get; set; }
     public string TextValueFixed { get; set; } = ""; //abc from=> "{S.01.02.07.01, r0180,c0010,val=[abc]}";
-    public decimal DecimalValue { get; set; }
+    public double DecimalValue { get; set; }
     public int NumberOfDecimals { get; set; }
     public DateTime DateValue { get; set; }
     public string Letter { get; }
@@ -42,7 +42,7 @@ public class RuleTerm
 
 
 
-    public RuleTerm(string letter, string textValue, decimal decimalValue, bool booleanValue, DateTime dateValue, DataTypeMajorUU dataType, bool isMissing)
+    public RuleTerm(string letter, string textValue, double decimalValue, bool booleanValue, DateTime dateValue, DataTypeMajorUU dataType, bool isMissing)
     {
         //used for testing assertExpression
         Letter = letter;

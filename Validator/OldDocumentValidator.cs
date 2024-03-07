@@ -723,7 +723,7 @@ public class OldDocumentValidator : IOldDocumentValidator
 
                 term.DataTypeOfTerm = DataTypeMajorUU.NumericDtm;
                 term.IsMissing = false;
-                term.DecimalValue = Convert.ToDecimal(minVal);
+                term.DecimalValue = minVal;
                 break;
             case FunctionTypes.MAX:
                 //TermText = max(xx,X1,X2)
@@ -737,7 +737,7 @@ public class OldDocumentValidator : IOldDocumentValidator
 
                 term.DataTypeOfTerm = DataTypeMajorUU.NumericDtm;
                 term.IsMissing = false;
-                term.DecimalValue = Convert.ToDecimal(maxVal);
+                term.DecimalValue = maxVal;
                 break;
             case FunctionTypes.MATCHES:
                 //matches(ftdv({S.06.02.01.02,c0290},"s2c_dim:UI"),"^CAU/(ISIN/.*)|(INDEX/.*)"))	ftdv will becoume X00
@@ -805,7 +805,7 @@ public class OldDocumentValidator : IOldDocumentValidator
             case FunctionTypes.EXP:
                 term.DataTypeOfTerm = DataTypeMajorUU.NumericDtm;
                 term.IsMissing = false;
-                term.DecimalValue = Convert.ToDecimal(FunctionForExp(allTerms, term));
+                term.DecimalValue = FunctionForExp(allTerms, term);
                 break;
             case FunctionTypes.LIKE:
                 // LIKE(X00, '____')
@@ -934,7 +934,7 @@ public class OldDocumentValidator : IOldDocumentValidator
             {
                 var firstFact = facts.First();
                 var majorDataType = ConstantsAndUtils.GetMajorDataType(firstFact.DataTypeUse.Trim());
-                var sum = facts.Aggregate(decimal.Zero, (currentVal, item) => currentVal += (decimal)item.NumericValue);
+                var sum = facts.Aggregate(0.0, (currentVal, item) => currentVal += item.NumericValue);
                 var resVal = new DbValue(firstFact.FactId, firstFact.TextValue, sum, firstFact.Decimals, firstFact.DateTimeValue, firstFact.BooleanValue, majorDataType, false);
                 return resVal;
             }
@@ -1006,7 +1006,7 @@ public class OldDocumentValidator : IOldDocumentValidator
             {
                 var firstFact = facts.First();
                 var majorDataType2 = ConstantsAndUtils.GetMajorDataType(firstFact.DataTypeUse.Trim());
-                var sum = facts.Aggregate(decimal.Zero, (currentVal, item) => currentVal += (decimal)item.NumericValue);
+                var sum = facts.Aggregate(0.0, (currentVal, item) => currentVal += item.NumericValue);
                 var resValMany = new DbValue(firstFact.FactId, firstFact.TextValue, sum, firstFact.Decimals, firstFact.DateTimeValue, firstFact.BooleanValue, majorDataType2, false);
                 return resValMany;
             }
@@ -1748,7 +1748,7 @@ public class OldDocumentValidator : IOldDocumentValidator
         }
     }
 
-    private decimal FunctionForSumTermForCloseTableNew(RuleStructure rule, RuleTerm sumTerm)
+    private double FunctionForSumTermForCloseTableNew(RuleStructure rule, RuleTerm sumTerm)
     {
 
         using var connectionPension = new SqlConnection(_parameterData.SystemConnectionString);
@@ -1779,7 +1779,7 @@ public class OldDocumentValidator : IOldDocumentValidator
             sqlSum += sqlAdd;
 
             var fixedRowCol = sumObj.RangeAxis == VldRangeAxis.Cols ? sumTerm.Row : sumTerm.Col;
-            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, startRowCol = sumObj.StartRowCol, endRowCol = sumObj.EndRowCol, fixedRowCol, DocumentId }) ?? 0;
+            var sum = connectionPension.QuerySingleOrDefault<double?>(sqlSum, new { sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, startRowCol = sumObj.StartRowCol, endRowCol = sumObj.EndRowCol, fixedRowCol, DocumentId }) ?? 0;
             return sum;
 
         }
@@ -1797,7 +1797,7 @@ public class OldDocumentValidator : IOldDocumentValidator
             sqlSum += sqlAdd;
 
             var fixedRowCol = sumObj.RangeAxis == VldRangeAxis.Cols ? sumTerm.Row : sumTerm.Col;
-            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, startRowCol = sumObj.StartRowCol, endRowCol = sumObj.EndRowCol, fixedRowCol, DocumentId }) ?? 0;
+            var sum = connectionPension.QuerySingleOrDefault<double?>(sqlSum, new { sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, startRowCol = sumObj.StartRowCol, endRowCol = sumObj.EndRowCol, fixedRowCol, DocumentId }) ?? 0;
             return sum;
 
         }
@@ -1816,7 +1816,7 @@ public class OldDocumentValidator : IOldDocumentValidator
                 ";
             sqlSum += sqlAdd;
 
-            var sum = connectionPension.QuerySingleOrDefault<decimal?>(sqlSum, new { DocumentId, sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, sumTerm.Row, sumTerm.Col }) ?? 0;
+            var sum = connectionPension.QuerySingleOrDefault<double?>(sqlSum, new { DocumentId, sheetId = sumTerm.SheetId, tableCode = sumTerm.TableCode, sumTerm.Row, sumTerm.Col }) ?? 0;
             return sum;
         }
         return 0;
@@ -1824,7 +1824,7 @@ public class OldDocumentValidator : IOldDocumentValidator
 
 
 
-    private decimal FunctionForOpenSumNew(RuleTerm sumTerm, string filterFormula)
+    private double FunctionForOpenSumNew(RuleTerm sumTerm, string filterFormula)
     {
         //  rule 929, term = sum({S.06.02.01.01,c0170,snnn})	
         //  filter = matches({S.06.02.01.02,c0290},"^..((91)|(92)|(94)|(99))$") and ({S.06.02.01.01,c0090}=[s2c_LB:x91])
@@ -1848,7 +1848,7 @@ public class OldDocumentValidator : IOldDocumentValidator
         var isOpenTbl = IsOpenTable(sumTerm.TableCode);
 
         var sumfacts = connectionInsurance.Query<TemplateSheetFact>(sqlSumFacts, new { DocumentId, tableCode = sumTerm.TableCode, col = sumTerm.Col });
-        decimal factSum = 0;
+        double factSum = 0;
         foreach (var sumFact in sumfacts)
         {
             var fakeFilterRule = new RuleStructure(filterFormula, "")//the filter formula will now be the tablebase formula

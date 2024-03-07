@@ -1,10 +1,11 @@
 ﻿
 namespace Shared.DataModels;
+using Dapper.Contrib.Extensions;
 
-
-
+[Table("ERROR_Rule")]
 public class ERROR_Rule
 {
+    [Key]
     public int ErrorId { get; set; }
     public int RuleId { get; set; }
     public int ErrorDocumentId { get; set; }
