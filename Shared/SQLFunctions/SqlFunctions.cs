@@ -751,12 +751,12 @@ public class SqlFunctions : ISqlFunctions
         }
     }
 
-    public int CreateErrorDocument(int documentId,ErrorDocumentModel errorDocument)
+    public int CreateErrorDocument(ErrorDocumentModel errorDocument)
     {        
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var sqlDelete = @"delete from ERROR_Document where ErrorDocumentId = @documentId";
-        connectionLocal.Execute(sqlDelete, new { documentId });
+        var sqlDelete = @"delete from ERROR_Document where ErrorDocumentId = @ErrorDocumentId";
+        connectionLocal.Execute(sqlDelete, new {  errorDocument.ErrorDocumentId });
         try
         {
             int res = (int)connectionLocal.Insert<ErrorDocumentModel>(errorDocument);

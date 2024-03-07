@@ -65,4 +65,5 @@ public interface ISqlFunctions
     public List<VValidationRuleExpressions> SelectValidationRulesForModule(int ModuleId);
 
     public int CreateErrorRule(ERROR_Rule errorRule);
+    public int CreateErrorDocument( ErrorDocumentModel errorDocument);
 }

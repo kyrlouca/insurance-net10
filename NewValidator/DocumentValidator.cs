@@ -74,6 +74,8 @@ public class DocumentValidator : IDocumentValidator
         //2050 scope
         //else
 
+        var xx = CreateErrorDocument();
+
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
         validationRules = validationRules.Where(vr => vr.ValidationID == 743).ToList();
         foreach (var validationRule in validationRules)
@@ -330,7 +332,23 @@ public class DocumentValidator : IDocumentValidator
     }
 
 
-    private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
+
+    private int CreateErrorDocument()
+    {
+        var errorDoc = new ErrorDocumentModel
+        {
+            IsDocumentValid = true,
+            ErrorDocumentId = DocumentId,
+            OrganisationId=_parameterData.FundId,
+            UserId=_parameterData.UserId.ToString(),
+            ErrorCounter=true,
+            WarningCounter=true,
+        };
+        var errorDocument = _SqlFunctions.CreateErrorDocument(errorDoc);
+        return errorDocument;
+    }
+
+        private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
     {
 
         var errorRule = new ERROR_Rule
