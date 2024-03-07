@@ -22,4 +22,7 @@ public class ERROR_Rule
     public string TableBaseFormula { get; set; }
     public string Filter { get; set; }
     public string Scope { get; set; }
+    public string FormulaForIf { get; set; }
+    public string FormulaForThen { get; set; }
+    public string FormulaForElse { get; set; }
 }
