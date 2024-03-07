@@ -1,6 +1,7 @@
 ﻿using NewValidator.ValidationClasses;
 using Serilog;
 using Shared.DataModels;
+using Shared.GeneralUtils;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
@@ -12,6 +13,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NewValidator;
 
@@ -89,7 +91,7 @@ public class DocumentValidator : IDocumentValidator
 
 
                 //*********** SCOPE 
-                var rulex1 = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                var rulex1 = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                 var scopeRowcols = rulex1.ScopeRowCols;
                 var scopeType = rulex1.ScopeType;
                 if (scopeType == ScopeType.None)
@@ -98,7 +100,7 @@ public class DocumentValidator : IDocumentValidator
                 }
                 foreach (var scopeRowCol in scopeRowcols)
                 {
-                    var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                    var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                     if (scopeType != ScopeType.None)
                     {
                         UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
@@ -107,6 +109,7 @@ public class DocumentValidator : IDocumentValidator
                     }
                     ruleForScope = FillRuleStructureWithFactValues(ruleForScope);
                     var isValidRule = ExpressionEvaluator.ValidateRule(ruleForScope);
+                    CreateRuleError(ruleForScope, validationRule);
                 }
                                                 
             }
@@ -118,7 +121,7 @@ public class DocumentValidator : IDocumentValidator
                 //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
                 //--- for each row of the seq, check the filter using the row of the slave . 
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
-                var rule = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                 
                 var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);
                 if (ifSeqTerms.Any() && hasAggregateFunction)
@@ -145,6 +148,7 @@ public class DocumentValidator : IDocumentValidator
                     }
 
                     var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+                    CreateRuleError(rule, validationRule);
                 };
 
                 if (!ifSeqTerms.Any())
@@ -163,7 +167,7 @@ public class DocumentValidator : IDocumentValidator
                         foreach (var row in rows)
                         {
                             //find the row from the column that has the foreign key
-                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
                             var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, fkCol)?.Row ?? "";
                             UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
@@ -171,6 +175,7 @@ public class DocumentValidator : IDocumentValidator
                             UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
                             var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
+                            CreateRuleError(ruleOpen, validationRule);
                         }
                     }
 
@@ -325,28 +330,38 @@ public class DocumentValidator : IDocumentValidator
     }
 
 
-    private RuleStructure280 FillRuleStructureOpenTablesWithFactValues(RuleStructure280 ruleStructure, MTable slaveTable)
+    private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
     {
-        //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
-        //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        var ifObjectTermsRelated = ruleStructure.IfComponent.RuleTerms.Where(rt => rt.T == slaveTable.TableCode).ToList();
-        Dictionary<string, ObjectTerm280> ifObjectTermsxxx = ToOjectTerm280UsingFactValues(ifObjectTermsRelated);
-        ruleStructure.IfComponent.ObjectTerms = ifObjectTermsxxx;
-        //find the foreign key of the first object;
+        var errorRule = new ERROR_Rule
+        {
+            RuleId = ruleStructure.RuleId,
+            ErrorDocumentId = DocumentId,
+            //Scope = RegexUtils.TruncateString(rule.Sc, 800),
+            DataType="",
+            TableBaseFormula = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
+            Filter = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
+            SheetId = 0,
+            SheetCode = validationRule.Scope,            
+            RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
+            IsWarning = validationRule.AlwaysOn,
+            IsError = validationRule.IncludeInXBRL,
+            IsDataError = false,                        
+            FormulaForIf =  BuildComponentValues(ruleStructure.IfComponent),
+            FormulaForThen = BuildComponentValues(ruleStructure.ThenComponent),
+            FormulaForElse = BuildComponentValues(ruleStructure.ElseComponent),
+        };
 
-        //Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms);
-        //ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
+        var res = _SqlFunctions.CreateErrorRule(errorRule);
+        return res;
 
-        //Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms);
-        //ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
-
-        //Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms);
-        //ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
-
-        return ruleStructure;
+        string BuildComponentValues(RuleComponent280 component)
+        {
+            var val = $"{component.DislayRuleTerms()}";
+            return RegexUtils.TruncateString(val,900);
+        }
 
     }
 
-
+     
 }

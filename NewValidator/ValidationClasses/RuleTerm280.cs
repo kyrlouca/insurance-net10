@@ -60,6 +60,11 @@ public record RuleTerm280
         return record;
     }
 
+    public string ToStringValue()
+    {
+        var res = $"{Letter}-{T}-{R}-{C}";
+        return res;
+    }
     static public List<TermAttribute> CreateTermProperties(string text)
     {
 

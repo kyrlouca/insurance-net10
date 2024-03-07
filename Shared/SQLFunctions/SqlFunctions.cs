@@ -1,5 +1,6 @@
 ﻿namespace Shared.SQLFunctions;
 using Dapper;
+using Dapper.Contrib.Extensions;
 using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.DataModels;
@@ -9,6 +10,7 @@ using Shared.SharedHost;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
+using System.Reflection.Metadata;
 
 public class SqlFunctions : ISqlFunctions
 {
@@ -729,6 +731,45 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public  int CreateErrorRule(ERROR_Rule errorRule)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+                
+
+        //var dataRecord = record.Adapt<RecordDataModel>();
+        //dataRecord.IsActive = true;
+        try
+        {
+            int res = (int)connectionLocal.Insert<ERROR_Rule>(errorRule);
+            return res ;
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e.Message);
+            return 0;
+        }
+    }
+
+    public int CreateErrorDocument(int documentId,ErrorDocumentModel errorDocument)
+    {        
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlDelete = @"delete from ERROR_Document where ErrorDocumentId = @documentId";
+        connectionLocal.Execute(sqlDelete, new { documentId });
+        try
+        {
+            int res = (int)connectionLocal.Insert<ErrorDocumentModel>(errorDocument);
+            return res;
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e.Message);
+            return 0;
+        }
+        
+    }
 
 
 }

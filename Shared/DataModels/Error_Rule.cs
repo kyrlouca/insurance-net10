@@ -26,4 +26,6 @@ public class ERROR_Rule
     public string FormulaForIf { get; set; }
     public string FormulaForThen { get; set; }
     public string FormulaForElse { get; set; }
+    public string RuleTerms { get; set; }
+    
 }

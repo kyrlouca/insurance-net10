@@ -69,5 +69,15 @@ public class RuleComponent280
         return rc;
     }
 
+    
+    public string DislayRuleTerms()
+    {
+        var vals = RuleTerms.Aggregate("", (current, value) => {
+            var obj = ObjectTerms[value.Letter];    
+            return $"{value.Letter}:{value.T}:{value.R}:{value.C}##{obj.Obj},"; 
+        });
+        return $"{SymbolExpression}***{vals}";
 
+
+    }
 }
