@@ -61,11 +61,11 @@ public partial class ExpressionEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = !EvaluateGeneralBooleanExpression(value, terms);
-                    return resNot;
+                    var resNot = EvaluateGeneralBooleanExpression(value, terms);
+                    return !resNot;
                 case "isNull":
                     //var resn = ValidationFunctions.ValidateIsNull(value, terms);
-                    var resn = !EvaluateGeneralBooleanExpression(value, terms);                    
+                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);                    
                     return resn;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
@@ -73,6 +73,8 @@ public partial class ExpressionEvaluator
                 case "dim":
                     var resdim = ValidationFunctions.ValidateDim(formula, terms);
                     return resdim;
+                case "true":                    
+                    return true;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
                     var res = EvaluateGeneralBooleanExpression(value, terms);

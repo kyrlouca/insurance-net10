@@ -58,6 +58,8 @@ public class DocumentValidator : IDocumentValidator
         }
         _mModule = module;
         //A ValidationRule may apply to more than one tables and therefore we may have more than one with the same validationID
+        //A validationExpression may be related multiple times with the same table (because the same table is used by more than one module)
+        //my solution is to check if for all the tables of the rules exist a sheet
 
         //729 simple >
         //743 simple isnull
@@ -68,16 +70,16 @@ public class DocumentValidator : IDocumentValidator
         //1809 for max and sequence
         //702 dim
         //2050 scope
-        //4373 else
+        //else
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
-        validationRules = validationRules.Where(vr => vr.ValidationID == 2050).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 743).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
             var HasOpenTable = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
             var hasAggregateFunction = new[] { "sum", "count" }.Any(f => validationRule.Rule.Contains(f));
-            //**check if all the tables exist for this rule??
+            //**check if all the sheets exist for this rule??
 
             if (!HasOpenTable)
             {
@@ -96,15 +98,15 @@ public class DocumentValidator : IDocumentValidator
                 }
                 foreach (var scopeRowCol in scopeRowcols)
                 {
-                    var ruleScope = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                    var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.Rule, validationRule.Filter, validationRule.Scope);
                     if (scopeType != ScopeType.None)
                     {
-                        UpdateRuleTermsWithRowCol(ruleScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleScope.ScopeType);
-                        UpdateRuleTermsWithRowCol(ruleScope.ThenComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleScope.ScopeType);
-                        UpdateRuleTermsWithRowCol(ruleScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleScope.ScopeType);
-                        ruleScope = FillRuleStructureWithFactValues(ruleScope);
-                        var isValidRule = ExpressionEvaluator.ValidateRule(ruleScope);
-                    }                    
+                        UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                        UpdateRuleTermsWithRowCol(ruleForScope.ThenComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                        UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);                        
+                    }
+                    ruleForScope = FillRuleStructureWithFactValues(ruleForScope);
+                    var isValidRule = ExpressionEvaluator.ValidateRule(ruleForScope);
                 }
                                                 
             }

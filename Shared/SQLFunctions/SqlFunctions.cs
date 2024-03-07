@@ -700,6 +700,21 @@ public class SqlFunctions : ISqlFunctions
         //a rule may apply to more than one table (or to no table), therefore rule may appear twice
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
+        var sqlSelectNew = @"
+                SELECT vre.*     
+                FROM
+                  vValidationRuleTables vrt
+                  JOIN vValidationRuleExpressions vre ON vre.ValidationID=vrt.ValidationID
+                WHERE
+                  vrt.ModuleID= @ModuleID
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM vValidationRuleTables mm
+                    WHERE mm.ModuleID<> @ModuleID AND mm.ValidationID=vre.ValidationID
+                    );
+                ";
+
+
         var sqlSelect = @"
            SELECT vre.*
              FROM

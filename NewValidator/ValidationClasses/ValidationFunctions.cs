@@ -4,6 +4,7 @@ using Shared.GeneralUtils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -27,8 +28,8 @@ internal class ValidationFunctions
 
         var value = match.Groups[1].Value;
         var rgxExpression = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
-        var rgx= new Regex(rgxExpression, RegexOptions.IgnoreCase);
-        var matchValidation= rgx.Match(value);
+        var rgx = new Regex(rgxExpression, RegexOptions.IgnoreCase);
+        var matchValidation = rgx.Match(value);
         return matchValidation.Success;
 
     }
@@ -38,7 +39,7 @@ internal class ValidationFunctions
     {
         //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
 
-        var qt= "\"";
+        var qt = "\"";
         var pattern = @$"matches\((.*?)\s*,\s*\{qt}(.*)\{qt}\)";
         var regex = new Regex(pattern);
         var match = regex.Match(text);
@@ -48,8 +49,8 @@ internal class ValidationFunctions
         }
 
         //in real life the first term in the text would be X/d/d but take the actual value for testing 
-        
-        var letter = match.Groups[1].Value;        
+
+        var letter = match.Groups[1].Value;
         var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");
 
         var value = rgxForTestQ.IsMatch(letter) ? rgxForTestQ.Match(letter).Groups[1].Value : terms[letter].Obj.ToString() ?? "";
@@ -62,7 +63,7 @@ internal class ValidationFunctions
 
 
     public static bool ValidateDim(string dimFunction, Dictionary<string, ObjectTerm280> terms)
-    {        
+    {
         //regex the dimfunction: dim(X00,[s2c_dim:NF])=> X00 and s2c_dim:NF .
         //then check if the fact signature contains the dim
         var rgxDim = new Regex(@"dim\((.*),\[(.*)\]");
@@ -71,9 +72,9 @@ internal class ValidationFunctions
         {
             throw (new Exception($"Invalid dimFunction : {dimFunction}"));
         }
-        var term =  terms.SingleOrDefault( tm=> tm.Key== match.Groups[1].Value);
-        return term.Value?.fact?.DataPointSignature.Contains(match.Groups[2].Value) ?? false ;
-        
+        var term = terms.SingleOrDefault(tm => tm.Key == match.Groups[1].Value);
+        return term.Value?.fact?.DataPointSignature.Contains(match.Groups[2].Value) ?? false;
+
     }
 
 
@@ -85,7 +86,7 @@ internal class ValidationFunctions
 
     }
 
-    public static bool ValidateArithmetic(string symbolFormula, Dictionary<string,ObjectTerm280> terms)
+    public static bool ValidateArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
 
         symbolFormula = symbolFormula.Replace("or", "||");
@@ -94,7 +95,7 @@ internal class ValidationFunctions
 
         //Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.ObjectType == "E" ? (object)$"[{item.Value.Obj}]" : item.Value.Obj);
         var rgxTerm = new Regex(@"(X\d\d)");
-        var matchTersm= rgxTerm.Match(symbolFormula);
+        var matchTersm = rgxTerm.Match(symbolFormula);
         if (matchTersm.Success)
         {
             var term = terms[matchTersm.Value];
@@ -104,31 +105,35 @@ internal class ValidationFunctions
                 //symbolFormula = symbolFormula.Replace("[", "\"");
                 //symbolFormula= symbolFormula.Replace("]", "\"");
             }
-            
+
         }
         //todo first i need to split using ">,<,=" and then evaluate each part
         //maybe i need to call EvaluateArithmetic here
         Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
-        var result = Eval.Execute<bool>(symbolFormula,plainObjects);
+        var result = Eval.Execute<bool>(symbolFormula, plainObjects);
         return result;
     }
 
 
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
-        var letter = terms[symbolFormula];
-        var xx = letter?.Obj?.ToString();
-        var isEmpty = (letter?.Obj?.ToString() ?? "") == "emptySequence()";
-        if (letter == null ||  letter?.Obj is null || isEmpty)
+        var rgxNull = new Regex(@"isNull\((.*)\)");
+        var match = (rgxNull.Match(symbolFormula));
+        if (!match.Success)
         {
-            return true;
+            throw new Exception($"ValidateIsNull function cannot parse the formule :{symbolFormula} ");
         }
-        return false;
-        
+        var obj = terms[match.Groups[1].Value];
+        var objTostr = obj?.Obj.ToString() ?? "";
+        var isNull = (obj is null || obj.IsNullFact ||(objTostr == "emptySequence()"));
+                //var isNull = (obj is null || obj.IsNullFact || obj?.Obj?.ToString()??"" == "emptySequence()");
+
+        return isNull;
+
     }
 
 
-    
+
 
 
 }
