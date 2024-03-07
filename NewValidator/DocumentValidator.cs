@@ -72,7 +72,7 @@ public class DocumentValidator : IDocumentValidator
         //1809 for max and sequence
         //702 dim
         //2050 scope
-        //else
+        //743 else
 
         var xx = CreateErrorDocument();
 
@@ -129,6 +129,7 @@ public class DocumentValidator : IDocumentValidator
                 if (ifSeqTerms.Any() && hasAggregateFunction)
                 {
                     rule = FillRuleStructureWithFactValues(rule);
+                    
                     foreach (var ifSeqTerm in ifSeqTerms)
                     {
                         var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
@@ -190,6 +191,15 @@ public class DocumentValidator : IDocumentValidator
 
         return 1;
 
+        void CalculateSumObjectTerms(RuleComponent280 ruleComponent,RuleComponent280 filterComponent)
+        {
+            var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
+            foreach (var thenSeqTerm in seqTerms)
+            {                
+                var res = CalculateSumofSequenceTerm(thenSeqTerm, filterComponent);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
+            }
+        }
     }
     ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count)
     {
