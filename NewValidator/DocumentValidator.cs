@@ -5,6 +5,7 @@ using Shared.GeneralUtils;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
+using Syncfusion.Office;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation;
 using System;
@@ -38,7 +39,7 @@ public class DocumentValidator : IDocumentValidator
     }
     public int ValidateDocument()
     {
-        //filters 
+        
 
         var doc = _SqlFunctions.SelectDocInstance(_parameterData.DocumentId);
         if (doc is null)
@@ -83,7 +84,7 @@ public class DocumentValidator : IDocumentValidator
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
             var HasOpenTable = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
             var hasAggregateFunction = new[] { "sum", "count" }.Any(f => validationRule.Rule.Contains(f));
-            //**check if all the sheets exist for this rule??
+            //**todo check if all the sheets exist for this rule??
 
             if (!HasOpenTable)
             {
@@ -117,7 +118,7 @@ public class DocumentValidator : IDocumentValidator
             }
             else if (HasOpenTable)
             {
-                //if there is an open table involved and there is NO seq then start from the master
+                //if there is an open ta ble involved and there is NO seq then start from the master
                 //--  create a rule for each row of the m aster (so you have the row )
                 //--- fill the row of the slave by using the key
                 //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
@@ -125,30 +126,35 @@ public class DocumentValidator : IDocumentValidator
                 //--- the resulting object will have both the sum and the count because the function is not known  at the time 
                 var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                 
+
                 var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);
                 if (ifSeqTerms.Any() && hasAggregateFunction)
                 {
                     rule = FillRuleStructureWithFactValues(rule);
-                    
-                    foreach (var ifSeqTerm in ifSeqTerms)
-                    {
-                        var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
-                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, -999, sum, count);
-                    }
 
-                    var thenSeqTerms = rule.ThenComponent.RuleTerms.Where(rt => rt.IsSequence);
-                    foreach (var thenSeqTerm in thenSeqTerms)
-                    {
-                        var res = CalculateSumofSequenceTerm(thenSeqTerm, rule.FilterComponent);
-                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
-                    }
+                    CalculateObjectTermsWithSeqSum(rule.IfComponent, rule.FilterComponent);
+                    CalculateObjectTermsWithSeqSum(rule.ThenComponent, rule.FilterComponent);
+                    CalculateObjectTermsWithSeqSum(rule.ElseComponent, rule.FilterComponent);
 
-                    var elseSeqTerms = rule.ElseComponent.RuleTerms.Where(rt => rt.IsSequence);
-                    foreach (var elseSeqTerm in elseSeqTerms)
-                    {
-                        var res = CalculateSumofSequenceTerm(elseSeqTerm, rule.FilterComponent);
-                        ReplaceObjTerm(rule.IfComponent.ObjectTerms, elseSeqTerm.Letter, -999, res.sum, res.count);
-                    }
+                    //foreach (var ifSeqTerm in ifSeqTerms)
+                    //{
+                    //    var (sum, count) = CalculateSumofSequenceTerm(ifSeqTerm, rule.FilterComponent);
+                    //    ReplaceObjTerm(rule.IfComponent.ObjectTerms, ifSeqTerm.Letter, -999, sum, count);
+                    //}
+
+                    //var thenSeqTerms = rule.ThenComponent.RuleTerms.Where(rt => rt.IsSequence);
+                    //foreach (var thenSeqTerm in thenSeqTerms)
+                    //{
+                    //    var res = CalculateSumofSequenceTerm(thenSeqTerm, rule.FilterComponent);
+                    //    ReplaceObjTerm(rule.IfComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
+                    //}
+
+                    //var elseSeqTerms = rule.ElseComponent.RuleTerms.Where(rt => rt.IsSequence);
+                    //foreach (var elseSeqTerm in elseSeqTerms)
+                    //{
+                    //    var res = CalculateSumofSequenceTerm(elseSeqTerm, rule.FilterComponent);
+                    //    ReplaceObjTerm(rule.IfComponent.ObjectTerms, elseSeqTerm.Letter, -999, res.sum, res.count);
+                    //}
 
                     var isValidRule = ExpressionEvaluator.ValidateRule(rule);
                     CreateRuleError(rule, validationRule);
@@ -156,7 +162,6 @@ public class DocumentValidator : IDocumentValidator
 
                 if (!ifSeqTerms.Any())
                 {
-
 
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
                     var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
@@ -186,12 +191,10 @@ public class DocumentValidator : IDocumentValidator
                 }
 
             }
-
         }
-
         return 1;
 
-        void CalculateSumObjectTerms(RuleComponent280 ruleComponent,RuleComponent280 filterComponent)
+        void CalculateObjectTermsWithSeqSum(RuleComponent280 ruleComponent,RuleComponent280 filterComponent)
         {
             var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
             foreach (var thenSeqTerm in seqTerms)
