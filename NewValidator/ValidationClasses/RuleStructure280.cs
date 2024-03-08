@@ -80,6 +80,10 @@ public class RuleStructure280
     private static (ScopeType scopeType, List<string> rowsCols) GetScopeItems(RuleComponent280 scopeComponent)
     {
         var scope = scopeComponent.RuleTerms.FirstOrDefault();
+        if (scope == null)
+        {
+            return (ScopeType.None, new List<string>());
+        }
         var rows = (scope == null) ? new List<string>() : scope.R.Split(";",StringSplitOptions.RemoveEmptyEntries).ToList();
         var cols = (scope == null) ? new List<string>() : scope.C.Split(";",StringSplitOptions.RemoveEmptyEntries).ToList();
 

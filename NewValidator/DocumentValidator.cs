@@ -39,7 +39,7 @@ public class DocumentValidator : IDocumentValidator
     }
     public int ValidateDocument()
     {
-        
+
 
         var doc = _SqlFunctions.SelectDocInstance(_parameterData.DocumentId);
         if (doc is null)
@@ -74,85 +74,66 @@ public class DocumentValidator : IDocumentValidator
         //702 dim
         //2050 scope
         //743 else
-
+        //683 open tables
         var xx = CreateErrorDocument();
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
-        //validationRules = validationRules.Distinct().ToList();
+        ValidationRuleComparer comparer = new();        
+        validationRules = validationRules.Distinct(comparer).ToList();
         
-        validationRules = validationRules.Where(vr => vr.ValidationID == 743).ToList();
+
+
+        validationRules = validationRules.Where(vr => vr.ValidationID == 683).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
             var HasOpenTable = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
-            
-            var allOpenTables = tablesInValidation.All(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
-            var allClosedTables = !tablesInValidation.All(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
-            var mixedTables = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID)) && tablesInValidation.Any(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
 
-            var hasAggregateFunction = new[] { "sum", "count" }.Any(f => validationRule.Rule.Contains(f));
+            var isAllOpenTables = tablesInValidation.All(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
+            var isAllClosedTables = tablesInValidation.All(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
+            var isMixedTables = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID)) && tablesInValidation.Any(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
+
+
+            var hasAggregateFunction = new[] { "sum", "count" }.Any(fn => validationRule.Rule.Contains(fn));
             //**todo check if all the sheets exist for this rule??
 
-            if (!HasOpenTable)
+            //*********** SCOPE 
+            var rulex1 = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+            var scopeRowcols = rulex1.ScopeRowCols;
+            var scopeType = rulex1.ScopeType;
+            if (scopeType == ScopeType.None)
             {
-                var mainTable = tablesInValidation.FirstOrDefault();
-                var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
-                //foreach sheet...
-
-
-                //*********** SCOPE 
-                var rulex1 = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-                var scopeRowcols = rulex1.ScopeRowCols;
-                var scopeType = rulex1.ScopeType;
-                if (scopeType == ScopeType.None)
-                {
-                    scopeRowcols.Add("");
-                }
-                foreach (var scopeRowCol in scopeRowcols)
-                {
-                    var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-                    if (scopeType != ScopeType.None)
-                    {
-                        UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
-                        UpdateRuleTermsWithRowCol(ruleForScope.ThenComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
-                        UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);                        
-                    }
-                    ruleForScope = FillRuleStructureWithFactValues(ruleForScope);
-                    var isValidRule = ExpressionEvaluator.ValidateRule(ruleForScope);
-                    CreateRuleError(ruleForScope, validationRule);
-                }
-                                                
+                scopeRowcols.Add("");
             }
-            else if (HasOpenTable)
+            var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+            foreach (var scopeRowCol in scopeRowcols)
             {
-                //if there is an open table involved and there is NO seq then start from the master
-                //--  create a rule for each row of the m aster (so you have the row )
-                //--- fill the row of the slave by using the key
-                //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
-                //--- for each row of the seq, check the filter using the row of the slave . 
-                //--- the resulting object will have both the sum and the count because the function is not known  at the time 
-                var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                 
-
-                var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);
-                if (ifSeqTerms.Any() && hasAggregateFunction)
+                if (scopeType != ScopeType.None)
                 {
-                    rule = FillRuleStructureWithFactValues(rule);
+                    UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                    UpdateRuleTermsWithRowCol(ruleForScope.ThenComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                    UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                }
 
-                    CalculateObjectTermsWithSeqSum(rule.IfComponent, rule.FilterComponent);
-                    CalculateObjectTermsWithSeqSum(rule.ThenComponent, rule.FilterComponent);
-                    CalculateObjectTermsWithSeqSum(rule.ElseComponent, rule.FilterComponent);
 
-                    var isValidRule = ExpressionEvaluator.ValidateRule(rule);
-                    CreateRuleError(rule, validationRule);
-                };
 
-                if (!ifSeqTerms.Any())
+                //I think we cannot have isAllOpenTables with Aggregates . Only mix
+                //also rules for metric
+
+                //check if no seq and all tables are open                 
+                //--if there is a filter => it is an open table 
+                //sum with seq 
+                //for open tables use all the rows and apply filter and :filter
+                //Closed Tables: sum without seq , use the R: to create terms (3780) OR the terms are separated by commas
+                var isWithoutAggregate = !ruleForScope.IfComponent.RuleTerms.Any(rt => rt.IsSequence);
+                if (isWithoutAggregate && isAllOpenTables)
                 {
+                    //create one rule for each row and apply filter 
 
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
                     var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
-                    var fklTable = kyrTable?.FK_TableCol ?? "";
+                    var fklTable = kyrTable?.FK_TableCode ?? "";
                     var fkCol = kyrTable?.FK_TableCol ?? "";
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
@@ -177,15 +158,53 @@ public class DocumentValidator : IDocumentValidator
 
                 }
 
+
+            }
+
+
+
+            if (!HasOpenTable && 1 == 2)
+            {
+                var mainTable = tablesInValidation.FirstOrDefault();
+                var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
+                //foreach sheet...
+
+            }
+            else if (HasOpenTable && 1 == 2)
+            {
+                //if there is an open table involved and there is NO seq then start from the master
+                //--  create a rule for each row of the m aster (so you have the row )
+                //--- fill the row of the slave by using the key
+                //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
+                //--- for each row of the seq, check the filter using the row of the slave . 
+                //--- the resulting object will have both the sum and the count because the function is not known  at the time 
+                var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+
+
+                var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);
+                if (ifSeqTerms.Any() && hasAggregateFunction)
+                {
+                    rule = FillRuleStructureWithFactValues(rule);
+
+                    CalculateObjectTermsWithSeqSum(rule.IfComponent, rule.FilterComponent);
+                    CalculateObjectTermsWithSeqSum(rule.ThenComponent, rule.FilterComponent);
+                    CalculateObjectTermsWithSeqSum(rule.ElseComponent, rule.FilterComponent);
+
+                    var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+                    CreateRuleError(rule, validationRule);
+                };
+
+
+
             }
         }
         return 1;
 
-        void CalculateObjectTermsWithSeqSum(RuleComponent280 ruleComponent,RuleComponent280 filterComponent)
+        void CalculateObjectTermsWithSeqSum(RuleComponent280 ruleComponent, RuleComponent280 filterComponent)
         {
             var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
             foreach (var thenSeqTerm in seqTerms)
-            {                
+            {
                 var res = CalculateSumofSequenceTerm(thenSeqTerm, filterComponent);
                 ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
             }
@@ -340,16 +359,16 @@ public class DocumentValidator : IDocumentValidator
         {
             IsDocumentValid = true,
             ErrorDocumentId = DocumentId,
-            OrganisationId=_parameterData.FundId,
-            UserId=_parameterData.UserId.ToString(),
-            ErrorCounter=true,
-            WarningCounter=true,
+            OrganisationId = _parameterData.FundId,
+            UserId = _parameterData.UserId.ToString(),
+            ErrorCounter = true,
+            WarningCounter = true,
         };
         var errorDocument = _SqlFunctions.CreateErrorDocument(errorDoc);
         return errorDocument;
     }
 
-        private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
+    private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
     {
 
         var errorRule = new ERROR_Rule
@@ -357,16 +376,16 @@ public class DocumentValidator : IDocumentValidator
             RuleId = ruleStructure.RuleId,
             ErrorDocumentId = DocumentId,
             //Scope = RegexUtils.TruncateString(rule.Sc, 800),
-            DataType="",
+            DataType = "",
             TableBaseFormula = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
             Filter = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
             SheetId = 0,
-            SheetCode = validationRule.Scope,            
+            SheetCode = validationRule.Scope,
             RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
             IsWarning = validationRule.AlwaysOn,
             IsError = validationRule.IncludeInXBRL,
-            IsDataError = false,                        
-            FormulaForIf =  BuildComponentValues(ruleStructure.IfComponent),
+            IsDataError = false,
+            FormulaForIf = BuildComponentValues(ruleStructure.IfComponent),
             FormulaForThen = BuildComponentValues(ruleStructure.ThenComponent),
             FormulaForElse = BuildComponentValues(ruleStructure.ElseComponent),
         };
@@ -377,10 +396,28 @@ public class DocumentValidator : IDocumentValidator
         string BuildComponentValues(RuleComponent280 component)
         {
             var val = $"{component.DislayRuleTerms()}";
-            return RegexUtils.TruncateString(val,900);
+            return RegexUtils.TruncateString(val, 900);
         }
 
     }
 
-     
+
+    class ValidationRuleComparer : IEqualityComparer<VValidationRuleExpressions>
+    {
+        public bool Equals(VValidationRuleExpressions? b1, VValidationRuleExpressions? b2)
+        {
+            if (ReferenceEquals(b1, b2))
+                return true;
+
+            if (b2 is null || b1 is null)
+                return false;
+
+            return b1.ValidationID == b2.ValidationID;
+                
+        }
+
+        public int GetHashCode(VValidationRuleExpressions vr) => vr.ValidationID;
+    }
+
+
 }
