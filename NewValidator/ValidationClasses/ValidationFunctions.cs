@@ -48,7 +48,7 @@ internal class ValidationFunctions
             throw new InvalidOperationException($"invalid match:{text} ");
         }
 
-        //in real life the first term in the text would be X/d/d but take the actual value for testing 
+        
 
         var letter = match.Groups[1].Value;
         var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");

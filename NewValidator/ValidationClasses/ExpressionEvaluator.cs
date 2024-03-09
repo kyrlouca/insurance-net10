@@ -3,6 +3,7 @@ using Syncfusion.XlsIO.Implementation.Collections.Grouping;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 using System.Data;
 using System.Net.Http.Headers;
+using System.Reflection.Metadata.Ecma335;
 using System.Text.RegularExpressions;
 using Z.Expressions;
 
@@ -24,35 +25,29 @@ public partial class ExpressionEvaluator
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-
-        //if iffy is false 
+                       
         var isValidIf = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
-
-
-
         if (ruleStructure280.ThenComponent.IsEmpty)
         {
             return isValidIf;
         }
+
+        //thenComponent EXISTS                
+        if (ruleStructure280.ElseComponent.IsEmpty)
+        {
+            var resWithoutElse = isValidIf
+                ? ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms)
+                : false;
+            return resWithoutElse;
+        }
         else
         {
-            var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
-            if (ruleStructure280.ElseComponent.IsEmpty)
-            {
-                return isValidThen;
-            }
-            else
-            {
-                var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
-                return isValidElse;
-            }
+            //elseComponent EXISTS
+            var resWithElse = isValidIf
+               ? ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms)
+               : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
+            return resWithElse;
         }
-
-
-
-
-
-
     }
 
 

@@ -117,11 +117,7 @@ public class DocumentValidator : IDocumentValidator
                     UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
                 }
 
-
-
-                //I think we cannot have isAllOpenTables with Aggregates . Only mix
                 //also rules for metric
-
                 //check if no seq and all tables are open                 
                 //--if there is a filter => it is an open table 
                 //sum with seq 
@@ -146,17 +142,33 @@ public class DocumentValidator : IDocumentValidator
                             //find the row from the column that has the foreign key
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
-                            var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, fkCol)?.Row ?? "";
+                            var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, fkCol)?.RowForeign ?? "";
                             UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+                            UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
+
+                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
+                            if (!isFilterValid )
+                            {
+                                continue;
+                            };
+
                             var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
-                            CreateRuleError(ruleOpen, validationRule);
+                            if (!isValidRowRule )
+                            {
+                                CreateRuleError(ruleOpen, validationRule);
+                            }
+                            
                         }
                     }
 
 
+                }
+                if (!isWithoutAggregate && isAllOpenTables)
+                {
+                    //we may have aggregates but the sum and count are within 
                 }
 
 
@@ -294,6 +306,9 @@ public class DocumentValidator : IDocumentValidator
 
         Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms);
         ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
+
+        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.FilterComponent.RuleTerms);
+        ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
 
         return ruleStructure;
 
