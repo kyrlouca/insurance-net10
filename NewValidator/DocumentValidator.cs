@@ -101,6 +101,7 @@ public class DocumentValidator : IDocumentValidator
             var rulex1 = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
             var scopeRowcols = rulex1.ScopeRowCols;
             var scopeType = rulex1.ScopeType;
+            //** if no scope, add one entry to go through
             if (scopeType == ScopeType.None)
             {
                 scopeRowcols.Add("");

@@ -12,7 +12,7 @@ public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 //public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj,double sum,int count, bool IsNullFact, List<TemplateSheetFact> SeqFacts);
-public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj,double sumValue,int countValue, TemplateSheetFact? fact , bool IsNullFact);
+public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
 public record ZetTerm(string Letter, string Formula, bool IsPassed);
 public record ArTerm(string Letter, string Formula, double ValueReal, string ValueString);
 
@@ -24,19 +24,36 @@ public partial class ExpressionEvaluator
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-        
-        var isValidIf = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.IfComponent.SymbolExpression,ruleStructure280.IfComponent.ObjectTerms);
-        if (isValidIf)
+
+        //if iffy is false 
+        var isValidIf = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
+
+
+
+        if (ruleStructure280.ThenComponent.IsEmpty)
         {
-            var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
-            return isValidThen;
+            return isValidIf;
         }
         else
         {
-            var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
-            return isValidElse;
-        }      
-     }
+            var isValidThen = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
+            if (ruleStructure280.ElseComponent.IsEmpty)
+            {
+                return isValidThen;
+            }
+            else
+            {
+                var isValidElse = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
+                return isValidElse;
+            }
+        }
+
+
+
+
+
+
+    }
 
 
     public static bool EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
@@ -46,7 +63,7 @@ public partial class ExpressionEvaluator
         //1. outer parenthesis with or without function =>=> evaluate function or remove parenthesis and recurse
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis. (replace each term in parenthesis with Zxx and its value (1==1 for true, and 1==2 for false)
         //3. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
-        
+
         var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
 
         //Check if this is an outer parenthesis or an Outer function.
@@ -65,7 +82,7 @@ public partial class ExpressionEvaluator
                     return !resNot;
                 case "isNull":
                     //var resn = ValidationFunctions.ValidateIsNull(value, terms);
-                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);                    
+                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);
                     return resn;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
@@ -73,7 +90,7 @@ public partial class ExpressionEvaluator
                 case "dim":
                     var resdim = ValidationFunctions.ValidateDim(formula, terms);
                     return resdim;
-                case "true":                    
+                case "true":
                     return true;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
@@ -213,7 +230,7 @@ public partial class ExpressionEvaluator
             .Select(ft =>
             {
                 var val = EvaluateFunction(ft.FullText, terms);
-                return (ft.Letter, new ObjectTerm280("F", 0, false, val,0,0,null, false));
+                return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));
             });
         var allTerms = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 0 })).ToList();
         allTerms.AddRange(newObjTerms);
@@ -284,23 +301,23 @@ public partial class ExpressionEvaluator
                 argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
             //if isum or icount do NOT recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count            
-            if (functionType== FunctionAggregateTypes.iSum || functionType== FunctionAggregateTypes.iCount)
+            if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
             {
-                var sameObj = terms.FirstOrDefault(tr=>tr.Key==functionContent).Value;                
+                var sameObj = terms.FirstOrDefault(tr => tr.Key == functionContent).Value;
                 return sameObj;
             }
-            var res = EvaluateArithmeticRecursively(argSplit, terms);            
-            var obj = new ObjectTerm280("F", 0, false, res,0,0,null, false);
+            var res = EvaluateArithmeticRecursively(argSplit, terms);
+            var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
             return obj;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
         return finalFunctionValue;
-        
+
     }
 
     static double EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ObjectTerm280> terms)
     {
-        
+
         switch (functionType)
         {
             case FunctionAggregateTypes.iMin:
@@ -381,7 +398,7 @@ public partial class ExpressionEvaluator
             return replacedString;
         });
 
-         return (contentFormulaWithSymbols, nestedFunctions);
+        return (contentFormulaWithSymbols, nestedFunctions);
     }
 
 
