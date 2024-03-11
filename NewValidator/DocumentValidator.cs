@@ -151,7 +151,7 @@ public class DocumentValidator : IDocumentValidator
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
 
                             var isFilterValid = ruleOpen.FilterComponent.IsEmpty
-                                || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms) != KleeneValue.True;
+                                || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ZetTerms) != KleeneValue.True;
                             if (!isFilterValid)
                             {
                                 continue;

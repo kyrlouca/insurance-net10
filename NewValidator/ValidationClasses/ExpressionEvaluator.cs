@@ -294,10 +294,12 @@ public partial class ExpressionEvaluator
         var newObjTerms = functionObjects
             .Select(ft =>
             {
-                var val = EvaluateFunction(ft.FullText, terms);
-                return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));
+                //var val = EvaluateFunction(ft.FullText, terms);
+                var val = EvaluateFunction(ft.Formula, terms);
+                //return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));
+                return (ft.Letter, new ZetTerm("F", "", "", FunctionAggregateTypes.Plain, null, val, KleeneValue.Unknown));
             });
-        var allTerms = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 0 })).ToList();
+        var allTerms = terms.Select(trm => (trm.Key, trm.Value with { FunctionType  = FunctionAggregateTypes.Plain })).ToList();
         allTerms.AddRange(newObjTerms);
         var allObjectsDic = allTerms.ToDictionary(x => x.Key, x => x.Item2);
 
@@ -322,7 +324,7 @@ public partial class ExpressionEvaluator
         return result;
     }
 
-    public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
+    public static double EvaluateFunction(string functionText, Dictionary<string, ZetTerm> terms)
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
@@ -363,7 +365,7 @@ public partial class ExpressionEvaluator
             foreach (var ft in innerFunctionTerms)
             {
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
-                argSplit = argSplit.Replace(ft.Letter, ft.FullText);
+                argSplit = argSplit.Replace(ft.Letter, ft.Formula);
             }
             //if isum or icount do NOT recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count            
             if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
@@ -372,7 +374,9 @@ public partial class ExpressionEvaluator
                 return sameObj;
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);
-            var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
+            //var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
+            var obj =   new ZetTerm("F","","",FunctionAggregateTypes.Plain,null, null, KleeneValue.Unknown);
+
             return obj;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
@@ -380,23 +384,23 @@ public partial class ExpressionEvaluator
 
     }
 
-    static double EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ObjectTerm280> terms)
+    static double EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ZetTerm> terms)
     {
 
         switch (functionType)
         {
             case FunctionAggregateTypes.iMin:
-                var min = terms.Min(item => item.Obj);
+                var min = terms.Min(item => item?.Object280?.Obj);
                 return Convert.ToDouble(min);
 
             case FunctionAggregateTypes.iMax:
-                var max = terms.Max(item => item.Obj);
+                var max = terms.Max(item => item?.Object280?.Obj);
                 return Convert.ToDouble(max);
             case FunctionAggregateTypes.iSum:
                 //there is only ONE terms inside a isum/icount so no worries
-                return Convert.ToDouble(terms.FirstOrDefault()?.sumValue ?? 0);
+                return Convert.ToDouble(terms.FirstOrDefault()?.Object280?.sumValue ?? 0);
             case FunctionAggregateTypes.iCount:
-                return Convert.ToDouble(terms.FirstOrDefault()?.countValue ?? 0);
+                return Convert.ToDouble(terms.FirstOrDefault()?.Object280?.countValue ?? 0);
             default: return 0;
 
 
@@ -416,12 +420,12 @@ public partial class ExpressionEvaluator
             _ => throw new ArgumentException("Invalid function type"),
         };
 
-    public static DoubleObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static DoubleObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ZetTerm> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
         //what if a term is null ???
-        Dictionary<string, DoubleObject> doubleObjects = terms.ToDictionary(item => item.Key, item => stringToDouble(item.Value.Obj));
+        Dictionary<string, DoubleObject> doubleObjects = terms.ToDictionary(item => item.Key, item => stringToDouble(item.Value?.ObjectValue));
 
         var isNull = doubleObjects.Any(x => x.Value.IsNull);
         if (isNull)
@@ -432,7 +436,7 @@ public partial class ExpressionEvaluator
         return new DoubleObject(false, result);
 
 
-        static DoubleObject stringToDouble(object obj)
+        static DoubleObject stringToDouble(object? obj)
         {
             if (obj is null)
             {
