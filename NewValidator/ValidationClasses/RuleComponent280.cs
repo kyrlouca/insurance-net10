@@ -25,6 +25,7 @@ public class RuleComponent280
     public string SymbolExpression { get; set; } = "";
     public Dictionary<string, ObjectTerm280> ObjectTerms { get; set; } = new();
 
+    public Dictionary<string, ZetTerm> ZetTerms { get; set; } = new();
 
     public static RuleComponent280 CreateComponent(string textExpression)
     {
