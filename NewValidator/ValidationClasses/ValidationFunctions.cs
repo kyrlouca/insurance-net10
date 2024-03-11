@@ -35,7 +35,7 @@ internal class ValidationFunctions
     }
 
 
-    public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
+    public static bool ValidateMatch(string text, Dictionary<string, ZetTerm> terms)
     {
         //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
 
@@ -53,7 +53,7 @@ internal class ValidationFunctions
         var letter = match.Groups[1].Value;
         var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");
 
-        var value = rgxForTestQ.IsMatch(letter) ? rgxForTestQ.Match(letter).Groups[1].Value : terms[letter].Obj.ToString() ?? "";
+        var value = rgxForTestQ.IsMatch(letter) ? rgxForTestQ.Match(letter).Groups[1].Value : terms[letter].Object280?.Obj?.ToString() ?? "";
 
         var rgxFromValue = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
         var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
@@ -62,7 +62,7 @@ internal class ValidationFunctions
     }
 
 
-    public static bool ValidateDim(string dimFunction, Dictionary<string, ObjectTerm280> terms)
+    public static bool ValidateDim(string dimFunction, Dictionary<string, ZetTerm> terms)
     {
         //regex the dimfunction: dim(X00,[s2c_dim:NF])=> X00 and s2c_dim:NF .
         //then check if the fact signature contains the dim
@@ -73,7 +73,7 @@ internal class ValidationFunctions
             throw (new Exception($"Invalid dimFunction : {dimFunction}"));
         }
         var term = terms.SingleOrDefault(tm => tm.Key == match.Groups[1].Value);
-        return term.Value?.fact?.DataPointSignature.Contains(match.Groups[2].Value) ?? false;
+        return term.Value?.Object280?.fact?.DataPointSignature.Contains(match.Groups[2].Value) ?? false;
 
     }
 
@@ -119,7 +119,7 @@ internal class ValidationFunctions
     }
 
 
-    public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ZetTerm> terms)
     {
         var rgxNull = new Regex(@"isNull\((.*)\)");
         var match = (rgxNull.Match(symbolFormula));
@@ -127,9 +127,10 @@ internal class ValidationFunctions
         {
             throw new Exception($"ValidateIsNull function cannot parse the formule :{symbolFormula} ");
         }
-        var obj = terms[match.Groups[1].Value];
-        var objTostr = obj?.Obj.ToString() ?? "";
-        var isNull = (obj is null || obj.IsNullFact || (objTostr == "emptySequence()"));
+        var zetRc = terms[match.Groups[1].Value];
+        //var objTostr = zetObj?.Obj.ToString() ?? "";
+        var objTostr = zetRc?.Object280?.Obj?.ToString() ?? "";        
+        var isNull = (zetRc is null || (zetRc?.Object280?.IsNullFact??true)  || (objTostr == "emptySequence()"));
 
         return isNull;
 

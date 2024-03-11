@@ -83,7 +83,7 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static KleeneValue EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
+    public static KleeneValue EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ZetTerm> terms)
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
