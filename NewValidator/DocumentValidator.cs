@@ -387,7 +387,7 @@ public class DocumentValidator : IDocumentValidator
             if (filterTerms.Any())
             {
                 var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(filterComponent.SymbolExpression, filterTerms);
-                return res;
+                return res==KleeneValue.True;
             }
             return true;
         }

@@ -163,7 +163,7 @@ public partial class ExpressionEvaluator
             var newFormula = Enumerable.Aggregate<ZetTerm, string>(parenthesisTerms, formulaParen, (Func<string, ZetTerm, string>)((currentText, val) =>
             {
                 int index = currentText.IndexOf(val.Letter);
-                var replacement = (val.IsPassed == KleeneValue.True) ? "1==1" : "1==2";
+                var replacement = (val.KleenValue == KleeneValue.True) ? "1==1" : "1==2";
                 string replacedString = currentText[..index] + " " + replacement + " " + currentText[(index + val.Letter.Length)..];
                 return replacedString;
             }));
