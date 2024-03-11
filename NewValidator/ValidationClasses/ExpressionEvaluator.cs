@@ -22,7 +22,6 @@ public record BooleanObject(bool IsNull, bool Value);
 public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
-//public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj,double sum,int count, bool IsNullFact, List<TemplateSheetFact> SeqFacts);
 public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
 public record ZetTerm(string Letter, string Formula, KleeneValue IsPassed);
 public record ArTerm(string Letter, string Formula, double ValueReal, string ValueString);
