@@ -145,6 +145,7 @@ public partial class ExpressionEvaluator
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis and return the result 1==1 for true 1==2 for false
         if (ruleTextParenTerms.Any())
         {
+            //*** i changed that to remove the trick with 1==1
             //build a new formula where the terms(inside parenthesis) are replaced with the letters of the textTersms
             var formulaParen = ruleTextParenTerms.Aggregate(formula, (currentText, val) =>
             {
@@ -155,7 +156,7 @@ public partial class ExpressionEvaluator
 
             //Evaluate each of these terms 
             var parenthesisTerms = ruleTextParenTerms
-            .Select(zz => zz with { IsPassed = EvaluateGeneralBooleanExpression(zz.Formula, terms) })
+             .Select(zz => zz with { IsPassed = EvaluateGeneralBooleanExpression(zz.Formula, terms) })
             .ToList();
 
             //the new formula replaces each term(boolean) with either 1=1 or 1==2
@@ -170,6 +171,7 @@ public partial class ExpressionEvaluator
             var res = ValidationFunctions.ValidateArithmetic(newFormula, terms);
             return res;
         }
+
 
 
         //*******************************************************************
