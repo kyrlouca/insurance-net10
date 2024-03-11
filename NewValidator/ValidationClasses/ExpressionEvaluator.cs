@@ -19,12 +19,12 @@ public enum KleeneValue
 }
 public record DoubleObject(bool IsNull, double Value);
 public record BooleanObject(bool IsNull, bool Value);
-public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max };
+public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max,Plain };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
-public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
-public record ZetTerm(string Letter, string Formula, KleeneValue IsPassed);
-public record ArTerm(string Letter, string Formula, double ValueReal, string ValueString);
+public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
+public record ZetTerm(string Letter, string Formula, string FunctionArgument, FunctionAggregateTypes FunctionType,  ObjectTerm280? Object280, Object? ObjectValue,  KleeneValue KleenValue);
+
 
 public partial class ExpressionEvaluator
 {
@@ -128,7 +128,7 @@ public partial class ExpressionEvaluator
                     return res;
             }
         }
-
+         
 
         //////////////////////////////// Make new formula with zet 
         //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) => x1<3 or Z00
@@ -139,7 +139,8 @@ public partial class ExpressionEvaluator
         var rgxTerm = new Regex(@"(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
 
         var matchesTerms = rgxTerm.Matches(formula.Trim());
-        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, KleeneValue.Unknown)) ?? new List<ZetTerm>();
+        //var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, KleeneValue.Unknown)) ?? new List<ZetTerm>();
+        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, ToFunctionType(match.Groups[1].Value),null,null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
 
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis and return the result 1==1 for true 1==2 for false
         if (ruleTextParenTerms.Any())
@@ -155,17 +156,17 @@ public partial class ExpressionEvaluator
 
             //Evaluate each of these terms 
             var parenthesisTerms = ruleTextParenTerms
-             .Select(zz => zz with { IsPassed = EvaluateGeneralBooleanExpression(zz.Formula, terms) })
+             .Select(zz => zz with { KleenValue = EvaluateGeneralBooleanExpression(zz.Formula, terms) })
             .ToList();
 
             //the new formula replaces each term(boolean) with either 1=1 or 1==2
-            var newFormula = parenthesisTerms.Aggregate(formulaParen, (currentText, val) =>
+            var newFormula = Enumerable.Aggregate<ZetTerm, string>(parenthesisTerms, formulaParen, (Func<string, ZetTerm, string>)((currentText, val) =>
             {
                 int index = currentText.IndexOf(val.Letter);
-                var replacement = (val.IsPassed==KleeneValue.True ) ? "1==1" : "1==2";
+                var replacement = (val.IsPassed == KleeneValue.True) ? "1==1" : "1==2";
                 string replacedString = currentText[..index] + " " + replacement + " " + currentText[(index + val.Letter.Length)..];
                 return replacedString;
-            });
+            }));
 
             var res = ValidationFunctions.ValidateArithmetic(newFormula, terms);
             return res;
@@ -411,6 +412,7 @@ public partial class ExpressionEvaluator
             "max" => FunctionAggregateTypes.Max,
             "isum" => FunctionAggregateTypes.iSum,
             "icount" => FunctionAggregateTypes.iCount,
+            "plain" => FunctionAggregateTypes.Plain,
             _ => throw new ArgumentException("Invalid function type"),
         };
 

@@ -150,7 +150,8 @@ public class DocumentValidator : IDocumentValidator
                             UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
 
-                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
+                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty 
+                                || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms)!=KleeneValue.True;
                             if (!isFilterValid )
                             {
                                 continue;
@@ -281,6 +282,10 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
+    private static ObjectTerm280 CreateObjectTerm280Empty()
+    {
+        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true);
+    }
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance)
     {
         if (fact == null)
