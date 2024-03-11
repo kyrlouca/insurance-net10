@@ -75,6 +75,7 @@ public class DocumentValidator : IDocumentValidator
         //2050 scope
         //743 else
         //683 open tables
+        //2038 closed tables sum
         var xx = CreateErrorDocument();
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
@@ -83,7 +84,7 @@ public class DocumentValidator : IDocumentValidator
         
 
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 683).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 2038).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
@@ -169,6 +170,31 @@ public class DocumentValidator : IDocumentValidator
                 if (!isWithoutAggregate && isAllOpenTables)
                 {
                     //we may have aggregates but the sum and count are within 
+                }
+                
+                if (isAllClosedTables)
+                {
+                    var mainTable = tablesInValidation.FirstOrDefault();
+                    var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
+                    foreach (var sheet in sheets)
+                    {
+                        var  ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                        if (scopeType != ScopeType.None)
+                        {
+                            UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                            UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                            UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                            UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                        }
+
+
+                        ruleClosed = FillRuleStructureWithFactValues(ruleClosed);
+                        var isValidClosedRule = ExpressionEvaluator.ValidateRule(ruleClosed);
+                        if (!isValidClosedRule)
+                        {
+                            CreateRuleError(ruleClosed, validationRule);
+                        }
+                    }
                 }
 
 

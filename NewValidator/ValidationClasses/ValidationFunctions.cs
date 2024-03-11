@@ -48,7 +48,7 @@ internal class ValidationFunctions
             throw new InvalidOperationException($"invalid match:{text} ");
         }
 
-        
+
 
         var letter = match.Groups[1].Value;
         var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");
@@ -86,7 +86,7 @@ internal class ValidationFunctions
 
     }
 
-    public static bool ValidateArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static KleeneValue ValidateArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
 
         symbolFormula = symbolFormula.Replace("or", "||");
@@ -107,11 +107,15 @@ internal class ValidationFunctions
             }
 
         }
-        //todo first i need to split using ">,<,=" and then evaluate each part
-        //maybe i need to call EvaluateArithmetic here
+        //todo check ONLY the terms involved in the formula?
+        
         Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
+        if (plainObjects.Any(po => po.Value is null))
+        {
+            return KleeneValue.Unknown;
+        }
         var result = Eval.Execute<bool>(symbolFormula, plainObjects);
-        return result;
+        return result ? KleeneValue.True : KleeneValue.False;
     }
 
 
@@ -125,8 +129,7 @@ internal class ValidationFunctions
         }
         var obj = terms[match.Groups[1].Value];
         var objTostr = obj?.Obj.ToString() ?? "";
-        var isNull = (obj is null || obj.IsNullFact ||(objTostr == "emptySequence()"));
-                //var isNull = (obj is null || obj.IsNullFact || obj?.Obj?.ToString()??"" == "emptySequence()");
+        var isNull = (obj is null || obj.IsNullFact || (objTostr == "emptySequence()"));
 
         return isNull;
 
