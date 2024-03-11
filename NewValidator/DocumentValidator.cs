@@ -79,9 +79,9 @@ public class DocumentValidator : IDocumentValidator
         var xx = CreateErrorDocument();
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
-        ValidationRuleComparer comparer = new();        
+        ValidationRuleComparer comparer = new();
         validationRules = validationRules.Distinct(comparer).ToList();
-        
+
 
 
         validationRules = validationRules.Where(vr => vr.ValidationID == 2038).ToList();
@@ -110,7 +110,7 @@ public class DocumentValidator : IDocumentValidator
             var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
             foreach (var scopeRowCol in scopeRowcols)
             {
-                
+
                 if (scopeType != ScopeType.None)
                 {
                     UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
@@ -150,19 +150,19 @@ public class DocumentValidator : IDocumentValidator
                             UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
 
-                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty 
-                                || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms)!=KleeneValue.True;
-                            if (!isFilterValid )
+                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty
+                                || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms) != KleeneValue.True;
+                            if (!isFilterValid)
                             {
                                 continue;
                             };
 
                             var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
-                            if (!isValidRowRule )
+                            if (!isValidRowRule)
                             {
                                 CreateRuleError(ruleOpen, validationRule);
                             }
-                            
+
                         }
                     }
 
@@ -172,14 +172,14 @@ public class DocumentValidator : IDocumentValidator
                 {
                     //we may have aggregates but the sum and count are within 
                 }
-                
+
                 if (isAllClosedTables)
                 {
                     var mainTable = tablesInValidation.FirstOrDefault();
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
-                        var  ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                        var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                         if (scopeType != ScopeType.None)
                         {
                             UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
@@ -336,7 +336,7 @@ public class DocumentValidator : IDocumentValidator
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
 
-        var zetTerms= plainTerms.ToDictionary(obj280=>obj280.Key,obj280=> new ZetTerm(obj280.Key,"","",FunctionAggregateTypes.Plain,obj280.Value,null,KleeneValue.Unknown));
+        var zetTerms = plainTerms.ToDictionary(obj280 => obj280.Key, obj280 => new ZetTerm(obj280.Key, "", "", FunctionAggregateTypes.Plain, obj280.Value, null, KleeneValue.Unknown));
 
         return zetTerms;
     }
@@ -351,7 +351,7 @@ public class DocumentValidator : IDocumentValidator
         Dictionary<string, ZetTerm> ifZetTerms = ToZetTermsUsingFactValues(ruleStructure.IfComponent.RuleTerms);
         ruleStructure.IfComponent.ZetTerms = ifZetTerms;
         ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
-        
+
 
         Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms);
         Dictionary<string, ZetTerm> thenZetTerms = ToZetTermsUsingFactValues(ruleStructure.ThenComponent.RuleTerms);
@@ -410,12 +410,20 @@ public class DocumentValidator : IDocumentValidator
 
         try
         {
-            Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
+            //
+            //    Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
+            //    if (filterTerms.Any())
+            //    {
+            //        var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(filterComponent.SymbolExpression, filterTerms);
+            //        return res==KleeneValue.True;
+            //    }
+            Dictionary<string, ZetTerm> filterTerms = ToZetTermsUsingFactValues(filterComponent.RuleTerms);
             if (filterTerms.Any())
             {
                 var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(filterComponent.SymbolExpression, filterTerms);
-                return res==KleeneValue.True;
+                return res == KleeneValue.True;
             }
+
             return true;
         }
         catch (Exception ex)
@@ -487,7 +495,7 @@ public class DocumentValidator : IDocumentValidator
                 return false;
 
             return b1.ValidationID == b2.ValidationID;
-                
+
         }
 
         public int GetHashCode(VValidationRuleExpressions vr) => vr.ValidationID;

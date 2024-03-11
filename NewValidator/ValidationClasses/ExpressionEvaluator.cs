@@ -19,11 +19,11 @@ public enum KleeneValue
 }
 public record DoubleObject(bool IsNull, double Value);
 public record BooleanObject(bool IsNull, bool Value);
-public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max,Plain };
+public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max, Plain };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
-public record ZetTerm(string Letter, string Formula, string FunctionArgument, FunctionAggregateTypes FunctionType,  ObjectTerm280? Object280, Object? ObjectValue,  KleeneValue KleenValue);
+public record ZetTerm(string Letter, string Formula, string FunctionArgument, FunctionAggregateTypes FunctionType, ObjectTerm280? Object280, Object? ObjectValue, KleeneValue KleenValue);
 
 
 public partial class ExpressionEvaluator
@@ -35,7 +35,7 @@ public partial class ExpressionEvaluator
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        var ifResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
+        var ifResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ZetTerms);
         if (ruleStructure280.ThenComponent.IsEmpty)
         {
             return ToBoolean(ifResult);
@@ -50,36 +50,36 @@ public partial class ExpressionEvaluator
             }
             else if (ifResult == KleeneValue.True)
             {
-                var thenResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
+                var thenResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ZetTerms);
                 return ToBoolean(thenResult);
             }
             else // (ifResult == KleeneValue.Unknown)
             {
                 return true; //todo need to check this
-            }                       
+            }
         }
         else
         {
             //elseComponent EXISTS
             if (ifResult == KleeneValue.True)
             {
-                var thenRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
-                return ToBoolean(thenRes); // if is false and there is no else
+                var thenRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ZetTerms);
+                return ToBoolean(thenRes); // if is false and there is no else      
             }
             if (ifResult == KleeneValue.False)
             {
-                var elseRes=ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
-                
+                var elseRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ZetTerms);
+
                 return ToBoolean(elseRes); // if is false and there is no else
             }
             else //(ifResult == KleeneValue.Unknown)
             {
                 return true; //todo need to check this
             }
-           
-            
+
+
         }
-        bool ToBoolean(KleeneValue kleeneVal) => kleeneVal ==KleeneValue.True || kleeneVal == KleeneValue.Unknown;
+        bool ToBoolean(KleeneValue kleeneVal) => kleeneVal == KleeneValue.True || kleeneVal == KleeneValue.Unknown;
     }
 
 
@@ -108,12 +108,12 @@ public partial class ExpressionEvaluator
                     var resNot = EvaluateGeneralBooleanExpression(value, terms);
                     //return resNot.IsNull ? new BooleanObject(true, false) : new BooleanObject(false, !resNot.Value);
                     return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
-                        : resNot == KleeneValue.False ? KleeneValue.True 
+                        : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
                 case "isNull":
                     var resn = ValidationFunctions.ValidateIsNull(formula, terms);
                     //return resn;
-                     return resn? KleeneValue.True : KleeneValue.False;
+                    return resn ? KleeneValue.True : KleeneValue.False;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
                     return resm ? KleeneValue.True : KleeneValue.False;
@@ -128,7 +128,7 @@ public partial class ExpressionEvaluator
                     return res;
             }
         }
-         
+
 
         //////////////////////////////// Make new formula with zet 
         //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) => x1<3 or Z00
@@ -140,7 +140,7 @@ public partial class ExpressionEvaluator
 
         var matchesTerms = rgxTerm.Matches(formula.Trim());
         //var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, KleeneValue.Unknown)) ?? new List<ZetTerm>();
-        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, ToFunctionType(match.Groups[1].Value),null,null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
+        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
 
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis and return the result 1==1 for true 1==2 for false
         if (ruleTextParenTerms.Any())
@@ -196,15 +196,15 @@ public partial class ExpressionEvaluator
             var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
 
-            var isExpressionWithStrings = terms.Any(t => t.Value.ObjectType == "S");
+            var isExpressionWithStrings = terms.Any(t => (t.Value?.Object280?.ObjectType ?? "") == "S");
             if (isExpressionWithStrings)
             {
                 var resStr = EvaluateSimpleString(formula, terms);
                 return resStr;
             }
 
-            var leftDecimals = terms.ContainsKey(left) ? terms[left].Decimals : 0;
-            var rightDecimals = terms.ContainsKey(right) ? terms[right].Decimals : 0;
+            var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Object280?.Decimals ?? 0 : 0;
+            var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Object280?.Decimals ?? 0 : 0;
 
             var resLeftDbl = EvaluateArithmeticRecursively(left, terms);
             var resRightDbl = EvaluateArithmeticRecursively(right, terms);
@@ -216,7 +216,7 @@ public partial class ExpressionEvaluator
 
             var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, resLeftDbl.Value, leftDecimals, resRightDbl.Value, rightDecimals);
 
-            return intervalResult? KleeneValue.True:KleeneValue.False;
+            return intervalResult ? KleeneValue.True : KleeneValue.False;
         }
 
         if (termOperator == BooleanOperators.IsAnd)
@@ -271,7 +271,7 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
+    public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ZetTerm> terms)
     {
         // 1.Create a list of OUTER arithmetic functions (imin,imax,...).
         //  --call evaluateFunction for each
@@ -452,14 +452,14 @@ public partial class ExpressionEvaluator
 
     }
 
-    public static KleeneValue EvaluateSimpleString(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static KleeneValue EvaluateSimpleString(string symbolFormula, Dictionary<string, ZetTerm> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
 
         var rgxEnum = new Regex(@"\[(.*?)\]");
         string cleanFormula = rgxEnum.Replace(symbolFormula, match => $"\"{match.Groups[1].Value}\"");
-        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
+        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value?.Object280?.Obj ?? "");
 
 
         var result = Eval.Execute<bool>(cleanFormula, plainObjects);
@@ -470,14 +470,16 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
+    public static (string symbolFormula, List<ZetTerm> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
     {
+        //public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
         var matchFunctions = regex.Matches(text);
-        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
+        //var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
+        var nestedFunctions = matchFunctions.Select((match, i) => new ZetTerm($"{letter}{i:D2}", match.Value, match.Groups[2].Value, ToFunctionType(match.Groups[1].Value),null,null,KleeneValue.Unknown )).ToList();
         var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
         {
-            int index = currentText.IndexOf(val.FullText);
-            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.FullText.Length)..];
+            int index = currentText.IndexOf(val.Formula);
+            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
             return replacedString;
         });
 

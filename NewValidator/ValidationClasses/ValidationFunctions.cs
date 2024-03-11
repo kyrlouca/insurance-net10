@@ -86,7 +86,7 @@ internal class ValidationFunctions
 
     }
 
-    public static KleeneValue ValidateArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static KleeneValue ValidateArithmetic(string symbolFormula, Dictionary<string, ZetTerm> terms)
     {
 
         symbolFormula = symbolFormula.Replace("or", "||");
@@ -99,7 +99,7 @@ internal class ValidationFunctions
         if (matchTersm.Success)
         {
             var term = terms[matchTersm.Value];
-            if (term.ObjectType == "E")
+            if (term?.Object280?.ObjectType == "E")
             {
                 //todo is this right??
                 //symbolFormula = symbolFormula.Replace("[", "\"");
@@ -108,8 +108,9 @@ internal class ValidationFunctions
 
         }
         //todo check ONLY the terms involved in the formula?
-        
-        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
+
+        //Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
+        Dictionary<string, object?> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value?.Object280?.Obj);
         if (plainObjects.Any(po => po.Value is null))
         {
             return KleeneValue.Unknown;
