@@ -22,8 +22,8 @@ public record BooleanObject(bool IsNull, bool Value);
 public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max, Plain };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
-public record ObjectTerm280(string ObjectType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
-public record ZetTerm(string Letter, string Formula, string FunctionArgument, FunctionAggregateTypes FunctionType, ObjectTerm280? Object280, Object? ObjectValue, KleeneValue KleenValue);
+public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
+public record ZetTerm(string Letter, string Formula, string FunctionArgument,string DataType,  FunctionAggregateTypes FunctionType, ObjectTerm280? Object280, Object? ObjectValue, KleeneValue KleenValue);
 
 
 public partial class ExpressionEvaluator
@@ -140,7 +140,7 @@ public partial class ExpressionEvaluator
 
         var matchesTerms = rgxTerm.Matches(formula.Trim());
         //var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, KleeneValue.Unknown)) ?? new List<ZetTerm>();
-        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
+        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, "B", ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
 
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis and return the result 1==1 for true 1==2 for false
         if (ruleTextParenTerms.Any())
@@ -196,7 +196,7 @@ public partial class ExpressionEvaluator
             var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
 
-            var isExpressionWithStrings = terms.Any(t => (t.Value?.Object280?.ObjectType ?? "") == "S");
+            var isExpressionWithStrings = terms.Any(t => (t.Value?.Object280?.DataType ?? "") == "S");
             if (isExpressionWithStrings)
             {
                 var resStr = EvaluateSimpleString(formula, terms);
@@ -297,7 +297,7 @@ public partial class ExpressionEvaluator
                 //var val = EvaluateFunction(ft.FullText, terms);
                 var val = EvaluateFunction(ft.Formula, terms);
                 //return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));
-                return (ft.Letter, new ZetTerm("F", "", "", FunctionAggregateTypes.Plain, null, val, KleeneValue.Unknown));
+                return (ft.Letter, new ZetTerm("F", "", "","N", FunctionAggregateTypes.Plain, null, val, KleeneValue.Unknown));
             });
         var allTerms = terms.Select(trm => (trm.Key, trm.Value with { FunctionType  = FunctionAggregateTypes.Plain })).ToList();
         allTerms.AddRange(newObjTerms);
@@ -375,7 +375,7 @@ public partial class ExpressionEvaluator
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);
             //var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
-            var obj =   new ZetTerm("F","","",FunctionAggregateTypes.Plain,null, null, KleeneValue.Unknown);
+            var obj =   new ZetTerm("F","","","N", FunctionAggregateTypes.Plain,null, null, KleeneValue.Unknown);
 
             return obj;
         });
@@ -427,7 +427,10 @@ public partial class ExpressionEvaluator
         //what if a term is null ???
         Dictionary<string, DoubleObject> doubleObjects = terms.ToDictionary(item => item.Key, item => stringToDouble(item.Value?.ObjectValue));
 
-        var isNull = doubleObjects.Any(x => x.Value.IsNull);
+        //only check the terms of the formula 
+        var formulaTerms = terms.Where(term => symbolFormula.Contains(term.Key));
+        var isNull = formulaTerms.Any(ft => ft.Value?.Object280?.IsNullFact??false);
+        var isNullOld = doubleObjects.Any(x => x.Value.IsNull);
         if (isNull)
         {
             return new DoubleObject(true, 0);
@@ -479,7 +482,7 @@ public partial class ExpressionEvaluator
         //public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
         var matchFunctions = regex.Matches(text);
         //var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
-        var nestedFunctions = matchFunctions.Select((match, i) => new ZetTerm($"{letter}{i:D2}", match.Value, match.Groups[2].Value, ToFunctionType(match.Groups[1].Value),null,null,KleeneValue.Unknown )).ToList();
+        var nestedFunctions = matchFunctions.Select((match, i) => new ZetTerm($"{letter}{i:D2}", match.Value, match.Groups[2].Value, "N", ToFunctionType(match.Groups[1].Value),null,null,KleeneValue.Unknown )).ToList();
         var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.Formula);

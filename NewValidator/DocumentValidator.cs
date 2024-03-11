@@ -84,7 +84,7 @@ public class DocumentValidator : IDocumentValidator
 
 
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 2038).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 729).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
@@ -290,7 +290,7 @@ public class DocumentValidator : IDocumentValidator
     {
         if (fact == null)
         {
-            return new ObjectTerm280("E", 0, IsTolerance, defaultValue, 0, 0, null, true);
+            return new ObjectTerm280("J", 0, IsTolerance, defaultValue, 0, 0, null, true);
         }
 
 
@@ -336,7 +336,7 @@ public class DocumentValidator : IDocumentValidator
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
 
-        var zetTerms = plainTerms.ToDictionary(obj280 => obj280.Key, obj280 => new ZetTerm(obj280.Key, "", "", FunctionAggregateTypes.Plain, obj280.Value, null, KleeneValue.Unknown));
+        var zetTerms = plainTerms.ToDictionary(obj280 => obj280.Key, obj280 => new ZetTerm(obj280.Key, "", "",obj280.Value.DataType,  FunctionAggregateTypes.Plain, obj280.Value, null, KleeneValue.Unknown));
 
         return zetTerms;
     }

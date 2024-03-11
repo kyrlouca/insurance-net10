@@ -99,7 +99,7 @@ internal class ValidationFunctions
         if (matchTersm.Success)
         {
             var term = terms[matchTersm.Value];
-            if (term?.Object280?.ObjectType == "E")
+            if (term?.Object280?.DataType == "E")
             {
                 //todo is this right??
                 //symbolFormula = symbolFormula.Replace("[", "\"");
