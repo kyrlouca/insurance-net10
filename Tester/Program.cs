@@ -7,8 +7,9 @@ using NewValidator.ValidationClasses;
 
 
 
-var zz1 = RuleComponent280.CreateComponent("a");
+var zz1 = "abc (acx or x3) or imin(x1>x3 and x3<x1) + x3";
 
+var yy = ExpressionEvaluator.SplitAndOrExpression(zz1);
 return;
 
 Console.WriteLine("Hello, World!");

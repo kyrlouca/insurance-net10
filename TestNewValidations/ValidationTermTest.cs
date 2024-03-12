@@ -88,19 +88,19 @@ public class ValidationTermTest
 
         var text = @"5>2 and 4>3";
         var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text,new());
-        Assert.True(res);
+        Assert.True(res==KleeneValue.True);
 
         text = @"(2>1 or 1<2) and (2>1)";
         res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text,new());
-        Assert.True(res);
+        Assert.True(res == KleeneValue.True);
 
         text = @"(2>1 or 1<2) and (1>2)";
         res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
-        Assert.False(res);
+        Assert.False(res == KleeneValue.False);
 
         text = @"(2>1 or 1<2) and not(1>2)";
         res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
-        Assert.True(res);
+        Assert.True(res == KleeneValue.True);
 
         var qt = "\"";
         var x = "{";
@@ -109,12 +109,12 @@ public class ValidationTermTest
         //text = @"(1>2 or matches(""LEI/12301"", ""^LEI/[A-Z0-9]{3}(01|00)$"")) and not(1>2)";
         text = @$"(1>2 or matches({qt}LEI/12301{qt}, {qt}^LEI/[A-Z0-9]{x}3{y}(01|00)${qt})) and not(1>2)";
         res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
-        Assert.True(res);
+        Assert.True(res == KleeneValue.True);
 
 
         text = @$"(1>2 or matches({qt}LEI/12301{qt}, {qt}^LEI/[A-Z0-9]{x}3{y}(01|00)${qt})) and (matches({qt}Lei248{qt},{qt}Lei\d\d\d{qt}))";
         res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(text, new());
-        Assert.True(res);
+        Assert.True(res == KleeneValue.True);
 
     }
 
@@ -144,15 +144,36 @@ public class ValidationTermTest
 
         var text = @"5 + imin(3) +imax(4)";
         var res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
-        Assert.Equal(12, res);
+        Assert.Equal(12, res.Value);
 
 
         text = @"7 + imin(imax(3,5),4)";
         res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
-        Assert.Equal(11, res);
+        Assert.Equal(11, res.Value);
 
 
     }
+
+    [Fact]
+    public void TestSplitAndOrExpression()
+    {
+
+        var text = @"5 + imin(3)+(a>3 or b<4) and imax(4+x3)> 5";
+        var res = ExpressionEvaluator.SplitAndOrExpression(text);
+        Assert.Equal(res.logicalOperator, ExpressionEvaluator.LogicalOperators.IsAnd);
+        Assert.Equal(res.left, "5 + imin(3)+(a>3 or b<4)");
+        Assert.Equal(res.Right, "imax(4+x3)> 5");
+
+
+        text = @"5 + imin(3)+(a>3 and b<4) or imax(4+x3)> 5";
+        res = ExpressionEvaluator.SplitAndOrExpression(text);
+        Assert.Equal(res.logicalOperator, ExpressionEvaluator.LogicalOperators.IsOR);
+        Assert.Equal(res.left, "5 + imin(3)+(a>3 and b<4)");
+        Assert.Equal(res.Right, "imax(4+x3)> 5");
+
+
+    }
+
 
 
 
