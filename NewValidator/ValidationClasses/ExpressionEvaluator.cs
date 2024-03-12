@@ -23,7 +23,7 @@ public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max, Plain };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
-public record ZetTerm(string Letter, string Formula, string FunctionArgument,string DataType,  FunctionAggregateTypes FunctionType, ObjectTerm280? Object280, Object? ObjectValue, KleeneValue KleenValue);
+public record ZetTerm(string Letter, string Formula, string FunctionArgument,string DataType,int Decimals, bool IsNullFact,  FunctionAggregateTypes FunctionType, ObjectTerm280? Object280, Object? ObjectValue, KleeneValue KleenValue);
 
 
 public partial class ExpressionEvaluator
@@ -140,7 +140,7 @@ public partial class ExpressionEvaluator
 
         var matchesTerms = rgxTerm.Matches(formula.Trim());
         //var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, KleeneValue.Unknown)) ?? new List<ZetTerm>();
-        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, "B", ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
+        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, "B",0,false, ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
 
         //2. if there are terms in parenthesis, evaluate each term in the parenthesis and return the result 1==1 for true 1==2 for false
         if (ruleTextParenTerms.Any())
@@ -287,7 +287,7 @@ public partial class ExpressionEvaluator
 
         //5 +  A00  + A01
         //7 +  A00 
-        var (formulaWithSymbols, functionObjects) = ToFunctionObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
+        var (formulaWithSymbols, functionObjects) = CreateZetObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
 
         formulaWithSymbols = ReplaceIntervalCharacters(formulaWithSymbols);
 
@@ -297,7 +297,7 @@ public partial class ExpressionEvaluator
                 //var val = EvaluateFunction(ft.FullText, terms);
                 var val = EvaluateFunction(ft.Formula, terms);
                 //return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));
-                return (ft.Letter, new ZetTerm("F", "", "","N", FunctionAggregateTypes.Plain, null, val, KleeneValue.Unknown));
+                return (ft.Letter, new ZetTerm("F", "", "","N",0,false, FunctionAggregateTypes.Plain, null, val, KleeneValue.Unknown));
             });
         var allTerms = terms.Select(trm => (trm.Key, trm.Value with { FunctionType  = FunctionAggregateTypes.Plain })).ToList();
         allTerms.AddRange(newObjTerms);
@@ -355,7 +355,7 @@ public partial class ExpressionEvaluator
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
-        var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
+        var (innerSymbolFormula, innerFunctionTerms) = CreateZetObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
         var innerFunctionArguments = innerArguments.Select(argSplit =>
         {
@@ -375,7 +375,7 @@ public partial class ExpressionEvaluator
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);
             //var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
-            var obj =   new ZetTerm("F","","","N", FunctionAggregateTypes.Plain,null, null, KleeneValue.Unknown);
+            var obj =   new ZetTerm("F","","","N",0,false, FunctionAggregateTypes.Plain,null, null, KleeneValue.Unknown);
 
             return obj;
         });
@@ -477,12 +477,12 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static (string symbolFormula, List<ZetTerm> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
+    public static (string symbolFormula, List<ZetTerm> FunctionTerms) CreateZetObjectsFromTextFormula(string text, Regex regex, string letter)
     {
         //public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
         var matchFunctions = regex.Matches(text);
         //var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
-        var nestedFunctions = matchFunctions.Select((match, i) => new ZetTerm($"{letter}{i:D2}", match.Value, match.Groups[2].Value, "N", ToFunctionType(match.Groups[1].Value),null,null,KleeneValue.Unknown )).ToList();
+        var nestedFunctions = matchFunctions.Select((match, i) => new ZetTerm($"{letter}{i:D2}", match.Value, match.Groups[2].Value, "N",0,false, ToFunctionType(match.Groups[1].Value),null,null,KleeneValue.Unknown )).ToList();
         var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.Formula);

@@ -336,7 +336,7 @@ public class DocumentValidator : IDocumentValidator
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
 
-        var zetTerms = plainTerms.ToDictionary(obj280 => obj280.Key, obj280 => new ZetTerm(obj280.Key, "", "",obj280.Value.DataType,  FunctionAggregateTypes.Plain, obj280.Value, null, KleeneValue.Unknown));
+        var zetTerms = plainTerms.ToDictionary(obj280 => obj280.Key, obj280 => new ZetTerm(obj280.Key, "", "", obj280.Value.DataType, obj280.Value.Decimals, obj280.Value.IsNullFact,  FunctionAggregateTypes.Plain, obj280.Value, null, KleeneValue.Unknown));
 
         return zetTerms;
     }
