@@ -89,150 +89,10 @@ public partial class ExpressionEvaluator
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
-        //1. outer parenthesis with or without function =>=> evaluate function or remove parenthesis and recurse
-        //2. if there are terms in parenthesis, evaluate each term in the parenthesis. (replace each term in parenthesis with Zxx and its value (1==1 for true, and 1==2 for false)
-        //3. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
-
+        //1. single function or outer parenthesis => evaluate function or remove parenthesis and recurse       
+        //2. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
+        //3. arithmetic
         var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
-
-
-        //************************** Make new formula with zet ********************************************************        
-        //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) => x1<3 or Z00
-        //replace parenthesis with zet terms. 
-        //split (and, or) 
-        //reconstruct left and right 
-        //lookahead (?<!\S) is there to avoid matching imax(, imin( but to match 
-        var rgxTerm = new Regex(@"(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
-
-        var matchesTerms = rgxTerm.Matches(formula.Trim());
-
-        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, "B", 0, false, ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
-        if (!ruleTextParenTerms.Any())
-        {
-            var operatorF = formula.Contains("and") ? LogicalOperators.IsAnd
-            : formula.Contains("or") ? LogicalOperators.IsOR
-            : LogicalOperators.None;
-
-
-            if (operatorF == LogicalOperators.IsAnd)
-            {
-                //Kleene Logic:
-                //--false if any is false(the other can be null or false)
-                //--true only if both are true
-                //--otherwise is null 
-                //Null AND Null => Null
-                //True AND Null => null
-                //False AND Null => false
-
-                var resAnd = formula.Split("and", StringSplitOptions.RemoveEmptyEntries);
-                var val1 = resAnd[0].Trim();
-                var val2 = resAnd[1].Trim();
-
-                var aAndRes = EvaluateGeneralBooleanExpressionNew(val1, terms);
-                var bAndRes = EvaluateGeneralBooleanExpressionNew(val2, terms);
-                if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
-                    return KleeneValue.True;
-                else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
-                    return KleeneValue.False;
-                else
-                    return KleeneValue.Unknown;
-
-            }
-            if (operatorF == LogicalOperators.IsOR)
-            {
-                //kleene Logic :
-                //-- true if any is true
-                //-- false only if both are false
-                //-- otherwise unknown
-                //Null OR null => NULL
-                //False OR null => NULL
-                //True OR null =>TRUE
-                var res = formula.Split("or", StringSplitOptions.RemoveEmptyEntries);
-                var orRes1 = EvaluateGeneralBooleanExpressionNew(res[0].Trim(), terms);
-                var val2 = res[1].Trim();
-                var orRes2 = EvaluateGeneralBooleanExpressionNew(val2, terms);
-
-                if (orRes1 == KleeneValue.True || orRes2 == KleeneValue.True)
-                    return KleeneValue.True;
-                else if (orRes1 == KleeneValue.False && orRes2 == KleeneValue.False)
-                    return KleeneValue.False;
-                else
-                    return KleeneValue.Unknown;
-            }
-        }
-
-        if (ruleTextParenTerms.Any())
-        {
-            //build a new formula where the terms(inside parenthesis) are replaced with the letters of the textTersms
-            var formulaParen = ruleTextParenTerms.Aggregate(formula, (currentText, val) =>
-            {
-                int index = currentText.IndexOf(val.Formula);
-                string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
-                return replacedString;
-            });
-
-            var operatorParen = formula.Contains("and") ? LogicalOperators.IsAnd
-            : formula.Contains("or") ? LogicalOperators.IsOR
-            : LogicalOperators.None;
-
-
-
-            if (operatorParen == LogicalOperators.IsAnd)
-            {
-                //Kleene Logic:
-                //--false if any is false(the other can be null or false)
-                //--true only if both are true
-                //--otherwise is null 
-                //Null AND Null => Null
-                //True AND Null => null
-                //False AND Null => false
-
-                var resAnd = formula.Split("and", StringSplitOptions.RemoveEmptyEntries);
-                var val1 = resAnd[0].Trim();
-                var val2 = resAnd[1].Trim();
-
-                //replace the functions and paren in val1 and val2
-                //1. find the position of and
-                //2. replace each Zet function with the corresponding value
-
-
-
-                var aAndRes = EvaluateGeneralBooleanExpression(val1, terms);
-                var bAndRes = EvaluateGeneralBooleanExpression(val2, terms);
-                if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
-                    return KleeneValue.True;
-                else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
-                    return KleeneValue.False;
-                else
-                    return KleeneValue.Unknown;
-
-            }
-            if (operatorParen == LogicalOperators.IsOR)
-            {
-                //kleene Logic :
-                //-- true if any is true
-                //-- false only if both are false
-                //-- otherwise unknown
-                //Null OR null => NULL
-                //False OR null => NULL
-                //True OR null =>TRUE
-                var res = formula.Split("or", StringSplitOptions.RemoveEmptyEntries);
-                var orRes1 = EvaluateGeneralBooleanExpression(res[0].Trim(), terms);
-                var val2 = res[1].Trim();
-                var orRes2 = EvaluateGeneralBooleanExpression(val2, terms);
-
-                if (orRes1 == KleeneValue.True || orRes2 == KleeneValue.True)
-                    return KleeneValue.True;
-                else if (orRes1 == KleeneValue.False && orRes2 == KleeneValue.False)
-                    return KleeneValue.False;
-                else
-                    return KleeneValue.Unknown;
-            }
-
-        }
-
-
-
 
 
         //************************** Single Function Or Parenthesis********************************************************
@@ -267,24 +127,48 @@ public partial class ExpressionEvaluator
                     return KleeneValue.True;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
-                    var res = EvaluateGeneralBooleanExpression(value, terms);
-                    return res;
+                    var resN = EvaluateGeneralBooleanExpression(value, terms);
+                    return resN;
             }
         }
 
+        var res = SplitAndOrExpression(formula);
+        if (res.logicalOperator == LogicalOperators.IsAnd)
+        {
+            var aAndRes = EvaluateGeneralBooleanExpressionNew(res.left, terms);
+            var bAndRes = EvaluateGeneralBooleanExpressionNew(res.Right, terms);
+            if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
+                return KleeneValue.True;
+            else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
+                return KleeneValue.False;
+            else
+                return KleeneValue.Unknown;
+        }
 
 
+        if (res.logicalOperator == LogicalOperators.IsOR)
+        {
+            //kleene Logic :
+            //-- true if any is true
+            //-- false only if both are false
+            //-- otherwise unknown
+            //Null OR null => NULL
+            //False OR null => NULL
+            //True OR null =>TRUE
 
-        //*******************************************************************
-        //3. check for "and","or", nothing in this order
-        // a. If there is an "and" evaluate the two terms around end,
-        // b. if there is an "or" evaluate the two terms around "or"
-        // c. if there is  no "and" , "or" evaluate the terms
-        var termOperator = formula.Contains("and") ? LogicalOperators.IsAnd
-            : formula.Contains("or") ? LogicalOperators.IsOR
-            : LogicalOperators.None;
+            var orRes1 = EvaluateGeneralBooleanExpressionNew(res.left, terms);
+            var orRes2 = EvaluateGeneralBooleanExpressionNew(res.Right, terms);
 
-        if (termOperator == LogicalOperators.None)
+            if (orRes1 == KleeneValue.True || orRes2 == KleeneValue.True)
+                return KleeneValue.True;
+            else if (orRes1 == KleeneValue.False && orRes2 == KleeneValue.False)
+                return KleeneValue.False;
+            else
+                return KleeneValue.Unknown;
+        }
+
+
+        if (res.logicalOperator == LogicalOperators.None)
         {
             var regSplit = new Regex(@"(.+?)\s*(>=|>|<=|<|==|=)\s*(.+)");
             var xxx = regSplit.Split(formula);
@@ -320,54 +204,7 @@ public partial class ExpressionEvaluator
             return intervalResult ? KleeneValue.True : KleeneValue.False;
         }
 
-        if (termOperator == LogicalOperators.IsAnd)
-        {
-            //Kleene Logic:
-            //--false if any is false(the other can be null or false)
-            //--true only if both are true
-            //--otherwise is null 
-            //Null AND Null => Null
-            //True AND Null => null
-            //False AND Null => false
-
-            var resAnd = formula.Split("and", StringSplitOptions.RemoveEmptyEntries);
-            var val1 = resAnd[0].Trim();
-            var val2 = resAnd[1].Trim();
-
-            var aAndRes = EvaluateGeneralBooleanExpression(val1, terms);
-            var bAndRes = EvaluateGeneralBooleanExpression(val2, terms);
-            if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
-                return KleeneValue.True;
-            else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
-                return KleeneValue.False;
-            else
-                return KleeneValue.Unknown;
-
-        }
-        if (termOperator == LogicalOperators.IsOR)
-        {
-            //kleene Logic :
-            //-- true if any is true
-            //-- false only if both are false
-            //-- otherwise unknown
-            //Null OR null => NULL
-            //False OR null => NULL
-            //True OR null =>TRUE
-            var res = formula.Split("or", StringSplitOptions.RemoveEmptyEntries);
-            var orRes1 = EvaluateGeneralBooleanExpression(res[0].Trim(), terms);
-            var val2 = res[1].Trim();
-            var orRes2 = EvaluateGeneralBooleanExpression(val2, terms);
-
-            if (orRes1 == KleeneValue.True || orRes2 == KleeneValue.True)
-                return KleeneValue.True;
-            else if (orRes1 == KleeneValue.False && orRes2 == KleeneValue.False)
-                return KleeneValue.False;
-            else
-                return KleeneValue.Unknown;
-        }
-
-        return KleeneValue.Unknown;
-
+        return KleeneValue.True;
 
     }
 
