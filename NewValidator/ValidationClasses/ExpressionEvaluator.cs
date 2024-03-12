@@ -93,6 +93,7 @@ public partial class ExpressionEvaluator
 
         var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
 
+        //************************** Single Function Or Parenthesis********************************************************
         //Check if this is an outer parenthesis or an Outer function.
         //1. outer parenthesis with or without function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
         var match = rgxFn.Match(formula);
@@ -130,7 +131,7 @@ public partial class ExpressionEvaluator
         }
 
 
-        //////////////////////////////// Make new formula with zet 
+        //************************** Make new formula with zet ********************************************************        
         //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) => x1<3 or Z00
         //replace parenthesis with zet terms. 
         //evaluate each zet 
