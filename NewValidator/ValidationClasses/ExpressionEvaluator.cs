@@ -85,19 +85,29 @@ public partial class ExpressionEvaluator
 
 
 
-    public static KleeneValue EvaluateGeneralBooleanExpressionNew(string formula, Dictionary<string, ZetTerm> terms)
+    public static KleeneValue EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ZetTerm> terms)
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
         //1. single function or outer parenthesis => evaluate function or remove parenthesis and recurse       
         //2. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
         //3. arithmetic
-        var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        
 
+        var rgxOuter = RgxOuterParenthesis();
+        var matchOuter = rgxOuter.Match(formula);
+        if (matchOuter.Success)
+        {
+            var insideParen = matchOuter.Groups[1].Value.Trim();
+            var resInside= EvaluateGeneralBooleanExpression(insideParen, terms);
+            return resInside;
+
+        }
 
         //************************** Single Function Or Parenthesis********************************************************
         //Check if this is an outer parenthesis or an Outer function.
         //1. outer parenthesis with or without function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
+        var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
         var match = rgxFn.Match(formula);
         if (match.Success)
         {
@@ -135,8 +145,8 @@ public partial class ExpressionEvaluator
         var res = SplitAndOrExpression(formula);
         if (res.logicalOperator == LogicalOperators.IsAnd)
         {
-            var aAndRes = EvaluateGeneralBooleanExpressionNew(res.left, terms);
-            var bAndRes = EvaluateGeneralBooleanExpressionNew(res.Right, terms);
+            var aAndRes = EvaluateGeneralBooleanExpression(res.left, terms);
+            var bAndRes = EvaluateGeneralBooleanExpression(res.Right, terms);
             if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
                 return KleeneValue.True;
             else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
@@ -156,8 +166,8 @@ public partial class ExpressionEvaluator
             //False OR null => NULL
             //True OR null =>TRUE
 
-            var orRes1 = EvaluateGeneralBooleanExpressionNew(res.left, terms);
-            var orRes2 = EvaluateGeneralBooleanExpressionNew(res.Right, terms);
+            var orRes1 = EvaluateGeneralBooleanExpression(res.left, terms);
+            var orRes2 = EvaluateGeneralBooleanExpression(res.Right, terms);
 
             if (orRes1 == KleeneValue.True || orRes2 == KleeneValue.True)
                 return KleeneValue.True;
@@ -181,6 +191,7 @@ public partial class ExpressionEvaluator
             var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
 
+            //todo -- only check the terms in the formula
             var isExpressionWithStrings = terms.Any(t => (t.Value?.Object280?.DataType ?? "") == "S");
             if (isExpressionWithStrings)
             {
@@ -211,7 +222,7 @@ public partial class ExpressionEvaluator
 
 
 
-    public static KleeneValue EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ZetTerm> terms)
+    public static KleeneValue EvaluateGeneralBooleanExpressionOld(string formula, Dictionary<string, ZetTerm> terms)
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
@@ -707,7 +718,8 @@ public partial class ExpressionEvaluator
     [GeneratedRegex(@"(imin|imax|max|isum|icount)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxAggregateFunctions();
 
-
+    [GeneratedRegex(@"^\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
+    public static partial Regex RgxOuterParenthesis();
 
 
 }
