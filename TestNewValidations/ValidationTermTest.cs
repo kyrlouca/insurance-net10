@@ -171,6 +171,13 @@ public class ValidationTermTest
         Assert.Equal(res.left, "5 + imin(3)+(a>3 and b<4)");
         Assert.Equal(res.Right, "imax(4+x3)> 5");
 
+        text = @"5 + imin(3)+ imax(4+x3)> 5";
+        res = ExpressionEvaluator.SplitAndOrExpression(text);
+        Assert.Equal(res.logicalOperator, ExpressionEvaluator.LogicalOperators.None);
+        Assert.Equal(res.left, "5 + imin(3)+ imax(4+x3)> 5");
+        Assert.Equal(res.Right, "");
+
+
 
     }
 
