@@ -151,7 +151,7 @@ public class DocumentValidator : IDocumentValidator
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
 
                             var isFilterValid = ruleOpen.FilterComponent.IsEmpty
-                                || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ZetTerms) != KleeneValue.True;
+                                || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms) != KleeneValue.True;
                             if (!isFilterValid)
                             {
                                 continue;
@@ -323,24 +323,7 @@ public class DocumentValidator : IDocumentValidator
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
         return plainTerms;
     }
-
-    private Dictionary<string, ZetTerm> ToZetTermsUsingFactValues(List<RuleTerm280> ruleTerms)
-    {
-        Dictionary<string, ObjectTerm280> plainTerms = ruleTerms
-            .Select(ruleTerm => new
-            {
-                ruleTerm.Letter,
-                Zet = ruleTerm.Z,
-                Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance)
-            })
-            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
-
-        var zetTerms = plainTerms.ToDictionary(obj280 => obj280.Key, obj280 => new ZetTerm(obj280.Key, "", "", obj280.Value.DataType, obj280.Value.Decimals, obj280.Value.IsNullFact,  FunctionAggregateTypes.Plain, obj280.Value, null, KleeneValue.Unknown));
-
-        return zetTerms;
-    }
-
+    
 
     private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
     {
@@ -348,24 +331,16 @@ public class DocumentValidator : IDocumentValidator
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
         Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms);
-        Dictionary<string, ZetTerm> ifZetTerms = ToZetTermsUsingFactValues(ruleStructure.IfComponent.RuleTerms);
-        ruleStructure.IfComponent.ZetTerms = ifZetTerms;
         ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
 
 
         Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms);
-        Dictionary<string, ZetTerm> thenZetTerms = ToZetTermsUsingFactValues(ruleStructure.ThenComponent.RuleTerms);
-        ruleStructure.ThenComponent.ZetTerms = thenZetTerms;
         ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
 
         Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms);
-        Dictionary<string, ZetTerm> elseZetTerms = ToZetTermsUsingFactValues(ruleStructure.ElseComponent.RuleTerms);
-        ruleStructure.ElseComponent.ZetTerms = elseZetTerms;
         ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
 
         Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.FilterComponent.RuleTerms);
-        Dictionary<string, ZetTerm> filterZetTerms = ToZetTermsUsingFactValues(ruleStructure.FilterComponent.RuleTerms);
-        ruleStructure.FilterComponent.ZetTerms = filterZetTerms;
         ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
 
         return ruleStructure;
@@ -410,19 +385,14 @@ public class DocumentValidator : IDocumentValidator
 
         try
         {
-            //
-            //    Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
-            //    if (filterTerms.Any())
-            //    {
-            //        var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(filterComponent.SymbolExpression, filterTerms);
-            //        return res==KleeneValue.True;
-            //    }
-            Dictionary<string, ZetTerm> filterTerms = ToZetTermsUsingFactValues(filterComponent.RuleTerms);
+
+            Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
             if (filterTerms.Any())
             {
                 var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(filterComponent.SymbolExpression, filterTerms);
                 return res == KleeneValue.True;
             }
+
 
             return true;
         }

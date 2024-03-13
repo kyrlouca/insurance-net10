@@ -190,9 +190,10 @@ public partial class ExpressionEvaluator
             var left = matchSplit.Groups[1].Value;
             var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
-
-            //todo -- only check the terms in the formula
-            var isExpressionWithStrings = terms.Any(t => (t.Value?.DataType ?? "") == "S");
+            
+            var isExpressionWithStrings = terms
+                .Where(term => formula.Contains(term.Key))
+                .Any(t => (t.Value?.DataType ?? "") == "S");
             if (isExpressionWithStrings)
             {
                 var resStr = EvaluateSimpleString(formula, terms);
@@ -218,12 +219,6 @@ public partial class ExpressionEvaluator
         return KleeneValue.True;
 
     }
-
-
-
-
-
-
 
     public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
     {
@@ -437,8 +432,6 @@ public partial class ExpressionEvaluator
 
 
     }
-
-
 
     public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
     {
