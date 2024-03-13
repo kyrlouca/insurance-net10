@@ -223,6 +223,8 @@ public partial class ExpressionEvaluator
 
 
 
+
+
     public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
     {
         // 1.Create a list of OUTER arithmetic functions (imin,imax,...).
@@ -248,14 +250,23 @@ public partial class ExpressionEvaluator
             {
                 
                 var val = EvaluateFunction(ft.FullText, terms);
-                //return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));
-                return (ft.Letter, new ZetTerm("F", "", "", "N", 0, false, FunctionAggregateTypes.Plain, null, val, KleeneValue.Unknown));
+                return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));                
             });
-        var allTerms = terms.Select(trm => (trm.Key, trm.Value with { FunctionType = FunctionAggregateTypes.Plain })).ToList();
-        allTerms.AddRange(newObjTerms);
-        var allObjectsDic = allTerms.ToDictionary(x => x.Key, x => x.Item2);
 
+        var allTermsx = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 9 })).ToList();
+        allTermsx.AddRange(newObjTerms);
+        var allObjectsDic = allTermsx.ToDictionary(x => x.Key, x => x.Item2);
         var val = EvaluateSimpleArithmetic(formulaWithSymbols, allObjectsDic);
+
+
+
+
+
+        //var allTerms = terms.Select(trm => (trm.Key, trm.Value with { FunctionType = FunctionAggregateTypes.Plain })).ToList();
+        //allTerms.AddRange(newObjTerms);
+        //var allObjectsDic = allTerms.ToDictionary(x => x.Key, x => x.Item2);
+
+        //var val = EvaluateSimpleArithmetic(formulaWithSymbols, allObjectsDic);
 
         return val;
     }
@@ -307,7 +318,7 @@ public partial class ExpressionEvaluator
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
-        var (innerSymbolFormula, innerFunctionTerms) = CreateFunctionObjects(functionContent, rgxFunctions2, "F");
+        var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
         var innerFunctionArguments = innerArguments.Select(argSplit =>
         {
@@ -317,7 +328,7 @@ public partial class ExpressionEvaluator
             foreach (var ft in innerFunctionTerms)
             {
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
-                argSplit = argSplit.Replace(ft.Letter, ft.Formula);
+                argSplit = argSplit.Replace(ft.Letter, ft.);
             }
             //if isum or icount do NOT recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count            
             if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
@@ -372,16 +383,16 @@ public partial class ExpressionEvaluator
             _ => throw new ArgumentException("Invalid function type"),
         };
 
-    public static DoubleObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ZetTerm> terms)
+    public static DoubleObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
         //what if a term is null ???
-        Dictionary<string, DoubleObject> doubleObjects = terms.ToDictionary(item => item.Key, item => stringToDouble(item.Value?.ObjectValue));
+        Dictionary<string, DoubleObject> doubleObjects = terms.ToDictionary(item => item.Key, item => stringToDouble(item.Value?.Obj));
 
         //only check the terms of the formula 
         var formulaTerms = terms.Where(term => symbolFormula.Contains(term.Key));
-        var isNull = formulaTerms.Any(ft => ft.Value?.Object280?.IsNullFact ?? false);
+        var isNull = formulaTerms.Any(ft => ft.Value?.IsNullFact ?? false);
         var isNullOld = doubleObjects.Any(x => x.Value.IsNull);
         if (isNull)
         {
