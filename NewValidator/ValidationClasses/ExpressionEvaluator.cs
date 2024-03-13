@@ -381,38 +381,46 @@ public partial class ExpressionEvaluator
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
-        //what if a term is null ???
-        Dictionary<string, DoubleObject> doubleObjects = terms.ToDictionary(item => item.Key, item => stringToDouble(item.Value?.Obj));
+                
+        Dictionary<string, object> numericObjects = terms.ToDictionary(item => item.Key, item => FromStringToObj(item.Value?.Obj));
 
         //only check the terms of the formula 
         var formulaTerms = terms.Where(term => symbolFormula.Contains(term.Key));
-        var isNull = formulaTerms.Any(ft => ft.Value?.IsNullFact ?? false);
-        var isNullOld = doubleObjects.Any(x => x.Value.IsNull);
-        if (isNull)
+        var isAnyTermNull = formulaTerms.Any(ft => ft.Value?.IsNullFact ?? false);
+
+        if (isAnyTermNull)
         {
             return new DoubleObject(true, 0);
         }
-        var result = Eval.Execute<double>(symbolFormula, doubleObjects);
+        
+        var result = Eval.Execute<double>(symbolFormula, numericObjects);
         return new DoubleObject(false, result);
 
 
-        static DoubleObject stringToDouble(object? obj)
+        
+        static Object FromStringToObj(object? obj)
         {
             if (obj is null)
             {
-                return new DoubleObject(true, 0);
+                return 0;
             }
-
-            try
+            if(obj is string)
             {
-                return new DoubleObject(false, Convert.ToDouble(obj.ToString()));
+                try
+                {
+                    return Convert.ToDouble(obj.ToString());
+                }
+                catch (FormatException)
+                {
+                    throw new Exception($"obj:{obj.ToString} Cannot convert string object to double");                    
+                }
             }
-            catch (FormatException)
-            {
-                return new DoubleObject(true, 0.0);
-            }
+            return obj;
+            
 
         }
+
+
 
     }
 
