@@ -239,15 +239,15 @@ public partial class ExpressionEvaluator
 
         //5 +  A00  + A01
         //7 +  A00 
-        var (formulaWithSymbols, functionObjects) = CreateFunctionObjects(arithmeticExpression, rgxTerm, "V");
+        var (formulaWithSymbols, functionObjects) = ToFunctionObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
 
         formulaWithSymbols = ReplaceIntervalCharacters(formulaWithSymbols);
 
         var newObjTerms = functionObjects
             .Select(ft =>
             {
-                //var val = EvaluateFunction(ft.FullText, terms);
-                var val = EvaluateFunction(ft.Formula, terms);
+                
+                var val = EvaluateFunction(ft.FullText, terms);
                 //return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));
                 return (ft.Letter, new ZetTerm("F", "", "", "N", 0, false, FunctionAggregateTypes.Plain, null, val, KleeneValue.Unknown));
             });
@@ -429,22 +429,21 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static (string symbolFormula, List<FunctionObject> FunctionTerms) CreateFunctionObjects(string text, Regex regex, string letter)
+
+    public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
     {
-        //public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
         var matchFunctions = regex.Matches(text);
-        //var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
-        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", match.Value, match.Groups[2].Value, "N", 0, false, ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)).ToList();
+        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
         var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
         {
-            int index = currentText.IndexOf(val.Formula);
-            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
+            int index = currentText.IndexOf(val.FullText);
+            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.FullText.Length)..];
             return replacedString;
         });
 
         return (contentFormulaWithSymbols, nestedFunctions);
     }
-
+   
 
     public static (LogicalOperators logicalOperator, string left, string Right) SplitAndOrExpression(string text)
     {
