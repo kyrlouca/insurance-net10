@@ -253,16 +253,6 @@ public partial class ExpressionEvaluator
         var allObjectsDic = allTermsx.ToDictionary(x => x.Key, x => x.Item2);
         var val = EvaluateSimpleArithmetic(formulaWithSymbols, allObjectsDic);
 
-
-
-
-
-        //var allTerms = terms.Select(trm => (trm.Key, trm.Value with { FunctionType = FunctionAggregateTypes.Plain })).ToList();
-        //allTerms.AddRange(newObjTerms);
-        //var allObjectsDic = allTerms.ToDictionary(x => x.Key, x => x.Item2);
-
-        //var val = EvaluateSimpleArithmetic(formulaWithSymbols, allObjectsDic);
-
         return val;
     }
 
@@ -381,9 +371,7 @@ public partial class ExpressionEvaluator
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
-                
-        Dictionary<string, object> numericObjects = terms.ToDictionary(item => item.Key, item => FromStringToObj(item.Value?.Obj));
-
+                        
         //only check the terms of the formula 
         var formulaTerms = terms.Where(term => symbolFormula.Contains(term.Key));
         var isAnyTermNull = formulaTerms.Any(ft => ft.Value?.IsNullFact ?? false);
@@ -392,7 +380,8 @@ public partial class ExpressionEvaluator
         {
             return new DoubleObject(true, 0);
         }
-        
+
+        Dictionary<string, object> numericObjects = formulaTerms.ToDictionary(item => item.Key, item => FromStringToObj(item.Value?.Obj));
         var result = Eval.Execute<double>(symbolFormula, numericObjects);
         return new DoubleObject(false, result);
 
