@@ -36,7 +36,7 @@ public partial class ExpressionEvaluator
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        var ifResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ZetTerms);
+        var ifResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
         if (ruleStructure280.ThenComponent.IsEmpty)
         {
             return ToBoolean(ifResult);
@@ -51,7 +51,7 @@ public partial class ExpressionEvaluator
             }
             else if (ifResult == KleeneValue.True)
             {
-                var thenResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ZetTerms);
+                var thenResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
                 return ToBoolean(thenResult);
             }
             else // (ifResult == KleeneValue.Unknown)
@@ -64,12 +64,12 @@ public partial class ExpressionEvaluator
             //elseComponent EXISTS
             if (ifResult == KleeneValue.True)
             {
-                var thenRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ZetTerms);
+                var thenRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
                 return ToBoolean(thenRes); // if is false and there is no else      
             }
             if (ifResult == KleeneValue.False)
             {
-                var elseRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ZetTerms);
+                var elseRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
 
                 return ToBoolean(elseRes); // if is false and there is no else
             }
@@ -85,7 +85,7 @@ public partial class ExpressionEvaluator
 
 
 
-    public static KleeneValue EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ZetTerm> terms)
+    public static KleeneValue EvaluateGeneralBooleanExpression(string formula, Dictionary<string, ObjectTerm280> terms)
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
@@ -192,15 +192,15 @@ public partial class ExpressionEvaluator
             var right = matchSplit.Groups[3].Value;
 
             //todo -- only check the terms in the formula
-            var isExpressionWithStrings = terms.Any(t => (t.Value?.Object280?.DataType ?? "") == "S");
+            var isExpressionWithStrings = terms.Any(t => (t.Value?.DataType ?? "") == "S");
             if (isExpressionWithStrings)
             {
                 var resStr = EvaluateSimpleString(formula, terms);
                 return resStr;
             }
 
-            var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Object280?.Decimals ?? 0 : 0;
-            var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Object280?.Decimals ?? 0 : 0;
+            var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Decimals ?? 0 : 0;
+            var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Decimals ?? 0 : 0;
 
             var resLeftDbl = EvaluateArithmeticRecursively(left, terms);
             var resRightDbl = EvaluateArithmeticRecursively(right, terms);
@@ -222,196 +222,8 @@ public partial class ExpressionEvaluator
 
 
 
-    public static KleeneValue EvaluateGeneralBooleanExpressionOld(string formula, Dictionary<string, ZetTerm> terms)
-    {
 
-        //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
-        //1. outer parenthesis with or without function =>=> evaluate function or remove parenthesis and recurse
-        //2. if there are terms in parenthesis, evaluate each term in the parenthesis. (replace each term in parenthesis with Zxx and its value (1==1 for true, and 1==2 for false)
-        //3. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
-
-        var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
-
-        //************************** Single Function Or Parenthesis********************************************************
-        //Check if this is an outer parenthesis or an Outer function.
-        //1. outer parenthesis with or without function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
-        var match = rgxFn.Match(formula);
-        if (match.Success)
-        {
-            //( ab and matches(cd)) => evaluate ab and matches(cd)
-            var fn = match.Groups[1].Value;
-            var value = match.Groups[2].Value;
-
-            switch (fn)
-            {
-                case "not":
-                    var resNot = EvaluateGeneralBooleanExpression(value, terms);
-                    //return resNot.IsNull ? new BooleanObject(true, false) : new BooleanObject(false, !resNot.Value);
-                    return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
-                        : resNot == KleeneValue.False ? KleeneValue.True
-                        : KleeneValue.False;
-                case "isNull":
-                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);
-                    //return resn;
-                    return resn ? KleeneValue.True : KleeneValue.False;
-                case "matches":
-                    var resm = ValidationFunctions.ValidateMatch(formula, terms);
-                    return resm ? KleeneValue.True : KleeneValue.False;
-                case "dim":
-                    var resdim = ValidationFunctions.ValidateDim(formula, terms);
-                    return resdim ? KleeneValue.True : KleeneValue.False;
-                case "true":
-                    return KleeneValue.True;
-                default:
-                    //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
-                    var res = EvaluateGeneralBooleanExpression(value, terms);
-                    return res;
-            }
-        }
-
-
-        //************************** Make new formula with zet ********************************************************        
-        //if there are terms with parenthesis like  x1<3 or  (x0>3 and X1<4) => x1<3 or Z00
-        //replace parenthesis with zet terms. 
-        //evaluate each zet 
-        //reconstruct the formula using results instead of z        
-        //lookahead (?<!\S) is there to avoid matching imax(, imin( but to match 
-        var rgxTerm = new Regex(@"(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
-
-        var matchesTerms = rgxTerm.Matches(formula.Trim());
-        //var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, KleeneValue.Unknown)) ?? new List<ZetTerm>();
-        var ruleTextParenTerms = matchesTerms.Select((match, i) => new ZetTerm($"Z{i:D2}", match.Value, match.Groups[2].Value, "B", 0, false, ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)) ?? new List<ZetTerm>();
-
-        //2. if there are terms in parenthesis, evaluate each term in the parenthesis and return the result 1==1 for true 1==2 for false
-        if (ruleTextParenTerms.Any())
-        {
-            //*** i changed that to remove the trick with 1==1
-            //build a new formula where the terms(inside parenthesis) are replaced with the letters of the textTersms
-            var formulaParen = ruleTextParenTerms.Aggregate(formula, (currentText, val) =>
-            {
-                int index = currentText.IndexOf(val.Formula);
-                string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.Formula.Length)..];
-                return replacedString;
-            });
-
-            //Evaluate each of these terms 
-            var parenthesisTerms = ruleTextParenTerms
-             .Select(zz => zz with { KleenValue = EvaluateGeneralBooleanExpression(zz.Formula, terms) })
-            .ToList();
-
-            //the new formula replaces each term(boolean) with either 1=1 or 1==2
-            var newFormula = Enumerable.Aggregate<ZetTerm, string>(parenthesisTerms, formulaParen, (Func<string, ZetTerm, string>)((currentText, val) =>
-            {
-                int index = currentText.IndexOf(val.Letter);
-                var replacement = (val.KleenValue == KleeneValue.True) ? "1==1" : "1==2";
-                string replacedString = currentText[..index] + " " + replacement + " " + currentText[(index + val.Letter.Length)..];
-                return replacedString;
-            }));
-
-            var res = ValidationFunctions.ValidateArithmetic(newFormula, terms);
-            return res;
-        }
-
-
-
-        //*******************************************************************
-        //3. check for "and","or", nothing in this order
-        // a. If there is an "and" evaluate the two terms around end,
-        // b. if there is an "or" evaluate the two terms around "or"
-        // c. if there is  no "and" , "or" evaluate the terms
-        var termOperator = formula.Contains("and") ? LogicalOperators.IsAnd
-            : formula.Contains("or") ? LogicalOperators.IsOR
-            : LogicalOperators.None;
-
-        if (termOperator == LogicalOperators.None)
-        {
-            var regSplit = new Regex(@"(.+?)\s*(>=|>|<=|<|==|=)\s*(.+)");
-            var xxx = regSplit.Split(formula);
-            var matchSplit = regSplit.Match(formula);
-            if (!matchSplit.Success)
-            {
-                throw new ApplicationException($"Formula cannot be split using <,>,= :{formula}");
-            }
-            var left = matchSplit.Groups[1].Value;
-            var op = matchSplit.Groups[2].Value;
-            var right = matchSplit.Groups[3].Value;
-
-            var isExpressionWithStrings = terms.Any(t => (t.Value?.Object280?.DataType ?? "") == "S");
-            if (isExpressionWithStrings)
-            {
-                var resStr = EvaluateSimpleString(formula, terms);
-                return resStr;
-            }
-
-            var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Object280?.Decimals ?? 0 : 0;
-            var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Object280?.Decimals ?? 0 : 0;
-
-            var resLeftDbl = EvaluateArithmeticRecursively(left, terms);
-            var resRightDbl = EvaluateArithmeticRecursively(right, terms);
-
-            if (resLeftDbl.IsNull || resRightDbl.IsNull)
-            {
-                return KleeneValue.Unknown;
-            }
-
-            var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, resLeftDbl.Value, leftDecimals, resRightDbl.Value, rightDecimals);
-
-            return intervalResult ? KleeneValue.True : KleeneValue.False;
-        }
-
-        if (termOperator == LogicalOperators.IsAnd)
-        {
-            //Kleene Logic:
-            //--false if any is false(the other can be null or false)
-            //--true only if both are true
-            //--otherwise is null 
-            //Null AND Null => Null
-            //True AND Null => null
-            //False AND Null => false
-
-            var resAnd = formula.Split("and", StringSplitOptions.RemoveEmptyEntries);
-            var val1 = resAnd[0].Trim();
-            var val2 = resAnd[1].Trim();
-
-            var aAndRes = EvaluateGeneralBooleanExpression(val1, terms);
-            var bAndRes = EvaluateGeneralBooleanExpression(val2, terms);
-            if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
-                return KleeneValue.True;
-            else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
-                return KleeneValue.False;
-            else
-                return KleeneValue.Unknown;
-
-        }
-        if (termOperator == LogicalOperators.IsOR)
-        {
-            //kleene Logic :
-            //-- true if any is true
-            //-- false only if both are false
-            //-- otherwise unknown
-            //Null OR null => NULL
-            //False OR null => NULL
-            //True OR null =>TRUE
-            var res = formula.Split("or", StringSplitOptions.RemoveEmptyEntries);
-            var orRes1 = EvaluateGeneralBooleanExpression(res[0].Trim(), terms);
-            var val2 = res[1].Trim();
-            var orRes2 = EvaluateGeneralBooleanExpression(val2, terms);
-
-            if (orRes1 == KleeneValue.True || orRes2 == KleeneValue.True)
-                return KleeneValue.True;
-            else if (orRes1 == KleeneValue.False && orRes2 == KleeneValue.False)
-                return KleeneValue.False;
-            else
-                return KleeneValue.Unknown;
-        }
-
-        return KleeneValue.Unknown;
-
-
-    }
-
-
-    public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ZetTerm> terms)
+    public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
     {
         // 1.Create a list of OUTER arithmetic functions (imin,imax,...).
         //  --call evaluateFunction for each
@@ -427,7 +239,7 @@ public partial class ExpressionEvaluator
 
         //5 +  A00  + A01
         //7 +  A00 
-        var (formulaWithSymbols, functionObjects) = CreateZetObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
+        var (formulaWithSymbols, functionObjects) = CreateFunctionObjects(arithmeticExpression, rgxTerm, "V");
 
         formulaWithSymbols = ReplaceIntervalCharacters(formulaWithSymbols);
 
@@ -464,7 +276,7 @@ public partial class ExpressionEvaluator
         return result;
     }
 
-    public static double EvaluateFunction(string functionText, Dictionary<string, ZetTerm> terms)
+    public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
@@ -495,7 +307,7 @@ public partial class ExpressionEvaluator
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
-        var (innerSymbolFormula, innerFunctionTerms) = CreateZetObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
+        var (innerSymbolFormula, innerFunctionTerms) = CreateFunctionObjects(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
         var innerFunctionArguments = innerArguments.Select(argSplit =>
         {
@@ -599,14 +411,14 @@ public partial class ExpressionEvaluator
 
     }
 
-    public static KleeneValue EvaluateSimpleString(string symbolFormula, Dictionary<string, ZetTerm> terms)
+    public static KleeneValue EvaluateSimpleString(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
 
         var rgxEnum = new Regex(@"\[(.*?)\]");
         string cleanFormula = rgxEnum.Replace(symbolFormula, match => $"\"{match.Groups[1].Value}\"");
-        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value?.Object280?.Obj ?? "");
+        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value?.Obj ?? "");
 
 
         var result = Eval.Execute<bool>(cleanFormula, plainObjects);
@@ -617,12 +429,12 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static (string symbolFormula, List<ZetTerm> FunctionTerms) CreateZetObjectsFromTextFormula(string text, Regex regex, string letter)
+    public static (string symbolFormula, List<FunctionObject> FunctionTerms) CreateFunctionObjects(string text, Regex regex, string letter)
     {
         //public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
         var matchFunctions = regex.Matches(text);
         //var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
-        var nestedFunctions = matchFunctions.Select((match, i) => new ZetTerm($"{letter}{i:D2}", match.Value, match.Groups[2].Value, "N", 0, false, ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)).ToList();
+        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", match.Value, match.Groups[2].Value, "N", 0, false, ToFunctionType(match.Groups[1].Value), null, null, KleeneValue.Unknown)).ToList();
         var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.Formula);
