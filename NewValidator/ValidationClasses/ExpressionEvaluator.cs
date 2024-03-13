@@ -193,7 +193,7 @@ public partial class ExpressionEvaluator
             
             var isExpressionWithStrings = terms
                 .Where(term => formula.Contains(term.Key))
-                .Any(t => (t.Value?.DataType ?? "") == "S");
+                .Any(t => (t.Value?.DataType ?? "") == "S"); or "E" for enum
             if (isExpressionWithStrings)
             {
                 var resStr = EvaluateSimpleString(formula, terms);
