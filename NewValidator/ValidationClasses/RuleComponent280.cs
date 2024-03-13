@@ -24,9 +24,7 @@ public class RuleComponent280
     public List<RuleTerm280> RuleTerms { get; set; } = new();
     public string SymbolExpression { get; set; } = "";
     public Dictionary<string, ObjectTerm280> ObjectTerms { get; set; } = new();
-
-    public Dictionary<string, ZetTerm> ZetTerms { get; set; } = new();
-
+      
     public static RuleComponent280 CreateComponent(string textExpression)
     {
         //captures terms inside brackets , takes care of inner brackets in match statements        
