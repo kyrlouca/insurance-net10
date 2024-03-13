@@ -328,7 +328,7 @@ public partial class ExpressionEvaluator
             foreach (var ft in innerFunctionTerms)
             {
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
-                argSplit = argSplit.Replace(ft.Letter, ft.);
+                argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
             //if isum or icount do NOT recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count            
             if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
@@ -337,33 +337,32 @@ public partial class ExpressionEvaluator
                 return sameObj;
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);
-            //var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
-            var obj = new ZetTerm("F", "", "", "N", 0, false, FunctionAggregateTypes.Plain, null, null, KleeneValue.Unknown);
+            var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
+            //var obj = new ZetTerm("F", "", "", "N", 0, false, FunctionAggregateTypes.Plain, null, null, KleeneValue.Unknown);
 
             return obj;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
-        return finalFunctionValue;
-
+        return finalFunctionValue;        
     }
 
-    static double EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ZetTerm> terms)
+    static double EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ObjectTerm280> terms)
     {
 
         switch (functionType)
         {
             case FunctionAggregateTypes.iMin:
-                var min = terms.Min(item => item?.Object280?.Obj);
+                var min = terms.Min(item => item?.Obj);
                 return Convert.ToDouble(min);
 
             case FunctionAggregateTypes.iMax:
-                var max = terms.Max(item => item?.Object280?.Obj);
+                var max = terms.Max(item => item?.Obj);
                 return Convert.ToDouble(max);
             case FunctionAggregateTypes.iSum:
                 //there is only ONE terms inside a isum/icount so no worries
-                return Convert.ToDouble(terms.FirstOrDefault()?.Object280?.sumValue ?? 0);
+                return Convert.ToDouble(terms.FirstOrDefault()?.sumValue ?? 0);
             case FunctionAggregateTypes.iCount:
-                return Convert.ToDouble(terms.FirstOrDefault()?.Object280?.countValue ?? 0);
+                return Convert.ToDouble(terms.FirstOrDefault()?.countValue ?? 0);
             default: return 0;
 
 
