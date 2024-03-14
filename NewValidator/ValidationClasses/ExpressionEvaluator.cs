@@ -225,6 +225,11 @@ public partial class ExpressionEvaluator
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
         //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var regStartingFunction = RgxAggregateStartingFunction();
+        
+
+
+        arithmeticExpression = arithmeticExpression.Trim();
 
         //*** Remove Outer parenthesis
         var rgxOuter = RgxOuterParenthesis();
@@ -239,8 +244,16 @@ public partial class ExpressionEvaluator
         var resM = SplitArithmeticExpression(arithmeticExpression);
         if (resM.arithmeticOperator != ArithmeticOperators.None)
         {
-            var leftRes = EvaluateArithmeticRecursively(resM.left, terms);
-            var rightRes = EvaluateArithmeticRecursively(resM.Right, terms);
+            var matchLeftFunction = regStartingFunction.Match(resM.left);
+            var leftRes= matchLeftFunction.Success
+                ? EvaluateFunction(resM.left, terms)
+                : EvaluateArithmeticRecursively(resM.left, terms);
+
+            var matchRightFunction = regStartingFunction.Match(resM.Right);
+            var rightRes = matchRightFunction.Success
+                ? EvaluateFunction(resM.Right, terms)
+                : EvaluateArithmeticRecursively(resM.Right, terms);
+            
             if (leftRes.IsNull || rightRes.IsNull)
             {
                 return new DoubleObject(true, 0);
@@ -253,12 +266,12 @@ public partial class ExpressionEvaluator
                 default: return new DoubleObject(true, 0);
             }
         }
-
+         
         //*** we are sure that there is no operator
 
-        //*** SingleFunction
-        var regxSingleFunction = RgxAggregateFunctionSingle();
-        var matchSingleFunction = regxSingleFunction.Match(arithmeticExpression);
+        //*** Starting Function
+        var regStrtingFunction = RgxAggregateStartingFunction();
+        var matchSingleFunction = regStrtingFunction.Match(arithmeticExpression);
         if (matchOuter.Success)
         {
             var res = EvaluateFunction(matchOuter.Groups[1].Value, terms);
@@ -690,6 +703,8 @@ public partial class ExpressionEvaluator
 
 
 
+    [GeneratedRegex(@"^(imin|imax|max|isum|icount)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
+    public static partial Regex RgxAggregateStartingFunction();
 
 
     [GeneratedRegex(@"^(imin|imax|max|isum|icount)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]

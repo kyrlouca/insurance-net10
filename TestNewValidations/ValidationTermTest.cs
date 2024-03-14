@@ -223,6 +223,10 @@ public class ValidationTermTest
         Assert.True(res.IsNull == false);
         Assert.True(res.Value == 4);
 
+        text = @"3 + imin(4,3,2) * 7";
+        res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
+        Assert.True(res.IsNull == false);
+        Assert.True(res.Value == 17);
 
     }
 
