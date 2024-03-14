@@ -193,7 +193,7 @@ public partial class ExpressionEvaluator
             
             var isExpressionWithStrings = terms
                 .Where(term => formula.Contains(term.Key))
-                .Any(t => (t.Value?.DataType ?? "") == "S"); or "E" for enum
+                .Any(t => (t.Value?.DataType ?? "") == "S" || (t.Value?.DataType ?? "") == "E"); //check for "E"
             if (isExpressionWithStrings)
             {
                 var resStr = EvaluateSimpleString(formula, terms);
@@ -272,7 +272,7 @@ public partial class ExpressionEvaluator
         return result;
     }
 
-    public static double EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
+    public static DoubleObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
@@ -305,7 +305,7 @@ public partial class ExpressionEvaluator
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
-        var innerFunctionArguments = innerArguments.Select(argSplit =>
+        IEnumerable<DoubleObject> innerFunctionArguments = innerArguments.Select(argSplit =>
         {
             //here, we are processing each inner term (which are expressions) of the function. For example , x2+3, or even max(x3)+3
             //When all the inner terms are evaluated, we will evalueate the actual function
@@ -319,36 +319,57 @@ public partial class ExpressionEvaluator
             if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
             {
                 var sameObj = terms.FirstOrDefault(tr => tr.Key == functionContent).Value;
-                return sameObj;
+                var resSumOrCount = sameObj is null
+                ? new DoubleObject(true, 0)
+                : new DoubleObject(false, Convert.ToDouble(sameObj));
+                return resSumOrCount;
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);
-            var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
-            //var obj = new ZetTerm("F", "", "", "N", 0, false, FunctionAggregateTypes.Plain, null, null, KleeneValue.Unknown);
+            //var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
+            
 
-            return obj;
+            return res;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
         return finalFunctionValue;        
     }
 
-    static double EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ObjectTerm280> terms)
+    static DoubleObject EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ObjectTerm280> terms)
     {
 
         switch (functionType)
         {
             case FunctionAggregateTypes.iMin:
-                var min = terms.Min(item => item?.Obj);
-                return Convert.ToDouble(min);
-
+                //var min = terms.Min(item => item?.Obj);
+                var hasNullTermMin = terms.Any(item => ( item is null || item.IsNullFact));
+                var resMin = hasNullTermMin
+                    ? new DoubleObject(true,0)
+                    : new DoubleObject(false, terms.Min(item => Convert.ToDouble((item?.Obj))));                
+                return resMin;
             case FunctionAggregateTypes.iMax:
-                var max = terms.Max(item => item?.Obj);
-                return Convert.ToDouble(max);
+                //var max = terms.Max(item => item?.Obj);
+                var hasNullTermMax = terms.Any(item => (item is null || item.IsNullFact));
+                var resMax = hasNullTermMax
+                    ? new DoubleObject(true, 0)
+                    : new DoubleObject(false, terms.Max(item => Convert.ToDouble((item?.Obj))));
+                return resMax;
+                                
             case FunctionAggregateTypes.iSum:
                 //there is only ONE terms inside a isum/icount so no worries
-                return Convert.ToDouble(terms.FirstOrDefault()?.sumValue ?? 0);
+                //return Convert.ToDouble(terms.FirstOrDefault()?.sumValue ?? 0);
+                var sumTerm = terms.FirstOrDefault()?.sumValue;
+                var resSum = (sumTerm is null)
+                    ? new DoubleObject(true, 0)
+                    : new DoubleObject(false, Convert.ToDouble(sumTerm));
+                return resSum;
             case FunctionAggregateTypes.iCount:
-                return Convert.ToDouble(terms.FirstOrDefault()?.countValue ?? 0);
-            default: return 0;
+                //return Convert.ToDouble(terms.FirstOrDefault()?.countValue ?? 0);
+                var countTerm = terms.FirstOrDefault()?.countValue;
+                var resCount = (countTerm is null)
+                    ? new DoubleObject(true, 0)
+                    : new DoubleObject(false, Convert.ToDouble(countTerm));
+                return resCount;
+            default: return new DoubleObject(true,0);
 
 
         }

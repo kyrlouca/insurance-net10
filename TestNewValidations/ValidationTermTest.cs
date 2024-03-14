@@ -126,12 +126,12 @@ public class ValidationTermTest
 
         var text = @"imin(3, 4, 1 +1)";
         var res = ExpressionEvaluator.EvaluateFunction(text, new());
-        Assert.Equal(2, res);
+        Assert.Equal(new DoubleObject(true, 2), res);
 
 
         text = @"imax(imin(3, 7) , 4) ";
         res = ExpressionEvaluator.EvaluateFunction(text, new());
-        Assert.Equal(4, res);
+        Assert.Equal(4, res.Value);
 
 
     }
