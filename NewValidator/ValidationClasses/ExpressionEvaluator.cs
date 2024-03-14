@@ -334,21 +334,16 @@ public partial class ExpressionEvaluator
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
         //EXAMPLE withREAL  : imin(imax(X01, 0) * 0.25, X02)
         //Takes the inside content of the function and
-        //  --construct a List of the nested Functions objects (nestedFunctions) 
-        //  --builds a new formula (contentFormulaWithSymbols) and evaluates each term
-        //  --the term is evaluated using simpleArithmetic if no nesting and using recursion if more nested functions
-        // At the end all the terms are computed, and it uses the original symbol formula
+        //  -- create an array with the result of each inner term
+        //The final result is computed by evaluating the function using the list of computed inner terms
 
-        //string[] functionsSupported = { "imin", "imax", "isum", "icount", "max" };
 
         functionText = ReplaceIntervalCharacters(functionText);//max(x01,0) i => remove the i. the function has already been marked as interval
         var rgxSingleFunction = RgxSingleFunction(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         functionText = functionText.Trim();
 
         //we have a SINGLE function 
-        var matchFn = rgxSingleFunction.Match(functionText);
-        if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
-
+        //it is difficult to split with commas because functions have commas inside
         // the function CONTENT is a list of expressions separated by comma =>imax(X01, 0) * 0.25, X02 and => two expressions: imax(X01, 0) * 0.25  AND   X02
         // 1. Split the terms inside the function 
         // --the proper solution would be to split each expression, call the arithmeticExpressionEvaluator for each BUT due to commas inside functions, I cannot do the split
@@ -356,26 +351,34 @@ public partial class ExpressionEvaluator
         // 2.Evalueate each function term
         // 3.Finally, call  EvaluateFunctionWithComputedTerms since all the function terms were computed
 
+
+        var matchFn = rgxSingleFunction.Match(functionText);
+        if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
+        
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
+
+        if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
+        {
+            var fterms = terms.Where(trm => functionText.Contains(trm.Key)).ToDictionary(tm => tm.Key, tm => tm.Value);
+            var resSumOrCount = EvaluateSumOrCount(functionType, fterms);
+            return resSumOrCount;
+        }
+
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                
+        var count=innerArguments.Length;
         IEnumerable<DoubleObject> innerFunctionArguments = innerArguments.Select(argSplit =>
         {
             //here, we are processing each inner term (which are expressions) of the function. For example , x2+3, or even max(x3)+3
             //When all the inner terms are evaluated, we will evaluate the actual function
-            //for isum and icount do not recurse 
+            
             foreach (var ft in innerFunctionTerms)
             {
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
                 argSplit = argSplit.Replace(ft.Letter, ft.FullText);
-            }
-            //if isum or icount do NOT recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count            
-            if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
-            {
-                var resSumOrCount = EvaluateSumOrCount(functionType, terms);
-                return resSumOrCount;
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);
             return res;
@@ -394,16 +397,16 @@ public partial class ExpressionEvaluator
 
             case FunctionAggregateTypes.iSum:
                 //there is only ONE terms inside a isum/icount so no worries
-                var sumTerm = terms.FirstOrDefault();
+                var sumTerm = terms.FirstOrDefault();                
                 var resSum = sumTerm.Key is null
                     ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, Convert.ToDouble(sumTerm.Value));
+                    : new DoubleObject(false, Convert.ToDouble(sumTerm.Value.sumValue));
                 return resSum;
             case FunctionAggregateTypes.iCount:
                 var countTerm = terms.FirstOrDefault();
                 var resCount = countTerm.Key is null
                     ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, Convert.ToDouble(countTerm.Value));
+                    : new DoubleObject(false, Convert.ToDouble(countTerm.Value.countValue));
                 return resCount;
             default: return new DoubleObject(true, 0);
 
@@ -516,7 +519,13 @@ public partial class ExpressionEvaluator
 
     public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
     {
+        //max(min(X01,3,X03), X2,0),X2 => F01,X2
+        //X01+X02=> X01+X02
         var matchFunctions = regex.Matches(text);
+        if (matchFunctions.Count == 0)
+        {
+            return (text,new List<FunctionObject>());
+        }
         var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
         var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
         {
