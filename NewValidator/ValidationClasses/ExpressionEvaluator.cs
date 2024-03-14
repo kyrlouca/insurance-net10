@@ -30,6 +30,7 @@ public record ZetTerm(string Letter, string Formula, string FunctionArgument, st
 public partial class ExpressionEvaluator
 {
     public enum LogicalOperators { None, IsAnd, IsOR };
+    public enum ArithmeticOperators { Multiply, Plus, Minus, None };
 
     public static bool ValidateRule(RuleStructure280 ruleStructure280)
     {
@@ -92,14 +93,14 @@ public partial class ExpressionEvaluator
         //1. single function or outer parenthesis => evaluate function or remove parenthesis and recurse       
         //2. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
         //3. arithmetic
-        
+
 
         var rgxOuter = RgxOuterParenthesis();
         var matchOuter = rgxOuter.Match(formula);
         if (matchOuter.Success)
         {
             var insideParen = matchOuter.Groups[1].Value.Trim();
-            var resInside= EvaluateGeneralBooleanExpression(insideParen, terms);
+            var resInside = EvaluateGeneralBooleanExpression(insideParen, terms);
             return resInside;
 
         }
@@ -190,7 +191,7 @@ public partial class ExpressionEvaluator
             var left = matchSplit.Groups[1].Value;
             var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
-            
+
             var isExpressionWithStrings = terms
                 .Where(term => formula.Contains(term.Key))
                 .Any(t => (t.Value?.DataType ?? "") == "S" || (t.Value?.DataType ?? "") == "E"); //check for "E"
@@ -222,38 +223,73 @@ public partial class ExpressionEvaluator
 
     public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
     {
-        // 1.Create a list of OUTER arithmetic functions (imin,imax,...).
-        //  --call evaluateFunction for each
-        //  --each function will become a symbol in the formula and a term with a value will be created
-        // 2.Add the new terms to the exisiting ones        
-        // 3.Use EvaluateSimpleArithmetic (formula with symbols and all symbols have a value in a list)
-        //  --@"5 + imin(3) +imax(4)";
-        //  --@"7 + imin(imax(3,5),4)";
-        // imin(imax(X01, 0) i* 0.25, X02) 
-        var rgxTerm = RgxAggregateFunctions(); //"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
-        var matchFunctions = rgxTerm.Matches(arithmeticExpression);
+        //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
+        //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
 
+        //*** Remove Outer parenthesis
+        var rgxOuter = RgxOuterParenthesis();
+        var matchOuter = rgxOuter.Match(arithmeticExpression);
+        if (matchOuter.Success)
+        {
+            var res = EvaluateArithmeticRecursively(matchOuter.Groups[1].Value, terms);
+            return res;
+        }
 
-        //5 +  A00  + A01
-        //7 +  A00 
-        var (formulaWithSymbols, functionObjects) = ToFunctionObjectsFromTextFormula(arithmeticExpression, rgxTerm, "V");
-
-        formulaWithSymbols = ReplaceIntervalCharacters(formulaWithSymbols);
-
-        var newObjTerms = functionObjects
-            .Select(ft =>
+        //*** Multiply , add, subtract
+        var resM = SplitArithmeticExpression(arithmeticExpression);
+        if (resM.arithmeticOperator != ArithmeticOperators.None)
+        {
+            var leftRes = EvaluateArithmeticRecursively(resM.left, terms);
+            var rightRes = EvaluateArithmeticRecursively(resM.Right, terms);
+            if (leftRes.IsNull || rightRes.IsNull)
             {
-                
-                var val = EvaluateFunction(ft.FullText, terms);
-                return (ft.Letter, new ObjectTerm280("F", 0, false, val, 0, 0, null, false));                
-            });
+                return new DoubleObject(true, 0);
+            }
+            switch (resM.arithmeticOperator)
+            {
+                case ArithmeticOperators.Multiply: return new DoubleObject(false, leftRes.Value * rightRes.Value);
+                case ArithmeticOperators.Plus: return new DoubleObject(false, leftRes.Value + rightRes.Value);
+                case ArithmeticOperators.Minus: return new DoubleObject(false, leftRes.Value - rightRes.Value);
+                default: return new DoubleObject(true, 0);
+            }
+        }
 
-        var allTermsx = terms.Select(trm => (trm.Key, trm.Value with { Decimals = 9 })).ToList();
-        allTermsx.AddRange(newObjTerms);
-        var allObjectsDic = allTermsx.ToDictionary(x => x.Key, x => x.Item2);
-        var val = EvaluateSimpleArithmetic(formulaWithSymbols, allObjectsDic);
+        //*** we are sure that there is no operator
 
-        return val;
+        //*** SingleFunction
+        var regxSingleFunction = RgxAggregateFunctionSingle();
+        var matchSingleFunction = regxSingleFunction.Match(arithmeticExpression);
+        if (matchOuter.Success)
+        {
+            var res = EvaluateFunction(matchOuter.Groups[1].Value, terms);
+            return res;
+        }
+
+        //*** Just a Term
+        var rgxTerm = new Regex("X/d{2}");
+        var matchTerm= rgxTerm.Match(arithmeticExpression);
+        if (matchTerm.Success)
+        {
+            var term = terms.FirstOrDefault(trm => trm.Key == matchTerm.Groups[1].Value);
+            var xx= term.Value.IsNullFact? new DoubleObject(true,0): new DoubleObject(false,Convert.ToDouble(matchTerm.Value));            
+        }
+
+        //*** number as Text
+        Double numberFromText;
+        try
+        {
+            numberFromText = Convert.ToDouble(arithmeticExpression);
+            return new DoubleObject(false, numberFromText);
+        }
+        catch
+        {
+            //no proplem
+        }
+
+        return new DoubleObject(true, 0);
+              
+
+
     }
 
     static string ReplaceIntervalCharacters(string input)
@@ -308,7 +344,7 @@ public partial class ExpressionEvaluator
         IEnumerable<DoubleObject> innerFunctionArguments = innerArguments.Select(argSplit =>
         {
             //here, we are processing each inner term (which are expressions) of the function. For example , x2+3, or even max(x3)+3
-            //When all the inner terms are evaluated, we will evalueate the actual function
+            //When all the inner terms are evaluated, we will evaluate the actual function
             //for isum and icount do not recurse 
             foreach (var ft in innerFunctionTerms)
             {
@@ -318,58 +354,65 @@ public partial class ExpressionEvaluator
             //if isum or icount do NOT recurse, there are no expressions inside. you just need to keep the value of the old terms which has the sum and count            
             if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
             {
-                var sameObj = terms.FirstOrDefault(tr => tr.Key == functionContent).Value;
-                var resSumOrCount = sameObj is null
-                ? new DoubleObject(true, 0)
-                : new DoubleObject(false, Convert.ToDouble(sameObj));
+                var resSumOrCount = EvaluateSumOrCount(functionType, terms);
                 return resSumOrCount;
             }
             var res = EvaluateArithmeticRecursively(argSplit, terms);
-            //var obj = new ObjectTerm280("F", 0, false, res, 0, 0, null, false);
-            
-
             return res;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
-        return finalFunctionValue;        
+        return finalFunctionValue;
     }
 
-    static DoubleObject EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<ObjectTerm280> terms)
+
+
+    static DoubleObject EvaluateSumOrCount(FunctionAggregateTypes functionType, Dictionary<string, ObjectTerm280> terms)
+    {
+
+        switch (functionType)
+        {
+
+            case FunctionAggregateTypes.iSum:
+                //there is only ONE terms inside a isum/icount so no worries
+                var sumTerm = terms.FirstOrDefault();
+                var resSum = sumTerm.Key is null
+                    ? new DoubleObject(true, 0)
+                    : new DoubleObject(false, Convert.ToDouble(sumTerm.Value));
+                return resSum;
+            case FunctionAggregateTypes.iCount:
+                var countTerm = terms.FirstOrDefault();
+                var resCount = countTerm.Key is null
+                    ? new DoubleObject(true, 0)
+                    : new DoubleObject(false, Convert.ToDouble(countTerm.Value));
+                return resCount;
+            default: return new DoubleObject(true, 0);
+
+        }
+
+    }
+
+
+    static DoubleObject EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<DoubleObject> terms)
     {
 
         switch (functionType)
         {
             case FunctionAggregateTypes.iMin:
                 //var min = terms.Min(item => item?.Obj);
-                var hasNullTermMin = terms.Any(item => ( item is null || item.IsNullFact));
+                var hasNullTermMin = terms.Any(item => item.IsNull);
                 var resMin = hasNullTermMin
-                    ? new DoubleObject(true,0)
-                    : new DoubleObject(false, terms.Min(item => Convert.ToDouble((item?.Obj))));                
+                    ? new DoubleObject(true, 0)
+                    : new DoubleObject(false, terms.Min(item => item.Value));
                 return resMin;
             case FunctionAggregateTypes.iMax:
                 //var max = terms.Max(item => item?.Obj);
-                var hasNullTermMax = terms.Any(item => (item is null || item.IsNullFact));
+                var hasNullTermMax = terms.Any(item => item.IsNull);
                 var resMax = hasNullTermMax
                     ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, terms.Max(item => Convert.ToDouble((item?.Obj))));
+                    : new DoubleObject(false, terms.Max(item => item.Value));
                 return resMax;
-                                
-            case FunctionAggregateTypes.iSum:
-                //there is only ONE terms inside a isum/icount so no worries
-                //return Convert.ToDouble(terms.FirstOrDefault()?.sumValue ?? 0);
-                var sumTerm = terms.FirstOrDefault()?.sumValue;
-                var resSum = (sumTerm is null)
-                    ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, Convert.ToDouble(sumTerm));
-                return resSum;
-            case FunctionAggregateTypes.iCount:
-                //return Convert.ToDouble(terms.FirstOrDefault()?.countValue ?? 0);
-                var countTerm = terms.FirstOrDefault()?.countValue;
-                var resCount = (countTerm is null)
-                    ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, Convert.ToDouble(countTerm));
-                return resCount;
-            default: return new DoubleObject(true,0);
+
+            default: return new DoubleObject(true, 0);
 
 
         }
@@ -392,7 +435,7 @@ public partial class ExpressionEvaluator
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
-                        
+
         //only check the terms of the formula 
         var formulaTerms = terms.Where(term => symbolFormula.Contains(term.Key));
         var isAnyTermNull = formulaTerms.Any(ft => ft.Value?.IsNullFact ?? false);
@@ -407,14 +450,14 @@ public partial class ExpressionEvaluator
         return new DoubleObject(false, result);
 
 
-        
+
         static Object FromStringToObj(object? obj)
         {
             if (obj is null)
             {
                 return 0;
             }
-            if(obj is string)
+            if (obj is string)
             {
                 try
                 {
@@ -422,11 +465,11 @@ public partial class ExpressionEvaluator
                 }
                 catch (FormatException)
                 {
-                    throw new Exception($"obj:{obj.ToString} Cannot convert string object to double");                    
+                    throw new Exception($"obj:{obj.ToString} Cannot convert string object to double");
                 }
             }
             return obj;
-            
+
 
         }
 
@@ -464,11 +507,14 @@ public partial class ExpressionEvaluator
 
         return (contentFormulaWithSymbols, nestedFunctions);
     }
-   
+
 
     public static (LogicalOperators logicalOperator, string left, string Right) SplitAndOrExpression(string text)
     {
-        //public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
+        //We have "and", "or" inside parenthesis or other functions. We need to find the first valid "And" or the first valid "or"
+        //Then, split the expression to left and right and return.
+        //If no logical operator is found=> put everything in the left
+        //The trick is to replace the parenthesis with letters and then find the split 
         //RgxAggregateFunctions
         var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         //var rgx = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
@@ -537,6 +583,108 @@ public partial class ExpressionEvaluator
                 return replacedString;
             });
             return newRight;
+        }
+    }
+
+
+    public static (ArithmeticOperators arithmeticOperator, string left, string Right) SplitArithmeticExpression(string text)
+    {
+        //We have "*", "+", "-" inside parenthesis or other functions. We need to find the first valid "*","+","-"
+        //Then, split the expression to left and right and return.
+        //If no logical operator is found=> put everything in the left
+        //The trick is to replace the parenthesis with letters and then find the split 
+
+        //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
+        //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        //var rgx = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
+        var rgx = new Regex(@"\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var matchParenthesis = rgx.Matches(text);
+        var nestedFunctions = matchParenthesis.Select((match, i) => ($"Z{i:D2}", match.Value)).ToList();
+        var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
+        {
+            int index = currentText.IndexOf(val.Value);
+            string replacedString = currentText[..index] + "" + val.Item1 + "" + currentText[(index + val.Value.Length)..];
+            return replacedString;
+        });
+
+        
+
+        char[] opeatorsToFind = { '+', '-' };
+        var plusOrMinusPosition = contentFormulaWithSymbols.IndexOfAny(opeatorsToFind);
+
+        var multiplyPosition = contentFormulaWithSymbols.IndexOf("*");
+
+        //yes break for + or minus , so that * has precedence
+        var operatorPosition = plusOrMinusPosition > -1
+            ? plusOrMinusPosition
+            : multiplyPosition > -1
+            ? multiplyPosition
+            : -1;
+
+        if (operatorPosition == -1)
+        {
+            return (ArithmeticOperators.None, text, "");
+        }
+
+        var op = contentFormulaWithSymbols[operatorPosition].ToString();
+
+        if (op == "*")
+        {
+            string newLeft = RestoreLeftSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
+            string newRight = RestoreRightSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
+            return (ArithmeticOperators.Multiply, newLeft, newRight);
+        }
+
+        if (op == "+")
+        {
+            string newLeft = RestoreLeftSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
+            string newRight = RestoreRightSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
+            return (ArithmeticOperators.Plus, newLeft, newRight);
+        }
+
+        if (op == "-")
+        {
+            string newLeft = RestoreLeftSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
+            string newRight = RestoreRightSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
+            return (ArithmeticOperators.Minus, newLeft, newRight);
+        }
+
+
+
+        return (ArithmeticOperators.None, text, "");
+        //***************************************
+        static string RestoreLeftSide(List<(string, string Value)> nestedFunctions, string contentFormulaWithSymbols, string logicalOperator)
+        {
+            var indexAnd = contentFormulaWithSymbols.IndexOf(logicalOperator);
+            var leftSide = contentFormulaWithSymbols[..indexAnd];
+            var newLeft = nestedFunctions.Aggregate(leftSide, (currentText, val) =>
+            {
+                int index = currentText.IndexOf(val.Item1);
+
+                string replacedString = index > -1
+                ? currentText[..index] + val.Value + currentText[(index + val.Item1.Length)..]
+                : currentText;
+
+                return replacedString;
+            });
+            return newLeft.Trim();
+        }
+
+        static string RestoreRightSide(List<(string, string Value)> nestedFunctions, string contentFormulaWithSymbols, string logicalOperator)
+        {
+            var indexAnd = contentFormulaWithSymbols.IndexOf(logicalOperator);
+            var rightSide = contentFormulaWithSymbols[(indexAnd + logicalOperator.Length)..];
+            var newRight = nestedFunctions.Aggregate(rightSide, (currentText, val) =>
+            {
+                int index = currentText.IndexOf(val.Item1);
+
+                string replacedString = index > -1
+                ? currentText[..index] + val.Value + currentText[(index + val.Item1.Length)..]
+                : currentText;
+
+                return replacedString;
+            });
+            return newRight.Trim();
         }
     }
 

@@ -183,5 +183,50 @@ public class ValidationTermTest
 
 
 
+    [Fact]
+    public void TestSplitPlusOrMinusArithmetic()
+    {
+
+        var text = @"5 - 4 + (3 * X2)";
+        var res = ExpressionEvaluator.SplitArithmeticExpression(text);
+        Assert.Equal(res.arithmeticOperator, ExpressionEvaluator.ArithmeticOperators.Minus);
+        Assert.Equal(res.left, "5");
+        Assert.Equal(res.Right, "4 + (3 * X2)");
+
+        text = @"5 - 4 * X1 + (3 * X2)";
+        res = ExpressionEvaluator.SplitArithmeticExpression(text);
+        Assert.Equal(res.arithmeticOperator, ExpressionEvaluator.ArithmeticOperators.Multiply);
+        Assert.Equal(res.left, "5 - 4");
+        Assert.Equal(res.Right, "X1 + (3 * X2)");
+
+        text = @"X3";
+        res = ExpressionEvaluator.SplitArithmeticExpression(text);
+        Assert.Equal(res.arithmeticOperator, ExpressionEvaluator.ArithmeticOperators.None);
+        Assert.Equal(res.left, "X3");
+        Assert.Equal(res.Right, "");
+
+
+
+    }
+
+    [Fact]
+    public void TestEvaluateArithmeticExpression()
+    {
+
+        var text = @"3 * (2+4)";
+        var res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
+        Assert.True(res.IsNull == false);
+        Assert.True(res.Value == 18);
+
+        text = @"3 + (2 * 4 -7)";
+        res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
+        Assert.True(res.IsNull == false);
+        Assert.True(res.Value == 4);
+
+
+    }
+
+
+
 
 }
