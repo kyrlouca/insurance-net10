@@ -191,19 +191,19 @@ public class ValidationTermTest
         var res = ExpressionEvaluator.SplitArithmeticExpression(text);
         Assert.Equal(res.arithmeticOperator, ExpressionEvaluator.ArithmeticOperators.Minus);
         Assert.Equal(res.left, "5");
-        Assert.Equal(res.Right, "4 + (3 * X2)");
+        Assert.Equal(res.right, "4 + (3 * X2)");
 
         text = @"5 - 4 * X1 + (3 * X2)";
         res = ExpressionEvaluator.SplitArithmeticExpression(text);
         Assert.Equal(res.arithmeticOperator, ExpressionEvaluator.ArithmeticOperators.Multiply);
         Assert.Equal(res.left, "5 - 4");
-        Assert.Equal(res.Right, "X1 + (3 * X2)");
+        Assert.Equal(res.right, "X1 + (3 * X2)");
 
         text = @"X3";
         res = ExpressionEvaluator.SplitArithmeticExpression(text);
         Assert.Equal(res.arithmeticOperator, ExpressionEvaluator.ArithmeticOperators.None);
         Assert.Equal(res.left, "X3");
-        Assert.Equal(res.Right, "");
+        Assert.Equal(res.right, "");
 
 
 

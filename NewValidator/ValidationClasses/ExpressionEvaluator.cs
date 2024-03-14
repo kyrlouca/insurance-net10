@@ -225,8 +225,8 @@ public partial class ExpressionEvaluator
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
         //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
-        var regStartingFunction = RgxAggregateStartingFunction();
-        
+        //var regStartingFunction = RgxAggregateStartingFunction();
+        var regSingleFunction = RgxAggregateFunctionSingle();
 
 
         arithmeticExpression = arithmeticExpression.Trim();
@@ -244,15 +244,15 @@ public partial class ExpressionEvaluator
         var resM = SplitArithmeticExpression(arithmeticExpression);
         if (resM.arithmeticOperator != ArithmeticOperators.None)
         {
-            var matchLeftFunction = regStartingFunction.Match(resM.left);
+            var matchLeftFunction = regSingleFunction.Match(resM.left);
             var leftRes= matchLeftFunction.Success
                 ? EvaluateFunction(resM.left, terms)
                 : EvaluateArithmeticRecursively(resM.left, terms);
 
-            var matchRightFunction = regStartingFunction.Match(resM.Right);
+            var matchRightFunction = regSingleFunction.Match(resM.right);
             var rightRes = matchRightFunction.Success
-                ? EvaluateFunction(resM.Right, terms)
-                : EvaluateArithmeticRecursively(resM.Right, terms);
+                ? EvaluateFunction(resM.right, terms)
+                : EvaluateArithmeticRecursively(resM.right, terms);
             
             if (leftRes.IsNull || rightRes.IsNull)
             {
@@ -268,15 +268,7 @@ public partial class ExpressionEvaluator
         }
          
         //*** we are sure that there is no operator
-
-        //*** Starting Function
-        var regStrtingFunction = RgxAggregateStartingFunction();
-        var matchSingleFunction = regStrtingFunction.Match(arithmeticExpression);
-        if (matchOuter.Success)
-        {
-            var res = EvaluateFunction(matchOuter.Groups[1].Value, terms);
-            return res;
-        }
+        
 
         //*** Just a Term
         var rgxTerm = new Regex("X/d{2}");
@@ -600,7 +592,7 @@ public partial class ExpressionEvaluator
     }
 
 
-    public static (ArithmeticOperators arithmeticOperator, string left, string Right) SplitArithmeticExpression(string text)
+    public static (ArithmeticOperators arithmeticOperator, string left, string right) SplitArithmeticExpression(string text)
     {
         //We have "*", "+", "-" inside parenthesis or other functions. We need to find the first valid "*","+","-"
         //Then, split the expression to left and right and return.
