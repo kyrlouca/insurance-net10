@@ -90,9 +90,10 @@ public partial class ExpressionEvaluator
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
-        //1. single function or outer parenthesis => evaluate function or remove parenthesis and recurse       
-        //2. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
-        //3. arithmetic
+        //1. outer parenthesis
+        //2. single function        
+        //3. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
+        //4. arithmetic
 
 
         var rgxOuter = RgxOuterParenthesis();
@@ -105,9 +106,9 @@ public partial class ExpressionEvaluator
 
         }
 
-        //************************** Single Function Or Parenthesis********************************************************
-        //Check if this is an outer parenthesis or an Outer function.
-        //1. outer parenthesis with or without function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
+        //************************** Single Function********************************************************
+        //
+        //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
         var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
         var match = rgxFn.Match(formula);
         if (match.Success)
@@ -207,7 +208,7 @@ public partial class ExpressionEvaluator
             var resLeftDbl = EvaluateArithmeticRecursively(left, terms);
             var resRightDbl = EvaluateArithmeticRecursively(right, terms);
 
-            if (resLeftDbl.IsNull || resRightDbl.IsNull)
+             if (resLeftDbl.IsNull || resRightDbl.IsNull)
             {
                 return KleeneValue.Unknown;
             }
@@ -266,17 +267,24 @@ public partial class ExpressionEvaluator
                 default: return new DoubleObject(true, 0);
             }
         }
-         
+
         //*** we are sure that there is no operator
-        
+
+        var matchSingleFunction = regSingleFunction.Match(arithmeticExpression);
+        if (matchSingleFunction.Success)
+        {
+            var res = EvaluateFunction(arithmeticExpression, terms);
+            return res;
+        }
 
         //*** Just a Term
-        var rgxTerm = new Regex("X/d{2}");
+        var rgxTerm = new Regex(@"^X\d{2}");
         var matchTerm= rgxTerm.Match(arithmeticExpression);
         if (matchTerm.Success)
         {
-            var term = terms.FirstOrDefault(trm => trm.Key == matchTerm.Groups[1].Value);
-            var xx= term.Value.IsNullFact? new DoubleObject(true,0): new DoubleObject(false,Convert.ToDouble(matchTerm.Value));            
+            var term = terms.FirstOrDefault(trm => trm.Key == matchTerm.Value);
+            var resTerm= term.Value.IsNullFact? new DoubleObject(true,0): new DoubleObject(false,Convert.ToDouble(term.Value.Obj));
+            return resTerm;
         }
 
         //*** number as Text
