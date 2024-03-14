@@ -126,12 +126,14 @@ public class ValidationTermTest
 
         var text = @"imin(3, 4, 1 +1)";
         var res = ExpressionEvaluator.EvaluateFunction(text, new());
-        Assert.Equal(new DoubleObject(true, 2), res);
+        Assert.Equal(new DoubleObject(false, 2), res);
 
 
         text = @"imax(imin(3, 7) , 4) ";
         res = ExpressionEvaluator.EvaluateFunction(text, new());
+        Assert.Equal(false, res.IsNull);
         Assert.Equal(4, res.Value);
+        
 
 
     }
@@ -213,6 +215,12 @@ public class ValidationTermTest
     public void TestEvaluateArithmeticExpression()
     {
 
+        var text0 = @"3 + imin(4,3,2) * 7";
+        var res0 = ExpressionEvaluator.EvaluateArithmeticRecursively(text0, new());
+        Assert.True(res0.IsNull == false);
+        Assert.True(res0.Value == 17);
+
+
         var text = @"3 * (2+4)";
         var res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
         Assert.True(res.IsNull == false);
@@ -223,10 +231,6 @@ public class ValidationTermTest
         Assert.True(res.IsNull == false);
         Assert.True(res.Value == 4);
 
-        text = @"3 + imin(4,3,2) * 7";
-        res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new());
-        Assert.True(res.IsNull == false);
-        Assert.True(res.Value == 17);
 
     }
 

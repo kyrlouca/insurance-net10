@@ -5,6 +5,7 @@ using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 using Syncfusion.XlsIO.Parser.Biff_Records;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.RegularExpressions;
@@ -227,8 +228,7 @@ public partial class ExpressionEvaluator
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
         //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         //var regStartingFunction = RgxAggregateStartingFunction();
-        var regSingleFunction = RgxAggregateFunctionSingle();
-
+        var regSingleFunction = RgxSingleFunction();
 
         arithmeticExpression = arithmeticExpression.Trim();
 
@@ -241,8 +241,47 @@ public partial class ExpressionEvaluator
             return res;
         }
 
-        //*** Multiply , add, subtract
+        //*** Just a Term X01
+        var rgxTerm = new Regex(@"^X\d{2}$");
+        var matchTerm = rgxTerm.Match(arithmeticExpression);
+        if (matchTerm.Success)
+        {
+            var term = terms.FirstOrDefault(trm => trm.Key == matchTerm.Value);
+            var resTerm = term.Value.IsNullFact ? new DoubleObject(true, 0) : new DoubleObject(false, Convert.ToDouble(term.Value.Obj));
+            return resTerm;
+        }
+
+        //*** A single function imin(imax(3,X01),X02
+        var matchSingleFunction = regSingleFunction.Match(arithmeticExpression);
+        if (matchSingleFunction.Success)
+        {
+            var res = EvaluateFunction(arithmeticExpression, terms);
+            return res;
+        }
+        
+        //Try to split the expression         
         var resM = SplitArithmeticExpression(arithmeticExpression);
+        //*** it is an expression and above we checked that there is no operator, it is not function , it is not a term=>Should be a number
+        if (resM.arithmeticOperator == ArithmeticOperators.None)
+        {
+            //*** number as Text
+            Double numberFromText;
+            try
+            {
+                CultureInfo usCulture = new CultureInfo("en-US");
+                CultureInfo.CurrentCulture = usCulture;
+
+                numberFromText = Convert.ToDouble(arithmeticExpression, usCulture);
+                return new DoubleObject(false, numberFromText);
+            }
+            catch
+            {
+                throw new Exception($"expression:{arithmeticExpression} Text is not a Number");
+            }
+        }
+
+
+        //*** Multiply , add, subtract
         if (resM.arithmeticOperator != ArithmeticOperators.None)
         {
             var matchLeftFunction = regSingleFunction.Match(resM.left);
@@ -268,41 +307,9 @@ public partial class ExpressionEvaluator
             }
         }
 
-        //*** we are sure that there is no operator
-
-        var matchSingleFunction = regSingleFunction.Match(arithmeticExpression);
-        if (matchSingleFunction.Success)
-        {
-            var res = EvaluateFunction(arithmeticExpression, terms);
-            return res;
-        }
-
-        //*** Just a Term
-        var rgxTerm = new Regex(@"^X\d{2}");
-        var matchTerm= rgxTerm.Match(arithmeticExpression);
-        if (matchTerm.Success)
-        {
-            var term = terms.FirstOrDefault(trm => trm.Key == matchTerm.Value);
-            var resTerm= term.Value.IsNullFact? new DoubleObject(true,0): new DoubleObject(false,Convert.ToDouble(term.Value.Obj));
-            return resTerm;
-        }
-
-        //*** number as Text
-        Double numberFromText;
-        try
-        {
-            numberFromText = Convert.ToDouble(arithmeticExpression);
-            return new DoubleObject(false, numberFromText);
-        }
-        catch
-        {
-            //no proplem
-        }
-
-        return new DoubleObject(true, 0);
-              
-
-
+        //*** Should not come here
+        throw new Exception($"Expression:{arithmeticExpression}. Can not decifer Arithmetic Expression");        
+        //return new DoubleObject(true, 0);              
     }
 
     static string ReplaceIntervalCharacters(string input)
@@ -335,7 +342,7 @@ public partial class ExpressionEvaluator
         //string[] functionsSupported = { "imin", "imax", "isum", "icount", "max" };
 
         functionText = ReplaceIntervalCharacters(functionText);//max(x01,0) i => remove the i. the function has already been marked as interval
-        var rgxSingleFunction = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
+        var rgxSingleFunction = RgxSingleFunction(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         functionText = functionText.Trim();
 
         //we have a SINGLE function 
@@ -704,11 +711,10 @@ public partial class ExpressionEvaluator
 
 
     [GeneratedRegex(@"^(imin|imax|max|isum|icount)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
-    public static partial Regex RgxAggregateStartingFunction();
-
+    public static partial Regex RgxStartingFunction();
 
     [GeneratedRegex(@"^(imin|imax|max|isum|icount)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
-    public static partial Regex RgxAggregateFunctionSingle();
+    public static partial Regex RgxSingleFunction();
 
     [GeneratedRegex(@"(imin|imax|max|isum|icount)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxAggregateFunctions();
