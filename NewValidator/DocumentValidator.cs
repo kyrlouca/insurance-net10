@@ -81,7 +81,7 @@ public class DocumentValidator : IDocumentValidator
         ValidationRuleComparer comparer = new();
         validationRules = validationRules.Distinct(comparer).ToList();
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 2050).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 683).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
@@ -173,8 +173,10 @@ public class DocumentValidator : IDocumentValidator
                             UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
 
-                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty
-                                || ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms) != KleeneValue.True;
+                            var filterKleeneValue = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
+
+                            //if filter has terms with null values, it is considered false here
+                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty || (filterKleeneValue == KleeneValue.True);                            
                             if (!isFilterValid)
                             {
                                 continue;
