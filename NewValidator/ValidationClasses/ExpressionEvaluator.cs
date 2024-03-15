@@ -93,8 +93,8 @@ public partial class ExpressionEvaluator
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
         //1. outer parenthesis
         //2. single function        
-        //3. if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
-        //4. arithmetic
+        //---- if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
+        //3. arithmetic
 
 
         var rgxOuter = RgxOuterParenthesis();
@@ -180,7 +180,7 @@ public partial class ExpressionEvaluator
                 return KleeneValue.Unknown;
         }
 
-
+        //3. ****************************************arithmetic
         if (res.logicalOperator == LogicalOperators.None)
         {
             var regSplit = new Regex(@"(.+?)\s*(>=|>|<=|<|==|=)\s*(.+)");

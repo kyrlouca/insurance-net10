@@ -77,10 +77,11 @@ public class DocumentValidator : IDocumentValidator
         var xx = CreateErrorDocument();
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
+        //Select rules with the same id Only once. We need a comparer for this 
         ValidationRuleComparer comparer = new();
         validationRules = validationRules.Distinct(comparer).ToList();
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 783).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 2050).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
@@ -114,7 +115,7 @@ public class DocumentValidator : IDocumentValidator
                     UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
                 }
 
-                //also rules for metric
+                //todo also rules for metric
                 //check if no seq and all tables are open                 
                 //--if there is a filter => it is an open table 
                 //sum with seq 
@@ -122,7 +123,7 @@ public class DocumentValidator : IDocumentValidator
                 //Closed Tables: sum without seq , use the R: to create terms (3780) OR the terms are separated by commas
 
                 var hasAggregateFn = ruleForScope.IfComponent.RuleTerms.Any(rt => rt.IsSequence);
-                if (isAllClosedTables)
+                if ((!hasAggregateFn || hasAggregateFn) && isAllClosedTables)
                 {
                     var mainTable = tablesInValidation.FirstOrDefault();
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
@@ -145,27 +146,6 @@ public class DocumentValidator : IDocumentValidator
                             CreateRuleError(ruleClosed, validationRule);
                         }
                     }
-                }
-
-                if (hasAggregateFn && isMixedTables)
-                {
-                    //if there is an open table involved and there is NO seq then start from the master  "X00= isum(X01)"
-                    //--  create a rule for each row of the m aster (so you have the row )
-                    //--- fill the row of the slave by using the key
-                    //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
-                    //--- for each row of the seq, check the filter using the row of the slave . 
-                    //--- the resulting object will have both the sum and the count because the function is not known  at the time 
-                    var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-
-                    rule = FillRuleStructureWithFactValues(rule);
-                    CalculateObjectTermsWithSeqSum(rule.IfComponent, rule.FilterComponent);
-                    CalculateObjectTermsWithSeqSum(rule.ThenComponent, rule.FilterComponent);
-                    CalculateObjectTermsWithSeqSum(rule.ElseComponent, rule.FilterComponent);
-
-                    var isValidRule = ExpressionEvaluator.ValidateRule(rule);
-                    CreateRuleError(rule, validationRule);
-
-
                 }
 
                 if (!hasAggregateFn && isAllOpenTables)
@@ -211,48 +191,46 @@ public class DocumentValidator : IDocumentValidator
 
 
                 }
-
-                if (hasAggregateFn && isAllOpenTables)
+                
+                if (!hasAggregateFn && isMixedTables)
                 {
-                    //we may have aggregates but the sum and count are within 
+                    throw new Exception("NO Aggregate Tables but mixed tables exist");
                 }
-
-            }
-
-            if (!HasOpenTable && 1 == 2)
-            {
-                var mainTable = tablesInValidation.FirstOrDefault();
-                var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
-                //foreach sheet...
-
-            }
-            else if (HasOpenTable && 1 == 2)
-            {
-                //if there is an open table involved and there is NO seq then start from the master
-                //--  create a rule for each row of the m aster (so you have the row )
-                //--- fill the row of the slave by using the key
-                //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
-                //--- for each row of the seq, check the filter using the row of the slave . 
-                //--- the resulting object will have both the sum and the count because the function is not known  at the time 
-                var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-
-
-                var ifSeqTerms = rule.IfComponent.RuleTerms.Where(rt => rt.IsSequence);
-                if (ifSeqTerms.Any() && hasAggregateFunction)
+                
+                if (hasAggregateFn && isMixedTables)
                 {
-                    rule = FillRuleStructureWithFactValues(rule);
+                    //if there is an open table involved and there is NO seq then start from the master  "X00= isum(X01)"
+                    //--  create a rule for each row of the m aster (so you have the row )
+                    //--- fill the row of the slave by using the key
+                    //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
+                    //--- for each row of the seq, check the filter using the row of the slave . 
+                    //--- the resulting object will have both the sum and the count because the function is not known  at the time 
+                    var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
+                    rule = FillRuleStructureWithFactValues(rule);
                     CalculateObjectTermsWithSeqSum(rule.IfComponent, rule.FilterComponent);
                     CalculateObjectTermsWithSeqSum(rule.ThenComponent, rule.FilterComponent);
                     CalculateObjectTermsWithSeqSum(rule.ElseComponent, rule.FilterComponent);
 
                     var isValidRule = ExpressionEvaluator.ValidateRule(rule);
                     CreateRuleError(rule, validationRule);
-                };
+
+
+                }
+                
+                if (hasAggregateFn && isAllOpenTables)
+                {
+                    throw new Exception("Aggregate Tables and isAllOpenTables. is it possible?");
+                    //we may have aggregates but the sum  are within ?
+                }
+                
+                
 
 
 
             }
+
+
         }
         return 1;
 
