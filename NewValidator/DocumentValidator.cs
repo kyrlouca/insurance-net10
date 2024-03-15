@@ -81,7 +81,7 @@ public class DocumentValidator : IDocumentValidator
         ValidationRuleComparer comparer = new();
         validationRules = validationRules.Distinct(comparer).ToList();
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 683).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 2038).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
@@ -113,6 +113,7 @@ public class DocumentValidator : IDocumentValidator
                     UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
                     UpdateRuleTermsWithRowCol(ruleForScope.ThenComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
                     UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                    UpdateRuleTermsWithRowCol(ruleForScope.FilterComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
                 }
 
                 //todo also rules for metric
