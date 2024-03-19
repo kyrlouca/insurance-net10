@@ -79,14 +79,9 @@ internal class ValidationFunctions
 
 
 
-    public static bool ValidateArithmetic(string text)
-    {
-        var result = Eval.Execute<bool>(text);
-        return result;
+    
 
-    }
-
-    public static KleeneValue ValidateArithmetic(string symbolFormula, Dictionary<string, ZetTerm> terms)
+    public static KleeneValue OldValidateArithmetic(string symbolFormula, Dictionary<string, ZetTerm> terms)
     {
 
         symbolFormula = symbolFormula.Replace("or", "||");

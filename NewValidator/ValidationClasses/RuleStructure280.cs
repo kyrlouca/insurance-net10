@@ -12,8 +12,7 @@ public enum ScopeType { Rows, Cols, None }
 public class RuleStructure280
 {
     public int RuleId { get; init; }
-    public string RuleFormula { get; init; }
-    public bool IsIffy { get; init; }
+    public string RuleFormula { get; init; }    
     public RuleComponent280 IfComponent { get; init; }
     public RuleComponent280 ThenComponent { get; init; }
     public RuleComponent280 ElseComponent { get; init; }

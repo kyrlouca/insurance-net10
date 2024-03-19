@@ -14,6 +14,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NewValidator;
@@ -85,11 +86,10 @@ public class DocumentValidator : IDocumentValidator
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
-            var HasOpenTable = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
-
-            var isAllOpenTables = tablesInValidation.All(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
-            var isAllClosedTables = tablesInValidation.All(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
-            var isMixedTables = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID)) && tablesInValidation.Any(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
+            
+            var hasOnlyOpenTables = tablesInValidation.All(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
+            var hasOnlyClosedTables = tablesInValidation.All(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
+            var hasMixedTables = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID)) && tablesInValidation.Any(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
 
 
             var hasAggregateFunction = new[] { "sum", "count" }.Any(fn => validationRule.Rule.Contains(fn));
@@ -124,7 +124,7 @@ public class DocumentValidator : IDocumentValidator
                 //Closed Tables: sum without seq , use the R: to create terms (3780) OR the terms are separated by commas
 
                 var hasAggregateFn = ruleForScope.IfComponent.RuleTerms.Any(rt => rt.IsSequence);
-                if ((!hasAggregateFn || hasAggregateFn) && isAllClosedTables)
+                if ((!hasAggregateFn || hasAggregateFn) && hasOnlyClosedTables)
                 {
                     var mainTable = tablesInValidation.FirstOrDefault();
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
@@ -149,7 +149,7 @@ public class DocumentValidator : IDocumentValidator
                     }
                 }
 
-                if (!hasAggregateFn && isAllOpenTables)
+                if (!hasAggregateFn && hasOnlyOpenTables)
                 {
                     //create one rule for each row and apply filter 
 
@@ -177,7 +177,7 @@ public class DocumentValidator : IDocumentValidator
                             var filterKleeneValue = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
 
                             //if filter has terms with null values, it is considered false here
-                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty || (filterKleeneValue == KleeneValue.True);                            
+                            var isFilterValid = ruleOpen.FilterComponent.IsEmpty || (filterKleeneValue == KleeneValue.True);
                             if (!isFilterValid)
                             {
                                 continue;
@@ -194,13 +194,13 @@ public class DocumentValidator : IDocumentValidator
 
 
                 }
-                
-                if (!hasAggregateFn && isMixedTables)
+
+                if (!hasAggregateFn && hasMixedTables)
                 {
                     throw new Exception("NO Aggregate Tables but mixed tables exist");
                 }
-                
-                if (hasAggregateFn && isMixedTables)
+
+                if (hasAggregateFn && hasMixedTables)
                 {
                     //if there is an open table involved and there is NO seq then start from the master  "X00= isum(X01)"
                     //--  create a rule for each row of the m aster (so you have the row )
@@ -220,14 +220,14 @@ public class DocumentValidator : IDocumentValidator
 
 
                 }
-                
-                if (hasAggregateFn && isAllOpenTables)
+
+                if (hasAggregateFn && hasOnlyOpenTables)
                 {
                     throw new Exception("Aggregate Tables and isAllOpenTables. is it possible?");
                     //we may have aggregates but the sum  are within ?
                 }
-                
-                
+
+
 
 
 
@@ -242,7 +242,7 @@ public class DocumentValidator : IDocumentValidator
             var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
             foreach (var thenSeqTerm in seqTerms)
             {
-                var res = CalculateSumofSequenceTerm(thenSeqTerm, filterComponent);
+                var res = CalculateSumofOpenTable(thenSeqTerm, filterComponent);
                 ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
             }
         }
@@ -309,6 +309,8 @@ public class DocumentValidator : IDocumentValidator
 
     private Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms)
     {
+        var seqTerms = ruleTerms.Where(rt => rt.IsSequence && rt.R.Contains(";"));
+
         Dictionary<string, ObjectTerm280> plainTerms = ruleTerms
             .Select(ruleTerm => new
             {
@@ -321,6 +323,46 @@ public class DocumentValidator : IDocumentValidator
         return plainTerms;
     }
 
+
+    private double CalculateSumOfClosedTable(RuleTerm280 ruleTermRec)
+    {
+        //isum({t: S.23.01.02.01, r: R0300; R0310; R0320; R0330; R0340; R0350; R0360; R0370, z: Z0001, dv: emptySequence(), seq: True,.. )
+        //scope({t: S.23.01.02.01, c:C0010;C0040, f: solvency, fv: solvency2})
+        var (sumScopeType, rowCols) = ParseRuleTerms(ruleTermRec);
+        var sum = 0.0;
+
+        foreach (var rowCol in rowCols)
+        {
+            var row = sumScopeType == ScopeType.Rows ? rowCol : ruleTermRec.R;
+            var col = sumScopeType == ScopeType.Cols ? rowCol : ruleTermRec.C;
+
+            var fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTermRec.T, ruleTermRec.Z, row, col);
+            sum += fact?.NumericValue ?? 0;
+        }
+        return sum;
+
+        (ScopeType scopeType, List<string> rowCol) ParseRuleTerms(RuleTerm280 ruleTerm)
+        {
+            var rows = string.IsNullOrEmpty(ruleTerm.R) ? new List<string>() : ruleTerm.R.Split(";", StringSplitOptions.RemoveEmptyEntries).ToList();
+            var cols = string.IsNullOrEmpty(ruleTerm.C) ? new List<string>() : ruleTerm.C.Split(";", StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            ScopeType sumScopeType = rows switch
+            {
+                _ when rows.Any() => ScopeType.Rows,
+                _ when cols.Any() => ScopeType.Cols,
+                _ => ScopeType.None
+            };
+
+            var rowCols = sumScopeType switch
+            {
+                ScopeType.Rows => rows,
+                ScopeType.Cols => cols,
+                _ => new List<string>()
+            };
+            return (sumScopeType, rowCols);
+        }
+
+    }
 
     private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
     {
@@ -344,7 +386,7 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
-    private (double sum, int count) CalculateSumofSequenceTerm(RuleTerm280 seqTableTerm, RuleComponent280 filterComponent)
+    private (double sum, int count) CalculateSumofOpenTable(RuleTerm280 seqTableTerm, RuleComponent280 filterComponent)
     {
 
         var seqTable = seqTableTerm.T;

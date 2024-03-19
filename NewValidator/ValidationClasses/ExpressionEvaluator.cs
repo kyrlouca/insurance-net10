@@ -231,6 +231,7 @@ public partial class ExpressionEvaluator
         var regSingleFunction = RgxSingleFunction();
 
         arithmeticExpression = arithmeticExpression.Trim();
+        arithmeticExpression = ReplaceIntervalCharacters(arithmeticExpression);
 
         //*** Remove Outer parenthesis
         var rgxOuter = RgxOuterParenthesis();
