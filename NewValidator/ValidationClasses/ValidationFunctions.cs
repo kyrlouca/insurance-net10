@@ -37,7 +37,9 @@ internal class ValidationFunctions
 
     public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
     {
-        //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
+        //1. matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
+        //2. matches(dim(this(), [s2c_dim:UI]), "^CAU/.*")
+        //the second option is used in internal filters and need to check the datasignature of the fact to get the value of the dimension
 
         var qt = "\"";
         var pattern = @$"matches\((.*?)\s*,\s*\{qt}(.*)\{qt}\)";
@@ -48,9 +50,16 @@ internal class ValidationFunctions
             throw new InvalidOperationException($"invalid match:{text} ");
         }
 
+        var leftPart = match.Groups[1].Value; //dim(this(), [s2c_dim:UI])
 
+        var leftPartValue= ExtractFactDim(terms, leftPart);
 
-        var letter = match.Groups[1].Value;
+        if(string.IsNullOrEmpty(leftPartValue))
+        {
+            var letterX = match.Groups[1].Value;
+        }
+
+        var letter = match.Groups[1].Value; 
         var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");
 
         var value = rgxForTestQ.IsMatch(letter) ? rgxForTestQ.Match(letter).Groups[1].Value : terms[letter].Obj?.ToString() ?? "";
@@ -59,6 +68,27 @@ internal class ValidationFunctions
         var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
         var matchValidation = rgx.Match(value);
         return matchValidation.Success;
+
+        static string ExtractFactDim(Dictionary<string, ObjectTerm280> terms, string leftPart)
+        {
+            var rgxFilterDim = new Regex(@"dim\(.*,\s*\[(.*)\]\)");
+            var matchDim = rgxFilterDim.Match(leftPart);
+            var leftPartValue = "";
+            if (!matchDim.Success)
+            {
+                return "";
+            }
+            leftPartValue = terms.FirstOrDefault().Value?.fact?.DataPointSignature ?? "";
+            var rgxFactDim = new Regex(@"s2c_dim:UI\((.*)\)");
+            var marchFactDim = rgxFactDim.Match(leftPartValue);
+
+            if (!marchFactDim.Success)
+            {
+                return "";
+            }
+            return leftPartValue = marchFactDim.Groups[1].Value;
+
+        }
     }
 
 
@@ -76,7 +106,7 @@ internal class ValidationFunctions
         return term.Value?.fact?.DataPointSignature.Contains(match.Groups[2].Value) ?? false;
 
     }
-        
+
 
 
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
@@ -89,8 +119,8 @@ internal class ValidationFunctions
         }
         var zetRc = terms[match.Groups[1].Value];
         //var objTostr = zetObj?.Obj.ToString() ?? "";
-        var objTostr = zetRc?.Obj?.ToString() ?? "";        
-        var isNull = (zetRc is null || (zetRc?.IsNullFact ??true)  || (objTostr == "emptySequence()"));
+        var objTostr = zetRc?.Obj?.ToString() ?? "";
+        var isNull = (zetRc is null || (zetRc?.IsNullFact ?? true) || (objTostr == "emptySequence()"));
 
         return isNull;
 
