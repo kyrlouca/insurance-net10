@@ -362,6 +362,7 @@ public partial class ExpressionEvaluator
         if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
         {
             var fterms = terms.Where(trm => functionText.Contains(trm.Key)).ToDictionary(tm => tm.Key, tm => tm.Value);
+            //todo sum
             var resSumOrCount = EvaluateSumOrCount(functionType, fterms);
             return resSumOrCount;
         }
