@@ -75,6 +75,7 @@ public class DocumentValidator : IDocumentValidator
         //743 else
         //683 open tables
         //2038 closed tables sum
+        //655 :filter
         var xx = CreateErrorDocument();
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
@@ -82,7 +83,7 @@ public class DocumentValidator : IDocumentValidator
         ValidationRuleComparer comparer = new();
         validationRules = validationRules.Distinct(comparer).ToList();
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 2038).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 655).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
@@ -202,18 +203,18 @@ public class DocumentValidator : IDocumentValidator
 
                 if (hasAggregateFn && hasMixedTables)
                 {
-                    //if there is an open table involved and there is NO seq then start from the master  "X00= isum(X01)"
-                    //--  create a rule for each row of the m aster (so you have the row )
-                    //--- fill the row of the slave by using the key
-                    //if there is an open table and there is a seq:TRUE (SUM or COUNT) then  
-                    //--- for each row of the seq, check the filter using the row of the slave . 
+
+                    //there are closed and OPEN tables and there is a seq:TRUE (SUM or COUNT) then  
+                     //--- Add ONLY the rows of the open table for which the filter is valid. we may need the slave row (foreign key) if more than one open table. 
                     //--- the resulting object will have both the sum and the count because the function is not known  at the time 
+                    // Rule 783: {t: S.02.01.02.01, r: R0060, c: C0010, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i= isum({t: S.06.02.01.01, c: C0170, z: Z0001, dv: emptySequence(), seq: True, id: v2, f: solvency, fv: solvency2})
+                    // Filter matches({t: S.06.02.01.02, c: C0290, z: Z0001, dv: emptySequence(), seq: True, id: v3, f: solvency, fv: solvency2}, "^..((93)|(95)|(96))$") and ({t: S.06.02.01.01, c: C0090, z: Z0001, dv: emptySequence(), seq: True, id: v4, f: solvency, fv: solvency2} = [s2c_LB:x91])
                     var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
                     rule = FillRuleStructureWithFactValues(rule);
-                    CalculateObjectTermsWithSeqSum(rule.IfComponent, rule.FilterComponent);
-                    CalculateObjectTermsWithSeqSum(rule.ThenComponent, rule.FilterComponent);
-                    CalculateObjectTermsWithSeqSum(rule.ElseComponent, rule.FilterComponent);
+                    EvaluateSumTerms(rule.IfComponent, rule.FilterComponent);
+                    EvaluateSumTerms(rule.ThenComponent, rule.FilterComponent);
+                    EvaluateSumTerms(rule.ElseComponent, rule.FilterComponent);
 
                     var isValidRule = ExpressionEvaluator.ValidateRule(rule);
                     CreateRuleError(rule, validationRule);
@@ -237,7 +238,7 @@ public class DocumentValidator : IDocumentValidator
         }
         return 1;
 
-        void CalculateObjectTermsWithSeqSum(RuleComponent280 ruleComponent, RuleComponent280 filterComponent)
+        void EvaluateSumTerms(RuleComponent280 ruleComponent, RuleComponent280 filterComponent)
         {
             var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
             foreach (var thenSeqTerm in seqTerms)

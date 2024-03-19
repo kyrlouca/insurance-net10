@@ -76,10 +76,7 @@ internal class ValidationFunctions
         return term.Value?.fact?.DataPointSignature.Contains(match.Groups[2].Value) ?? false;
 
     }
-
-
-
-    
+        
 
 
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
