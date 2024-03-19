@@ -1,6 +1,7 @@
 namespace TestNewValidations;
 
 using NewValidator.ValidationClasses;
+using Shared.SpecialRoutines;
 
 public class ValidationTermTest
 {
@@ -231,9 +232,34 @@ public class ValidationTermTest
         Assert.True(res.IsNull == false);
         Assert.True(res.Value == 4);
 
-
+        string text2 = @"{t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), ""^CAU/.*"") and not(matches(dim(this(), [s2c_dim:UI]), ""^CAU/(ISIN/.*)|(INDEX/.*)"")), seq: False, id: v1, f: solvency, fv: solvency2}";
     }
 
+
+    [Fact]
+    public void TestSimplifyFormula()
+    {
+        var text1 = "m:x3 and x=33";
+        var res1 = FormulaSimplification.Simplify(text1);
+        Assert.Equal("m:x3 and x=33", res1.Formula );
+        Assert.Empty(res1.FormulaTerms);
+
+        var finalText1 = FormulaSimplification.ReplaceTerms(res1.Formula, res1.FormulaTerms);
+        Assert.Equal( text1, finalText1);
+        
+
+        string text0 = @"{t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), ""^CAU/.*"") and not(matches(dim(this(), [s2c_dim:UI]), ""^CAU/(ISIN/.*)|(INDEX/.*)"")), seq: False, id: v1, f: solvency, fv: solvency2}";        
+        var res0 = FormulaSimplification.Simplify(text0);        
+        Assert.Equal(res0.Formula, @"{t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(XYZ00) and not(XYZ01), seq: False, id: v1, f: solvency, fv: solvency2}");
+        Assert.Equal(res0.FormulaTerms[0].content, @"dim(this(), [s2c_dim:UI]), ""^CAU/.*""");
+        Assert.Equal(res0.FormulaTerms[0].letter, @"XYZ00");
+
+        var finalText2 = FormulaSimplification.ReplaceTerms(res0.Formula, res0.FormulaTerms);
+        Assert.Equal(text0, finalText2);
+
+
+
+    }
 
 
 

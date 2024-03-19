@@ -9,7 +9,17 @@ using NewValidator.ValidationClasses;
 
 var zz1 = "abc (acx or x3) or imin(x1>x3 and x3<x1) + x3";
 
-var yy = ExpressionEvaluator.SplitAndOrExpression(zz1);
+//655	BV780-5	matches({t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, "^((XL)|(XT))..$")
+
+string text2 = @"{t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), ""^CAU/.*"") and not(matches(dim(this(), [s2c_dim:UI]), ""^CAU/(ISIN/.*)|(INDEX/.*)"")), seq: False, id: v1, f: solvency, fv: solvency2}";
+
+var res33 = FormulaSimplification.Simplify(text2);
+
+
+var terms = new List<(string, string)>(){ ( "Z01", "cc" ),("Z00","bbb") };
+var fomula = "match(Z00,X1) and filter(Z01,C3) ";
+var newFormula = FormulaSimplification.ReplaceTerms(fomula, terms);
+
 return;
 
 Console.WriteLine("Hello, World!");

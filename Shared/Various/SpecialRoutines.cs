@@ -146,3 +146,38 @@ public class DimUtils
     }
 
 }
+
+public class FormulaSimplification
+{
+    public static (string Formula, List<(string letter,string content)> FormulaTerms) Simplify(string text)
+    {
+        var rgx = new Regex(@"\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var matchParenthesis = rgx.Matches(text);
+        var nestedParenthesis = matchParenthesis.Select((match, i) => ($"XYZ{i:D2}", match.Groups[1].Value)).ToList();
+        var symbolFormula = nestedParenthesis.Aggregate(text, (currentText, val) =>
+        {
+            int index = currentText.IndexOf(val.Value);
+            string replacedString = currentText[..index] + "" + val.Item1 + "" + currentText[(index + val.Value.Length)..];
+            return replacedString;
+        });
+
+        return (symbolFormula, nestedParenthesis);
+    }
+    public static string  ReplaceTerms(string formula, List<(string letter,string content)> terms)
+    {
+        var y = 3;
+        var fullFormula = terms.Aggregate(formula, (currentText, term) =>
+        {
+            int index = currentText.IndexOf(term.letter);
+
+            string replacedString = index > -1
+            ? currentText[..index] + term.content + currentText[(index + term.letter.Length)..]
+            : currentText;
+
+            return replacedString;
+        });
+        return fullFormula;
+    }
+    
+
+}

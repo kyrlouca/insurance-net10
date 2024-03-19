@@ -9,6 +9,7 @@ public class StringRoutines
 {
     public static string JoinStringCreate(IReadOnlyList<string> strings, string separator = null)
     {
+        //use this routine in place of the build in join because it is too slow        
         int totalSize = 0;
         for (int i = 0; i < strings.Count; i++)
             totalSize += strings[i].Length;
