@@ -25,8 +25,6 @@ public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max, Plain };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
-public record ZetTerm(string Letter, string Formula, string FunctionArgument, string DataType, int Decimals, bool IsNullFact, FunctionAggregateTypes FunctionType, ObjectTerm280? Object280, Object? ObjectValue, KleeneValue KleenValue);
-
 
 public partial class ExpressionEvaluator
 {

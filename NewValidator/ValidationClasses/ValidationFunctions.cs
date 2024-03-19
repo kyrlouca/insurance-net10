@@ -81,39 +81,6 @@ internal class ValidationFunctions
 
     
 
-    public static KleeneValue OldValidateArithmetic(string symbolFormula, Dictionary<string, ZetTerm> terms)
-    {
-
-        symbolFormula = symbolFormula.Replace("or", "||");
-        symbolFormula = symbolFormula.Replace("and", "&&");
-
-
-        //Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.ObjectType == "E" ? (object)$"[{item.Value.Obj}]" : item.Value.Obj);
-        var rgxTerm = new Regex(@"(X\d\d)");
-        var matchTersm = rgxTerm.Match(symbolFormula);
-        if (matchTersm.Success)
-        {
-            var term = terms[matchTersm.Value];
-            if (term?.Object280?.DataType == "E")
-            {
-                //todo is this right??
-                //symbolFormula = symbolFormula.Replace("[", "\"");
-                //symbolFormula= symbolFormula.Replace("]", "\"");
-            }
-
-        }
-        //todo check ONLY the terms involved in the formula?
-
-        //Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
-        Dictionary<string, object?> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value?.Object280?.Obj);
-        if (plainObjects.Any(po => po.Value is null))
-        {
-            return KleeneValue.Unknown;
-        }
-        var result = Eval.Execute<bool>(symbolFormula, plainObjects);
-        return result ? KleeneValue.True : KleeneValue.False;
-    }
-
 
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
