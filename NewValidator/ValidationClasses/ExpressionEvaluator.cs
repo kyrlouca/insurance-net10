@@ -123,20 +123,27 @@ public partial class ExpressionEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = EvaluateGeneralBooleanExpression(ruleId, value, terms);
-                    //return resNot.IsNull ? new BooleanObject(true, false) : new BooleanObject(false, !resNot.Value);
+                    var resNot = EvaluateGeneralBooleanExpression(ruleId, value, terms);                    
                     return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
                         : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
                 case "isNull":
-                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);
-                    //return resn;
+                    //if value is a function, then call evaluatefunction to find the value of the function and then call IsNull
+                    
+                    var matchFnInsideNull= rgxFn.Match(value);
+                    if (matchFnInsideNull.Success)
+                    {
+                       var valueInNull = EvaluateFunction(matchFnInsideNull.Groups[1].Value, terms);
+
+                    }
+                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);     //isNull(dim(X00,[s2c_dim:NF]))
+                                                                                       //
                     return resn ? KleeneValue.True : KleeneValue.False;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
                     return resm ? KleeneValue.True : KleeneValue.False;
                 case "dim":
-                    var resdim = ValidationFunctions.ValidateDim(formula, terms);
+                    var resdim = ValidationFunctions.FindDimValue(formula, terms);
                     return resdim ? KleeneValue.True : KleeneValue.False;
                 case "true":
                     return KleeneValue.True;

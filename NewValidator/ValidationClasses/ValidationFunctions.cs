@@ -37,9 +37,13 @@ internal class ValidationFunctions
 
     public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
     {
+        //matches may have a term with filter, a metric m: with filter , a dim , a term with filter
         //1. matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
-        //2. matches(dim(this(), [s2c_dim:UI]), "^CAU/.*")
-        //the second option is used in internal filters and need to check the datasignature of the fact to get the value of the dimension
+        //2. matches({ m: [s2md_met:si1558], filter:not(isNull(dim(this(), [s2c_dim:NF]))), seq: False, id: v0}, "^LEI/[A-Z0-9]{20}$")
+        //3. matches(dim(this(), [s2c_dim:UI]), "^CAU/.*")
+        //4. matches({t: S.06.02.07.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, "^((XL)|(XT))..$")
+        //So the term may need the value of the fact, the metric of the fact, a dim of the fact. 
+        //The term may have a filter
 
         var qt = "\"";
         var pattern = @$"matches\((.*?)\s*,\s*\{qt}(.*)\{qt}\)";
@@ -50,16 +54,26 @@ internal class ValidationFunctions
             throw new InvalidOperationException($"invalid match:{text} ");
         }
 
-        var leftPart = match.Groups[1].Value; //dim(this(), [s2c_dim:UI])
+        var leftPartValue = "";
 
-        var leftPartValue= ExtractFactDim(terms, leftPart);
+        var leftPart = match.Groups[1].Value; //dim(this(), [s2c_dim:UI]) OR X00
 
-        if(string.IsNullOrEmpty(leftPartValue))
+        var isDimLeft = leftPart.Contains("dim");
+        if(isDimLeft )
+        {
+            var dimTerm= terms.FirstOrDefault()
+            leftPartValue= ExtractDimValueFormFact("")
+        }
+        var 
+
+        var leftPartValue =   (terms, leftPart);
+
+        if (string.IsNullOrEmpty(leftPartValue))
         {
             var letterX = match.Groups[1].Value;
         }
 
-        var letter = match.Groups[1].Value; 
+        var letter = match.Groups[1].Value;
         var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");
 
         var value = rgxForTestQ.IsMatch(letter) ? rgxForTestQ.Match(letter).Groups[1].Value : terms[letter].Obj?.ToString() ?? "";
@@ -68,45 +82,42 @@ internal class ValidationFunctions
         var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
         var matchValidation = rgx.Match(value);
         return matchValidation.Success;
-
-        static string ExtractFactDim(Dictionary<string, ObjectTerm280> terms, string leftPart)
-        {
-            var rgxFilterDim = new Regex(@"dim\(.*,\s*\[(.*)\]\)");
-            var matchDim = rgxFilterDim.Match(leftPart);
-            var leftPartValue = "";
-            if (!matchDim.Success)
-            {
-                return "";
-            }
-            leftPartValue = terms.FirstOrDefault().Value?.fact?.DataPointSignature ?? "";
-            var rgxFactDim = new Regex(@"s2c_dim:UI\((.*)\)");
-            var marchFactDim = rgxFactDim.Match(leftPartValue);
-
-            if (!marchFactDim.Success)
-            {
-                return "";
-            }
-            return leftPartValue = marchFactDim.Groups[1].Value;
-
-        }
     }
 
 
-    public static bool ValidateDim(string dimFunction, Dictionary<string, ObjectTerm280> terms)
+    static string ExtractDimValueFormFact(string dimText, string dimTerm, Dictionary<string, ObjectTerm280> terms)
     {
-        //regex the dimfunction: dim(X00,[s2c_dim:NF])=> X00 and s2c_dim:NF .
-        //then check if the fact signature contains the dim
-        var rgxDim = new Regex(@"dim\((.*),\[(.*)\]");
-        var match = rgxDim.Match(dimFunction);
-        if (!match.Success)
+        //dim(this(), [s2c_dim:UI])
+        //dim(X00, [s2c_dim:UI])
+        //MET(s2md_met:si1554)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/1888-1891 LX64W1_IPROP)
+
+        var rgxFilterDim = new Regex(@"dim\((.*),\s*\[(.*)\]\)");
+        var matchDim = rgxFilterDim.Match(dimText);
+        if (!matchDim.Success)
         {
-            throw (new Exception($"Invalid dimFunction : {dimFunction}"));
+            return "";
         }
-        var term = terms.SingleOrDefault(tm => tm.Key == match.Groups[1].Value);
-        return term.Value?.fact?.DataPointSignature.Contains(match.Groups[2].Value) ?? false;
+        var isThisTerm = matchDim.Groups[1].Value.Trim() == "this()";
+        var term = isThisTerm ? dimTerm : matchDim.Groups[1].Value.Trim();
+        var dim= matchDim.Groups[2].Value.Trim();
+        if (!terms.ContainsKey(term))
+        {
+            throw (new Exception($"Invalid dimFunction : {dimTerm}"));
+        }
+
+        var dataSignature = terms[term].fact?.DataPointSignature ?? "";
+        var rgxFactDim = new Regex(@$"{matchDim.Groups[2].Value.Trim()}\((.*)\)");
+        var matchDimValue = rgxFactDim.Match(dim);
+
+        if (!matchDimValue.Success)
+        {
+            return "";
+        }
+        return matchDimValue.Groups[1].Value;
 
     }
 
+    
 
 
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
