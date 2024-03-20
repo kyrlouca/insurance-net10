@@ -24,7 +24,7 @@ public record BooleanObject(bool IsNull, bool Value);
 public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max, Plain };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
-public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact);
+public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact ,string Filter);
  
 public partial class ExpressionEvaluator
 {
@@ -85,7 +85,7 @@ public partial class ExpressionEvaluator
 
 
 
-    public static KleeneValue EvaluateGeneralBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms,string FilterTerm)
+    public static KleeneValue EvaluateGeneralBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms,string filterTerm)
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
@@ -112,45 +112,47 @@ public partial class ExpressionEvaluator
         //************************** Single Function********************************************************
         //
         //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
-        var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        //var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        var rgxFn = new Regex(@"^(isNull|matches|not|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
         var match = rgxFn.Match(formula);
         if (match.Success)
         {
             //( ab and matches(cd)) => evaluate ab and matches(cd)
             var fn = match.Groups[1].Value;
-            var value = match.Groups[2].Value;
+            var fnArgument = match.Groups[2].Value;
 
             switch (fn)
             {
                 case "not":
-                    var resNot = EvaluateGeneralBooleanExpression(ruleId, value, terms, "");                    
+                    var resNot = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms, filterTerm);                    
                     return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
                         : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
                 case "isNull":
                     //if value is a function, then call evaluatefunction to find the value of the function and then call IsNull
                     var rgxDim= new Regex(@"dim\((.*?)\)");
-                    var matchDim= rgxDim.Match(value);                                        
+                    var matchDim= rgxDim.Match(fnArgument);                                        
                     if (matchDim.Success) 
                     {
                         //isNull(dim(X00,[s2c_dim:NF]))
                         //isNull(dim({t: S.06.02.07.01, c: C0060, z: Z0001, seq: False, id: v0, f: solvency, fv: solvency2},[s2c_dim:NF])
-                        var dimValue = ValidationFunctions.ExtractDimValueFormFact(matchDim.Value, terms, "");
+                        var dimValue = ValidationFunctions.ExtractDimValueFormFact(matchDim.Value, terms, filterTerm);
                         return string.IsNullOrEmpty(dimValue)?KleeneValue.True:KleeneValue.False ;
                     }
                     var resn = ValidationFunctions.ValidateIsNull(formula, terms);                                                                                           
                     return resn ? KleeneValue.True : KleeneValue.False;
                 case "matches":
-                    var resm = ValidationFunctions.ValidateMatch(formula, terms, "");
+                    var resm = ValidationFunctions.ValidateMatch(formula, terms, filterTerm);
                     return resm ? KleeneValue.True : KleeneValue.False;
-                //case "dim":                    
+                //case "dim":
+                //it is not a function returning boolean. It is only used inside isNull
                 //    var resdim = ValidationFunctions.ExtractDimValueFormFact(formula,"", terms);
                 //    return string.IsNullOrEmpty(resdim) ? KleeneValue.True : KleeneValue.False;
                 case "true":
                     return KleeneValue.True;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
-                    var resN = EvaluateGeneralBooleanExpression(ruleId, value, terms, "");
+                    var resN = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms, filterTerm);
                     return resN;
             }
         }

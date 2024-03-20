@@ -83,7 +83,7 @@ public class DocumentValidator : IDocumentValidator
         ValidationRuleComparer comparer = new();
         validationRules = validationRules.Distinct(comparer).ToList();
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 702).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID ==655).ToList();
         foreach (var validationRule in validationRules)
         {
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
@@ -194,13 +194,13 @@ public class DocumentValidator : IDocumentValidator
 
 
                             //filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)"))
-                            var insideFilterTerm = ruleOpen.IfComponent.RuleTerms.FirstOrDefault(rt=> !string.IsNullOrEmpty(rt.Filter));
-                            if (insideFilterTerm != null)
-                            {
-                                var insideFilterObjectTerm = ruleOpen.IfComponent.ObjectTerms.FirstOrDefault(ot => ot.Key == insideFilterTerm!.Letter);
-                                var filterDimThis = insideFilterObjectTerm.Value?.fact?.DataPointSignature ?? "";
-                                var isInsideFilter = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, insideFilterTerm.Filter, ruleOpen.IfComponent.ObjectTerms, "");
-                            }
+                            //var insideFilterTerm = ruleOpen.IfComponent.RuleTerms.FirstOrDefault(rt=> !string.IsNullOrEmpty(rt.Filter));
+                            //if (insideFilterTerm != null)
+                            //{
+                            //    var insideFilterObjectTerm = ruleOpen.IfComponent.ObjectTerms.FirstOrDefault(ot => ot.Key == insideFilterTerm!.Letter);
+                            //    var filterDimThis = insideFilterObjectTerm.Value?.fact?.DataPointSignature ?? "";
+                            //    var isInsideFilter = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, insideFilterTerm.Filter, ruleOpen.IfComponent.ObjectTerms, "");
+                            //}
 
                             var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
                             if (!isValidRowRule)
@@ -300,13 +300,13 @@ public class DocumentValidator : IDocumentValidator
 
     private static ObjectTerm280 CreateObjectTerm280Empty()
     {
-        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true);
+        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true,"");
     }
-    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance)
+    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance,string filter)
     {
         if (fact == null)
         {
-            return new ObjectTerm280("J", 0, IsTolerance, defaultValue, 0, 0, null, true);
+            return new ObjectTerm280("J", 0, IsTolerance, defaultValue, 0, 0, null, true,"");
         }
 
 
@@ -322,7 +322,7 @@ public class DocumentValidator : IDocumentValidator
             "D" => fact.DateTimeValue,
             _ => throw new NotImplementedException()
         };
-        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false);
+        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false,filter);
         return objTerm;
     }
 
@@ -336,7 +336,7 @@ public class DocumentValidator : IDocumentValidator
                 ruleTerm.Letter,
                 Zet = ruleTerm.Z,
                 Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance)
+                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance,ruleTerm.Filter)
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
         return plainTerms;

@@ -63,10 +63,18 @@ internal class ValidationFunctions
         {
             var dimTerm = terms.FirstOrDefault(tr=>tr.Key==filterTerm);
             leftPartValue = ExtractDimValueFormFact(dimTerm.Value.fact?.DataPointSignature??"",terms,"");
+            
         }
         else
         {
             var termLeft= terms[leftPart];
+            var filter = termLeft.Filter;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                var isFilterValid = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, filter, terms, leftPart);
+            }
+            
+
             leftPartValue = termLeft?.Obj?.ToString()??"";
         }
                 
@@ -81,6 +89,7 @@ internal class ValidationFunctions
 
     public static string ExtractDimValueFormFact(string dimText,  Dictionary<string, ObjectTerm280> terms, string dimTerm)
     {
+        //if you find this()=> the term must be dimTerm
         //dim(this(), [s2c_dim:UI])
         //dim(X00, [s2c_dim:UI])
         //MET(s2md_met:si1554)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/1888-1891 LX64W1_IPROP)  //this i do NOT process
