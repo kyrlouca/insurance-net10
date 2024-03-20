@@ -184,7 +184,7 @@ public class DocumentValidator : IDocumentValidator
 
                             KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
                                 ? KleeneValue.True
-                                : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
+                                : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms,"");
 
                             //if filter has terms with null values, it is considered false here                            
                             if (filterKleeneValue != KleeneValue.True && 1==2)
@@ -199,7 +199,7 @@ public class DocumentValidator : IDocumentValidator
                             {
                                 var insideFilterObjectTerm = ruleOpen.IfComponent.ObjectTerms.FirstOrDefault(ot => ot.Key == insideFilterTerm!.Letter);
                                 var filterDimThis = insideFilterObjectTerm.Value?.fact?.DataPointSignature ?? "";
-                                var isInsideFilter = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, insideFilterTerm.Filter, ruleOpen.IfComponent.ObjectTerms);
+                                var isInsideFilter = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, insideFilterTerm.Filter, ruleOpen.IfComponent.ObjectTerms, "");
                             }
 
                             var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
@@ -447,7 +447,7 @@ public class DocumentValidator : IDocumentValidator
             Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
             if (filterTerms.Any())
             {
-                var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms);
+                var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms, "");
                 return res == KleeneValue.True;
             }
 

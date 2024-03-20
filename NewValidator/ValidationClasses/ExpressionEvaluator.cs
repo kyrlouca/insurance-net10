@@ -36,7 +36,7 @@ public partial class ExpressionEvaluator
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        var ifResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
+        var ifResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms, "");
         if (ruleStructure280.ThenComponent.IsEmpty)
         {
             return ToBoolean(ifResult);
@@ -51,7 +51,7 @@ public partial class ExpressionEvaluator
             }
             else if (ifResult == KleeneValue.True)
             {
-                var thenResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
+                var thenResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms, "");
                 return ToBoolean(thenResult);
             }
             else // (ifResult == KleeneValue.Unknown)
@@ -64,12 +64,12 @@ public partial class ExpressionEvaluator
             //elseComponent EXISTS
             if (ifResult == KleeneValue.True)
             {
-                var thenRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
+                var thenRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms, "");
                 return ToBoolean(thenRes); // if is false and there is no else      
             }
             if (ifResult == KleeneValue.False)
             {
-                var elseRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
+                var elseRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms, "");
 
                 return ToBoolean(elseRes); // if is false and there is no else
             }
@@ -85,7 +85,7 @@ public partial class ExpressionEvaluator
 
 
 
-    public static KleeneValue EvaluateGeneralBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms)
+    public static KleeneValue EvaluateGeneralBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms,string FilterTerm)
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
@@ -104,7 +104,7 @@ public partial class ExpressionEvaluator
         if (matchOuter.Success)
         {
             var insideParen = matchOuter.Groups[1].Value.Trim();
-            var resInside = EvaluateGeneralBooleanExpression(ruleId, insideParen, terms);
+            var resInside = EvaluateGeneralBooleanExpression(ruleId, insideParen, terms, "");
             return resInside;
 
         }
@@ -123,33 +123,34 @@ public partial class ExpressionEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = EvaluateGeneralBooleanExpression(ruleId, value, terms);                    
+                    var resNot = EvaluateGeneralBooleanExpression(ruleId, value, terms, "");                    
                     return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
                         : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
                 case "isNull":
                     //if value is a function, then call evaluatefunction to find the value of the function and then call IsNull
-                    
-                    var matchFnInsideNull= rgxFn.Match(value);
-                    if (matchFnInsideNull.Success)
+                    var rgxDim= new Regex(@"dim\((.*?)\)");
+                    var matchDim= rgxDim.Match(value);                                        
+                    if (matchDim.Success) 
                     {
-                       var valueInNull = EvaluateFunction(matchFnInsideNull.Groups[1].Value, terms);
-
+                        //isNull(dim(X00,[s2c_dim:NF]))
+                        //isNull(dim({t: S.06.02.07.01, c: C0060, z: Z0001, seq: False, id: v0, f: solvency, fv: solvency2},[s2c_dim:NF])
+                        var dimValue = ValidationFunctions.ExtractDimValueFormFact(matchDim.Value, terms, "");
+                        return string.IsNullOrEmpty(dimValue)?KleeneValue.True:KleeneValue.False ;
                     }
-                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);     //isNull(dim(X00,[s2c_dim:NF]))
-                                                                                       //
+                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);                                                                                           
                     return resn ? KleeneValue.True : KleeneValue.False;
                 case "matches":
-                    var resm = ValidationFunctions.ValidateMatch(formula, terms);
+                    var resm = ValidationFunctions.ValidateMatch(formula, terms, "");
                     return resm ? KleeneValue.True : KleeneValue.False;
-                case "dim":
-                    var resdim = ValidationFunctions.FindDimValue(formula, terms);
-                    return resdim ? KleeneValue.True : KleeneValue.False;
+                //case "dim":                    
+                //    var resdim = ValidationFunctions.ExtractDimValueFormFact(formula,"", terms);
+                //    return string.IsNullOrEmpty(resdim) ? KleeneValue.True : KleeneValue.False;
                 case "true":
                     return KleeneValue.True;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
-                    var resN = EvaluateGeneralBooleanExpression(ruleId, value, terms);
+                    var resN = EvaluateGeneralBooleanExpression(ruleId, value, terms, "");
                     return resN;
             }
         }
@@ -157,8 +158,8 @@ public partial class ExpressionEvaluator
         var res = SplitAndOrExpression(formula);
         if (res.logicalOperator == LogicalOperators.IsAnd)
         {
-            var aAndRes = EvaluateGeneralBooleanExpression(ruleId, res.left, terms);
-            var bAndRes = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms);
+            var aAndRes = EvaluateGeneralBooleanExpression(ruleId, res.left, terms, "");
+            var bAndRes = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms, "");
             if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
                 return KleeneValue.True;
             else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
@@ -178,8 +179,8 @@ public partial class ExpressionEvaluator
             //False OR null => NULL
             //True OR null =>TRUE
 
-            var orRes1 = EvaluateGeneralBooleanExpression(ruleId, res.left, terms);
-            var orRes2 = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms);
+            var orRes1 = EvaluateGeneralBooleanExpression(ruleId, res.left, terms, "");
+            var orRes2 = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms, "");
 
             if (orRes1 == KleeneValue.True || orRes2 == KleeneValue.True)
                 return KleeneValue.True;
@@ -215,8 +216,8 @@ public partial class ExpressionEvaluator
             var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Decimals ?? 0 : 0;
             var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Decimals ?? 0 : 0;
 
-            var resLeftDbl = EvaluateArithmeticRecursively(left, terms);
-            var resRightDbl = EvaluateArithmeticRecursively(right, terms);
+            var resLeftDbl = EvaluateArithmeticRecursively(left, terms,"");
+            var resRightDbl = EvaluateArithmeticRecursively(right, terms, "");
 
              if (resLeftDbl.IsNull || resRightDbl.IsNull)
             {
@@ -232,7 +233,7 @@ public partial class ExpressionEvaluator
 
     }
 
-    public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms)
+    public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms,string thisTerm)
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
         //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
@@ -247,7 +248,7 @@ public partial class ExpressionEvaluator
         var matchOuter = rgxOuter.Match(arithmeticExpression);
         if (matchOuter.Success)
         {
-            var res = EvaluateArithmeticRecursively(matchOuter.Groups[1].Value, terms);
+            var res = EvaluateArithmeticRecursively(matchOuter.Groups[1].Value, terms,"");
             return res;
         }
 
@@ -265,7 +266,7 @@ public partial class ExpressionEvaluator
         var matchSingleFunction = regSingleFunction.Match(arithmeticExpression);
         if (matchSingleFunction.Success)
         {
-            var res = EvaluateFunction(arithmeticExpression, terms);
+            var res = EvaluateFunction(arithmeticExpression, terms,"");
             return res;
         }
         
@@ -296,13 +297,13 @@ public partial class ExpressionEvaluator
         {
             var matchLeftFunction = regSingleFunction.Match(resM.left);
             var leftRes= matchLeftFunction.Success
-                ? EvaluateFunction(resM.left, terms)
-                : EvaluateArithmeticRecursively(resM.left, terms);
+                ? EvaluateFunction(resM.left, terms, "")
+                : EvaluateArithmeticRecursively(resM.left, terms, "");
 
             var matchRightFunction = regSingleFunction.Match(resM.right);
             var rightRes = matchRightFunction.Success
-                ? EvaluateFunction(resM.right, terms)
-                : EvaluateArithmeticRecursively(resM.right, terms);
+                ? EvaluateFunction(resM.right, terms, "")
+                : EvaluateArithmeticRecursively(resM.right, terms, "");
             
             if (leftRes.IsNull || rightRes.IsNull)
             {
@@ -338,7 +339,7 @@ public partial class ExpressionEvaluator
         return result;
     }
 
-    public static DoubleObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms)
+    public static DoubleObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms,string filterTerm )
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
@@ -391,7 +392,7 @@ public partial class ExpressionEvaluator
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
                 argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
-            var res = EvaluateArithmeticRecursively(argSplit, terms);
+            var res = EvaluateArithmeticRecursively(argSplit, terms, "");
             return res;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
