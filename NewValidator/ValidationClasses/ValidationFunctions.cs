@@ -37,12 +37,10 @@ internal class ValidationFunctions
 
     public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms,string filterTerm)
     {
-        //matches may have a term with filter, a metric m: with filter , a dim , a term with filter
-        //1. matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
-        //2. matches(dim(this(), [s2c_dim:UI]), "^CAU/.*")  //this one is only found inside a filter
-        //3. matches({t: S.06.02.07.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, "^((XL)|(XT))..$")
-        
-        //This one is NOT used //XX. matches({ m: [s2md_met:si1558], filter:not(isNull(dim(this(), [s2c_dim:NF]))), seq: False, id: v0}, "^LEI/[A-Z0-9]{20}$")
+        //matches may be inside a formula or in a filter, a metric m: with filter , a dim , a term with filter
+        //1. inside the term matches : matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")                        
+        //2. inside and outside the filter :matches({t: S.06.02.07.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, "^((XL)|(XT))..$")
+        //3. NOT used no XXX. matches({ m: [s2md_met:si1558], filter:not(isNull(dim(this(), [s2c_dim:NF]))), seq: False, id: v0}, "^LEI/[A-Z0-9]{20}$")
         //So the term may need the value of the fact, the metric of the fact, a dim of the fact. 
         //The term may have a filter which may have a match inside. this() is ONLY found in filters where there is DIM(
 
@@ -57,24 +55,30 @@ internal class ValidationFunctions
 
         var leftPartValue = "";
 
-        var leftPart = match.Groups[1].Value; //dim(this(), [s2c_dim:UI]) OR X00
-        var isDimLeft = leftPart.Contains("dim");
-        if(isDimLeft )
+        //match function may check for dim 
+        var leftPart = match.Groups[1].Value; //dim(this(X00), [s2c_dim:UI]) OR X00
+        var hasDimOnTheLeft = leftPart.Contains("dim");
+        if(hasDimOnTheLeft )
         {
-            var dimTerm = terms.FirstOrDefault(tr=>tr.Key==filterTerm);
-            leftPartValue = ExtractDimValueFormFact(dimTerm.Value.fact?.DataPointSignature??"",terms,"");
-            
+            //*** you are in a filter. Do NOT check for filter since you are using the same term
+            //find the  dim
+            leftPartValue = ExtractDimValueFormFact(leftPart,terms,"");            
+            //check the match
         }
         else
         {
+            //**check first the filter
             var termLeft= terms[leftPart];
             var filter = termLeft.Filter;
             if (!string.IsNullOrEmpty(filter))
             {
                 var isFilterValid = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, filter, terms, leftPart);
-            }
-            
-
+                //if the filter is false, no need to check the rule and return a match
+                if ( isFilterValid != KleeneValue.True)
+                {                    
+                    return true;
+                };                
+            }            
             leftPartValue = termLeft?.Obj?.ToString()??"";
         }
                 
@@ -90,32 +94,35 @@ internal class ValidationFunctions
     public static string ExtractDimValueFormFact(string dimText,  Dictionary<string, ObjectTerm280> terms, string dimTerm)
     {
         //if you find this()=> the term must be dimTerm
-        //dim(this(), [s2c_dim:UI])
+        //dim(this(X00), [s2c_dim:UI])
         //dim(X00, [s2c_dim:UI])
         //MET(s2md_met:si1554)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/1888-1891 LX64W1_IPROP)  //this i do NOT process
+        //2. inside filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*")  //this one is only found inside a filter
 
-        var rgxFilterDim = new Regex(@"dim\((.*),\s*\[(.*)\]\)");
+        var rgxFilterDim = new Regex(@"dim\((.*),\s*\[(.*)\]\)"); //=> X00 or this(X00) , s2c_dim:UI
         var matchDim = rgxFilterDim.Match(dimText);
         if (!matchDim.Success)
         {
             return "";
         }
-        var isThisTerm = matchDim.Groups[1].Value.Trim() == "this()";
-        var term = isThisTerm 
-            ? dimTerm 
-            : matchDim.Groups[1].Value.Trim();
-        var dim= matchDim.Groups[2].Value.Trim();
+        
+        //the term 
+        var theTerm = matchDim.Groups[1].Value;//=> X00 or this(X00)
+        var rgxThis = new Regex(@"this\((.*?)\)");
+        var matchThisInside= rgxThis.Match(theTerm);
+        var term = matchThisInside.Success
+            ? matchThisInside.Groups[1].Value
+            : theTerm;        
+        
         if (!terms.ContainsKey(term))
         {
-            throw (new Exception($"Invalid dimFunction : {dimTerm}"));
+            throw (new Exception($"Invalid dimfunction: {dimText}. Cannot find term :{term}"));
         }
-
+        
         var dataSignature = terms[term].fact?.DataPointSignature ?? "";
-        var rgxPattern = @$"{matchDim.Groups[2].Value.Trim()}\((.*?)\)";
-       
-        var rgxFactDim = new Regex( rgxPattern);
-        //rgxFactDim = new Regex(@"s2c_dim:NF\((.*?)\)");
-        var matchDimValue = rgxFactDim.Match(dataSignature);
+        var rgxPattern = @$"{matchDim.Groups[2].Value.Trim()}\(\w\w:(.*?)\)"; 
+        var rgxFactDim = new Regex( rgxPattern); //rgxFactDim = //s2c_dim:UI\(\w\w:(.*?)\)
+        var matchDimValue = rgxFactDim.Match(dataSignature); //s2c_dim:UI(ID:CAU/INST/1888-1891 LX64W1_IPROP) => CAU/INST/1888-1891 LX64W1_IPROP
 
         if (!matchDimValue.Success)
         {
