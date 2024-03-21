@@ -76,7 +76,7 @@ public class DocumentValidator : IDocumentValidator
         //743 else
         //683 open tables
         //2038 closed tables sum
-        //655 :filter with dim
+        //655  :filter with match and dim(this(),)
         var xx = CreateErrorDocument();
 
         var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
@@ -87,6 +87,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => vr.ValidationID ==655).ToList();
         foreach (var validationRule in validationRules)
         {
+            Console.WriteLine($"Validating Rule:{validationRule.ValidationID}");
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
 
             var hasOnlyOpenTables = tablesInValidation.All(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
@@ -171,6 +172,7 @@ public class DocumentValidator : IDocumentValidator
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
                         foreach (var row in rows)
                         {
+                            Console.WriteLine($"Row:{row}");
                             //find the row from the column that has the foreign key
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
@@ -193,19 +195,10 @@ public class DocumentValidator : IDocumentValidator
                                 continue;
                             };
 
-
-                            //filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)"))
-                            //var insideFilterTerm = ruleOpen.IfComponent.RuleTerms.FirstOrDefault(rt=> !string.IsNullOrEmpty(rt.Filter));
-                            //if (insideFilterTerm != null)
-                            //{
-                            //    var insideFilterObjectTerm = ruleOpen.IfComponent.ObjectTerms.FirstOrDefault(ot => ot.Key == insideFilterTerm!.Letter);
-                            //    var filterDimThis = insideFilterObjectTerm.Value?.fact?.DataPointSignature ?? "";
-                            //    var isInsideFilter = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, insideFilterTerm.Filter, ruleOpen.IfComponent.ObjectTerms, "");
-                            //}
-
                             var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
                             if (!isValidRowRule)
                             {
+                                Console.WriteLine($"Error ruleId:{validationRule.ValidationID} row:{row}");
                                 CreateRuleError(ruleOpen, validationRule);
                             }
 
