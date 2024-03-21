@@ -36,7 +36,7 @@ public partial class ExpressionEvaluator
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        var ifResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms, "");
+        var ifResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
         if (ruleStructure280.ThenComponent.IsEmpty)
         {
             return ToBoolean(ifResult);
@@ -51,7 +51,7 @@ public partial class ExpressionEvaluator
             }
             else if (ifResult == KleeneValue.True)
             {
-                var thenResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms, "");
+                var thenResult = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
                 return ToBoolean(thenResult);
             }
             else // (ifResult == KleeneValue.Unknown)
@@ -64,12 +64,12 @@ public partial class ExpressionEvaluator
             //elseComponent EXISTS
             if (ifResult == KleeneValue.True)
             {
-                var thenRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms, "");
+                var thenRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
                 return ToBoolean(thenRes); // if is false and there is no else      
             }
             if (ifResult == KleeneValue.False)
             {
-                var elseRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms, "");
+                var elseRes = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
 
                 return ToBoolean(elseRes); // if is false and there is no else
             }
@@ -85,7 +85,7 @@ public partial class ExpressionEvaluator
 
 
 
-    public static KleeneValue EvaluateGeneralBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms,string filterTerm)
+    public static KleeneValue EvaluateGeneralBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms)
     {
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
@@ -104,7 +104,7 @@ public partial class ExpressionEvaluator
         if (matchOuter.Success)
         {
             var insideParen = matchOuter.Groups[1].Value.Trim();
-            var resInside = EvaluateGeneralBooleanExpression(ruleId, insideParen, terms, "");
+            var resInside = EvaluateGeneralBooleanExpression(ruleId, insideParen, terms);
             return resInside;
 
         }
@@ -124,7 +124,7 @@ public partial class ExpressionEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms, filterTerm);                    
+                    var resNot = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms);                    
                     return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
                         : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
@@ -136,13 +136,13 @@ public partial class ExpressionEvaluator
                     {
                         //isNull(dim(X00,[s2c_dim:NF]))
                         //isNull(dim({t: S.06.02.07.01, c: C0060, z: Z0001, seq: False, id: v0, f: solvency, fv: solvency2},[s2c_dim:NF])
-                        var dimValue = ValidationFunctions.ExtractDimValueFormFact(matchDim.Value, terms, filterTerm);
+                        var dimValue = ValidationFunctions.ExtractDimValueFormFact(matchDim.Value, terms);
                         return string.IsNullOrEmpty(dimValue)?KleeneValue.True:KleeneValue.False ;
                     }
                     var resn = ValidationFunctions.ValidateIsNull(formula, terms);                                                                                           
                     return resn ? KleeneValue.True : KleeneValue.False;
                 case "matches":
-                    var resm = ValidationFunctions.ValidateMatch(formula, terms, filterTerm);
+                    var resm = ValidationFunctions.ValidateMatch(formula, terms);
                     return resm ? KleeneValue.True : KleeneValue.False;
                 //case "dim":
                 //it is not a function returning boolean. It is only used inside isNull
@@ -152,7 +152,7 @@ public partial class ExpressionEvaluator
                     return KleeneValue.True;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
-                    var resN = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms, filterTerm);
+                    var resN = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms);
                     return resN;
             }
         }
@@ -160,8 +160,8 @@ public partial class ExpressionEvaluator
         var res = SplitAndOrExpression(formula);
         if (res.logicalOperator == LogicalOperators.IsAnd)
         {
-            var aAndRes = EvaluateGeneralBooleanExpression(ruleId, res.left, terms, "");
-            var bAndRes = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms, "");
+            var aAndRes = EvaluateGeneralBooleanExpression(ruleId, res.left, terms  );
+            var bAndRes = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms);
             if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
                 return KleeneValue.True;
             else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
@@ -181,8 +181,8 @@ public partial class ExpressionEvaluator
             //False OR null => NULL
             //True OR null =>TRUE
 
-            var orRes1 = EvaluateGeneralBooleanExpression(ruleId, res.left, terms, "");
-            var orRes2 = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms, "");
+            var orRes1 = EvaluateGeneralBooleanExpression(ruleId, res.left, terms);
+            var orRes2 = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms);
 
             if (orRes1 == KleeneValue.True || orRes2 == KleeneValue.True)
                 return KleeneValue.True;

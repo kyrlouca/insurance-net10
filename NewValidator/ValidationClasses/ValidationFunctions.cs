@@ -35,7 +35,7 @@ internal class ValidationFunctions
     }
 
 
-    public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms,string filterTerm)
+    public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
     {
         //matches may be inside a formula or in a filter, a metric m: with filter , a dim , a term with filter
         //1. inside the term matches : matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")                        
@@ -62,7 +62,7 @@ internal class ValidationFunctions
         {
             //*** you are in a filter. Do NOT check for filter since you are using the same term
             //find the  dim
-            leftPartValue = ExtractDimValueFormFact(leftPart,terms,"");            
+            leftPartValue = ExtractDimValueFormFact(leftPart,terms);            
             //check the match
         }
         else
@@ -72,7 +72,7 @@ internal class ValidationFunctions
             var filter = termLeft.Filter;
             if (!string.IsNullOrEmpty(filter))
             {
-                var isFilterValid = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, filter, terms, leftPart);
+                var isFilterValid = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, filter, terms);
                 //if the filter is false, no need to check the rule and return a match
                 if ( isFilterValid != KleeneValue.True)
                 {                    
@@ -91,7 +91,7 @@ internal class ValidationFunctions
     }
 
 
-    public static string ExtractDimValueFormFact(string dimText,  Dictionary<string, ObjectTerm280> terms, string dimTerm)
+    public static string ExtractDimValueFormFact(string dimText,  Dictionary<string, ObjectTerm280> terms)
     {
         //if you find this()=> the term must be dimTerm
         //dim(this(X00), [s2c_dim:UI])

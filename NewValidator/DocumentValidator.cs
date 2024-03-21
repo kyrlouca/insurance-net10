@@ -187,7 +187,7 @@ public class DocumentValidator : IDocumentValidator
 
                             KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
                                 ? KleeneValue.True
-                                : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms,"");
+                                : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
 
                             //if filter has terms with null values, it is considered false here                            
                             if (filterKleeneValue != KleeneValue.True && 1==2)
@@ -449,7 +449,7 @@ public class DocumentValidator : IDocumentValidator
             Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
             if (filterTerms.Any())
             {
-                var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms, "");
+                var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms);
                 return res == KleeneValue.True;
             }
 
