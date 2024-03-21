@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Schema;
@@ -336,12 +337,20 @@ public class DocumentValidator : IDocumentValidator
                 ruleTerm.Letter,
                 Zet = ruleTerm.Z,
                 Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance,ruleTerm.Filter)
+                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance, UpdateRuleTermFilter(ruleTerm.Letter,ruleTerm.Filter))
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
         return plainTerms;
     }
 
+
+    private string UpdateRuleTermFilter(string letter, string filter)
+    {
+        //not(isNull({t: SR.26.01.01.03, r: R0012; R0014; R0020; R0030; R0040, c: C0010, z: Z0001, dv: emptySequence(), filter: dim(this(), [s2c_dim:PO]) = [s2c_PU:x60] and not(isNull(dim(this(), [s2c_dim:FN]))), seq: True, id: v1, f: solvency, fv: solvency2}))
+        //filter: dim(this(), [s2c_dim:PO]) = [s2c_PU:x60] and not(isNull(dim(this(), [s2c_dim:FN])))
+        var res = filter.Replace("this()", $"this({letter})");
+        return res;
+    }
 
     private double CalculateSumOfClosedTable(RuleTerm280 ruleTermRec)
     {
