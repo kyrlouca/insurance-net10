@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Identity.Client;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,7 @@ public class IntervalFunctions
             ">=" => IntervalFunctions.IsIntervalGTE(left, leftDecimals, right, rightDecimals),
             "<" => IntervalFunctions.IsIntervalLT(left, leftDecimals, right, rightDecimals),
             "<=" => IntervalFunctions.IsIntervalLTE(left, leftDecimals, right, rightDecimals),
+            "!=" => IntervalFunctions.IsIntervalNE(left, leftDecimals, right, rightDecimals),
             _ => false
         };
         return resInterval;
@@ -63,6 +65,15 @@ public class IntervalFunctions
         var leftSide = left - right;
         var rightSide = Radius(leftDecimals) + Radius(rightDecimals);
         return leftSide <= rightSide;
+    }
+
+    private static bool IsIntervalNE(double left, int leftDecimals, double right, int rightDecimals)
+    {
+        //For intervals: abs(centre(left) – centre(right)) > radius(left) + radius(right)
+        
+        var leftSide = Math.Abs( left - right);
+        var rightSide = Radius(leftDecimals) + Radius(rightDecimals);
+        return leftSide > rightSide;
     }
 
     private static double Radius(int decimals)

@@ -84,7 +84,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID ==662).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID ==674).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"Validating Rule:{validationRule.ValidationID}");

@@ -198,7 +198,7 @@ public partial class ExpressionEvaluator
         //3. ****************************************arithmetic
         if (res.logicalOperator == LogicalOperators.None)
         {
-            var regSplit = new Regex(@"(.+?)\s*(>=|>|<=|<|==|=)\s*(.+)");
+            var regSplit = new Regex(@"(.+?)\s*(!=|>=|>|<=|<|==|=)\s*(.+)");
             var xxx = regSplit.Split(formula);
             var matchSplit = regSplit.Match(formula);
             if (!matchSplit.Success)
