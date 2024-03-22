@@ -22,6 +22,7 @@ public class RuleStructure280
     public ScopeType ScopeType { get; init; }
     private RuleStructure280(int ruleId, string ruleFormula, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent, RuleComponent280 filter, List<string> rowsCols, ScopeType scopeType)
     {
+        RuleId = ruleId;
         RuleFormula = ruleFormula;
         IfComponent = ifComponent;
         ThenComponent = thenComponent;
@@ -64,6 +65,7 @@ public class RuleStructure280
         //@"if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)";
 
         //create three components (if, then, else)
+
         var (ifExpression, thenExpression, elseExpression) = SplitIfThenElse(ruleFormula);
         var ifComponent = RuleComponent280.CreateComponent(ifExpression);
         var thenComponent = RuleComponent280.CreateComponent(thenExpression);

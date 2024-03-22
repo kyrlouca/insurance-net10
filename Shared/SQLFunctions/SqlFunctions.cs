@@ -697,33 +697,23 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public List<VValidationRuleExpressions> SelectValidationRulesForModule(int ModuleId)
+    public List<VValidationRuleExpressions> SelectValidationExpressionsWithTablesForModule(int ModuleId)
     {
-        //a rule may apply to more than one table (or to no table), therefore rule may appear twice
+        //in  vValidationRuleTables you may find validationId (correspond to expression) without tables        
+
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
-        var sqlSelectNew = @"
-                SELECT vre.*     
-                FROM
-                  vValidationRuleTables vrt
-                  JOIN vValidationRuleExpressions vre ON vre.ValidationID=vrt.ValidationID
-                WHERE
-                  vrt.ModuleID= @ModuleID
-                  AND NOT EXISTS (
-                    SELECT 1
-                    FROM vValidationRuleTables mm
-                    WHERE mm.ModuleID<> @ModuleID AND mm.ValidationID=vre.ValidationID
-                    );
-                ";
-
+        
 
         var sqlSelect = @"
-           SELECT vre.*
-             FROM
-               vValidationRuleTables vrt               
-               JOIN vValidationRuleExpressions vre ON vre.ValidationID=vrt.ValidationID   
-             WHERE
-               vrt.ModuleID= @ModuleID
+            with validationDis as (
+	            select distinct ValidationID,vrt.Severity from  vValidationRuleTables vrt where ModuleID=@ModuleID and vrt.TableID is not null
+            ) 
+            select 
+	            severity,vre.*
+            from  vValidationRuleExpressions vre 
+            join validationDis vds on vds.ValidationID= vre.ValidationID
+
 ";
 
         var ctx = connectionEiopa.Query<VValidationRuleExpressions>(sqlSelect, new { ModuleId }).ToList();

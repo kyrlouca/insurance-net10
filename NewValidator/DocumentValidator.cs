@@ -79,11 +79,10 @@ public class DocumentValidator : IDocumentValidator
         //655  :filter with match and dim(this(),)
         var xx = CreateErrorDocument();
 
-        var validationRules = _SqlFunctions.SelectValidationRulesForModule(_mModule.ModuleID);
-        //Select rules with the same id Only once. We need a comparer for this 
-        ValidationRuleComparer comparer = new();
-        validationRules = validationRules.Distinct(comparer).ToList();
-
+        //Same rule 
+        //Select rules with the same id Only once. We need a comparer for this.  
+        var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID);        
+        
         validationRules = validationRules.Where(vr => vr.ValidationID ==655).ToList();
         foreach (var validationRule in validationRules)
         {
@@ -490,16 +489,17 @@ public class DocumentValidator : IDocumentValidator
             //Scope = RegexUtils.TruncateString(rule.Sc, 800),
             DataType = "",
             TableBaseFormula = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
-            Filter = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
+            Filter = RegexUtils.TruncateString(ruleStructure.RuleFormula,800),
             SheetId = 0,
             SheetCode = validationRule.Scope,
             RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
-            IsWarning = validationRule.AlwaysOn,
-            IsError = validationRule.IncludeInXBRL,
+            IsWarning = validationRule.Severity.Trim()=="Error",
+            IsError = validationRule.Severity.Trim()=="Warning",
             IsDataError = false,
-            FormulaForIf = BuildComponentValues(ruleStructure.IfComponent),
-            FormulaForThen = BuildComponentValues(ruleStructure.ThenComponent),
-            FormulaForElse = BuildComponentValues(ruleStructure.ElseComponent),
+            FormulaForIf = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.IfComponent),800),
+            FormulaForThen = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ThenComponent),800),
+            FormulaForElse = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ElseComponent),800),
+            FormulaForFilter = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.FilterComponent), 800),
         };
 
         var res = _SqlFunctions.CreateErrorRule(errorRule);

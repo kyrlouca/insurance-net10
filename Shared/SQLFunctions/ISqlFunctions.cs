@@ -62,7 +62,7 @@ public interface ISqlFunctions
 
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId);
     public MDimensionModel? SelectDimensionByCode(string DomainCode, string DimensionCode);
-    public List<VValidationRuleExpressions> SelectValidationRulesForModule(int ModuleId);
+    public List<VValidationRuleExpressions> SelectValidationExpressionsWithTablesForModule(int ModuleId);
 
     public int CreateErrorRule(ERROR_Rule errorRule);
     public int CreateErrorDocument( ErrorDocumentModel errorDocument);
