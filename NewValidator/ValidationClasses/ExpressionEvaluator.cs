@@ -113,9 +113,8 @@ public partial class ExpressionEvaluator
 
         //************************** Single Function********************************************************
         //
-        //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)
-        //var rgxFn = new Regex(@"^(isNull|matches|not|dim|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
-        var rgxFn = new Regex(@"^(isNull|matches|not|true|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)       
+        var rgxFn = new Regex(@"^(isNull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");        
         var match = rgxFn.Match(formula);
         if (match.Success)
         {
@@ -152,6 +151,8 @@ public partial class ExpressionEvaluator
                 //    return string.IsNullOrEmpty(resdim) ? KleeneValue.True : KleeneValue.False;
                 case "true":
                     return KleeneValue.True;
+                case "false":
+                    return KleeneValue.False;
                 default:
                     //this is executed when there are outer parenthesis around (a=b and (bc==dd) and b=c) => a=b and (bc==dd) and b=c
                     var resN = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms);

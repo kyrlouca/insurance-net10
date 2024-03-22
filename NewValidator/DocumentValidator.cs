@@ -81,9 +81,10 @@ public class DocumentValidator : IDocumentValidator
 
         //Same rule 
         //Select rules with the same id Only once. We need a comparer for this.  
-        var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID);        
+        var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
+            .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID ==658).ToList();
+        //validationRules = validationRules.Where(vr => vr.ValidationID ==648).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"Validating Rule:{validationRule.ValidationID}");
@@ -169,6 +170,7 @@ public class DocumentValidator : IDocumentValidator
                     foreach (var sheet in sheets)
                     {
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
+                        var prevRowValid = true;
                         foreach (var row in rows)
                         {
                             
@@ -195,14 +197,19 @@ public class DocumentValidator : IDocumentValidator
                             };
 
                             var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
+
                             if (!isValidRowRule)
                             {
+                                if (prevRowValid) Console.WriteLine("");
                                 Console.WriteLine($"Error ruleId:{validationRule.ValidationID} row:{row}");
                                 CreateRuleError(ruleOpen, validationRule);
+                                prevRowValid = false;
                             }
                             else
                             {
-                                Console.Write($".");
+                                prevRowValid = true;
+                                Console.WriteLine($"Error ruleId:{validationRule.ValidationID} row:{row}");
+                                //Console.Write($".");
                             }
 
                         }
