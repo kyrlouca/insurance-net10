@@ -83,7 +83,7 @@ public class DocumentValidator : IDocumentValidator
         //Select rules with the same id Only once. We need a comparer for this.  
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID);        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID ==655).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID ==658).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"Validating Rule:{validationRule.ValidationID}");
@@ -171,7 +171,7 @@ public class DocumentValidator : IDocumentValidator
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
                         foreach (var row in rows)
                         {
-                            Console.WriteLine($"Row:{row}");
+                            
                             //find the row from the column that has the foreign key
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
@@ -199,6 +199,10 @@ public class DocumentValidator : IDocumentValidator
                             {
                                 Console.WriteLine($"Error ruleId:{validationRule.ValidationID} row:{row}");
                                 CreateRuleError(ruleOpen, validationRule);
+                            }
+                            else
+                            {
+                                Console.Write($".");
                             }
 
                         }
@@ -489,7 +493,7 @@ public class DocumentValidator : IDocumentValidator
             //Scope = RegexUtils.TruncateString(rule.Sc, 800),
             DataType = "",
             TableBaseFormula = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
-            Filter = RegexUtils.TruncateString(ruleStructure.RuleFormula,800),
+            Filter = RegexUtils.TruncateString(ruleStructure.FilterComponent.Expression,800),
             SheetId = 0,
             SheetCode = validationRule.Scope,
             RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
@@ -508,7 +512,7 @@ public class DocumentValidator : IDocumentValidator
         string BuildComponentValues(RuleComponent280 component)
         {
             var val = $"{component.DislayRuleTerms()}";
-            return RegexUtils.TruncateString(val, 900);
+            return RegexUtils.TruncateString(val, 800);
         }
 
     }

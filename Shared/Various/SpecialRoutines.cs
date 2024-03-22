@@ -151,9 +151,16 @@ public class FormulaSimplification
 {
     public static (string Formula, List<(string letter,string content)> FormulaTerms) Simplify(string text)
     {
+
+        //{t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}
+        //=> {t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(XYZ00) and not(XYZ01), seq: False, id: v1, f: solvency, fv: solvency2}
+        //=>XYZ00: dim(this(), [s2c_dim:UI]), "^CAU/.*", XYZ01:matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")
+
         var rgx = new Regex(@"\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         var matchParenthesis = rgx.Matches(text);
-        var nestedParenthesis = matchParenthesis.Select((match, i) => ($"XYZ{i:D2}", match.Groups[1].Value)).ToList();
+        var nestedParenthesis = matchParenthesis
+            .Where(match => !string.IsNullOrEmpty( match.Groups[1].Value))
+            .Select((match, i) => ($"XYZ{i:D2}", match.Groups[1].Value)).ToList();
         var symbolFormula = nestedParenthesis.Aggregate(text, (currentText, val) =>
         {
             int index = currentText.IndexOf(val.Value);

@@ -239,11 +239,16 @@ public class ValidationTermTest
     [Fact]
     public void TestSimplifyFormula()
     {
+        var text2 = @"{t: S.06.02.01.01, c: C0130, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2}";
+        var res2 = FormulaSimplification.Simplify(text2);
+        Assert.Equal(@"{t: S.06.02.01.01, c: C0130, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2}", res2.Formula);
+
         var text1 = "m:x3 and x=33";
         var res1 = FormulaSimplification.Simplify(text1);
         Assert.Equal("m:x3 and x=33", res1.Formula );
         Assert.Empty(res1.FormulaTerms);
-
+        
+        //put it back and check if like origingl
         var finalText1 = FormulaSimplification.ReplaceTerms(res1.Formula, res1.FormulaTerms);
         Assert.Equal( text1, finalText1);
         
@@ -254,9 +259,10 @@ public class ValidationTermTest
         Assert.Equal(res0.FormulaTerms[0].content, @"dim(this(), [s2c_dim:UI]), ""^CAU/.*""");
         Assert.Equal(res0.FormulaTerms[0].letter, @"XYZ00");
 
-        var finalText2 = FormulaSimplification.ReplaceTerms(res0.Formula, res0.FormulaTerms);
-        Assert.Equal(text0, finalText2);
+        var finalText0 = FormulaSimplification.ReplaceTerms(res0.Formula, res0.FormulaTerms);
+        Assert.Equal(text0, finalText0);
 
+        
 
 
     }

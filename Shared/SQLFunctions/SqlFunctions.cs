@@ -713,6 +713,7 @@ public class SqlFunctions : ISqlFunctions
 	            severity,vre.*
             from  vValidationRuleExpressions vre 
             join validationDis vds on vds.ValidationID= vre.ValidationID
+            where vre.IsEnabled=1
 
 ";
 

@@ -98,6 +98,8 @@ public partial class ExpressionEvaluator
         {
             throw new ArgumentNullException("Hey1: Formula is Null or Empty");
         }
+        
+
 
         var rgxOuter = RgxOuterParenthesis();
         var matchOuter = rgxOuter.Match(formula);
@@ -161,7 +163,7 @@ public partial class ExpressionEvaluator
         if (res.logicalOperator == LogicalOperators.IsAnd)
         {
             var aAndRes = EvaluateGeneralBooleanExpression(ruleId, res.left, terms  );
-            var bAndRes = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms);
+             var bAndRes = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms);
             if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
                 return KleeneValue.True;
             else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
@@ -235,6 +237,7 @@ public partial class ExpressionEvaluator
 
     }
 
+    
     public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms,string thisTerm)
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
