@@ -522,6 +522,12 @@ public partial class ExpressionEvaluator
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
+        var isAnyTermNull = terms.Any(ft => ft.Value.Obj is null);
+
+        if (isAnyTermNull)
+        {
+            return KleeneValue.Unknown;
+        }
 
         var rgxEnum = new Regex(@"\[(.*?)\]");
         string cleanFormula = rgxEnum.Replace(symbolFormula, match => $"\"{match.Groups[1].Value}\"");

@@ -84,7 +84,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID ==660).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID ==662).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"Validating Rule:{validationRule.ValidationID}");
@@ -208,7 +208,7 @@ public class DocumentValidator : IDocumentValidator
                             else
                             {
                                 prevRowValid = true;
-                                Console.WriteLine($"Error ruleId:{validationRule.ValidationID} row:{row}");
+                                Console.WriteLine($"Valid:{validationRule.ValidationID} row:{row}");
                                 //Console.Write($".");
                             }
 
@@ -318,19 +318,20 @@ public class DocumentValidator : IDocumentValidator
                 "CreateDate(1900,01,01)" => "D",
                 _ => "S"
             };
+
             
-            object objValue = defaultValue.Trim() switch
+            object? objValue = defaultValue.Trim() switch
             {
                 "0" => 0,
                 "[Default]" => "[Default]",
                 "emptySequence()" => 0,
                 "CreateDate(1900,01,01)" => new DateOnly(1900,1,1),
-                _ => ""
+                _ =>  null
             };
 
 
 
-            return new ObjectTerm280(defaultDataType, 0, IsTolerance, objValue, 0, 0, null, true,"");
+            return new ObjectTerm280(defaultDataType, 0, IsTolerance,null , 0, 0, null, true,"");
         }
 
 
