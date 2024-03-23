@@ -42,27 +42,27 @@ public class RuleComponent280
         
 
         /////////////////////////////////////////
-        //var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
-        var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
-        var matches = rgxTerm.Matches(textExpression);
-        if (matches is null)
-        {
-            return new RuleComponent280() {IsEmpty=false,IsValid=false, Expression = textExpression, SymbolExpression = "", RuleTerms = new List<RuleTerm280>() };
-        }
-
-        var ruleTextTerms = matches.Select((match, i) => new RuleTextTerm($"X{i:D2}", match.Value)) ?? new List<RuleTextTerm>();
-        var formula = ruleTextTerms.Aggregate(textExpression, (currentText, val) =>
-        {
-            int index = currentText.IndexOf(val.TermText);
-            string replacedString = currentText.Substring(0, index) + val.Letter + currentText.Substring(index + val.TermText.Length);
-            return replacedString;
-        });
-
-        var(formula2,ruleTextTerms2) = TermsExtraction.ExtractTerms(textExpression);
         
-        if(formula!= formula2)
+        //var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
+        //var matches = rgxTerm.Matches(textExpression);
+        //if (matches is null)
+        //{
+        //    return new RuleComponent280() {IsEmpty=false,IsValid=false, Expression = textExpression, SymbolExpression = "", RuleTerms = new List<RuleTerm280>() };
+        //}
+
+        //var ruleTextTerms = matches.Select((match, i) => new RuleTextTerm($"X{i:D2}", match.Value)) ?? new List<RuleTextTerm>();
+        //var formula = ruleTextTerms.Aggregate(textExpression, (currentText, val) =>
+        //{
+        //    int index = currentText.IndexOf(val.TermText);
+        //    string replacedString = currentText.Substring(0, index) + val.Letter + currentText.Substring(index + val.TermText.Length);
+        //    return replacedString;
+        //});
+
+        var(formula,ruleTextTerms) = TermsExtraction.ExtractTerms(textExpression);
+
+        if (ruleTextTerms.Count==0)
         {
-            Console.WriteLine($"*{formula}*  *{formula2}");
+            return new RuleComponent280() { IsEmpty = false, IsValid = false, Expression = textExpression, SymbolExpression = "", RuleTerms = new List<RuleTerm280>() };
         }
 
 
