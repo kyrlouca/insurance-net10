@@ -86,7 +86,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        //validationRules = validationRules.Where(vr => vr.ValidationID ==759).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID ==759).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\nValidating Rule:{validationRule.ValidationID}***");
@@ -264,7 +264,7 @@ public class DocumentValidator : IDocumentValidator
     {
         //maybe I need to set obj to zero instead of sum
         var objTerm = objTerms[objKey];
-        var newObjTerm = objTerm with { Obj = sum, sumValue = Convert.ToDouble(sum), countValue = count };
+        var newObjTerm = objTerm with { Obj = sum, sumValue = Convert.ToDouble(sum), countValue = count ,DataType="N"};
         objTerms.Remove(objKey);
         objTerms.Add(objKey, newObjTerm);
         return newObjTerm;
