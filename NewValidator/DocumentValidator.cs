@@ -77,6 +77,7 @@ public class DocumentValidator : IDocumentValidator
         //683 open tables
         //2038 closed tables sum
         //655  :filter with match and dim(this(),)
+        //699 dates 
         var xx = CreateErrorDocument();
 
         //Same rule 
@@ -84,10 +85,10 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID ==674).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID ==703).ToList();
         foreach (var validationRule in validationRules)
         {
-            Console.WriteLine($"Validating Rule:{validationRule.ValidationID}");
+            Console.WriteLine($"\nValidating Rule:{validationRule.ValidationID}***");
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
 
             var hasOnlyOpenTables = tablesInValidation.All(tbl => tbl.IsOpenTable);
@@ -332,7 +333,7 @@ public class DocumentValidator : IDocumentValidator
             "N" => fact.NumericValue,
             "P" => fact.NumericValue,
             "B" => fact.BooleanValue,
-            "D" => fact.DateTimeValue,
+            "D" => (DateTime)fact.DateTimeValue,
             _ => throw new NotImplementedException()
         };
         var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false,filter);

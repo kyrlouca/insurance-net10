@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.FileSystemGlobbing;
 using Shared.DataModels;
 using Syncfusion.XlsIO.Implementation.Collections.Grouping;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
@@ -9,6 +10,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.RegularExpressions;
+using System.Transactions;
 using Z.Expressions;
 
 namespace NewValidator.ValidationClasses;
@@ -218,6 +220,8 @@ public partial class ExpressionEvaluator
                 return resStr;
             }
 
+            
+
             var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Decimals ?? 0 : 0;
             var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Decimals ?? 0 : 0;
 
@@ -238,6 +242,19 @@ public partial class ExpressionEvaluator
 
     }
 
+    private static DoubleObject ToDoubleObject(string letter, Dictionary<string, ObjectTerm280> terms)
+    {
+    
+        var term = terms.FirstOrDefault(trm => trm.Key == letter).Value;
+       
+        var resTerm = term is null?  new DoubleObject(true, 0)
+            : term.IsNullFact ? new DoubleObject(true, 0)//do i really need to check this??
+            : term.Obj is null ? new DoubleObject(true, 0)
+            : term.DataType == "D" ? new DoubleObject(false, ((DateTime)term.Obj).ToOADate())
+            : new DoubleObject(false, Convert.ToDouble(term.Obj));
+            
+        return resTerm;        
+    }
     
     public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms,string thisTerm)
     {
@@ -263,9 +280,11 @@ public partial class ExpressionEvaluator
         var matchTerm = rgxTerm.Match(arithmeticExpression);
         if (matchTerm.Success)
         {
-            var term = terms.FirstOrDefault(trm => trm.Key == matchTerm.Value);
-            var resTerm = term.Value.IsNullFact ? new DoubleObject(true, 0) : new DoubleObject(false, Convert.ToDouble(term.Value.Obj));
-            return resTerm;
+            var resTermD = ToDoubleObject(matchTerm.Value,terms);
+            //var term = terms.FirstOrDefault(trm => trm.Key == matchTerm.Value);
+            //var resTerm = term.Value.IsNullFact ? new DoubleObject(true, 0) : new DoubleObject(false, Convert.ToDouble(term.Value.Obj));
+            //return resTerm;
+            return resTermD;
         }
 
         //*** A single function imin(imax(3,X01),X02
