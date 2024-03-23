@@ -21,13 +21,13 @@ public enum KleeneValue
     False,
     Unknown
 }
-public record DoubleObject(bool IsNull, double Value);
+public record OptionialObject(bool IsNull, object? Value);
 public record BooleanObject(bool IsNull, bool Value);
 public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max, Plain };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
-public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact ,string Filter);
- 
+public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact, string Filter);
+
 public partial class ExpressionEvaluator
 {
     public enum LogicalOperators { None, IsAnd, IsOR };
@@ -100,7 +100,7 @@ public partial class ExpressionEvaluator
         {
             throw new ArgumentNullException("Hey1: Formula is Null or Empty");
         }
-        
+
 
 
         var rgxOuter = RgxOuterParenthesis();
@@ -116,7 +116,7 @@ public partial class ExpressionEvaluator
         //************************** Single Function********************************************************
         //
         //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)       
-        var rgxFn = new Regex(@"^(isNull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");        
+        var rgxFn = new Regex(@"^(isNull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
         var match = rgxFn.Match(formula);
         if (match.Success)
         {
@@ -127,22 +127,22 @@ public partial class ExpressionEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms);                    
+                    var resNot = EvaluateGeneralBooleanExpression(ruleId, fnArgument, terms);
                     return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
                         : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
                 case "isNull":
                     //if value is a function, then call evaluatefunction to find the value of the function and then call IsNull
-                    var rgxDim= new Regex(@"dim\((.*?)\)");
-                    var matchDim= rgxDim.Match(fnArgument);                                        
-                    if (matchDim.Success) 
+                    var rgxDim = new Regex(@"dim\((.*?)\)");
+                    var matchDim = rgxDim.Match(fnArgument);
+                    if (matchDim.Success)
                     {
                         //isNull(dim(X00,[s2c_dim:NF]))
                         //isNull(dim({t: S.06.02.07.01, c: C0060, z: Z0001, seq: False, id: v0, f: solvency, fv: solvency2},[s2c_dim:NF])
                         var dimValue = ValidationFunctions.ExtractDimValueFormFact(matchDim.Value, terms);
-                        return string.IsNullOrEmpty(dimValue)?KleeneValue.True:KleeneValue.False ;
+                        return string.IsNullOrEmpty(dimValue) ? KleeneValue.True : KleeneValue.False;
                     }
-                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);                                                                                           
+                    var resn = ValidationFunctions.ValidateIsNull(formula, terms);
                     return resn ? KleeneValue.True : KleeneValue.False;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
@@ -165,8 +165,8 @@ public partial class ExpressionEvaluator
         var res = SplitAndOrExpression(formula);
         if (res.logicalOperator == LogicalOperators.IsAnd)
         {
-            var aAndRes = EvaluateGeneralBooleanExpression(ruleId, res.left, terms  );
-             var bAndRes = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms);
+            var aAndRes = EvaluateGeneralBooleanExpression(ruleId, res.left, terms);
+            var bAndRes = EvaluateGeneralBooleanExpression(ruleId, res.Right, terms);
             if (aAndRes == KleeneValue.True && bAndRes == KleeneValue.True)
                 return KleeneValue.True;
             else if (aAndRes == KleeneValue.False || bAndRes == KleeneValue.False)
@@ -220,99 +220,120 @@ public partial class ExpressionEvaluator
                 return resStr;
             }
 
-            
+
 
             var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Decimals ?? 0 : 0;
             var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Decimals ?? 0 : 0;
 
-            var resLeftDbl = EvaluateArithmeticRecursively(left, terms,"");
-            var resRightDbl = EvaluateArithmeticRecursively(right, terms, "");
+            var resLeftDbl = EvaluateGeneralExpressionRecursively(left, terms, "");
+            var resRightDbl = EvaluateGeneralExpressionRecursively(right, terms, "");
 
-             if (resLeftDbl.IsNull || resRightDbl.IsNull)
+            if (resLeftDbl.IsNull || resRightDbl.IsNull)
             {
                 return KleeneValue.Unknown;
             }
 
-            var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, resLeftDbl.Value, leftDecimals, resRightDbl.Value, rightDecimals);
+            if (resLeftDbl.Value is double || resRightDbl.Value is double)
+            {
+                var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)resLeftDbl.Value, leftDecimals, (double)resRightDbl.Value, rightDecimals);
+                return intervalResult ? KleeneValue.True : KleeneValue.False;
+            }
 
-            return intervalResult ? KleeneValue.True : KleeneValue.False;
+            if (resLeftDbl.Value is string || resRightDbl.Value is string)
+            {                
+                var resString = resLeftDbl.Value == resRightDbl.Value;
+                //var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)resLeftDbl.Value, leftDecimals, (double)resRightDbl.Value, rightDecimals);
+                return resString ? KleeneValue.True : KleeneValue.False;
+            }
+
+
         }
+
 
         return KleeneValue.True;
 
     }
 
-    private static DoubleObject ToDoubleObject(string letter, Dictionary<string, ObjectTerm280> terms)
+    private static OptionialObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms)
     {
-    
+
         var term = terms.FirstOrDefault(trm => trm.Key == letter).Value;
-       
-        var resTerm = term is null?  new DoubleObject(true, 0)
-            : term.IsNullFact ? new DoubleObject(true, 0)//do i really need to check this??
-            : term.Obj is null ? new DoubleObject(true, 0)
-            : term.DataType == "D" ? new DoubleObject(false, ((DateTime)term.Obj).ToOADate())
-            : new DoubleObject(false, Convert.ToDouble(term.Obj));
-            
-        return resTerm;        
+
+        var resTerm = term is null ? new OptionialObject(true, null)            
+            : term.Obj is null ? new OptionialObject(true, null)            
+            : term.DataType == "D" ? new OptionialObject(false, ((DateTime)term.Obj).ToOADate())
+            : new OptionialObject(false, Convert.ToDouble(term.Obj));
+
+        return resTerm;
     }
-    
-    public static DoubleObject EvaluateArithmeticRecursively(string arithmeticExpression, Dictionary<string, ObjectTerm280> terms,string thisTerm)
+
+    public static OptionialObject EvaluateGeneralExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms, string thisTerm)
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
         //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         //var regStartingFunction = RgxAggregateStartingFunction();
         var regSingleFunction = RgxSingleFunction();
 
-        arithmeticExpression = arithmeticExpression.Trim();
-        arithmeticExpression = ReplaceIntervalCharacters(arithmeticExpression);
+        generalExpression = generalExpression.Trim();
+        generalExpression = ReplaceIntervalCharacters(generalExpression);
 
         //*** Remove Outer parenthesis
         var rgxOuter = RgxOuterParenthesis();
-        var matchOuter = rgxOuter.Match(arithmeticExpression);
+        var matchOuter = rgxOuter.Match(generalExpression);
         if (matchOuter.Success)
         {
-            var res = EvaluateArithmeticRecursively(matchOuter.Groups[1].Value, terms,"");
+            var res = EvaluateGeneralExpressionRecursively(matchOuter.Groups[1].Value, terms, "");
             return res;
         }
 
-        //*** Just a Term X01
+        //*** Just a Term X01 (could be double,date, string, or null. Dates are converted to double)
         var rgxTerm = new Regex(@"^X\d{2}$");
-        var matchTerm = rgxTerm.Match(arithmeticExpression);
+        var matchTerm = rgxTerm.Match(generalExpression);
         if (matchTerm.Success)
         {
-            var resTermD = ToDoubleObject(matchTerm.Value,terms);
-            //var term = terms.FirstOrDefault(trm => trm.Key == matchTerm.Value);
-            //var resTerm = term.Value.IsNullFact ? new DoubleObject(true, 0) : new DoubleObject(false, Convert.ToDouble(term.Value.Obj));
-            //return resTerm;
+            var resTermD = ToOptionalObject(matchTerm.Value, terms);            
             return resTermD;
         }
 
         //*** A single function imin(imax(3,X01),X02
-        var matchSingleFunction = regSingleFunction.Match(arithmeticExpression);
+        var matchSingleFunction = regSingleFunction.Match(generalExpression);
         if (matchSingleFunction.Success)
         {
-            var res = EvaluateFunction(arithmeticExpression, terms,"");
+            var res = EvaluateFunction(generalExpression, terms, "");
             return res;
         }
-        
+
         //Try to split the expression         
-        var resM = SplitArithmeticExpression(arithmeticExpression);
-        //*** it is an expression and above we checked that there is no operator, it is not function , it is not a term=>Should be a number
+        var resM = SplitArithmeticExpression(generalExpression);
+        //*** it is an expression and above we checked that there is no operator, it is not function , it is not a term . What is it??
         if (resM.arithmeticOperator == ArithmeticOperators.None)
         {
-            //*** number as Text
-            Double numberFromText;
+         
+            if(generalExpression is null)
+            {
+                return new OptionialObject(true,null);
+            }
+            
+            var rgxBrackets = new Regex(@"\[(.*)\]");
+            var matchBrackets = rgxBrackets.Match(generalExpression);
+            if (matchBrackets.Success)
+            {
+                var operandString = (string)matchBrackets.Value;
+                return new OptionialObject(false, operandString);
+            }
+
+            //date was converted to double when creating objecttERMS            
             try
             {
                 CultureInfo usCulture = new CultureInfo("en-US");
                 CultureInfo.CurrentCulture = usCulture;
 
-                numberFromText = Convert.ToDouble(arithmeticExpression, usCulture);
-                return new DoubleObject(false, numberFromText);
+                var operand = Convert.ToDouble(generalExpression, usCulture);
+                return new OptionialObject(false, operand);
             }
             catch
             {
-                throw new Exception($"expression:{arithmeticExpression} Text is not a Number");
+                throw new Exception($"expression:{generalExpression} Text is not a Number");
             }
         }
 
@@ -321,30 +342,30 @@ public partial class ExpressionEvaluator
         if (resM.arithmeticOperator != ArithmeticOperators.None)
         {
             var matchLeftFunction = regSingleFunction.Match(resM.left);
-            var leftRes= matchLeftFunction.Success
+            var leftRes = matchLeftFunction.Success
                 ? EvaluateFunction(resM.left, terms, "")
-                : EvaluateArithmeticRecursively(resM.left, terms, "");
+                : EvaluateGeneralExpressionRecursively(resM.left, terms, "");
 
             var matchRightFunction = regSingleFunction.Match(resM.right);
             var rightRes = matchRightFunction.Success
                 ? EvaluateFunction(resM.right, terms, "")
-                : EvaluateArithmeticRecursively(resM.right, terms, "");
-            
+                : EvaluateGeneralExpressionRecursively(resM.right, terms, "");
+
             if (leftRes.IsNull || rightRes.IsNull)
             {
-                return new DoubleObject(true, 0);
+                return new OptionialObject(true, 0);
             }
             switch (resM.arithmeticOperator)
             {
-                case ArithmeticOperators.Multiply: return new DoubleObject(false, leftRes.Value * rightRes.Value);
-                case ArithmeticOperators.Plus: return new DoubleObject(false, leftRes.Value + rightRes.Value);
-                case ArithmeticOperators.Minus: return new DoubleObject(false, leftRes.Value - rightRes.Value);
-                default: return new DoubleObject(true, 0);
+                case ArithmeticOperators.Multiply: return new OptionialObject(false, (double)leftRes.Value * (double)rightRes.Value);
+                case ArithmeticOperators.Plus: return new OptionialObject(false, (double)leftRes.Value + (double)rightRes.Value);
+                case ArithmeticOperators.Minus: return new OptionialObject(false, (double)leftRes.Value - (double)rightRes.Value);
+                default: return new OptionialObject(true, 0);
             }
         }
 
         //*** Should not come here
-        throw new Exception($"Expression:{arithmeticExpression}. Can not decifer Arithmetic Expression");        
+        throw new Exception($"Expression:{generalExpression}. Can not decifer Arithmetic Expression");
         //return new DoubleObject(true, 0);              
     }
 
@@ -364,7 +385,7 @@ public partial class ExpressionEvaluator
         return result;
     }
 
-    public static DoubleObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms,string filterTerm )
+    public static OptionialObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm)
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
@@ -390,7 +411,7 @@ public partial class ExpressionEvaluator
 
         var matchFn = rgxSingleFunction.Match(functionText);
         if (!matchFn.Success) throw new ArgumentException($"Invalid function:{functionText}");
-        
+
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
 
@@ -405,19 +426,19 @@ public partial class ExpressionEvaluator
         var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
-                
-        var count=innerArguments.Length;
-        IEnumerable<DoubleObject> innerFunctionArguments = innerArguments.Select(argSplit =>
+
+        var count = innerArguments.Length;
+        IEnumerable<OptionialObject> innerFunctionArguments = innerArguments.Select(argSplit =>
         {
             //here, we are processing each inner term (which are expressions) of the function. For example , x2+3, or even max(x3)+3
             //When all the inner terms are evaluated, we will evaluate the actual function
-            
+
             foreach (var ft in innerFunctionTerms)
             {
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
                 argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
-            var res = EvaluateArithmeticRecursively(argSplit, terms, "");
+            var res = EvaluateGeneralExpressionRecursively(argSplit, terms, "");
             return res;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments);//at the end =>functionType:Max and the terms are : 3, 4 
@@ -426,7 +447,7 @@ public partial class ExpressionEvaluator
 
 
 
-    static DoubleObject EvaluateSumOrCount(FunctionAggregateTypes functionType, Dictionary<string, ObjectTerm280> terms)
+    static OptionialObject EvaluateSumOrCount(FunctionAggregateTypes functionType, Dictionary<string, ObjectTerm280> terms)
     {
 
         switch (functionType)
@@ -434,25 +455,25 @@ public partial class ExpressionEvaluator
 
             case FunctionAggregateTypes.iSum:
                 //there is only ONE terms inside a isum/icount so no worries
-                var sumTerm = terms.FirstOrDefault();                
+                var sumTerm = terms.FirstOrDefault();
                 var resSum = sumTerm.Key is null
-                    ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, Convert.ToDouble(sumTerm.Value.sumValue));
+                    ? new OptionialObject(true, 0)
+                    : new OptionialObject(false, Convert.ToDouble(sumTerm.Value.sumValue));
                 return resSum;
             case FunctionAggregateTypes.iCount:
                 var countTerm = terms.FirstOrDefault();
                 var resCount = countTerm.Key is null
-                    ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, Convert.ToDouble(countTerm.Value.countValue));
+                    ? new OptionialObject(true, 0)
+                    : new OptionialObject(false, Convert.ToDouble(countTerm.Value.countValue));
                 return resCount;
-            default: return new DoubleObject(true, 0);
+            default: return new OptionialObject(true, 0);
 
         }
 
     }
 
 
-    static DoubleObject EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<DoubleObject> terms)
+    static OptionialObject EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<OptionialObject> terms)
     {
 
         switch (functionType)
@@ -461,18 +482,18 @@ public partial class ExpressionEvaluator
                 //var min = terms.Min(item => item?.Obj);
                 var hasNullTermMin = terms.Any(item => item.IsNull);
                 var resMin = hasNullTermMin
-                    ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, terms.Min(item => item.Value));
+                    ? new OptionialObject(true, 0)
+                    : new OptionialObject(false, terms.Min(item => item.Value));
                 return resMin;
             case FunctionAggregateTypes.iMax:
                 //var max = terms.Max(item => item?.Obj);
                 var hasNullTermMax = terms.Any(item => item.IsNull);
                 var resMax = hasNullTermMax
-                    ? new DoubleObject(true, 0)
-                    : new DoubleObject(false, terms.Max(item => item.Value));
+                    ? new OptionialObject(true, 0)
+                    : new OptionialObject(false, terms.Max(item => item.Value));
                 return resMax;
 
-            default: return new DoubleObject(true, 0);
+            default: return new OptionialObject(true, 0);
 
 
         }
@@ -491,7 +512,7 @@ public partial class ExpressionEvaluator
             _ => throw new ArgumentException("Invalid function type"),
         };
 
-    public static DoubleObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static OptionialObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
@@ -502,12 +523,12 @@ public partial class ExpressionEvaluator
 
         if (isAnyTermNull)
         {
-            return new DoubleObject(true, 0);
+            return new OptionialObject(true, 0);
         }
 
         Dictionary<string, object> numericObjects = formulaTerms.ToDictionary(item => item.Key, item => FromStringToObj(item.Value?.Obj));
         var result = Eval.Execute<double>(symbolFormula, numericObjects);
-        return new DoubleObject(false, result);
+        return new OptionialObject(false, result);
 
 
 
@@ -567,7 +588,7 @@ public partial class ExpressionEvaluator
         var matchFunctions = regex.Matches(text);
         if (matchFunctions.Count == 0)
         {
-            return (text,new List<FunctionObject>());
+            return (text, new List<FunctionObject>());
         }
         var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
         var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
@@ -679,7 +700,7 @@ public partial class ExpressionEvaluator
             return replacedString;
         });
 
-        
+
 
         char[] opeatorsToFind = { '+', '-' };
         var plusOrMinusPosition = contentFormulaWithSymbols.IndexOfAny(opeatorsToFind);

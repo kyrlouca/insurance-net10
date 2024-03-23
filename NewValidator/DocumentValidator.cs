@@ -80,12 +80,12 @@ public class DocumentValidator : IDocumentValidator
         //699 dates 
         var xx = CreateErrorDocument();
 
-        //Same rule 
-        //Select rules with the same id Only once. We need a comparer for this.  
+        
+        //Select rules only with tables (the other rules check context dims or metrics)
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID ==703).ToList();
+        //validationRules = validationRules.Where(vr => vr.ValidationID ==703).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\nValidating Rule:{validationRule.ValidationID}***");

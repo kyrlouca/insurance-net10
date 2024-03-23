@@ -127,7 +127,7 @@ public class ValidationTermTest
 
         var text = @"imin(3, 4, 1 +1)";
         var res = ExpressionEvaluator.EvaluateFunction(text, new(), "");
-        Assert.Equal(new DoubleObject(false, 2), res);
+        Assert.Equal(new OptionialObject(false, 2), res);
 
 
         text = @"imax(imin(3, 7) , 4) ";
@@ -146,12 +146,12 @@ public class ValidationTermTest
     {
 
         var text = @"5 + imin(3) +imax(4)";
-        var res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new(),"");
+        var res = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text, new(),"");
         Assert.Equal(12, res.Value);
 
 
         text = @"7 + imin(imax(3,5),4)";
-        res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new(), "");
+        res = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text, new(), "");
         Assert.Equal(11, res.Value);
 
 
@@ -217,20 +217,20 @@ public class ValidationTermTest
     {
 
         var text0 = @"3 + imin(4,3,2) * 7";
-        var res0 = ExpressionEvaluator.EvaluateArithmeticRecursively(text0, new(), "");
+        var res0 = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text0, new(), "");
         Assert.True(res0.IsNull == false);
-        Assert.True(res0.Value == 17);
+        Assert.True((double)res0.Value == 17);
 
 
         var text = @"3 * (2+4)";
-        var res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new(), "");
+        var res = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text, new(), "");
         Assert.True(res.IsNull == false);
-        Assert.True(res.Value == 18);
+        Assert.True((double)res.Value == 18);
 
         text = @"3 + (2 * 4 -7)";
-        res = ExpressionEvaluator.EvaluateArithmeticRecursively(text, new(), "");
+        res = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text, new(), "");
         Assert.True(res.IsNull == false);
-        Assert.True(res.Value == 4);
+        Assert.True((double)res.Value == 4);
 
         string text2 = @"{t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), ""^CAU/.*"") and not(matches(dim(this(), [s2c_dim:UI]), ""^CAU/(ISIN/.*)|(INDEX/.*)"")), seq: False, id: v1, f: solvency, fv: solvency2}";
     }
