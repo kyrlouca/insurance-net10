@@ -62,7 +62,7 @@ public class RuleComponent280
 
         if (ruleTextTerms.Count==0)
         {
-            return new RuleComponent280() { IsEmpty = false, IsValid = false, Expression = textExpression, SymbolExpression = "", RuleTerms = new List<RuleTerm280>() };
+            return new RuleComponent280() { IsEmpty = false, IsValid = false, Expression = textExpression, SymbolExpression = formula , RuleTerms = new List<RuleTerm280>() };
         }
 
 
