@@ -518,8 +518,12 @@ public class SqlFunctions : ISqlFunctions
 			where vrt.ValidationID= @validationRuleId;
         ";
 
-        var res = connectionEiopa.Query<MTable>(sqlSelect, new { validationRuleId }).ToList();
-        return res;
+        var tables = connectionEiopa.Query<MTable>(sqlSelect, new { validationRuleId }).ToList();
+        foreach(MTable table in tables)
+        {
+            table.IsOpenTable = IsOpenTable(table.TableID);
+        }
+        return tables;
     }
 
     public List<MTableCell> SelectTableCells(int tableId)

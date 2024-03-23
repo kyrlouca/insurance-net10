@@ -90,9 +90,9 @@ public class DocumentValidator : IDocumentValidator
             Console.WriteLine($"Validating Rule:{validationRule.ValidationID}");
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
 
-            var hasOnlyOpenTables = tablesInValidation.All(tbl => _SqlFunctions.IsOpenTable(tbl.TableID));
-            var hasOnlyClosedTables = tablesInValidation.All(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
-            var hasMixedTables = tablesInValidation.Any(tbl => _SqlFunctions.IsOpenTable(tbl.TableID)) && tablesInValidation.Any(tbl => !_SqlFunctions.IsOpenTable(tbl.TableID));
+            var hasOnlyOpenTables = tablesInValidation.All(tbl => tbl.IsOpenTable);
+            var hasOnlyClosedTables = tablesInValidation.All(tbl => !tbl.IsOpenTable);
+            var hasMixedTables = tablesInValidation.Any(tbl => tbl.IsOpenTable) && tablesInValidation.Any(tbl => !tbl.IsOpenTable);
 
 
             var hasAggregateFunction = new[] { "sum", "count" }.Any(fn => validationRule.Rule.Contains(fn));
@@ -118,8 +118,7 @@ public class DocumentValidator : IDocumentValidator
                     UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
                     UpdateRuleTermsWithRowCol(ruleForScope.FilterComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
                 }
-
-                //todo also rules for metric
+                
                 //check if no seq and all tables are open                 
                 //--if there is a filter => it is an open table 
                 //sum with seq 
@@ -150,16 +149,16 @@ public class DocumentValidator : IDocumentValidator
                             CreateRuleError(ruleClosed, validationRule);
                         }
                     }
-                }
+                }                
 
-                if (!hasAggregateFn && hasOnlyOpenTables)
+                if (!hasAggregateFn && (hasMixedTables|| hasOnlyOpenTables))
                 {
                     //create one rule for each row and apply filter 
 
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
                     if (mainTable is null)
                     {
-                        mainTable = tablesInValidation.FirstOrDefault();
+                        mainTable = tablesInValidation.FirstOrDefault(tb=>tb.IsOpenTable);
                     }
 
                     var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
@@ -173,7 +172,7 @@ public class DocumentValidator : IDocumentValidator
                         var prevRowValid = true;
                         foreach (var row in rows)
                         {
-                            
+
                             //find the row from the column that has the foreign key
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
@@ -201,26 +200,20 @@ public class DocumentValidator : IDocumentValidator
                             if (!isValidRowRule)
                             {
                                 if (prevRowValid) Console.WriteLine("");
-                                Console.WriteLine($"Error ruleId:{validationRule.ValidationID} row:{row}");
+                                Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
                                 CreateRuleError(ruleOpen, validationRule);
                                 prevRowValid = false;
                             }
                             else
                             {
                                 prevRowValid = true;
-                                Console.WriteLine($"Valid:{validationRule.ValidationID} row:{row}");
-                                //Console.Write($".");
+                                //Console.WriteLine($"Valid:{validationRule.ValidationID} row:{row}");
+                                Console.Write($".");
                             }
 
                         }
                     }
 
-
-                }
-
-                if (!hasAggregateFn && hasMixedTables)
-                {
-                    throw new Exception("NO Aggregate Tables but mixed tables exist");
                 }
 
                 if (hasAggregateFn && hasMixedTables)
@@ -249,11 +242,6 @@ public class DocumentValidator : IDocumentValidator
                     throw new Exception("Aggregate Tables and isAllOpenTables. is it possible?");
                     //we may have aggregates but the sum  are within ?
                 }
-
-
-
-
-
             }
 
 
@@ -525,8 +513,8 @@ public class DocumentValidator : IDocumentValidator
             SheetId = 0,
             SheetCode = validationRule.Scope,
             RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
-            IsWarning = validationRule.Severity.Trim()=="Error",
-            IsError = validationRule.Severity.Trim()=="Warning",
+            IsWarning = validationRule.Severity.Trim()== "Warning",
+            IsError = validationRule.Severity.Trim()== "Error",
             IsDataError = false,
             FormulaForIf = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.IfComponent),800),
             FormulaForThen = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ThenComponent),800),
