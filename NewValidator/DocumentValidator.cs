@@ -78,6 +78,7 @@ public class DocumentValidator : IDocumentValidator
         //2038 closed tables sum
         //655  :filter with match and dim(this(),)
         //699 dates 
+        //703 string equality
         var xx = CreateErrorDocument();
 
         
@@ -85,7 +86,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        //validationRules = validationRules.Where(vr => vr.ValidationID ==703).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID ==759).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\nValidating Rule:{validationRule.ValidationID}***");

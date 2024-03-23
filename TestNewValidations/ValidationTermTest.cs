@@ -239,6 +239,11 @@ public class ValidationTermTest
     [Fact]
     public void TestSimplifyFormula()
     {
+
+        var text3 = @"(isum({t: S.06.02.01.01, c: C0170, z: Z0001, seq: True, id: v1, f: solvency, fv: solvency2}) i> (0.3 i* ({t: S.02.01.02.01, r: R0070, c: C0010, dv: 0, seq: False, id: v2, f: solvency, fv: solvency2} i+ {t: S.02.01.02.01, r: R0220, c: C0010, dv: 0, seq: False, id: v3, f: solvency, fv: solvency2})) and {t: S.02.01.02.01, r: R0070, c: C0010, dv: 0, seq: False, id: v2, f: solvency, fv: solvency2} != 0 and {t: S.02.01.02.01, r: R0220, c: C0010, dv: 0, seq: False, id: v3, f: solvency, fv: solvency2} != 0)";
+        var res3 = FormulaSimplification.Simplify(text3);
+
+
         var text2 = @"{t: S.06.02.01.01, c: C0130, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2}";
         var res2 = FormulaSimplification.Simplify(text2);
         Assert.Equal(@"{t: S.06.02.01.01, c: C0130, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2}", res2.Formula);
