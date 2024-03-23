@@ -240,9 +240,7 @@ public class ValidationTermTest
     public void TestSimplifyFormula()
     {
 
-        var text3 = @"(isum({t: S.06.02.01.01, c: C0170, z: Z0001, seq: True, id: v1, f: solvency, fv: solvency2}) i> (0.3 i* ({t: S.02.01.02.01, r: R0070, c: C0010, dv: 0, seq: False, id: v2, f: solvency, fv: solvency2} i+ {t: S.02.01.02.01, r: R0220, c: C0010, dv: 0, seq: False, id: v3, f: solvency, fv: solvency2})) and {t: S.02.01.02.01, r: R0070, c: C0010, dv: 0, seq: False, id: v2, f: solvency, fv: solvency2} != 0 and {t: S.02.01.02.01, r: R0220, c: C0010, dv: 0, seq: False, id: v3, f: solvency, fv: solvency2} != 0)";
-        var res3 = FormulaSimplification.Simplify(text3);
-
+        
 
         var text2 = @"{t: S.06.02.01.01, c: C0130, z: Z0001, dv: emptySequence(), seq: False, id: v1, f: solvency, fv: solvency2}";
         var res2 = FormulaSimplification.Simplify(text2);
@@ -268,8 +266,28 @@ public class ValidationTermTest
         Assert.Equal(text0, finalText0);
 
         
+    }
 
+    [Fact]
+    public void TestTermsExtractions()
+    {
 
+        
+
+        var text3 = @"{t: S.06.02.01.01, c: C0170, z: Z0001, seq: False, id: v2, f: solvency, fv: solvency2} i= {t: S.06.02.01.01, c: C0140, z: Z0001, seq: False, id: v1, f: solvency, fv: solvency2} i* {t: S.06.02.01.02, c: C0380, z: Z0001, dv: 0, seq: False, id: v3, f: solvency, fv: solvency2} i+ {t: S.06.02.01.01, c: C0180, z: Z0001, dv: 0, seq: False, id: v4, f: solvency, fv: solvency2}";
+        var res3 = TermsExtraction.ExtractTerms(text3);
+
+        var text1 = "ab > 232";
+        var res1 = TermsExtraction.ExtractTerms(text1);
+        Assert.Equal("ab > 232", res1.Formula);
+        Assert.Equal(0, res1.formulaTerms.Count);
+
+        var text0 = @"(isum({t: S.06.02.01.01, c: C0170, z: Z0001, seq: True, id: v1, f: solvency, fv: solvency2}) i> (0.3 i* ({t: S.02.01.02.01, r: R0070, c: C0010, dv: 0, seq: False, id: v2, f: solvency, fv: solvency2} i+ {t: S.02.01.02.01, r: R0220, c: C0010, dv: 0, seq: False, id: v3, f: solvency, fv: solvency2})) and {t: S.02.01.02.01, r: R0070, c: C0010, dv: 0, seq: False, id: v2, f: solvency, fv: solvency2} != 0 and {t: S.02.01.02.01, r: R0220, c: C0010, dv: 0, seq: False, id: v3, f: solvency, fv: solvency2} != 0)";
+        var res0 = TermsExtraction.ExtractTerms(text0);
+        Assert.Equal("(isum(X00) > (0.3 * (X01 + X02)) and X03 != 0 and X04 != 0)", res0.Formula);
+        Assert.Equal("{t: S.02.01.02.01, r: R0070, c: C0010, dv: 0, seq: False, id: v2, f: solvency, fv: solvency2}", res0.formulaTerms[1].TermText);
+
+        
     }
 
 

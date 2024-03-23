@@ -5,11 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Linq.Expressions;
+using Shared.SpecialRoutines;
 
 namespace NewValidator.ValidationClasses;
 
 
-public record RuleTextTerm(string Letter, string TermText);
+
 public class RuleComponent280
 {
     //Either the component of the if, else, then
@@ -38,8 +39,7 @@ public class RuleComponent280
         {
             return new RuleComponent280() {IsEmpty=true, Expression=textExpression};
         }
-
-        var rgxTermi = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
+        
 
         /////////////////////////////////////////
         //var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
@@ -57,6 +57,14 @@ public class RuleComponent280
             string replacedString = currentText.Substring(0, index) + val.Letter + currentText.Substring(index + val.TermText.Length);
             return replacedString;
         });
+
+        var(formula2,ruleTextTerms2) = TermsExtraction.ExtractTerms(textExpression);
+        
+        if(formula!= formula2)
+        {
+            Console.WriteLine($"*{formula}*  *{formula2}");
+        }
+
 
         var ruleTerms = ruleTextTerms.Select(rt => RuleTerm280.CreateRuleTerm280(rt.Letter, rt.TermText))
             .Where(rt => rt is not null)

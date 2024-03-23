@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Shared.DataModels;
+using Shared.SpecialRoutines;
 using Syncfusion.XlsIO.Implementation.Collections.Grouping;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 using Syncfusion.XlsIO.Parser.Biff_Records;
@@ -275,7 +276,7 @@ public partial class ExpressionEvaluator
         var regSingleFunction = RgxSingleFunction();
 
         generalExpression = generalExpression.Trim();
-        generalExpression = ReplaceIntervalCharacters(generalExpression);
+        generalExpression = FormulaCharacters.RemoveWeirdFormulaCharacters(generalExpression);
 
         //*** Remove Outer parenthesis
         var rgxOuter = RgxOuterParenthesis();
@@ -357,9 +358,9 @@ public partial class ExpressionEvaluator
             }
             switch (resM.arithmeticOperator)
             {
-                case ArithmeticOperators.Multiply: return new OptionialObject(false, (double)leftRes.Value * (double)rightRes.Value);
-                case ArithmeticOperators.Plus: return new OptionialObject(false, (double)leftRes.Value + (double)rightRes.Value);
-                case ArithmeticOperators.Minus: return new OptionialObject(false, (double)leftRes.Value - (double)rightRes.Value);
+                case ArithmeticOperators.Multiply: return new OptionialObject(false, (double)leftRes.Value! * (double)rightRes.Value!);
+                case ArithmeticOperators.Plus: return new OptionialObject(false, (double)leftRes.Value! + (double)rightRes.Value!);
+                case ArithmeticOperators.Minus: return new OptionialObject(false, (double)leftRes.Value! - (double)rightRes.Value!);
                 default: return new OptionialObject(true, 0);
             }
         }
@@ -368,22 +369,7 @@ public partial class ExpressionEvaluator
         throw new Exception($"Expression:{generalExpression}. Can not decifer Arithmetic Expression");
         //return new DoubleObject(true, 0);              
     }
-
-    static string ReplaceIntervalCharacters(string input)
-    {
-        // imin(imax(X01, 0) i* 0.25, X02) =>// imin(imax(X01, 0) * 0.25, X02) 
-        // Define the regular expressions
-        Regex rgxStar = new Regex(@"i\*");
-        Regex rgxPlus = new Regex(@"i\+");
-        Regex rgxMinus = new Regex(@"i\-");
-
-        // Replace occurrences of "i*" and "i+"
-        string result = rgxStar.Replace(input, "*");
-        result = rgxPlus.Replace(result, "+");
-        result = rgxMinus.Replace(result, "-");
-
-        return result;
-    }
+    
 
     public static OptionialObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm)
     {
@@ -395,7 +381,7 @@ public partial class ExpressionEvaluator
         //The final result is computed by evaluating the function using the list of computed inner terms
 
 
-        functionText = ReplaceIntervalCharacters(functionText);//max(x01,0) i => remove the i. the function has already been marked as interval
+        functionText = FormulaCharacters.RemoveWeirdFormulaCharacters(functionText);//max(x01,0) i => remove the i. the function has already been marked as interval
         var rgxSingleFunction = RgxSingleFunction(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         functionText = functionText.Trim();
 

@@ -1,4 +1,6 @@
 ﻿namespace Shared.SpecialRoutines;
+
+using Microsoft.Extensions.FileSystemGlobbing;
 using Shared.GeneralUtils;
 using System.Collections.Generic;
 using System.Linq;
@@ -147,6 +149,54 @@ public class DimUtils
 
 }
 
+public class FormulaCharacters
+{
+    public static string RemoveWeirdFormulaCharacters(string input)
+    {
+        // imin(imax(X01, 0) i* 0.25, X02) =>// imin(imax(X01, 0) * 0.25, X02) 
+        // Define the regular expressions
+
+        Regex rgx = new Regex(@"i([*+\-><=])");
+        string result = rgx.Replace(input, match =>
+        {
+            // Replace 'i' followed by a character in the specified set with just that character
+            return match.Groups[1].Value;
+        });
+
+        //Regex rgxStar = new Regex(@"i\*");
+        //Regex rgxPlus = new Regex(@"i\+");
+        //Regex rgxMinus = new Regex(@"i\-");        
+        //Regex rgxEqual = new Regex(@"i\=");
+        
+        //string result = rgxStar.Replace(input, "*");
+        //result = rgxPlus.Replace(result, "+");
+        //result = rgxMinus.Replace(result, "-");
+        //result = rgxEqual.Replace(result, "=");
+
+        return result;
+    }
+}
+
+public record RuleTextTerm(string Letter, string TermText);
+public class TermsExtraction
+{
+    public static (string Formula, List< RuleTextTerm > formulaTerms) ExtractTerms(string textExpression)
+    {
+        var rgx = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
+        var matches = rgx.Matches(textExpression);
+        var ruleTextTerms = matches.Select((match, i) => new RuleTextTerm($"X{i:D2}", match.Value)).ToList() ?? new List<RuleTextTerm>();
+        var formula = ruleTextTerms.Aggregate(textExpression, (currentText, val) =>
+        {
+            int index = currentText.IndexOf(val.TermText);
+            string replacedString = currentText.Substring(0, index) + val.Letter + currentText.Substring(index + val.TermText.Length);
+            return replacedString;
+        });
+        var symbolFormula = FormulaCharacters.RemoveWeirdFormulaCharacters(formula).Trim();
+
+        return (symbolFormula, ruleTextTerms);
+        
+    }
+}
 public class FormulaSimplification
 {
     public static (string Formula, List<(string letter,string content)> FormulaTerms) Simplify(string text)
@@ -172,7 +222,7 @@ public class FormulaSimplification
     }
     public static string  ReplaceTerms(string formula, List<(string letter,string content)> terms)
     {
-        var y = 3;
+
         var fullFormula = terms.Aggregate(formula, (currentText, term) =>
         {
             int index = currentText.IndexOf(term.letter);
@@ -183,6 +233,7 @@ public class FormulaSimplification
 
             return replacedString;
         });
+        
         return fullFormula;
     }
     
