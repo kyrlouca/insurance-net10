@@ -24,7 +24,7 @@ public enum KleeneValue
 }
 public record OptionialObject(bool IsNull, object? Value);
 public record BooleanObject(bool IsNull, bool Value);
-public enum FunctionAggregateTypes { iMin, iMax, iSum, iCount, Max, Plain };
+public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact, string Filter);
@@ -270,8 +270,7 @@ public partial class ExpressionEvaluator
 
     public static OptionialObject EvaluateGeneralExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms, string thisTerm)
     {
-        //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
-        //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus         
         //var regStartingFunction = RgxAggregateStartingFunction();
         var regSingleFunction = RgxSingleFunction();
 
@@ -401,7 +400,7 @@ public partial class ExpressionEvaluator
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
 
-        if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.iCount)
+        if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.Count)
         {
             var fterms = terms.Where(trm => functionText.Contains(trm.Key)).ToDictionary(tm => tm.Key, tm => tm.Value);
             //todo sum
@@ -440,13 +439,13 @@ public partial class ExpressionEvaluator
         {
 
             case FunctionAggregateTypes.iSum:
-                //there is only ONE terms inside a isum/icount so no worries
+                //there is only ONE terms inside a isum/count so no worries
                 var sumTerm = terms.FirstOrDefault();
                 var resSum = sumTerm.Key is null
                     ? new OptionialObject(true, 0)
                     : new OptionialObject(false, Convert.ToDouble(sumTerm.Value.sumValue));
                 return resSum;
-            case FunctionAggregateTypes.iCount:
+            case FunctionAggregateTypes.Count:
                 var countTerm = terms.FirstOrDefault();
                 var resCount = countTerm.Key is null
                     ? new OptionialObject(true, 0)
@@ -493,7 +492,7 @@ public partial class ExpressionEvaluator
             "imax" => FunctionAggregateTypes.iMax,
             "max" => FunctionAggregateTypes.Max,
             "isum" => FunctionAggregateTypes.iSum,
-            "icount" => FunctionAggregateTypes.iCount,
+            "count" => FunctionAggregateTypes.Count,
             "plain" => FunctionAggregateTypes.Plain,
             _ => throw new ArgumentException("Invalid function type"),
         };
@@ -595,7 +594,7 @@ public partial class ExpressionEvaluator
         //If no logical operator is found=> put everything in the left
         //The trick is to replace the parenthesis with letters and then find the split 
         //RgxAggregateFunctions
-        var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        var rgx = new Regex(@"(imin|imax|max|isum|count)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         //var rgx = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         var matchFunctions = rgx.Matches(text);
         var nestedFunctions = matchFunctions.Select((match, i) => ($"Z{i:D2}", match.Value)).ToList();
@@ -673,8 +672,7 @@ public partial class ExpressionEvaluator
         //If no logical operator is found=> put everything in the left
         //The trick is to replace the parenthesis with letters and then find the split 
 
-        //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus 
-        //var rgx = new Regex(@"(imin|imax|max|isum|icount)?\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
+        //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus         
         //var rgx = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
         var rgx = new Regex(@"\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         var matchParenthesis = rgx.Matches(text);
@@ -769,13 +767,13 @@ public partial class ExpressionEvaluator
 
 
 
-    [GeneratedRegex(@"^(imin|imax|max|isum|icount)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
+    [GeneratedRegex(@"^(imin|imax|max|isum|count)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxStartingFunction();
 
-    [GeneratedRegex(@"^(imin|imax|max|isum|icount)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
+    [GeneratedRegex(@"^(imin|imax|max|isum|count)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
     public static partial Regex RgxSingleFunction();
 
-    [GeneratedRegex(@"(imin|imax|max|isum|icount)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
+    [GeneratedRegex(@"(imin|imax|max|isum|count)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxAggregateFunctions();
 
     [GeneratedRegex(@"^\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
