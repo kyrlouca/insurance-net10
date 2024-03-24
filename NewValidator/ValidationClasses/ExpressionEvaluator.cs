@@ -117,7 +117,7 @@ public partial class ExpressionEvaluator
         //************************** Single Function********************************************************
         //
         //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)       
-        var rgxFn = new Regex(@"^(isNull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        var rgxFn = new Regex(@"^(isNull|isnull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
         var match = rgxFn.Match(formula);
         if (match.Success)
         {
@@ -133,6 +133,7 @@ public partial class ExpressionEvaluator
                         : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
                 case "isNull":
+                case "isnull":
                     //if value is a function, then call evaluatefunction to find the value of the function and then call IsNull
                     var rgxDim = new Regex(@"dim\((.*?)\)");
                     var matchDim = rgxDim.Match(fnArgument);

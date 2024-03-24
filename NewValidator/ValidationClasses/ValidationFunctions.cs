@@ -137,7 +137,7 @@ internal class ValidationFunctions
 
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
-        var rgxNull = new Regex(@"isNull\((.*)\)");
+        var rgxNull = new Regex(@"is[Nn]ull\((.*)\)");
         var match = (rgxNull.Match(symbolFormula));
         if (!match.Success)
         {
