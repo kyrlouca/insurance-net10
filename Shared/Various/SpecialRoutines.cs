@@ -156,7 +156,7 @@ public class FormulaCharacters
         // imin(imax(X01, 0) i* 0.25, X02) =>// imin(imax(X01, 0) * 0.25, X02) 
         // Define the regular expressions
 
-        Regex rgx = new Regex(@"i([*+\-><=])");
+        Regex rgx = new Regex(@"i([*+\-><=!])");
         string result = rgx.Replace(input, match =>
         {
             // Replace 'i' followed by a character in the specified set with just that character
