@@ -196,7 +196,7 @@ public class CustomPensionStyler : ICustomPensionStyler
         return style;
 
     }
-    private IStyle GetOrCreateStyle(string styleName)
+    public IStyle GetOrCreateStyle(string styleName)
     {
         IStyle style;
         try
