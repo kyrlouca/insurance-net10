@@ -1,4 +1,5 @@
-﻿namespace NewValidator;
+﻿namespace ErrorFileHandler;
+
 
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -10,27 +11,27 @@ using System.Reflection.Metadata;
 using System.Reflection;
 using Shared.DataModels;
 
-public class NewValidatorMain : INewValidatorMain
+public class ErrorFileHandlerMain
 {
 
     private readonly IParameterHandler _parameterHandler;
     private ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
-    private IDocumentValidator _documentValidator;
+    //private IDocumentValidator _documentValidator;
 
-       
+
 
 
 
     public int id = 12;
-    public NewValidatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
+    public ErrorFileHandlerMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
-        _documentValidator = documentValidator;
+        //_documentValidator = documentValidator;
 
     }
 
@@ -69,11 +70,11 @@ public class NewValidatorMain : INewValidatorMain
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
         }
-        
-        _documentValidator.ValidateDocument();
+
+        //_documentValidator.ValidateDocument();
 
 
-   
+
 
         return 0;
 
@@ -82,8 +83,3 @@ public class NewValidatorMain : INewValidatorMain
 
 
 }
-
-
-
-
-
