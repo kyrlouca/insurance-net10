@@ -1,19 +1,16 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using ErrorFileHandler;
+using ErrorFileCreator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Shared.SharedHost;
-using ErrorFileHandler.Hosting;
+using ErrorFileCreator.Hosting;
 
 //var dir = Directory.GetCurrentDirectory();
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
-{
-    //todo may need to change this
-    var sample = @".\NewValidator.exe external-id=12  eiopa-version=IU270  ";
-    Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
-    Console.WriteLine(sample);
+{    
+    Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");    
     throw new ArgumentException($"parameter missing:{missingParam}");
 }
 
@@ -27,7 +24,7 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try
 {
-    //host.Services.GetService<INewValidatorMain>()?.Run();
+    host.Services.GetService<IErrorFileCreatorMain>()?.Run();
 }
 catch (Exception ex)
 {
@@ -38,7 +35,7 @@ return 0;
 
 string? CheckParams(string[] args)
 {
-    var paramNames = new[] { "external-id", "eiopa-version", "document-id" };
+    var paramNames = new[] { "external-id",  "document-id" };
     var missingParam = paramNames.FirstOrDefault(par => !args.Any(arg => arg.Contains(par)));
     return missingParam;
 }

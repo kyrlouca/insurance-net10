@@ -1,4 +1,4 @@
-﻿namespace ErrorFileHandler;
+﻿namespace ErrorFileCreator;
 
 
 using Microsoft.IdentityModel.Tokens;
@@ -11,27 +11,27 @@ using System.Reflection.Metadata;
 using System.Reflection;
 using Shared.DataModels;
 
-public class ErrorFileHandlerMain
+public class ErrorFileCreatorMain : IErrorFileCreatorMain
 {
 
     private readonly IParameterHandler _parameterHandler;
     private ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
-    //private IDocumentValidator _documentValidator;
+    private IExcelFileCreator _excelFileCreator;
 
 
 
 
 
     public int id = 12;
-    public ErrorFileHandlerMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
+    public ErrorFileCreatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IExcelFileCreator excelFileCreator)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
-        //_documentValidator = documentValidator;
+        _excelFileCreator = excelFileCreator;
 
     }
 
@@ -71,7 +71,7 @@ public class ErrorFileHandlerMain
             return 1;
         }
 
-        //_documentValidator.ValidateDocument();
+        _excelFileCreator.CreateExcelFile();
 
 
 

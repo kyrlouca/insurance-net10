@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "ErrorFileHandler": {
+      "commandName": "Project",
+      "commandLineArgs": "external-id=1111\r\ndocument-id=12",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Develop"
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-﻿namespace ErrorFileHandler.Hosting;
+﻿namespace ErrorFileCreator.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
@@ -40,8 +40,7 @@ public class HostCreator
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();			 
-			 //services.AddScoped<INewValidatorMain, NewValidatorMain>();
-    //         services.AddScoped<IDocumentValidator, DocumentValidator>();
+			 services.AddScoped<IErrorFileCreatorMain, ErrorFileCreatorMain>();    
 
          })
 		.UseSerilog((hostingContext, loggerConfiguration) =>
