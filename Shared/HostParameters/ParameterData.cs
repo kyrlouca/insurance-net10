@@ -23,6 +23,8 @@ public class ParameterData
     public int ApplicableQuarter { get; set; }
     public string ModuleCode { get; set; }
     public string FileName { get; set; }
+    public string FileNameError { get; set; }
+    public string FileNameWarning { get; set; }
     public int DocumentId { get; set; }
 
     public bool IsDevelop { get; set; }

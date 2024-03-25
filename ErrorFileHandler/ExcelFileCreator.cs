@@ -27,15 +27,17 @@ public class ExcelFileCreator : IExcelFileCreator
     private readonly ISqlFunctions _SqlFunctions;
     private IErrorFileCreatorMain _errorFileHandlerMain;
     private IWorkbook? _destinationWorkbook;
-
+    private readonly ICustomPensionStyler _customPensionStyles;
+    PensionStyles _pensionStyles;
 
     public int id = 12;
-    public ExcelFileCreator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions )
+    public ExcelFileCreator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions , ICustomPensionStyler customPensionStyles)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
-        _SqlFunctions = sqlFunctions;        
+        _SqlFunctions = sqlFunctions;
+        _customPensionStyles = customPensionStyles;
 
     }
 
@@ -54,6 +56,23 @@ public class ExcelFileCreator : IExcelFileCreator
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorMessage + "--" + xMessage);
             return 0;
         }
+        _pensionStyles = _customPensionStyles.GetStyles(_destinationWorkbook);
+
+        var indexSheet = _destinationWorkbook.Worksheets.Create("List");
+        indexSheet.SetColumnWidth(1, 30);
+        indexSheet.Zoom = 90;
+        var titleCell = indexSheet[1, 1];
+        titleCell.Text = "List of Templates";
+        titleCell.CellStyle = _pensionStyles.HeaderStyle;
+
+        var (isSaveValid, saveMessage) = HelperRoutines.SaveWorkbook(_destinationWorkbook, _parameterData.FileNameError);
+        if (!isSaveValid)
+        {
+            _logger.Error(saveMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, saveMessage);
+            return 0;
+        }
+
         Console.WriteLine("hello0 create file");
 
         return 0;

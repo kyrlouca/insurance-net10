@@ -20,10 +20,6 @@ public class ErrorFileCreatorMain : IErrorFileCreatorMain
     private readonly ISqlFunctions _SqlFunctions;
     private IExcelFileCreator _excelFileCreator;
 
-
-
-
-
     public int id = 12;
     public ErrorFileCreatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IExcelFileCreator excelFileCreator)
     {

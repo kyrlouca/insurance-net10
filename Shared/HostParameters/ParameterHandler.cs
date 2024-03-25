@@ -67,6 +67,8 @@ public class ParameterHandler : IParameterHandler
             ExcelTemplateFile = _optionsVersionData.Value.ExcelTemplateFile,
             //LoggerFile = _optionsLoggerFiles.Value.LoggerExcelReaderFile,
             FileName = _configuration["file-name"] ?? "NF",
+            FileNameError = _configuration["file-name-error"] ?? "NF",
+            FileNameWarning = _configuration["file-name-warning"] ?? "NF",
             IsDevelop = _configuration["DOTNET_ENVIRONMENT"]?.Contains("Develop") ?? false
 
     };
