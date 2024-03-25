@@ -553,7 +553,7 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
-    public TemplateSheetFact? SelectFactByRowCol(int documentId, string tableCode, string zet, string row, string col)
+    public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelect = @"
@@ -572,8 +572,13 @@ public class SqlFunctions : ISqlFunctions
                 "
         ;
 
-        var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
-        return fact;
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
+        if (facts.Count() > 1)
+        {
+            _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}");
+        }
+
+        return facts.FirstOrDefault();
     }
 
 

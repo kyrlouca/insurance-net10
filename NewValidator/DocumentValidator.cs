@@ -86,7 +86,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID > 3650).ToList();
+        //validationRules = validationRules.Where(vr => vr.ValidationID ==672).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\nValidating Rule:{validationRule.ValidationID}***");
@@ -192,7 +192,7 @@ public class DocumentValidator : IDocumentValidator
                                 : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
 
                             //if filter has terms with null values, it is considered false here                            
-                            if (filterKleeneValue != KleeneValue.True && 1==2)
+                            if (filterKleeneValue != KleeneValue.True)
                             {
                                 continue;
                             };
@@ -350,8 +350,8 @@ public class DocumentValidator : IDocumentValidator
             {
                 ruleTerm.Letter,
                 Zet = ruleTerm.Z,
-                Fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowCol(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance, UpdateRuleTermFilter(ruleTerm.Letter,ruleTerm.Filter))
+                Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
+                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance, UpdateRuleTermFilter(ruleTerm.Letter,ruleTerm.Filter))
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
         return plainTerms;
@@ -378,7 +378,7 @@ public class DocumentValidator : IDocumentValidator
             var row = sumScopeType == ScopeType.Rows ? rowCol : ruleTermRec.R;
             var col = sumScopeType == ScopeType.Cols ? rowCol : ruleTermRec.C;
 
-            var fact = _SqlFunctions.SelectFactByRowCol(DocumentId, ruleTermRec.T, ruleTermRec.Z, row, col);
+            var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTermRec.T, ruleTermRec.Z, row, col);
             sum += fact?.NumericValue ?? 0;
         }
         return sum;
