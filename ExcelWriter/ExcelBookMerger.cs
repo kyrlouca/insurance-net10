@@ -1,7 +1,7 @@
 ﻿namespace ExcelWriter;
 using Dapper;
-using ExcelWriter.Common;
-using ExcelWriter.DataModels;
+using Shared.ExcelHelperRoutines;
+using Shared.ExcelDataModels;
 using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.DataModels;

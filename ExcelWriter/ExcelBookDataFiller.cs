@@ -1,5 +1,6 @@
 ﻿namespace ExcelWriter;
 using Shared.HostParameters;
+using Shared.ExcelHelperRoutines;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Serilog;
@@ -15,7 +16,7 @@ using Syncfusion.XlsIO.Parser.Biff_Records;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
 using System.Linq.Expressions;
-using ExcelWriter.Common;
+
 using Shared.SQLFunctions;
 using Microsoft.IdentityModel.Tokens;
 using Shared.SpecialRoutines;
