@@ -25,13 +25,12 @@ public class ExcelFileCreator : IExcelFileCreator
 
 
     public int id = 12;
-    public ExcelFileCreator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IErrorFileCreatorMain errorFileHandlerMain)
+    public ExcelFileCreator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions )
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
-        _SqlFunctions = sqlFunctions;
-        _errorFileHandlerMain = errorFileHandlerMain;
+        _SqlFunctions = sqlFunctions;        
 
     }
 

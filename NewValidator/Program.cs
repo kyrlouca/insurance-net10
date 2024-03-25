@@ -11,7 +11,7 @@ var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
     //todo may need to change this
-    var sample = @".\NewValidator.exe external-id=12  eiopa-version=IU270  ";
+    var sample = @".\NewValidator.exe external-id=12 document-id=12 eiopa-version=IU280  ";
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
     Console.WriteLine(sample);
     throw new ArgumentException($"parameter missing:{missingParam}");

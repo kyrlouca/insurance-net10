@@ -10,7 +10,8 @@ var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {    
-    Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");    
+    Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
+    Console.WriteLine(@".\ErrorFileCreattor.exe external-id=2122 document-id=12 eiopa-version=IU280 ");
     throw new ArgumentException($"parameter missing:{missingParam}");
 }
 
@@ -35,7 +36,7 @@ return 0;
 
 string? CheckParams(string[] args)
 {
-    var paramNames = new[] { "external-id",  "document-id" };
+    var paramNames = new[] { "external-id", "eiopa-version", "document-id" };    
     var missingParam = paramNames.FirstOrDefault(par => !args.Any(arg => arg.Contains(par)));
     return missingParam;
 }
