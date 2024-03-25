@@ -1,4 +1,4 @@
-﻿namespace Shared.ExcelDataModels;
+﻿namespace ExcelWriter.ExcelDataModels;
 using Syncfusion.XlsIO;
 using System.Collections.Generic;
 using Shared.DataModels;

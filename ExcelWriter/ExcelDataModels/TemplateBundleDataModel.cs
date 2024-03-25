@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Shared.ExcelDataModels;
+namespace ExcelWriter.ExcelDataModels;
 
 
 //ZetTemplateBundle contains list of lists to accomodate a list of horizontal tables layout
