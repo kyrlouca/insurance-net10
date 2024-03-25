@@ -4,14 +4,16 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.SharedHost;
+using Shared.ExcelHelperRoutines;
 using Shared.DataModels;
+
 using System.Reflection.Metadata;
 using Syncfusion.XlsIO.Implementation;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System;
 using System.Drawing;
-using ExcelWriter.Common;
+using Shared.ExcelHelperRoutines;
 using Shared.SQLFunctions;
 using System.Text.RegularExpressions;
 using Microsoft.IdentityModel.Tokens;

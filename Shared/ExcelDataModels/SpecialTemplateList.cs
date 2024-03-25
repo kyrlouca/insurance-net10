@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExcelWriter.DataModels;
+namespace Shared.ExcelDataModels;
 
 public record ZHorizontalTables(List<string> TablesList);
 public record ZMatrix(List<ZHorizontalTables> Matrix);

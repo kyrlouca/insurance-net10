@@ -4,13 +4,16 @@ using Serilog;
 using Shared.HostParameters;
 using Shared.SharedHost;
 
+
 using Shared.SQLFunctions;
+using Shared.ExcelHelperRoutines;
 using Syncfusion.XlsIO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
 
 
 
@@ -46,10 +49,10 @@ public class ExcelFileCreator : IExcelFileCreator
         (_destinationWorkbook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);
         if (_destinationWorkbook is null)
         {
-            errorMessage = $"Cannot create excel Workbook syncfusion file";
+           var errorMessage = $"Cannot create excel Workbook syncfusion file";
             _logger.Error(xMessage);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorMessage + "--" + xMessage);
-            return "";
+            return 0;
         }
         Console.WriteLine("hello0 create file");
 

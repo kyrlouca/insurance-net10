@@ -1,4 +1,4 @@
-﻿using ExcelWriter.DataModels;
+﻿
 using Microsoft.Identity.Client;
 using Syncfusion.XlsIO;
 using System;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExcelWriter;
+namespace Shared.ExcelHelperRoutines;
 
 public record struct PensionStyles(
     IStyle Normal,

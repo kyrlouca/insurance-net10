@@ -1,11 +1,7 @@
-﻿namespace ExcelWriter.DataModels;
-using Shared.DataModels;
+﻿namespace Shared.ExcelDataModels;
 using Syncfusion.XlsIO;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Shared.DataModels;
 
 internal readonly record struct MergedSheetRecord
 {

@@ -1,4 +1,4 @@
-﻿namespace ExcelWriter.Common;
+﻿namespace Shared.ExcelHelperRoutines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 
-internal class HelperRoutines
+public class HelperRoutines
 {
     //***If the new instance for ExcelEngine is created in using statement, then there is no need to closing workbook and disposing excelEngine.
     public static (IWorkbook? workbook, string errorMessage) OpenExistingExcelWorkbook(ExcelEngine excelEngine, string fileName)
