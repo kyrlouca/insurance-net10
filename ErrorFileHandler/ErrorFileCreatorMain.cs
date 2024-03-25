@@ -43,7 +43,7 @@ public class ErrorFileCreatorMain : IErrorFileCreatorMain
         //module-code="qrs"
 
 
-        Console.WriteLine($"started Validating Document - DocumentId:{_parameterData.DocumentId}");
+        Console.WriteLine($"started ErrorFileWriter - DocumentId:{_parameterData.DocumentId}");
 
         var doc = _SqlFunctions.SelectDocInstance(_parameterData.DocumentId);
 
@@ -72,9 +72,6 @@ public class ErrorFileCreatorMain : IErrorFileCreatorMain
         }
 
         _excelFileCreator.CreateExcelFile();
-
-
-
 
         return 0;
 
