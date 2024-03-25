@@ -1,4 +1,5 @@
 ﻿using Shared.DataModels;
+using static Shared.SQLFunctions.SqlFunctions;
 
 namespace Shared.SQLFunctions;
 public enum ProgramCode { AG, DO, XB, VA, CX, RX }
@@ -65,5 +66,8 @@ public interface ISqlFunctions
     public List<VValidationRuleExpressions> SelectValidationExpressionsWithTablesForModule(int ModuleId);
 
     public int CreateErrorRule(ERROR_Rule errorRule);
+
+    public enum ErrorRuleTypes { Errors, Warnings, Both };
+    public List<ERROR_Rule> SelectErrorRules(int documentId, ErrorRuleTypes errorType);
     public int CreateErrorDocument( ErrorDocumentModel errorDocument);
 }

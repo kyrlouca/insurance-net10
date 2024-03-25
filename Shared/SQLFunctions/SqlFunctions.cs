@@ -9,8 +9,10 @@ using Shared.HostParameters;
 using Shared.SharedHost;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.SqlTypes;
 using System.Reflection.Metadata;
+using static Shared.SQLFunctions.ISqlFunctions;
 
 public class SqlFunctions : ISqlFunctions
 {
@@ -750,6 +752,19 @@ public class SqlFunctions : ISqlFunctions
             return 0;
         }
     }
+
+    
+    public List<ERROR_Rule> SelectErrorRules(int errorDocumentId, ErrorRuleTypes errorType )
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"select * from ERROR_Rule er where er.ErrorDocumentId = @ErrorDocumentId and er.IsError = @IsError and er.isWarning=@isWarning";
+        var isError= errorType == ErrorRuleTypes.Errors;
+        var isWarning = errorType == ErrorRuleTypes.Warnings;
+        var errors = connectionLocal.Query<ERROR_Rule>(sqlSelect, new { errorDocumentId, isError,isWarning }).ToList();
+        return errors;
+
+    }
+
 
     public int CreateErrorDocument(ErrorDocumentModel errorDocument)
     {        
