@@ -5,6 +5,7 @@ using Shared.HostParameters;
 using Shared.SharedHost;
 
 using Shared.SQLFunctions;
+using Syncfusion.XlsIO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,7 @@ public class ExcelFileCreator : IExcelFileCreator
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
     private IErrorFileCreatorMain _errorFileHandlerMain;
+    private IWorkbook? _destinationWorkbook;
 
 
     public int id = 12;
@@ -38,7 +40,17 @@ public class ExcelFileCreator : IExcelFileCreator
 
     public int CreateExcelFile()
     {
-
+        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
+        
+        using var excelEngine = new ExcelEngine();
+        (_destinationWorkbook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);
+        if (_destinationWorkbook is null)
+        {
+            errorMessage = $"Cannot create excel Workbook syncfusion file";
+            _logger.Error(xMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorMessage + "--" + xMessage);
+            return "";
+        }
         Console.WriteLine("hello0 create file");
 
         return 0;
