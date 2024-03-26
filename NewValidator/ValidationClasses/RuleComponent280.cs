@@ -81,7 +81,7 @@ public class RuleComponent280
     {
         var vals = RuleTerms.Aggregate("", (current, value) => {
             var obj = ObjectTerms[value.Letter];    
-            return $"{value.Letter}={value.T}:{value.R}:{value.C}##{obj.Obj},"; 
+            return $"{value.Letter}={value.T}:{value.R}:{value.C}#>{obj.Obj},"; 
         });
         return $"{SymbolExpression}***{vals}";
 

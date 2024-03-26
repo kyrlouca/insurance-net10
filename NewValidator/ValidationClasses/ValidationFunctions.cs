@@ -53,7 +53,7 @@ internal class ValidationFunctions
             throw new InvalidOperationException($"invalid match:{text} ");
         }
 
-        var leftPartValue = "";
+        object? termValue ;
 
         //match function may check for dim 
         var leftPart = match.Groups[1].Value; //dim(this(X00), [s2c_dim:UI]) OR X00
@@ -62,7 +62,7 @@ internal class ValidationFunctions
         {
             //*** you are in a filter. Do NOT check for filter since you are using the same term
             //find the  dim
-            leftPartValue = ExtractDimValueFormFact(leftPart,terms);            
+            termValue = ExtractDimValueFormFact(leftPart,terms);            
             //check the match
         }
         else
@@ -79,14 +79,23 @@ internal class ValidationFunctions
                     return true;
                 };                
             }            
-            leftPartValue = termLeft?.Obj?.ToString()??"";
+            termValue = termLeft.Obj;
         }
                 
-              
+        if(termValue is null)
+        {
+            //match could return a kleene value?
+            return true;
+        }
+        
 
         var rgxFromValue = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
+        if (rgxFromValue.Contains("ISO 8601") && termValue is DateTime){
+            return true; //since termValue is of type DateTime, it means it was processed successfully and we do not care about formatting
+        }
+
         var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
-        var matchValidation = rgx.Match(leftPartValue);
+        var matchValidation = rgx.Match((string)termValue!);
         return matchValidation.Success;
     }
 

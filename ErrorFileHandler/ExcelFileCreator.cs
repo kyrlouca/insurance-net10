@@ -82,7 +82,10 @@ public class ExcelFileCreator : IExcelFileCreator
         errorSheet.SetColumnWidth(4, 10);
         errorSheet.SetColumnWidth(5, 10);
         errorSheet.SetColumnWidth(6, 50);
+        errorSheet.SetColumnWidth(7, 10);
         errorSheet.SetColumnWidth(8, 50);
+        errorSheet.SetColumnWidth(9, 10);
+        errorSheet.SetColumnWidth(10, 10);
         errorSheet.Zoom = 90;
 
 
@@ -100,6 +103,8 @@ public class ExcelFileCreator : IExcelFileCreator
             errorSheet[headerRow, 4].Text = "Else Clause";
             errorSheet[headerRow, 6].Text = "Filter";
             errorSheet[headerRow, 8].Text = "Rule Message";
+            errorSheet[headerRow, 9].Text = "Original Formula";
+            errorSheet[headerRow, 10].Text = "";
             errorSheet.Rows.First().CellStyle = headerStyle;
         }
 
@@ -117,6 +122,8 @@ public class ExcelFileCreator : IExcelFileCreator
             errorSheet[dataRow, 4].Text = error.FormulaForElse;
             errorSheet[dataRow, 6].Text = error.FormulaForFilter;
             errorSheet[dataRow, 8].Text = error.RuleMessage;
+            errorSheet[dataRow, 9].Text = error.TableBaseFormula;
+            errorSheet[dataRow, 10].Text = " ";
             dataRow++;
         }
         errorSheet.Range["B2"].FreezePanes();
