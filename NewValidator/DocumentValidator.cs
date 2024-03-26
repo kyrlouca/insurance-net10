@@ -81,6 +81,7 @@ public class DocumentValidator : IDocumentValidator
         //703 string equality
         //713 dates
         //715 iso countries
+        //790 count for closed table
         var xx = CreateErrorDocument();
 
         
@@ -88,7 +89,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID ==790).ToList();
+        //validationRules = validationRules.Where(vr => vr.ValidationID ==4066).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\nValidating Rule:{validationRule.ValidationID}***");
