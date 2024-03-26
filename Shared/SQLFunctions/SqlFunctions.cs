@@ -566,7 +566,7 @@ public class SqlFunctions : ISqlFunctions
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelect = @"
-                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                SELECT  fact.* 
                 FROM
                   TemplateSheetFact fact
                   JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
@@ -580,7 +580,9 @@ public class SqlFunctions : ISqlFunctions
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
-
+        row = row.Trim();
+        col=col.Trim();
+        tableCode = tableCode.Trim();
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
         if (facts.Count() > 1)
         {

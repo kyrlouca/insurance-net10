@@ -147,6 +147,13 @@ public class DocumentValidator : IDocumentValidator
 
 
                         ruleClosed = FillRuleStructureWithFactValues(ruleClosed);
+                        var sumTerm = ruleClosed.IfComponent.RuleTerms.Where(rt => rt.IsSequence).FirstOrDefault();
+                        if(sumTerm != null)
+                        {
+                            var(count,sum)= CalculateSumOfClosedTable(sumTerm);
+                            ReplaceObjTerm(ruleClosed.IfComponent.ObjectTerms, sumTerm.Letter, -999, sum, count);
+                        }
+                        
                         var isValidClosedRule = ExpressionEvaluator.ValidateRule(ruleClosed);
                         if (!isValidClosedRule)
                         {
@@ -368,13 +375,13 @@ public class DocumentValidator : IDocumentValidator
         return res;
     }
 
-    private double CalculateSumOfClosedTable(RuleTerm280 ruleTermRec)
+    private (int, double) CalculateSumOfClosedTable(RuleTerm280 ruleTermRec)
     {
         //isum({t: S.23.01.02.01, r: R0300; R0310; R0320; R0330; R0340; R0350; R0360; R0370, z: Z0001, dv: emptySequence(), seq: True,.. )
         //scope({t: S.23.01.02.01, c:C0010;C0040, f: solvency, fv: solvency2})
         var (sumScopeType, rowCols) = ParseRuleTerms(ruleTermRec);
         var sum = 0.0;
-
+        var count = 0;
         foreach (var rowCol in rowCols)
         {
             var row = sumScopeType == ScopeType.Rows ? rowCol : ruleTermRec.R;
@@ -382,13 +389,14 @@ public class DocumentValidator : IDocumentValidator
 
             var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTermRec.T, ruleTermRec.Z, row, col);
             sum += fact?.NumericValue ?? 0;
+            count += fact is not null ? 1 : 0;
         }
-        return sum;
+        return (count,sum);
 
         (ScopeType scopeType, List<string> rowCol) ParseRuleTerms(RuleTerm280 ruleTerm)
         {
-            var rows = string.IsNullOrEmpty(ruleTerm.R) ? new List<string>() : ruleTerm.R.Split(";", StringSplitOptions.RemoveEmptyEntries).ToList();
-            var cols = string.IsNullOrEmpty(ruleTerm.C) ? new List<string>() : ruleTerm.C.Split(";", StringSplitOptions.RemoveEmptyEntries).ToList();
+            var rows = string.IsNullOrEmpty(ruleTerm.R) ? new List<string>() : ruleTerm.R.Split(";", StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).ToList();
+            var cols = string.IsNullOrEmpty(ruleTerm.C) ? new List<string>() : ruleTerm.C.Split(";", StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).ToList();
 
             ScopeType sumScopeType = rows switch
             {
