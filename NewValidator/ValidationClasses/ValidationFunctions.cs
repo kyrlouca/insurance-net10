@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using Shared.CommonRoutines;
+using Shared.DataModels;
 using Shared.GeneralUtils;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,95 @@ using static System.Net.Mime.MediaTypeNames;
 namespace NewValidator.ValidationClasses;
 internal class ValidationFunctions
 {
+    private static List<string> euCountries = new List<string>() {
+        "s2c_GA:AT",
+        "s2c_GA:BE",
+        "s2c_GA:BG",
+        "s2c_GA:CY",
+        "s2c_GA:CZ",
+        "s2c_GA:DE",
+        "s2c_GA:DK",
+        "s2c_GA:EE",
+        "s2c_GA:ES",
+        "s2c_GA:FI",
+        "s2c_GA:FR",
+        "s2c_GA:GB",
+        "s2c_GA:GI",
+        "s2c_GA:GR",
+        "s2c_GA:HR",
+        "s2c_GA:HU",
+        "s2c_GA:IE",
+        "s2c_GA:IS",
+        "s2c_GA:IT",
+        "s2c_GA:LI",
+        "s2c_GA:LT",
+        "s2c_GA:LU",
+        "s2c_GA:LV",
+        "s2c_GA:MT",
+        "s2c_GA:NL",
+        "s2c_GA:NO",
+        "s2c_GA:PL",
+        "s2c_GA:PT",
+        "s2c_GA:RO",
+        "s2c_GA:SE",
+        "s2c_GA:SI",
+        "s2c_GA:SK",
+        "s2c_GA:x0",
+        "s2c_XA:multinational"
+    };
+
+    private static List<string> supranationalCountries392 = new List<string>()
+    {
+                "s2c_GA:BE",
+                "s2c_GA:BG",
+                "s2c_GA:BR",
+                "s2c_GA:CA",
+                "s2c_GA:CH",
+                "s2c_GA:CN",
+                "s2c_GA:CY",
+                "s2c_GA:CZ",
+                "s2c_GA:AT",
+                "s2c_GA:DE",
+                "s2c_GA:DK",
+                "s2c_GA:EE",
+                "s2c_GA:ES",
+                "s2c_GA:EU",
+                "s2c_GA:FI",
+                "s2c_GA:FR",
+                "s2c_GA:GB",
+                "s2c_GA:GR",
+                "s2c_GA:HK",
+                "s2c_GA:HR",
+                "s2c_GA:HU",
+                "s2c_GA:IE",
+                "s2c_GA:IN",
+                "s2c_GA:IT",
+                "s2c_GA:JP",
+                "s2c_GA:LT",
+                "s2c_GA:LU",
+                "s2c_GA:LV",
+                "s2c_GA:MT",
+                "s2c_GA:NL",
+                "s2c_GA:PL",
+                "s2c_GA:PT",
+                "s2c_GA:RO",
+                "s2c_GA:RU",
+                "s2c_GA:SE",
+                "s2c_GA:SI",
+                "s2c_GA:SK",
+                "s2c_GA:US",
+                "s2c_GA:x0",
+                "s2c_GA:x24",
+                "s2c_GA:x6000",
+                "s2c_GA:x6001",
+                "s2c_GA:x6002",
+                "s2c_GA:x79",
+                "s2c_GA:x80",
+                "s2c_GA:XA"
+    };
+
+
+    
     public static bool ValidateMatch(string text)
     {
         //matches("LEI/12A01", "^LEI\/[A-Z0-9]{3}(01|00)$")
@@ -53,45 +143,54 @@ internal class ValidationFunctions
             throw new InvalidOperationException($"invalid match:{text} ");
         }
 
-        object? termValue ;
+        object? termValue;
 
         //match function may check for dim 
         var leftPart = match.Groups[1].Value; //dim(this(X00), [s2c_dim:UI]) OR X00
         var hasDimOnTheLeft = leftPart.Contains("dim");
-        if(hasDimOnTheLeft )
+        if (hasDimOnTheLeft)
         {
             //*** you are in a filter. Do NOT check for filter since you are using the same term
             //find the  dim
-            termValue = ExtractDimValueFormFact(leftPart,terms);            
+            termValue = ExtractDimValueFormFact(leftPart, terms);
             //check the match
         }
         else
         {
             //**check first the filter
-            var termLeft= terms[leftPart];
+            var termLeft = terms[leftPart];
             var filter = termLeft.Filter;
             if (!string.IsNullOrEmpty(filter))
             {
                 var isFilterValid = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, filter, terms);
                 //if the filter is false, no need to check the rule and return a match
-                if ( isFilterValid != KleeneValue.True)
-                {                    
+                if (isFilterValid != KleeneValue.True)
+                {
                     return true;
-                };                
-            }            
+                };
+            }
             termValue = termLeft.Obj;
         }
-                
-        if(termValue is null)
+
+        if (termValue is null)
         {
             //match could return a kleene value?
             return true;
         }
-        
+
 
         var rgxFromValue = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
-        if (rgxFromValue.Contains("ISO 8601") && termValue is DateTime){
-            return true; //since termValue is of type DateTime, it means it was processed successfully and we do not care about formatting
+        if (rgxFromValue.Contains("ISO 8601") && termValue is DateTime)
+        {
+            //matches(X00, "ISO 8601 'yyyy-mm-dd' pattern ")
+            //since termValue is of type DateTime, it means it was processed successfully and we do not care about formatting
+            return true; 
+        }
+        if (rgxFromValue.Contains("ISO 3166"))
+        {
+            return (euCountries.Contains(termValue) || supranationalCountries392.Contains(termValue));
+            
+            //matches(X00, "one of options as per ISO 3166-1")
         }
 
         var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
@@ -100,7 +199,7 @@ internal class ValidationFunctions
     }
 
 
-    public static string ExtractDimValueFormFact(string dimText,  Dictionary<string, ObjectTerm280> terms)
+    public static string ExtractDimValueFormFact(string dimText, Dictionary<string, ObjectTerm280> terms)
     {
         //if you find this()=> the term must be dimTerm
         //dim(this(X00), [s2c_dim:UI])
@@ -114,23 +213,23 @@ internal class ValidationFunctions
         {
             return "";
         }
-        
+
         //the term 
         var theTerm = matchDim.Groups[1].Value;//=> X00 or this(X00)
         var rgxThis = new Regex(@"this\((.*?)\)");
-        var matchThisInside= rgxThis.Match(theTerm);
+        var matchThisInside = rgxThis.Match(theTerm);
         var term = matchThisInside.Success
             ? matchThisInside.Groups[1].Value
-            : theTerm;        
-        
+            : theTerm;
+
         if (!terms.ContainsKey(term))
         {
             throw (new Exception($"Invalid dimfunction: {dimText}. Cannot find term :{term}"));
         }
-        
+
         var dataSignature = terms[term].fact?.DataPointSignature ?? "";
-        var rgxPattern = @$"{matchDim.Groups[2].Value.Trim()}\(\w\w:(.*?)\)"; 
-        var rgxFactDim = new Regex( rgxPattern); //rgxFactDim = //s2c_dim:UI\(\w\w:(.*?)\)
+        var rgxPattern = @$"{matchDim.Groups[2].Value.Trim()}\(\w\w:(.*?)\)";
+        var rgxFactDim = new Regex(rgxPattern); //rgxFactDim = //s2c_dim:UI\(\w\w:(.*?)\)
         var matchDimValue = rgxFactDim.Match(dataSignature); //s2c_dim:UI(ID:CAU/INST/1888-1891 LX64W1_IPROP) => CAU/INST/1888-1891 LX64W1_IPROP
 
         if (!matchDimValue.Success)
@@ -141,7 +240,7 @@ internal class ValidationFunctions
 
     }
 
-    
+
 
 
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)

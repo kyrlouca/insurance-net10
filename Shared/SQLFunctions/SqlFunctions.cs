@@ -201,6 +201,13 @@ public class SqlFunctions : ISqlFunctions
         return val;
     }
 
+    public List<MMember> SelectMMembersFromHierarchy(int hierarchyId)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlMem = @"select mem.* from mHierarchyNode hn	join mMember mem on mem.MemberID=hn.MemberID where HierarchyID = @HierarchyID";
+        var res = connectionEiopa.Query<MMember>(sqlMem, new { hierarchyId })?.ToList() ?? new List<MMember>();
+        return res;
+    }
 
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mappingOrigin)
     {
