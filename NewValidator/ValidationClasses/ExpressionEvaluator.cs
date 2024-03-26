@@ -223,7 +223,6 @@ public partial class ExpressionEvaluator
             }
 
 
-
             var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Decimals ?? 0 : 0;
             var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Decimals ?? 0 : 0;
 

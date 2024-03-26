@@ -46,7 +46,7 @@ public class ExcelFileCreator : IExcelFileCreator
     public int CreateExcelFile()
     {
 
-        var errors = _SqlFunctions.SelectErrorRules(112, ISqlFunctions.ErrorRuleTypes.Errors);
+        var errors = _SqlFunctions.SelectErrorRules(212, ISqlFunctions.ErrorRuleTypes.Errors);
         RenderBook(_parameterData.FileNameError,errors, ISqlFunctions.ErrorRuleTypes.Errors);
 
         var warnings = _SqlFunctions.SelectErrorRules(112, ISqlFunctions.ErrorRuleTypes.Warnings);
