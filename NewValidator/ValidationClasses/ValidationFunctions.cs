@@ -53,7 +53,7 @@ internal class ValidationFunctions
         "s2c_XA:multinational"
     };
 
-    private static List<string> supranationalCountries392 = new List<string>()
+    private static List<string> xaSupranationalCountries392 = new List<string>()
     {
                 "s2c_GA:BE",
                 "s2c_GA:BG",
@@ -102,7 +102,7 @@ internal class ValidationFunctions
                 "s2c_GA:x80",
                 "s2c_GA:XA"
     };
-    private static List<string> aaCountries380= new List<string>()
+    private static List<string> aaCountries380 = new List<string>()
     {
         "s2c_GA:AA",
             "s2c_GA:AD",
@@ -361,7 +361,7 @@ internal class ValidationFunctions
             "s2c_GA:ZA",
             "s2c_GA:ZM",
             "s2c_GA:ZW",
-    }
+    };
 
     private static List<string> currencies317 = new List<string>()
     {
@@ -644,7 +644,32 @@ internal class ValidationFunctions
         }
         if (rgxFromValue.Contains("ISO 3166"))
         {
-            return (euCountries.Contains(termValue) || supranationalCountries392.Contains(termValue));
+            var rgxRegions = new Regex(@"[‘'](\w\w)['’]");
+            
+            var regions= rgxRegions.Matches(rgxFromValue).Select(rg => rg.Groups[1].Value);
+            if (regions.Count() == 0 && (string)termValue == "s2c_GA:CY")
+            {
+                return true;
+            }
+            
+            foreach ( var region in regions )
+            {                
+
+                if (region == "AA" && aaCountries380.Contains(termValue))
+                {
+                    return true;
+                }
+                if (region == "EU" && euCountries.Contains(termValue))
+                {
+                    return true;
+                }
+                if (region == "XA" &&  xaSupranationalCountries392.Contains(termValue))
+                {
+                    return true;
+                }
+
+            }
+            return false;
             
             //matches(X00, "one of options as per ISO 3166-1")
         }
