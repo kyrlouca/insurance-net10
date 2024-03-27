@@ -16,11 +16,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tester", "Tester\Tester.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XbrlReader", "XbrlReader\XbrlReader.csproj", "{A129C016-3859-4B46-B8B1-B2D885DBE931}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewValidator", "NewValidator\NewValidator.csproj", "{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Validator", "NewValidator\Validator.csproj", "{309EAA24-DF42-40CF-9BF4-11CDE8A1DFB3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestNewValidations", "TestNewValidations\TestNewValidations.csproj", "{37055BD7-C2A2-4EB9-B4D3-9281929CFE3D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErrorFileCreator", "ErrorFileHandler\ErrorFileCreator.csproj", "{97B3BE4E-010B-4BA0-A9A7-E796FE5EE3EC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ErrorFileCreator", "ErrorFileHandler\ErrorFileCreator.csproj", "{97B3BE4E-010B-4BA0-A9A7-E796FE5EE3EC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
