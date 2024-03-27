@@ -90,10 +90,10 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-        validationRules = validationRules.Where(vr => vr.ValidationID == 5002).ToList();
+       //validationRules = validationRules.Where(vr => vr.ValidationID == 770).ToList();
         foreach (var validationRule in validationRules)
         {
-            Console.WriteLine($"\nValidating Rule:{validationRule.ValidationID}***");
+            Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
 
             var hasOnlyOpenTables = tablesInValidation.All(tbl => tbl.IsOpenTable);
@@ -245,7 +245,12 @@ public class DocumentValidator : IDocumentValidator
                     EvaluateSumTerms(rule.RuleId, rule.ElseComponent, rule.FilterComponent);
 
                     var isValidRule = ExpressionEvaluator.ValidateRule(rule);
-                    CreateRuleError(rule, validationRule);
+                    if (!isValidRule)
+                    {
+                        Console.WriteLine($"{validationRule.Severity} ruleId:{rule.RuleId} ");
+                        CreateRuleError(rule, validationRule);
+                    }
+                    
 
 
                 }
