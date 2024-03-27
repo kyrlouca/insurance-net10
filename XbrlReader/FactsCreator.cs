@@ -506,7 +506,7 @@ public class FactsCreator : IFactsCreator
                 try
                 {
                     var nfi = new CultureInfo("en-US", false).NumberFormat;
-                    fact.NumericValue = Convert.ToDecimal(fact.TextValue, nfi);
+                    fact.NumericValue = Convert.ToDouble(fact.TextValue, nfi);
                 }
                 catch (System.Exception)
                 {

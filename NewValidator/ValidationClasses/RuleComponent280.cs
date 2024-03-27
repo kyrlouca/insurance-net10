@@ -74,14 +74,14 @@ public class RuleComponent280
         
         var rc = new RuleComponent280() {IsEmpty=false, Expression = textExpression, SymbolExpression = formula, RuleTerms = ruleTerms };
         return rc;
-    }
+    }   
 
     
     public string DislayRuleTerms()
     {
         var vals = RuleTerms.Aggregate("", (current, value) => {
             var obj = ObjectTerms[value.Letter];    
-            return $"{current}#{value.Letter}-{value.T}:{value.R}:{value.C}=={obj.Obj??"null"},"; 
+            return $"{current}#{value.Letter}-{value.T}:{value.R}:{value.C}={obj.Obj??"null"},"; 
         });
         return $"{SymbolExpression}***{vals}";
 

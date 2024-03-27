@@ -46,10 +46,10 @@ public class ExcelFileCreator : IExcelFileCreator
     public int CreateExcelFile()
     {
 
-        var errors = _SqlFunctions.SelectErrorRules(12, ISqlFunctions.ErrorRuleTypes.Errors);
+        var errors = _SqlFunctions.SelectErrorRules(_parameterData.DocumentId, ISqlFunctions.ErrorRuleTypes.Errors);
         RenderBook(_parameterData.FileNameError,errors, ISqlFunctions.ErrorRuleTypes.Errors);
 
-        var warnings = _SqlFunctions.SelectErrorRules(12, ISqlFunctions.ErrorRuleTypes.Warnings);
+        var warnings = _SqlFunctions.SelectErrorRules(_parameterData.DocumentId, ISqlFunctions.ErrorRuleTypes.Warnings);
         RenderBook(_parameterData.FileNameWarning, warnings, ISqlFunctions.ErrorRuleTypes.Warnings);
 
         Console.WriteLine("files created");
