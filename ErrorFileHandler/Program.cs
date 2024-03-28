@@ -11,7 +11,7 @@ var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {    
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
-    Console.WriteLine(@".\ErrorFileCreator.exe external-id=2122 eiopa-version=IU280 document-id=12  file-name-warning=""c:\eurofileWq3.xlsx"" file-name-error=""eurofileErorr.xlsx""");
+    Console.WriteLine(@".\ErrorFileCreator.exe external-id=2122 eiopa-version=IU280 document-id=12  file-name-warning=""c:\eurofileWq3.xlsx"" file-name-error=""C:\eurofileErorr.xlsx""");
     throw new ArgumentException($"parameter missing:{missingParam}");
 }
 

@@ -10,7 +10,7 @@ var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
 
-    var sample = """.\XbrlReader.exe external-id=12 currency-batch-id=1 user-id=1 fund-id=33 eiopa-version=IU280 module-code="qrs" year=2024 quarter=1 file-name="C:\Users\kyrlo\soft\dotnet\pension-project\TestingHR\eac.xbr" """;
+    var sample = """.\XbrlReader.exe external-id=12 currency-batch-id=1 user-id=1 fund-id=33 eiopa-version=IU280 module-code="qrs" year=2024 quarter=3 file-name="C:\Users\kyrlo\soft\dotnet\pension-project\TestingHR\eac.xbr" """;
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
     Console.WriteLine(sample);
     throw new ArgumentException($"parameter missing:{missingParam}");
