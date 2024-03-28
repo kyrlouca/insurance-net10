@@ -1,4 +1,6 @@
-﻿using NewValidator.ValidationClasses;
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
+using NewValidator.ValidationClasses;
 using Serilog;
 using Shared.DataModels;
 using Shared.GeneralUtils;
@@ -14,6 +16,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -90,7 +93,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-       //validationRules = validationRules.Where(vr => vr.ValidationID == 770).ToList();
+       validationRules = validationRules.Where(vr => vr.ValidationID == 715).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -553,6 +556,41 @@ public class DocumentValidator : IDocumentValidator
     }
 
 
+
+    public static void UpdateExpressionWithShortLabel(string inputFilePath, string outputFilePath)
+    {
+        var connectionString = "Data Source = KYR-RYZEN\\MSSQLSERVER01; Initial Catalog =EIOPA_280_Hotfix; Integrated Security = true;TrustServerCertificate=True;";
+        using var connectionLocal = new SqlConnection(connectionString);
+        // Use 'using' for automatic file closing
+        using (StreamReader reader = new StreamReader(inputFilePath))
+        {
+            using (StreamWriter writer = new StreamWriter(outputFilePath))
+            {
+                string line;
+                // Read line by line until null (end of file)
+                //$$$SHORT_LABEL(en) - BV1296: T.99.01 c0070 must not be reported.$$$BV1296
+                var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*:(.*)\${3}(.*)");
+
+                while ((line = reader.ReadLine()) != null)
+                {
+                    var match= rgxLine.Match(line);
+                    if (match.Success)
+                    {
+                        var shortLabel = match.Groups[1].Value;
+                        var validationCode = match.Groups[2].Value;
+                        var sqlRule = @"update vValidationRuleExpressions set ShortLabel= @shortLabel where ValidationCode = @ValidationCode";
+                                                
+                        writer.WriteLine($"{sqlRule}");
+                        var res= connectionLocal.Execute(sqlRule, new { shortLabel, validationCode });
+                        var y = 3;
+                    }
+                    // Write the line wrapped in quotes
+                    
+                }
+            }
+        }
+    }
+
     class ValidationRuleComparer : IEqualityComparer<VValidationRuleExpressions>
     {
         public bool Equals(VValidationRuleExpressions? b1, VValidationRuleExpressions? b2)
@@ -569,6 +607,8 @@ public class DocumentValidator : IDocumentValidator
 
         public int GetHashCode(VValidationRuleExpressions vr) => vr.ValidationID;
     }
+
+
 
 
 }

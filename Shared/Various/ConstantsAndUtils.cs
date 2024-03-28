@@ -172,3 +172,5 @@ public static class XbrlDataTypes
         return outUnit;
     }
 }
+
+

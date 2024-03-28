@@ -7,6 +7,10 @@ using NewValidator.ValidationClasses;
 
 
 
+var inputfile = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ShortLabels.txt";
+var outputfile = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ShortLabelsSql.txt";
+NewValidator.DocumentValidator.UpdateExpressionWithShortLabel(inputfile, outputfile);
+return;
 var zz1 = "abc (acx or x3) or imin(x1>x3 and x3<x1) + x3";
 
 //655	BV780-5	matches({t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, "^((XL)|(XT))..$")
