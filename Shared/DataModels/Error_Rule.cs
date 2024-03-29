@@ -28,5 +28,7 @@ public class ERROR_Rule
     public string FormulaForElse { get; set; }
     public string FormulaForFilter { get; set; }
     public string RuleTerms { get; set; }
+    public string ShortLabel { get; set; }
     
+
 }

@@ -20,6 +20,7 @@ public class RuleStructure280
     public RuleComponent280 FilterComponent { get; init; }
     public List<string> ScopeRowCols { get; init; }    
     public ScopeType ScopeType { get; init; }
+
     private RuleStructure280(int ruleId, string ruleFormula, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent, RuleComponent280 filter, List<string> rowsCols, ScopeType scopeType)
     {
         RuleId = ruleId;
@@ -29,7 +30,8 @@ public class RuleStructure280
         ElseComponent = elseComponent;
         FilterComponent = filter;
         ScopeType = scopeType;
-        ScopeRowCols = rowsCols;        
+        ScopeRowCols = rowsCols;
+
     }
 
     public static (string ifExpression, string thenExpression, string elseExpression) SplitIfThenElse(string stringExpression)

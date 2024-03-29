@@ -93,7 +93,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-       validationRules = validationRules.Where(vr => vr.ValidationID == 715).ToList();
+       validationRules = validationRules.Where(vr => vr.ValidationID == 1803).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -533,15 +533,18 @@ public class DocumentValidator : IDocumentValidator
             TableBaseFormula = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
             Filter = RegexUtils.TruncateString(ruleStructure.FilterComponent.Expression,800),
             SheetId = 0,
-            SheetCode = validationRule.Scope,
+            SheetCode = "",
             RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
+            ShortLabel = RegexUtils.TruncateString(validationRule.ShortLabel, 900),
             IsWarning = validationRule.Severity.Trim()== "Warning",
             IsError = validationRule.Severity.Trim()== "Error",
             IsDataError = false,
+            
             FormulaForIf = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.IfComponent),800),
             FormulaForThen = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ThenComponent),800),
             FormulaForElse = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ElseComponent),800),
             FormulaForFilter = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.FilterComponent), 800),
+            
         };
 
         var res = _SqlFunctions.CreateErrorRule(errorRule);

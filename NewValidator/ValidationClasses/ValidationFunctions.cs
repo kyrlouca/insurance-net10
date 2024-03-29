@@ -1,22 +1,9 @@
-﻿using Microsoft.Extensions.FileSystemGlobbing.Internal;
-using Shared.CommonRoutines;
-using Shared.DataModels;
-using Shared.GeneralUtils;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Metrics;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Z.Expressions;
-using static System.Net.Mime.MediaTypeNames;
+﻿using System.Text.RegularExpressions;
 
 namespace NewValidator.ValidationClasses;
 internal class ValidationFunctions
 {
-    private static List<string> euCountries = new List<string>() {
+    private static List<string> euCountries377 = new List<string>() {
         "s2c_GA:AT",
         "s2c_GA:BE",
         "s2c_GA:BG",
@@ -49,8 +36,7 @@ internal class ValidationFunctions
         "s2c_GA:SE",
         "s2c_GA:SI",
         "s2c_GA:SK",
-        "s2c_GA:x0",
-        "s2c_XA:multinational"
+        "s2c_GA:x0",        
     };
 
     private static List<string> xaSupranationalCountries392 = new List<string>()
@@ -1107,7 +1093,7 @@ internal class ValidationFunctions
                 {
                     return true;
                 }
-                if (region == "EU" && euCountries.Contains(termValue))
+                if (region == "EU" && euCountries377.Contains(termValue))
                 {
                     return true;
                 }
