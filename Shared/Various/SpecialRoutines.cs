@@ -66,7 +66,7 @@ public class DimDom
 
 public record RowColRecord(string rowcol, string Row, string Col, bool IsValid, bool HasOnlyCol);
 
-public record CellRowColRecord(string businessCode, string TableCode, string Zet, string Row, string Col,bool IsOpen, bool IsValid);
+public record CellRowColRecord(string businessCode, string TableCode, string Zet, string Row, string Col, bool IsOpen, bool IsValid);
 public class DimUtils
 {
     public static RowColRecord CreateRowCol(string RowCol)
@@ -110,7 +110,7 @@ public class DimUtils
 
         Match match;
 
-
+        //\{(S[REP]?[V]?(?:\.\d\d){4})(,[AE]?[E]?R\d{4})?(,[A]?[NE]?C\d{4})?(,Z\d{4})?}
         //{S.05.01.02.01,R1210,C0200,Z0001}
         var rgAll = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(R\d{4}))(?:,(C\d{4}))(?:,(Z\d{4}))\}");
         match = rgAll.Match(businessCode.Trim());
@@ -147,6 +147,33 @@ public class DimUtils
 
     }
 
+    public static CellRowColRecord ParseCellRowColNew(string businessCode)
+    {
+        //businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
+        //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
+        //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
+        //businessCode = "{S.01.02.01.02,C0070}";
+
+        Match match;        
+        //{S.05.01.02.01,R1210,C0200,Z0001}
+        var rgAll = new Regex(@"\{(S[REP]?[V]?(?:\.\d\d){4})(,[AE]?[E]?R\d{4})?(,[A]?[NE]?C\d{4})?(,Z\d{4})?}");
+        match = rgAll.Match(businessCode.Trim());
+        if (!match.Success)
+        {
+            throw (new Exception($"invalid businessCode-{businessCode}"));
+        }
+        
+        var tableCode = match.Groups[1].Value.Trim();
+        var row = match.Groups[2].Value.Replace(",", "");
+        var col = match.Groups[3].Value.Replace(",", "");
+        var zet = match.Groups[4].Value.Replace(",", "");
+        var isOpen = string.IsNullOrEmpty(row);
+        var isValid = !(string.IsNullOrEmpty(row) && string.IsNullOrEmpty(col));
+
+        return new CellRowColRecord(businessCode,tableCode, zet,row,col, isOpen, true);
+    }
+
+
 }
 
 public class FormulaCharacters
@@ -167,7 +194,7 @@ public class FormulaCharacters
         //Regex rgxPlus = new Regex(@"i\+");
         //Regex rgxMinus = new Regex(@"i\-");        
         //Regex rgxEqual = new Regex(@"i\=");
-        
+
         //string result = rgxStar.Replace(input, "*");
         //result = rgxPlus.Replace(result, "+");
         //result = rgxMinus.Replace(result, "-");
@@ -180,7 +207,7 @@ public class FormulaCharacters
 public record RuleTextTerm(string Letter, string TermText);
 public class TermsExtraction
 {
-    public static (string Formula, List< RuleTextTerm > formulaTerms) ExtractTerms(string textExpression)
+    public static (string Formula, List<RuleTextTerm> formulaTerms) ExtractTerms(string textExpression)
     {
         var rgx = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
         var matches = rgx.Matches(textExpression);
@@ -194,12 +221,12 @@ public class TermsExtraction
         var symbolFormula = FormulaCharacters.RemoveWeirdFormulaCharacters(formula).Trim();
 
         return (symbolFormula, ruleTextTerms);
-        
+
     }
 }
 public class FormulaSimplification
 {
-    public static (string Formula, List<(string letter,string content)> FormulaTerms) Simplify(string text)
+    public static (string Formula, List<(string letter, string content)> FormulaTerms) Simplify(string text)
     {
 
         //{t: S.06.02.01.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}
@@ -209,7 +236,7 @@ public class FormulaSimplification
         var rgx = new Regex(@"\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         var matchParenthesis = rgx.Matches(text);
         var nestedParenthesis = matchParenthesis
-            .Where(match => !string.IsNullOrEmpty( match.Groups[1].Value))
+            .Where(match => !string.IsNullOrEmpty(match.Groups[1].Value))
             .Select((match, i) => ($"XYZ{i:D2}", match.Groups[1].Value)).ToList();
         var symbolFormula = nestedParenthesis.Aggregate(text, (currentText, val) =>
         {
@@ -220,7 +247,7 @@ public class FormulaSimplification
 
         return (symbolFormula, nestedParenthesis);
     }
-    public static string  ReplaceTerms(string formula, List<(string letter,string content)> terms)
+    public static string ReplaceTerms(string formula, List<(string letter, string content)> terms)
     {
 
         var fullFormula = terms.Aggregate(formula, (currentText, term) =>
@@ -233,9 +260,9 @@ public class FormulaSimplification
 
             return replacedString;
         });
-        
+
         return fullFormula;
     }
-    
+
 
 }

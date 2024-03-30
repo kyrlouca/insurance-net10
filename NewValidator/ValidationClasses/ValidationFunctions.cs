@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NewValidator.ValidationClasses;
 internal class ValidationFunctions
@@ -1046,8 +1047,12 @@ internal class ValidationFunctions
         }
         else
         {
-            //**check first the filter
-            var termLeft = terms[leftPart];
+            var rgxTerm = new Regex(@"X\d\d");
+            var termLeft = rgxTerm.IsMatch(leftPart) ? terms[leftPart] : new ObjectTerm280("S",0,false,leftPart,0,0,null,false,"");
+
+
+            //var termLeft = terms[leftPart];                        
+            //**check first the filter            
             var filter = termLeft.Filter;
             if (!string.IsNullOrEmpty(filter))
             {
