@@ -373,11 +373,16 @@ public partial class FactsDecorator : IFactsDecorator
                 continue;
             }
 
-            var cellRowCol = DimUtils.ParseCellRowCol(tableCell.BusinessCode);
+            var cellRowCol = DimUtils.ParseCellRowCol(tableCell.BusinessCode);                                   
             if (!cellRowCol.IsValid)
             {
-                continue;
+                var cellMessage = $"Invalid MTableCell :cellId:{tableCell.CellID} , businessCode:{tableCell.BusinessCode}";
+                _logger.Error(cellMessage);
+                throw new Exception(cellMessage);
+                //continue;
             }
+
+
 
             var cellFacts = SelectFactsFromCellSignature280(cellSignature);
             var count = 0;

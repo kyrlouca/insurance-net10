@@ -13,25 +13,31 @@ public class ValidationTermTest
         //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
         //businessCode = "{S.01.02.01.02,C0070}";
 
+        var text4 = "{SR.06.02.01.01,NC0010}";
+        var rcr4 = DimUtils.ParseCellRowCol(text4);//tablecode, zet,row,col, isOpen, isValid
+        var expected4 = new CellRowColRecord(text4, "SR.06.02.01.01", "", "", "NC0010", true, true);
+        Assert.Equal(expected4, rcr4);
+
+
         var text3 = "{S.06.02.01.01,NC0010}";
-        var rcr3 = DimUtils.ParseCellRowColNew(text3);//tablecode, zet,row,col, isOpen, isValid
+        var rcr3 = DimUtils.ParseCellRowCol(text3);//tablecode, zet,row,col, isOpen, isValid
         var expected3 = new CellRowColRecord(text3, "S.06.02.01.01", "", "", "NC0010", true, true);
         Assert.Equal(expected3, rcr3);
 
 
         var text2 = "{S.06.02.01.01,C0010}";        
-        var rcr2 = DimUtils.ParseCellRowColNew(text2);//tablecode, zet,row,col, isOpen, isValid
+        var rcr2 = DimUtils.ParseCellRowCol(text2);//tablecode, zet,row,col, isOpen, isValid
         var expected2 = new CellRowColRecord(text2, "S.06.02.01.01", "","", "C0010", true, true);
         Assert.Equal(expected2, rcr2);
 
 
         var text1 = "{S.06.02.01.01,C0010,Z0001}";
-        var rcr1 = DimUtils.ParseCellRowColNew(text1);
+        var rcr1 = DimUtils.ParseCellRowCol(text1);
         var expected1 = new CellRowColRecord(text1, "S.06.02.01.01", "Z0001", "", "C0010", true, true);
         Assert.Equal(expected1, rcr1);
 
         var text = "{S.06.02.01.01,R0200,C0010,Z0001}";
-        var rcr= DimUtils.ParseCellRowColNew(text);
+        var rcr= DimUtils.ParseCellRowCol(text);
         var expected0 = new CellRowColRecord(text, "S.06.02.01.01", "Z0001", "R0200", "C0010", false, true );        
         Assert.Equal(expected0, rcr);
         
@@ -219,7 +225,7 @@ public class ValidationTermTest
 
 
     [Fact]
-    public void TestSplitPlusOrMinusArithmetic()
+    public void TestSplitPlusOrMinusArithmetic() 
     {
 
         var text = @"5 - 4 + (3 * X2)";

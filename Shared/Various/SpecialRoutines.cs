@@ -108,52 +108,6 @@ public class DimUtils
         //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
         //businessCode = "{S.01.02.01.02,C0070}";
 
-        Match match;
-
-        //\{(S[REP]?[V]?(?:\.\d\d){4})(,[AE]?[E]?R\d{4})?(,[A]?[NE]?C\d{4})?(,Z\d{4})?}
-        //{S.05.01.02.01,R1210,C0200,Z0001}
-        var rgAll = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(R\d{4}))(?:,(C\d{4}))(?:,(Z\d{4}))\}");
-        match = rgAll.Match(businessCode.Trim());
-        if (match.Success)
-        {
-            return new CellRowColRecord(businessCode, match.Groups[1].Value, match.Groups[4].Value, match.Groups[2].Value, match.Groups[3].Value, false, true);
-        }
-
-        //{S.01.01.02.01,R0010,C0010}
-        var rgRowCol = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(R\d{4}))(?:,(C\d{4}))\}");
-        match = rgRowCol.Match(businessCode.Trim());
-        if (match.Success)
-        {
-            return new CellRowColRecord(businessCode, match.Groups[1].Value, "", match.Groups[2].Value, match.Groups[3].Value, false, true);
-        }
-
-        //{S.06.02.01.01,C0100,Z0001}        
-        var rgZet = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(C\d{4}))(?:,(Z\d{4}))\}");
-        match = rgZet.Match(businessCode.Trim());
-        if (match.Success)
-        {
-            return new CellRowColRecord(businessCode, match.Groups[1].Value, match.Groups[3].Value, "", match.Groups[2].Value, true, true);
-        }
-
-        //"{S.01.02.01.02,C0070}"
-        var rgOnlyCol = new Regex(@"^\{(S(?:\.\d\d){4})(?:,(C\d{4}))\}");
-        match = rgOnlyCol.Match(businessCode.Trim());
-        if (match.Success)
-        {
-            return new CellRowColRecord(businessCode, match.Groups[1].Value, "", "", match.Groups[2].Value, false, false);
-        }
-        throw (new Exception($"invalid businessCode-{businessCode}"));
-
-
-    }
-
-    public static CellRowColRecord ParseCellRowColNew(string businessCode)
-    {
-        //businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
-        //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
-        //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
-        //businessCode = "{S.01.02.01.02,C0070}";
-
         Match match;        
         //{S.05.01.02.01,R1210,C0200,Z0001}
         var rgAll = new Regex(@"\{(S[REP]?[V]?(?:\.\d\d){4})(,[AE]?[E]?R\d{4})?(,[A]?[NE]?C\d{4})?(,Z\d{4})?}");
@@ -168,7 +122,7 @@ public class DimUtils
         var col = match.Groups[3].Value.Replace(",", "");
         var zet = match.Groups[4].Value.Replace(",", "");
         var isOpen = string.IsNullOrEmpty(row);
-        var isValid = !(string.IsNullOrEmpty(row) && string.IsNullOrEmpty(col));
+        var isValid = !string.IsNullOrEmpty(col);
 
         return new CellRowColRecord(businessCode,tableCode, zet,row,col, isOpen, true);
     }
