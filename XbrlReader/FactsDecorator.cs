@@ -645,10 +645,15 @@ public partial class FactsDecorator : IFactsDecorator
                 foreach (var childRowKeyFact in childFactsWithForeignKey)
                 {
                     //one fact in each row has the key also present in the master table
-                    //find the fact in the master table 
-                    
+                    //find the fact in the master table                     
                     var masterFact = masterFacts.FirstOrDefault(fct => fct.TextValue.Trim().Equals(childRowKeyFact.TextValue.Trim()));
-
+                    if (masterFact is null)
+                    {
+                        //todo fuck it cannot find masterFact
+                        _logger.Error($"Could NOT find Master fact for :{childRowKeyFact.TextValue}");
+                        continue;
+                    }
+                    
                     var sqlUpdCHildFacts = @"
                                 update TemplateSheetFact set RowForeign = @RowForeign 
                                 where InstanceId= @documentId and TemplateSheetId=@TemplateSheetId and Row=@Row;
