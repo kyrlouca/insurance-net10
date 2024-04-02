@@ -564,6 +564,8 @@ public class SqlFunctions : ISqlFunctions
 
     public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col)
     {
+        //ZET: sometimes is not used :  when  the closed table has an empty zet and the open tables have an actual zet
+        //for example rule 647 : 
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelectZet = @"
                 SELECT  fact.* 
@@ -580,7 +582,7 @@ public class SqlFunctions : ISqlFunctions
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
-        var sqlSelect = @"
+        var sqlSelectWithoutZet = @"
                 SELECT  fact.* 
                 FROM
                   TemplateSheetFact fact
@@ -598,11 +600,18 @@ public class SqlFunctions : ISqlFunctions
         row = row.Trim();
         col=col.Trim();
         tableCode = tableCode.Trim();
+        var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectZet;
+              
+        
+
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
-        var zetfacts = connectionLocal.Query<TemplateSheetFact>(sqlSelectZet, new { documentId, tableCode, zet, row, col });
-        if(facts.Count() != zetfacts.Count()) {
+        var factsWithOutzet = connectionLocal.Query<TemplateSheetFact>(sqlSelectWithoutZet, new { documentId, tableCode, zet, row, col });
+        if (facts.Count() != factsWithOutzet.Count())
+        {
             var xx = 22;
         }
+
+
         if (facts.Count() > 1)
         {
             _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}");
@@ -612,35 +621,7 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public TemplateSheetFact? SelectFactByRowColWithoutZet(int documentId, string tableCode, string row, string col)
-    {
-        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);        
-        var sqlSelect = @"
-                SELECT  fact.* 
-                FROM
-                  TemplateSheetFact fact
-                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
-                WHERE
-                  1=1
-                  AND sheet.InstanceId= @documentId
-                  and sheet.TableCode= @TableCode
-                  --AND fact.ZetValues= @Zet
-                  AND fact.Row= @Row
-                  AND fact.Col= @Col
-                ORDER BY fact.Row, fact.Col;
-                "
-        ;
-        row = row.Trim();
-        col = col.Trim();
-        tableCode = tableCode.Trim();
-        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });        
-        if (facts.Count() > 1)
-        {
-            _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}");
-        }
-
-        return facts.FirstOrDefault();
-    }
+   
 
 
 
