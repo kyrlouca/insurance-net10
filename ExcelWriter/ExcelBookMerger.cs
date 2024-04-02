@@ -576,7 +576,14 @@ public class ExcelBookMerger : IExcelBookMerger
 
         IRange? Find62Row(IRange range62, string key)
         {
-            foreach (IRange keyRange in range62.Columns[0].FindAll(key, ExcelFindType.Text))
+            var rngCol0 = range62.Columns[0];
+            var cellsInS62ColumnZeroWithKeyValue = range62.Columns[0].FindAll(key, ExcelFindType.Text);
+            if(cellsInS62ColumnZeroWithKeyValue is null)
+            {
+                return null;
+            }            
+
+            foreach (IRange keyRange in cellsInS62ColumnZeroWithKeyValue)
             {
                 var s62Row = range62[keyRange.Row, range62.Column, keyRange.Row, range62.LastColumn];
                 return s62Row;
