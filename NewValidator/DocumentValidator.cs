@@ -93,7 +93,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-       validationRules = validationRules.Where(vr => vr.ValidationID == 1803).ToList();
+       validationRules = validationRules.Where(vr => vr.ValidationID == 646).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -119,7 +119,7 @@ public class DocumentValidator : IDocumentValidator
             var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
             foreach (var scopeRowCol in scopeRowcols)
             {
-
+                //this must go , and update in each case
                 if (scopeType != ScopeType.None)
                 {
                     UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
@@ -150,7 +150,7 @@ public class DocumentValidator : IDocumentValidator
                             UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
                         }
 
-
+                        ruleClosed.ZetValue = sheet.ZDimVal;
                         ruleClosed = FillRuleStructureWithFactValues(ruleClosed);
                         var sumTerm = ruleClosed.IfComponent.RuleTerms.Where(rt => rt.IsSequence).FirstOrDefault();
                         if(sumTerm != null)
@@ -198,7 +198,7 @@ public class DocumentValidator : IDocumentValidator
                             UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
-
+                            ruleOpen.ZetValue = sheet.ZDimVal;
 
 
                             KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
@@ -240,20 +240,37 @@ public class DocumentValidator : IDocumentValidator
                     //--- the resulting object will have both the sum and the count because the function is not known  at the time 
                     // Rule 783: {t: S.02.01.02.01, r: R0060, c: C0010, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i= isum({t: S.06.02.01.01, c: C0170, z: Z0001, dv: emptySequence(), seq: True, id: v2, f: solvency, fv: solvency2})
                     // Filter matches({t: S.06.02.01.02, c: C0290, z: Z0001, dv: emptySequence(), seq: True, id: v3, f: solvency, fv: solvency2}, "^..((93)|(95)|(96))$") and ({t: S.06.02.01.01, c: C0090, z: Z0001, dv: emptySequence(), seq: True, id: v4, f: solvency, fv: solvency2} = [s2c_LB:x91])
-                    var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
-                    rule = FillRuleStructureWithFactValues(rule);
-                    EvaluateSumTerms(rule.RuleId, rule.IfComponent, rule.FilterComponent);
-                    EvaluateSumTerms(rule.RuleId, rule.ThenComponent, rule.FilterComponent);
-                    EvaluateSumTerms(rule.RuleId, rule.ElseComponent, rule.FilterComponent);
+                    var mainTable = tablesInValidation.Where(tbl=>!tbl.IsOpenTable).FirstOrDefault();
+                    var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
 
-                    var isValidRule = ExpressionEvaluator.ValidateRule(rule);
-                    if (!isValidRule)
+                    foreach (var sheet in sheets)
                     {
-                        Console.WriteLine($"{validationRule.Severity} ruleId:{rule.RuleId} ");
-                        CreateRuleError(rule, validationRule);
+                        var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+
+
+                        //sumTersm will be evaluated again below
+                        
+                        rule.ZetValue = sheet.ZDimVal;
+                        rule = FillRuleStructureWithFactValues(rule);
+                        
+
+                        EvaluateSumTerms(rule.RuleId, rule.IfComponent, rule.FilterComponent,rule.ZetValue);
+                        EvaluateSumTerms(rule.RuleId, rule.ThenComponent, rule.FilterComponent,rule.ZetValue);
+                        EvaluateSumTerms(rule.RuleId, rule.ElseComponent, rule.FilterComponent,rule.ZetValue);
+
+                        var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+                        if (!isValidRule)
+                        {
+                            Console.WriteLine($"{validationRule.Severity} ruleId:{rule.RuleId} ");
+                            CreateRuleError(rule, validationRule);
+                        }
+
+
+
                     }
-                    
+
+
 
 
                 }
@@ -269,12 +286,12 @@ public class DocumentValidator : IDocumentValidator
         }
         return 1;
 
-        void EvaluateSumTerms(int ruleId, RuleComponent280 ruleComponent, RuleComponent280 filterComponent)
+        void EvaluateSumTerms(int ruleId, RuleComponent280 ruleComponent, RuleComponent280 filterComponent,string zetValue)
         {
             var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
             foreach (var thenSeqTerm in seqTerms)
             {
-                var res = CalculateSumofOpenTable(ruleId, thenSeqTerm, filterComponent);
+                var res = CalculateSumofOpenTable(ruleId, thenSeqTerm, filterComponent,zetValue);
                 ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
             }
         }
@@ -360,16 +377,16 @@ public class DocumentValidator : IDocumentValidator
         return objTerm;
     }
 
-    private Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms)
+    private Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms,string zetValue)
     {
-        var seqTerms = ruleTerms.Where(rt => rt.IsSequence && rt.R.Contains(";"));
+        //var seqTermsxxxx = ruleTerms.Where(rt => rt.IsSequence && rt.R.Contains(";"));
 
         Dictionary<string, ObjectTerm280> plainTerms = ruleTerms
             .Select(ruleTerm => new
             {
                 ruleTerm.Letter,
                 Zet = ruleTerm.Z,
-                Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C),
+                Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTerm.T, zetValue , ruleTerm.R, ruleTerm.C),
                 ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance, UpdateRuleTermFilter(ruleTerm.Letter,ruleTerm.Filter))
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
@@ -431,24 +448,24 @@ public class DocumentValidator : IDocumentValidator
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms);
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms,ruleStructure.ZetValue);
         ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
 
 
-        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms);
+        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms, ruleStructure.ZetValue);
         ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
 
-        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms);
+        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms, ruleStructure.ZetValue);
         ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
 
-        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.FilterComponent.RuleTerms);
+        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.FilterComponent.RuleTerms, ruleStructure.ZetValue);
         ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
 
         return ruleStructure;
 
     }
 
-    private (double sum, int count) CalculateSumofOpenTable(int ruleId, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent)
+    private (double sum, int count) CalculateSumofOpenTable(int ruleId, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent,string zetValue)
     {
 
         var seqTable = seqTableTerm.T;
@@ -464,7 +481,7 @@ public class DocumentValidator : IDocumentValidator
         {
             var row = fact.Row;
             var foreignKeyRow = fact.RowForeign;
-            var isFilterValid = EvaluateFilterRow(ruleId, filterComponent, relatedTable, fact.Row, fact.RowForeign);
+            var isFilterValid = EvaluateFilterRow(ruleId, filterComponent, relatedTable, fact.Row, fact.RowForeign,zetValue);
             if (isFilterValid)
             {
                 sum += fact.NumericValue;
@@ -474,7 +491,7 @@ public class DocumentValidator : IDocumentValidator
         return (sum, count);
     }
 
-    private bool EvaluateFilterRow(int ruleId, RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow)
+    private bool EvaluateFilterRow(int ruleId, RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow,string zetValue)
     {
         foreach (var filterTerm in filterComponent.RuleTerms)
         {
@@ -487,7 +504,7 @@ public class DocumentValidator : IDocumentValidator
         try
         {
 
-            Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms);
+            Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms, zetValue );
             if (filterTerms.Any())
             {
                 var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms);

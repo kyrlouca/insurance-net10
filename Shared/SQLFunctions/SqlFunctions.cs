@@ -123,7 +123,7 @@ public class SqlFunctions : ISqlFunctions
 
     public List<TemplateSheetInstance> SelectTemplateSheetByTableCodeAllZets(int documentId, string tableCode)    
     {
-        //assume that for this tableCode there is only one sheet with or withoutzet  
+        //
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"
             SELECT 
@@ -565,6 +565,21 @@ public class SqlFunctions : ISqlFunctions
     public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelectZet = @"
+                SELECT  fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode
+                  AND fact.ZetValues= @Zet
+                  AND fact.Row= @Row
+                  AND fact.Col= @Col
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
         var sqlSelect = @"
                 SELECT  fact.* 
                 FROM
@@ -584,6 +599,10 @@ public class SqlFunctions : ISqlFunctions
         col=col.Trim();
         tableCode = tableCode.Trim();
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
+        var zetfacts = connectionLocal.Query<TemplateSheetFact>(sqlSelectZet, new { documentId, tableCode, zet, row, col });
+        if(facts.Count() != zetfacts.Count()) {
+            var xx = 22;
+        }
         if (facts.Count() > 1)
         {
             _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}");
@@ -627,7 +646,7 @@ public class SqlFunctions : ISqlFunctions
                   1=1
                   AND sheet.InstanceId= @documentId
                   and sheet.TableCode= @TableCode
-                  --AND fact.ZetValues= @Zet                  
+                  AND fact.ZetValues= @Zet                  
                   AND fact.Col= @Col
                 ORDER BY fact.Row, fact.Col;
                 "

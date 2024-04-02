@@ -135,10 +135,11 @@ public partial class FactsDecorator : IFactsDecorator
             
         }
         //***********  update foreing keys
-        foreach(var openTable in ModuleTables.Where(tbl=>tbl.IsOpenTable))
-        {
-            UpdateForeignKeysOfChildTablesNN();
-        }
+        UpdateForeignKeysOfChildTablesNN();
+        //foreach (var openTable in ModuleTables.Where(tbl=>tbl.IsOpenTable))
+        //{
+         
+        //}
         
         //update tableSheetNames
         UpdateTableSheetNames(moduleZets);

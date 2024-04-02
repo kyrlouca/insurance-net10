@@ -39,25 +39,8 @@ public class RuleComponent280
         {
             return new RuleComponent280() {IsEmpty=true, Expression=textExpression};
         }
+                        
         
-
-        /////////////////////////////////////////
-        
-        //var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
-        //var matches = rgxTerm.Matches(textExpression);
-        //if (matches is null)
-        //{
-        //    return new RuleComponent280() {IsEmpty=false,IsValid=false, Expression = textExpression, SymbolExpression = "", RuleTerms = new List<RuleTerm280>() };
-        //}
-
-        //var ruleTextTerms = matches.Select((match, i) => new RuleTextTerm($"X{i:D2}", match.Value)) ?? new List<RuleTextTerm>();
-        //var formula = ruleTextTerms.Aggregate(textExpression, (currentText, val) =>
-        //{
-        //    int index = currentText.IndexOf(val.TermText);
-        //    string replacedString = currentText.Substring(0, index) + val.Letter + currentText.Substring(index + val.TermText.Length);
-        //    return replacedString;
-        //});
-
         var(formula,ruleTextTerms) = TermsExtraction.ExtractTerms(textExpression);
 
         if (ruleTextTerms.Count==0)
