@@ -612,6 +612,38 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public TemplateSheetFact? SelectFactByRowColWithoutZet(int documentId, string tableCode, string row, string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);        
+        var sqlSelect = @"
+                SELECT  fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode
+                  --AND fact.ZetValues= @Zet
+                  AND fact.Row= @Row
+                  AND fact.Col= @Col
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+        row = row.Trim();
+        col = col.Trim();
+        tableCode = tableCode.Trim();
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });        
+        if (facts.Count() > 1)
+        {
+            _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}");
+        }
+
+        return facts.FirstOrDefault();
+    }
+
+
+
     public TemplateSheetFact? SelectFactByRowCol(int documentId, int sheetId,  string row, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);

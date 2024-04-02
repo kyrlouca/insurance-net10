@@ -93,7 +93,7 @@ public class DocumentValidator : IDocumentValidator
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
             .OrderBy(rl=>rl.ValidationID).ToList();        
         
-       validationRules = validationRules.Where(vr => vr.ValidationID == 646).ToList();
+       validationRules = validationRules.Where(vr => vr.ValidationID == 674).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -197,8 +197,9 @@ public class DocumentValidator : IDocumentValidator
                             UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
-                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
                             ruleOpen.ZetValue = sheet.ZDimVal;
+                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
+                            
 
 
                             KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
@@ -387,7 +388,7 @@ public class DocumentValidator : IDocumentValidator
                 ruleTerm.Letter,
                 Zet = ruleTerm.Z,
                 Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTerm.T, zetValue , ruleTerm.R, ruleTerm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTerm.T, ruleTerm.Z, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance, UpdateRuleTermFilter(ruleTerm.Letter,ruleTerm.Filter))
+                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTerm.T, zetValue, ruleTerm.R, ruleTerm.C), ruleTerm.Dv, 0, 0, ruleTerm.IsTolerance, UpdateRuleTermFilter(ruleTerm.Letter,ruleTerm.Filter))
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
         return plainTerms;

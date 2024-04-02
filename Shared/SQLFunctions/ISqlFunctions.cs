@@ -25,6 +25,7 @@ public interface ISqlFunctions
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet, string col);
     public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col);
+    public TemplateSheetFact? SelectFactByRowColWithoutZet(int documentId, string tableCode, string row, string col);
     public TemplateSheetFact? SelectFactByRowCol(int documentId, int sheetId, string row, string col);
     public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col);
     
