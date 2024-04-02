@@ -145,13 +145,20 @@ public class ExcelBookMerger : IExcelBookMerger
                     ? ToZetTemplateLayout(tableGroup, sheetCodeZet)
                     : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, sheetCodeZet);
 
-                zetTemplateLayout.SheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName
-                                                   : distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}"
-                                                   : $"{zetTemplateLayout.GroupTableCode}";
-                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(specialTemplateLayout is not null, zetTemplateLayout);
+                var sheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;
+                if(distinctSheetCodeZets.Count > 1) {
+                    sheetName = $"{sheetName}_{line:D2}";
+                }
+                zetTemplateLayout.SheetName = sheetName;
+                //zetTemplateLayout.SheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName
+                //                                   : distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}"
+                //                                   : $"{zetTemplateLayout.GroupTableCode}";
+
+                 zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(specialTemplateLayout is not null, zetTemplateLayout);
                 (var isRendered, var sheet) = RenderOneZetSheet(zetTemplateLayout);
                 if (isRendered)
                 {
+                    Console.WriteLine($"Merge:{ zetTemplateLayout.SheetName}");
                     var indexItem = new IndexSheetListItem(zetTemplateLayout.SheetName, zetTemplateLayout.SheetName, zetTemplateLayout.TemplateDescription);
                     indexList.ListItems.Add(indexItem);
                 }
