@@ -56,7 +56,8 @@ public class ExcelBookCreator : IExcelBookWriter
         using var excelEngine = new ExcelEngine();
         var errorMessage = "";
 
-        var sheets = SelectTempateSheetInstances().OrderBy(sh => sh.TableCode);
+        var sheetsOld = SelectTempateSheetInstances().OrderBy(sh => sh.TableCode);
+        var sheets = SelectTempateSheetInstances().DistinctBy(sh=>sh.TableID).OrderBy(sh => sh.TableCode);
         if (!sheets.Any())
         {
             errorMessage = "Document contains ZERO sheets";
@@ -96,9 +97,15 @@ public class ExcelBookCreator : IExcelBookWriter
         int START_COL = 1;
         int DATA_ROW_POSITION = 14;
 
-        var shnames = sheets.Select(sh => sh.SheetTabName).ToList();
+       
+        
         foreach (var sheet in sheets)
         {
+            if (sheet.SheetTabName.Contains("S.22.06.01.01"))
+            {
+                Console.WriteLine("S");
+            }
+
             Console.WriteLine("process " + sheet?.SheetTabName?.Trim() + "-" + sheet?.TableCode.Trim() + sheet?.SheetTabName.Trim());
 
             var table = _SqlFunctions.SelectTable(sheet?.TableCode ?? "");
@@ -106,17 +113,18 @@ public class ExcelBookCreator : IExcelBookWriter
             if (table is null)
                 continue;
             var sheetsIndb = _SqlFunctions.SelectTemplateSheetsByTableId(_documentId, table.TableID);
+            var shhnames = sheetsIndb.Select(dbs => dbs.SheetTabName).OrderBy(st=>st).ToList();
             foreach (var sheetDb in sheetsIndb)
             {
-                var originSheet = _originWorkbook.Worksheets[table.TableCode.Trim()];
+                 var originSheet = _originWorkbook.Worksheets[table.TableCode.Trim()];
                  if (originSheet is null) continue;
                 
                 var usedRange = originSheet[originSheet.UsedRange.Row, originSheet.UsedRange.Column, originSheet.UsedRange.LastRow, originSheet.UsedRange.LastColumn];
                 var orgDataRange280 = FindDataRange(originSheet);
                 var orgWholeRange280 = originSheet[1, 1, orgDataRange280.LastRow, orgDataRange280.LastColumn];
 
-
-                var sheetName = sheet.SheetTabName.Trim();
+                
+                var sheetName = sheetDb.SheetTabName.Trim();
                 var destSheet = _destinationWorkbook.Worksheets.Create(sheetName);
                 destSheet.Zoom = 90;
 
