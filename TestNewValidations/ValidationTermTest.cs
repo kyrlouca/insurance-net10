@@ -72,6 +72,16 @@ public class ValidationTermTest
     [Fact]
     public void TestRuleTerm()
     {
+
+        var text3 = @"{t: SR.02.01.07.01, r: AR0690, dv: 0, seq: False, id: v4, f: solvency, fv: solvency2}";
+        //var record = RuleTerm280.CreateRuleTerm(text);
+        var record3 = RuleTerm280.CreateRuleTerm280("X0", text3);
+        string[] expectedValues3 = { "SR.02.01.07.01", "", "AR0690", "" };
+        string[] actualValues3 = { record3.T, record3.Z, record3.R, record3.C };
+
+        Assert.Equal(expectedValues3, actualValues3);
+
+
         var text = @"{t: S.02.01.07.01, r: R0690, dv: 0, seq: False, id: v4, f: solvency, fv: solvency2}";
         //var record = RuleTerm280.CreateRuleTerm(text);
         var record = RuleTerm280.CreateRuleTerm280("X0",text);

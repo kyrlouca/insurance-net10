@@ -24,7 +24,7 @@ public enum KleeneValue
 }
 public record OptionialObject(bool IsNull, object? Value);
 public record BooleanObject(bool IsNull, bool Value);
-public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain };
+public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain,Exp };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact, string Filter);
@@ -408,7 +408,7 @@ public partial class ExpressionEvaluator
             return resSumOrCount;
         }
 
-        var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
+        var rgxFunctions2 = RgxAggregateFunctions();////"(imin|imax|max|isum|exp)\\s*\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)"
         var (innerSymbolFormula, innerFunctionTerms) = ToFunctionObjectsFromTextFormula(functionContent, rgxFunctions2, "F");
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
 
@@ -477,7 +477,16 @@ public partial class ExpressionEvaluator
                     ? new OptionialObject(true, 0)
                     : new OptionialObject(false, terms.Max(item => item.Value));
                 return resMax;
+            case FunctionAggregateTypes.Exp:
+                //var max = terms.Max(item => item?.Obj);
+                var hasNullTermExp = terms.Any(item => item.IsNull);
 
+                double value = Convert.ToDouble(terms.FirstOrDefault().Value ?? 0);
+
+                var resExp = hasNullTermExp
+                    ? new OptionialObject(true, 0)
+                    : new OptionialObject(false, Math.Exp(value));
+                return resExp;
             default: return new OptionialObject(true, 0);
 
 
@@ -494,6 +503,7 @@ public partial class ExpressionEvaluator
             "isum" => FunctionAggregateTypes.iSum,
             "count" => FunctionAggregateTypes.Count,
             "plain" => FunctionAggregateTypes.Plain,
+            "exp" => FunctionAggregateTypes.Exp,
             _ => throw new ArgumentException("Invalid function type"),
         };
 
@@ -767,13 +777,14 @@ public partial class ExpressionEvaluator
 
 
 
-    [GeneratedRegex(@"^(imin|imax|max|isum|count)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
+    [GeneratedRegex(@"^(imin|imax|max|isum|count|exp)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxStartingFunction();
 
-    [GeneratedRegex(@"^(imin|imax|max|isum|count)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
+    [GeneratedRegex(@"^(imin|imax|max|isum|count|exp)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
     public static partial Regex RgxSingleFunction();
 
-    [GeneratedRegex(@"(imin|imax|max|isum|count)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
+
+    [GeneratedRegex(@"(imin|imax|max|isum|count|exp)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxAggregateFunctions();
 
     [GeneratedRegex(@"^\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
