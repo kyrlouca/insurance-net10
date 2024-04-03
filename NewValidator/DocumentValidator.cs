@@ -92,9 +92,10 @@ public class DocumentValidator : IDocumentValidator
 
         //Select rules only with tables (the other rules check context dims or metrics)
         var validationRules = _SqlFunctions.SelectValidationExpressionsWithTablesForModule(_mModule.ModuleID)
+            .Where(rl=>rl.IsEnabled)
             .OrderBy(rl => rl.ValidationID).ToList();
 
-        validationRules = validationRules.Where(vr => vr.ValidationID == 400).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID > 3394).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");

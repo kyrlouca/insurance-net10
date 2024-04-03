@@ -597,9 +597,9 @@ public class SqlFunctions : ISqlFunctions
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
-        row = row.Trim();
-        col=col.Trim();
-        tableCode = tableCode.Trim();
+        row = (row ?? "").Trim();
+        col=(col??"").Trim();
+        tableCode = (tableCode ?? "").Trim();
         var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectZet;
               
         
