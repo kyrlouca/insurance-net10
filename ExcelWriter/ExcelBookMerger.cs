@@ -104,7 +104,7 @@ public class ExcelBookMerger : IExcelBookMerger
         var specialGroups = SpecialTemplateList.SinglePageTableGroupsId()
             .Select(code => SpecialTemplateList.FindSpecialTemplateLayoutByCode(code))
             .Where(sp => sp is not null)
-            .Select(sp => new TableGroup(sp.TemplateCode, "", new List<string>()))
+            .Select(sp => new TableGroup(sp!.TemplateCode, "", new List<string>()))
             .ToList();
 
         tableGroupsList.AddRange(specialGroups);
@@ -479,7 +479,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 LEFT OUTER JOIN mTemplateOrTable va ON va.TemplateOrTableID = mbt.BusinessTemplateID
                 LEFT OUTER JOIN mModule mod ON mbt.ModuleID = mod.ModuleID
                 WHERE 1 = 1
-                    and TemplateOrTableCode like 'S.%'
+                    and (TemplateOrTableCode like 'S.%'or TemplateOrTableCode like 'SR.%')
                     and mod.ModuleCode= @moduleCode                    
                 ORDER BY va.TemplateOrTableCode                       ";
         var templateOrTables = connectionEiopa.Query<MTemplateOrTable>(sqlTables, new { moduleCode });

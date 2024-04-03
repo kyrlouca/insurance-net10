@@ -6,6 +6,7 @@ using Serilog;
 using Shared.SharedHost;
 using Shared.ExcelHelperRoutines;
 using Shared.DataModels;
+using Shared.Various;
 
 using System.Reflection.Metadata;
 using Syncfusion.XlsIO.Implementation;
@@ -13,7 +14,6 @@ using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System;
 using System.Drawing;
-using Shared.ExcelHelperRoutines;
 using Shared.SQLFunctions;
 using System.Text.RegularExpressions;
 using Microsoft.IdentityModel.Tokens;
@@ -440,8 +440,10 @@ public class ExcelBookCreator : IExcelBookWriter
         var xyrange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
         //var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, s61DataLine.LastColumn];
 
-        var rowRgx = new Regex(@"^R\d\d\d\d");
-        var colRgx = new Regex(@"^C\d\d\d\d");
+        //var rowRgxOld = new Regex(@"^R\d\d\d\d");
+        //var colRgxOld = new Regex(@"^C\d\d\d\d");
+        var rowRgx =  RegexConstants.RgxRow();
+        var colRgx = RegexConstants.RgxCol();
 
         IRange xx;
         IRange startRow, endRow = xoriginSheet["A1"], startCol = xoriginSheet["A1"], endCol = xoriginSheet["A1"];
