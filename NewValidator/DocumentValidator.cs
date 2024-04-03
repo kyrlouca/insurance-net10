@@ -95,7 +95,7 @@ public class DocumentValidator : IDocumentValidator
             .Where(rl=>rl.IsEnabled)
             .OrderBy(rl => rl.ValidationID).ToList();
 
-        validationRules = validationRules.Where(vr => vr.ValidationID > 3976).ToList();
+        //validationRules = validationRules.Where(vr => vr.ValidationID > 3976).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -696,7 +696,7 @@ public class DocumentValidator : IDocumentValidator
                 string line;
                 // Read line by line until null (end of file)
                 //$$$SHORT_LABEL(en) - BV1296: T.99.01 c0070 must not be reported.$$$BV1296
-                var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*:(.*)\${3}(.*)");
+                var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*-(.*)\${3}(.*)");
 
                 while ((line = reader.ReadLine()) != null)
                 {
