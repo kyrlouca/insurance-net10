@@ -95,7 +95,7 @@ public class DocumentValidator : IDocumentValidator
             .Where(rl=>rl.IsEnabled)
             .OrderBy(rl => rl.ValidationID).ToList();
 
-        validationRules = validationRules.Where(vr => vr.ValidationID > 3394).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID > 3976).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -239,6 +239,9 @@ public class DocumentValidator : IDocumentValidator
                         }
                     }
 
+
+
+
                 }
 
                 if (hasAggregateFn && hasMixedTables)
@@ -283,9 +286,83 @@ public class DocumentValidator : IDocumentValidator
 
                 if (hasAggregateFn && hasOnlyOpenTables)
                 {
-                    throw new Exception("Aggregate Tables and isAllOpenTables. is it possible?");
+                    //*******WORKING ON THIS
+
+                    //create one rule for each row and apply filter 
+
+                    var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
+                    if (mainTable is null)
+                    {
+                        mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
+                    }
+
+                    var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
+                    var fklTable = kyrTable?.FK_TableCode ?? "";
+                    var fkCol = kyrTable?.FK_TableCol ?? "";
+
+                    var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
+                    foreach (var sheet in sheets)
+                    {
+                        var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
+                        var prevRowValid = true;
+                        foreach (var row in rows)
+                        {
+
+                            //find the row from the column that has the foreign key
+                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+
+                            var relatedRowZZ = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, sheet.TableCode, sheet.ZDimVal, row, fkCol)?.RowForeign ?? "";
+                            var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, fkCol)?.RowForeign ?? "";
+                            if (relatedRow != relatedRowZZ)
+                            {
+                                throw new Exception($"related Row:{relatedRow}");
+                            }
+                            UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+                            UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+                            UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+                            UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+
+                            ruleOpen.ZetValue = sheet.ZDimVal;
+                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
+
+                            ///Sum for closed terms
+                            EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.IfComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
+                            EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.ThenComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
+                            EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.ElseComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
+
+
+                            KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
+                                ? KleeneValue.True
+                                : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
+
+                            //if filter has terms with null values, it is considered false here                            
+                            if (filterKleeneValue != KleeneValue.True)
+                            {
+                                continue;
+                            };
+
+                            var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
+
+                            if (!isValidRowRule)
+                            {
+                                if (prevRowValid) Console.WriteLine("");
+                                Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
+                                CreateRuleError(ruleOpen, validationRule);
+                                prevRowValid = false;
+                            }
+                            else
+                            {
+                                prevRowValid = true;
+                                //Console.WriteLine($"Valid:{validationRule.ValidationID} row:{row}");
+                                Console.Write($".");
+                            }
+
+                        }
+                    }
+
                     //we may have aggregates but the sum  are within ?
                 }
+                
             }
 
 
@@ -298,6 +375,16 @@ public class DocumentValidator : IDocumentValidator
             foreach (var thenSeqTerm in seqTerms)
             {
                 var res = CalculateSumofOpenTable(ruleId, thenSeqTerm, filterComponent, zetValue);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
+            }
+        }
+
+        void EvaluateSumTermsForFixedCells(int ruleId, RuleComponent280 ruleComponent, RuleComponent280 filterComponent, string zetValue)
+        {
+            var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
+            foreach (var thenSeqTerm in seqTerms)
+            {
+                var res = CalculateSumOfClosedTable(thenSeqTerm, zetValue);
                 ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
             }
         }
@@ -409,7 +496,7 @@ public class DocumentValidator : IDocumentValidator
         return res;
     }
 
-    private (int, double) CalculateSumOfClosedTable(RuleTerm280 ruleTermRec,string zetValue)
+    private (int count, double sum) CalculateSumOfClosedTable(RuleTerm280 ruleTermRec,string zetValue)
     {
         //isum({t: S.23.01.02.01, r: R0300; R0310; R0320; R0330; R0340; R0350; R0360; R0370, z: Z0001, dv: emptySequence(), seq: True,.. )
         //scope({t: S.23.01.02.01, c:C0010;C0040, f: solvency, fv: solvency2})
@@ -434,10 +521,23 @@ public class DocumentValidator : IDocumentValidator
 
             ScopeType sumScopeType = rows switch
             {
+                _ when (!rows.Any() && !cols.Any()) => ScopeType.None,
+                _ when (cols.Count()> rows.Count()) => ScopeType.Cols,
+                _ => ScopeType.Rows
+            };
+
+
+            ScopeType sumScopeTypeOld = rows switch
+            {
                 _ when rows.Any() => ScopeType.Rows,
                 _ when cols.Any() => ScopeType.Cols,
                 _ => ScopeType.None
             };
+
+            if(sumScopeType!=sumScopeTypeOld && !(rows.Any() && cols.Any()))
+            {
+                throw new Exception($"sumScopeType DIFFERENT when there are rows AND cols");
+            }
 
             var rowCols = sumScopeType switch
             {
