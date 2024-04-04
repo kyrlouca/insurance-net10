@@ -2,7 +2,7 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=117\r\ncurrency-batch-id=1\r\neiopa-version=\"IU280\"\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ALTIUS Q4-117- 2023.xbrl\"",
+      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=53\r\ncurrency-batch-id=1\r\neiopa-version=\"IU280\"\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\GeneralInsurance-53-2023-q4.xbrl\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
         "Default": "MyDef",

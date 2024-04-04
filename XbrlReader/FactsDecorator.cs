@@ -635,14 +635,14 @@ public partial class FactsDecorator : IFactsDecorator
             var childSheets = _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, kyrTable.TableCode);
             foreach (var childSeet in childSheets)
             {
-                var masterSheet= _SqlFunctions.SelectTemplateSheetBySheetCodeZet(_documentId, kyrTable.TableCode,childSeet.SheetCodeZet);
+                var masterSheet= _SqlFunctions.SelectTemplateSheetBySheetCodeZet(_documentId, kyrTable.FK_TableCode,childSeet.SheetCodeZet); //master is S.06.02
                 if(masterSheet is null)
                 {
                     continue;
                 }
                 var masterFacts = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.FK_TableCode, childSeet.SheetCodeZet, kyrTable.FK_TableCol);
                 //find the single fact in each row  to get the Foreign key value 'ISIN/CAN...'
-                var childFactsWithForeignKey = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.TableCode, childSeet.SheetCodeZet, kyrTable.FK_TableCol);
+                var childFactsWithForeignKey = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.TableCode, childSeet.SheetCodeZet, kyrTable.TableCol);
                 foreach (var childRowKeyFact in childFactsWithForeignKey)
                 {
                     //one fact in each row has the key also present in the master table
