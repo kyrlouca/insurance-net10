@@ -95,7 +95,7 @@ public class DocumentValidator : IDocumentValidator
             .Where(rl=>rl.IsEnabled)
             .OrderBy(rl => rl.ValidationID).ToList();
 
-        //validationRules = validationRules.Where(vr => vr.ValidationID ==647).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID ==379).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");

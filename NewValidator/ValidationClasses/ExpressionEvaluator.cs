@@ -2,6 +2,8 @@
 using Microsoft.Extensions.FileSystemGlobbing;
 using Shared.DataModels;
 using Shared.SpecialRoutines;
+using Validator.Common.ParsingRoutines;
+
 using Syncfusion.XlsIO.Implementation.Collections.Grouping;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 using Syncfusion.XlsIO.Parser.Biff_Records;
@@ -13,6 +15,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Z.Expressions;
+using System.Linq;
 
 namespace NewValidator.ValidationClasses;
 
@@ -32,7 +35,7 @@ public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Obje
 public partial class ExpressionEvaluator
 {
     public enum LogicalOperators { None, IsAnd, IsOR };
-    public enum ArithmeticOperators { Multiply, Plus, Minus, None };
+    
 
     public static bool ValidateRule(RuleStructure280 ruleStructure280)
     {
@@ -694,7 +697,24 @@ public partial class ExpressionEvaluator
             return replacedString;
         });
 
+        ////
+        char[] minusPlusOps = { '+', '-' };
+        char[] multiplyOps = { '*' };
+        char[] allOps = minusPlusOps.Concat(multiplyOps).ToArray();
 
+
+        var opPlusOrMinus = OperatorManager.FindOperators(contentFormulaWithSymbols, minusPlusOps)
+                .Where(op => !OperatorManager.IsOperatorUnary(contentFormulaWithSymbols, allOps, op.position))
+                .ToList();
+        var opMulti = OperatorManager.FindOperators(contentFormulaWithSymbols, multiplyOps).ToList();
+        var opUnary = OperatorManager.FindOperators(contentFormulaWithSymbols, minusPlusOps)
+                .Where(op => OperatorManager.IsOperatorUnary(contentFormulaWithSymbols, allOps, op.position))
+                .ToList();
+
+        var allOperators=opPlusOrMinus.Concat(opMulti).Concat(opUnary).ToArray();
+
+        var firstOp=allOperators.First();
+        ///
 
         char[] opeatorsToFind = { '+', '-' };
         var plusOrMinusPosition = contentFormulaWithSymbols.IndexOfAny(opeatorsToFind);
@@ -733,13 +753,14 @@ public partial class ExpressionEvaluator
         {
             string newLeft = RestoreLeftSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
             string newRight = RestoreRightSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
+
             return (ArithmeticOperators.Minus, newLeft, newRight);
         }
 
-
-
         return (ArithmeticOperators.None, text, "");
         //***************************************
+
+        //****************************************
         static string RestoreLeftSide(List<(string, string Value)> nestedFunctions, string contentFormulaWithSymbols, string logicalOperator)
         {
             var indexAnd = contentFormulaWithSymbols.IndexOf(logicalOperator);

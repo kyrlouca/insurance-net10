@@ -3,13 +3,16 @@ using System.Text.RegularExpressions;
 using Shared.SpecialRoutines;
 using System.Linq;
 using NewValidator.ValidationClasses;
+using System.Xml.Schema;
+
+
 
 
 
 
 var inputfile = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ShortLabels.txt";
 var outputfile = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ShortLabelsSql.txt";
-NewValidator.DocumentValidator.UpdateExpressionWithShortLabel(inputfile, outputfile);
+//NewValidator.DocumentValidator.UpdateExpressionWithShortLabel(inputfile, outputfile);
 return;
 var zz1 = "abc (acx or x3) or imin(x1>x3 and x3<x1) + x3";
 
@@ -40,5 +43,4 @@ var rowcol = "C0023";
 var xx = DimUtils.CreateRowCol(rowcol);
 
 var y = 5;
-
 
