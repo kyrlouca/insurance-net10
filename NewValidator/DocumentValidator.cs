@@ -98,7 +98,7 @@ public class DocumentValidator : IDocumentValidator
         var exempted = new[] {   0 };
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
         //validationRules = validationRules.Where(vr => !vr.Rule.Contains("exp(")).ToList();
-        validationRules = validationRules.Where(vr => vr.ValidationID == 430).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 3547).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -183,14 +183,17 @@ public class DocumentValidator : IDocumentValidator
                     }
 
                     var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
-                    var fklTable = kyrTable?.FK_TableCode ?? "";
-                    var fkCol = kyrTable?.FK_TableCol ?? "";
                     var kyrTableCol = kyrTable?.TableCol ?? "";
+                    var fklTableCode = kyrTable?.FK_TableCode ?? "";
+                    var fkCol = kyrTable?.FK_TableCol ?? "";
+                    var relatedKeyFacts = _SqlFunctions.SelectFactsByCol(DocumentId, fklTableCode, "", fkCol);
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
-                        var keySheet = _SqlFunctions.SelectTemplateSheetBySheetCodeZet(DocumentId, fklTable, sheet.ZDimVal);
+                        var keySheet = _SqlFunctions.SelectTemplateSheetBySheetCodeZet(DocumentId, fklTableCode, sheet.ZDimVal);
+                      
+
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
                         
                         var prevRowValid = true;
@@ -199,13 +202,9 @@ public class DocumentValidator : IDocumentValidator
 
                             //find the row from the column that has the foreign key
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-                            
-                            var relatedRowZZ = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, sheet.TableCode, sheet.ZDimVal, row, kyrTableCol)?.RowForeign ?? "";
-                            var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, kyrTableCol)?.RowForeign ?? "";                            
-                            if (relatedRow != relatedRowZZ)
-                            {
-                                throw new Exception($"related Row:{relatedRow}");
-                            }
+                            var factKey = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, kyrTable?.TableCode??"", sheet.ZDimVal, row, kyrTableCol)?.TextValue?.Trim()??"";
+                            var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
+                                                        
                             UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
                             UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);

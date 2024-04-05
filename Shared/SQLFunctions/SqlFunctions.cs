@@ -599,19 +599,13 @@ public class SqlFunctions : ISqlFunctions
         ;
         row = (row ?? "").Trim();
         col=(col??"").Trim();
-        tableCode = (tableCode ?? "").Trim();
+        tableCode = (tableCode ?? "").Trim();   
         var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectZet;
               
         
 
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
-        var factsWithOutzet = connectionLocal.Query<TemplateSheetFact>(sqlSelectWithoutZet, new { documentId, tableCode, zet, row, col });
-        if (facts.Count() != factsWithOutzet.Count())
-        {
-            var xx = 22;
-        }
-
-
+        
         if (facts.Count() > 1)
         {
             _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}");
@@ -650,7 +644,8 @@ public class SqlFunctions : ISqlFunctions
     public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet,  string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlSelect = @"
+
+        var sqlSelectWithZet = @"
                 SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
                 FROM
                   TemplateSheetFact fact
@@ -665,6 +660,23 @@ public class SqlFunctions : ISqlFunctions
                 "
         ;
 
+
+
+        var sqlSelectWithoutZet = @"
+                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode                  
+                  AND fact.Col= @Col
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+
+        var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectWithZet;
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, col }).ToList();
         return facts;
     }
