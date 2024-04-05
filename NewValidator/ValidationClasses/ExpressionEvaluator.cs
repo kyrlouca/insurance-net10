@@ -497,8 +497,8 @@ public partial class ExpressionEvaluator
                 {
                     return new OptionialObject(true, 0);
                 }
-                
-                
+
+
             case FunctionAggregateTypes.Abs:
                 //var max = terms.Max(item => item?.Obj);
                 var hasNullTermAbs = terms.Any(item => item.IsNull);
@@ -513,9 +513,9 @@ public partial class ExpressionEvaluator
                     return new OptionialObject(false, absValue);
                 }
                 catch
-                {                 
+                {
                     return new OptionialObject(true, 0);
-                }                
+                }
 
             default: return new OptionialObject(true, 0);
 
@@ -726,23 +726,10 @@ public partial class ExpressionEvaluator
         });
 
         ////
-        char[] minusPlusOps = { '+', '-' };
-        char[] multiplyOps = { '*' };
-        char[] allOps = minusPlusOps.Concat(multiplyOps).ToArray();
-
-
-        var opPlusOrMinus = OperatorManager.FindOperators(contentFormulaWithSymbols, minusPlusOps)
-                .Where(op => !OperatorManager.IsOperatorUnary(contentFormulaWithSymbols, allOps, op.position))
-                .ToList();
-        var opMulti = OperatorManager.FindOperators(contentFormulaWithSymbols, multiplyOps).ToList();
-        var opUnary = OperatorManager.FindOperators(contentFormulaWithSymbols, minusPlusOps)
-                .Where(op => OperatorManager.IsOperatorUnary(contentFormulaWithSymbols, allOps, op.position))
-                .ToList();
-
-        var allOperators = opPlusOrMinus.Concat(opMulti).Concat(opUnary).ToArray();
-
-        //var firstOp = allOperators.First().;
-        ///
+        var arOperator = FindOperator(contentFormulaWithSymbols);
+        var opNewStr = arOperator?.op.ToString() ?? "";
+        ////
+        
 
         char[] opeatorsToFind = { '+', '-' };
         var plusOrMinusPosition = contentFormulaWithSymbols.IndexOfAny(opeatorsToFind);
@@ -762,6 +749,12 @@ public partial class ExpressionEvaluator
         }
 
         var op = contentFormulaWithSymbols[operatorPosition].ToString();
+
+        if (opNewStr != op)
+        {
+            var xx = 3;
+        }
+
 
         if (op == "*")
         {
@@ -821,6 +814,25 @@ public partial class ExpressionEvaluator
                 return replacedString;
             });
             return newRight.Trim();
+        }
+
+        static OperatorManager.OperatorRecord FindOperator(string contentFormulaWithSymbols)
+        {
+            char[] minusPlusOps = { '+', '-' };
+            char[] multiplyOps = { '*' };
+            char[] allOps = minusPlusOps.Concat(multiplyOps).ToArray();
+
+            var opPlusOrMinus = OperatorManager.FindOperators(contentFormulaWithSymbols, allOps, minusPlusOps);
+            var opMulti = OperatorManager.FindOperators(contentFormulaWithSymbols, allOps, multiplyOps);
+
+            var ordered = new List<OperatorManager.OperatorRecord>()
+                    .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator != ArithmeticOperators.UnaryMinus))
+                    .Concat(opMulti)
+                    .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator == ArithmeticOperators.UnaryMinus))
+                    .ToList();
+            var opNew = ordered.FirstOrDefault();
+            
+            return opNew;
         }
     }
 
