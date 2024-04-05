@@ -239,14 +239,13 @@ public partial class ExpressionEvaluator
 
             if (resLeftDbl.Value is double || resRightDbl.Value is double)
             {
-                var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)resLeftDbl.Value, leftDecimals, (double)resRightDbl.Value, rightDecimals);
+                var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value??0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
             }
 
             if (resLeftDbl.Value is string || resRightDbl.Value is string)
             {
-                var resString = resLeftDbl.Value == resRightDbl.Value;
-                //var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)resLeftDbl.Value, leftDecimals, (double)resRightDbl.Value, rightDecimals);
+                var resString = resLeftDbl.Value == resRightDbl.Value;                
                 return resString ? KleeneValue.True : KleeneValue.False;
             }
 
@@ -287,6 +286,13 @@ public partial class ExpressionEvaluator
         {
             var res = EvaluateGeneralExpressionRecursively(matchOuter.Groups[1].Value, terms, "");
             return res;
+        }
+
+        //*** just a number
+        if (double.TryParse(generalExpression, out double dValue))
+        {
+            // The string represents a valid double
+            return new OptionialObject(false,  dValue);
         }
 
         //*** Just a Term X01 (could be double,date, string, or null. Dates are converted to double)
@@ -344,25 +350,35 @@ public partial class ExpressionEvaluator
         //*** Multiply , add, subtract
         if (resM.arithmeticOperator != ArithmeticOperators.None)
         {
-            var matchLeftFunction = regSingleFunction.Match(resM.left);
-            var leftRes = matchLeftFunction.Success
+            
+            var leftRes = new OptionialObject(true, 0.0);
+            var rightRes = new OptionialObject(true, 0.0);
+
+            if (resM.arithmeticOperator != ArithmeticOperators.UnaryMinus)
+            {
+                var matchLeftFunction = regSingleFunction.Match(resM.left);
+                leftRes = matchLeftFunction.Success
                 ? EvaluateFunction(resM.left, terms, "")
                 : EvaluateGeneralExpressionRecursively(resM.left, terms, "");
+            }
+            
 
             var matchRightFunction = regSingleFunction.Match(resM.right);
-            var rightRes = matchRightFunction.Success
+            rightRes = matchRightFunction.Success
                 ? EvaluateFunction(resM.right, terms, "")
                 : EvaluateGeneralExpressionRecursively(resM.right, terms, "");
 
-            if (leftRes.IsNull || rightRes.IsNull)
-            {
-                return new OptionialObject(true, 0);
-            }
+            //if (leftRes.IsNull || rightRes.IsNull)
+            //{
+            //    return new OptionialObject(true, 0);
+            //}
+            
             switch (resM.arithmeticOperator)
             {
-                case ArithmeticOperators.Multiply: return new OptionialObject(false, (double)leftRes.Value! * (double)rightRes.Value!);
-                case ArithmeticOperators.Plus: return new OptionialObject(false, (double)leftRes.Value! + (double)rightRes.Value!);
-                case ArithmeticOperators.Minus: return new OptionialObject(false, (double)leftRes.Value! - (double)rightRes.Value!);
+                case ArithmeticOperators.Multiply: return new OptionialObject(false, ((double)(leftRes?.Value ?? 0)) * ((double)(rightRes?.Value ?? 0)));
+                case ArithmeticOperators.Plus: return new OptionialObject(false, (double)(leftRes?.Value??0) + (double)(rightRes?.Value??0));
+                case ArithmeticOperators.Minus: return new OptionialObject(false, (double)(leftRes?.Value ?? 0) - (double)(rightRes?.Value ?? 0));
+                case ArithmeticOperators.UnaryMinus: return new OptionialObject(false, -(double)(rightRes?.Value ?? 0) );
                 default: return new OptionialObject(true, 0);
             }
         }
@@ -464,60 +480,34 @@ public partial class ExpressionEvaluator
     static OptionialObject EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<OptionialObject> terms)
     {
 
+        var convertedTerms = terms.Select(tr => tr.IsNull ? tr with { IsNull = false, Value = 0.0 } : tr);
         switch (functionType)
         {
-            case FunctionAggregateTypes.iMin:
-                //var min = terms.Min(item => item?.Obj);
-                var hasNullTermMin = terms.Any(item => item.IsNull);
-                var resMin = hasNullTermMin
-                    ? new OptionialObject(true, 0)
-                    : new OptionialObject(false, terms.Min(item => item.Value));
+            
+            case FunctionAggregateTypes.iMin:                               
+                var resMin= new OptionialObject(false, convertedTerms.Min(item => item.Value));                
                 return resMin;
             case FunctionAggregateTypes.iMax:
-                //var max = terms.Max(item => item?.Obj);
-                var hasNullTermMax = terms.Any(item => item.IsNull);
-                var resMax = hasNullTermMax
-                    ? new OptionialObject(true, 0)
-                    : new OptionialObject(false, terms.Max(item => item.Value));
+                var resMax = new OptionialObject(false, convertedTerms.Min(item => item.Value));                                
                 return resMax;
-            case FunctionAggregateTypes.Exp:
-                //var max = terms.Max(item => item?.Obj);
-                var hasNullTermExp = terms.Any(item => item.IsNull);
-                if (hasNullTermExp)
-                {
-                    return new OptionialObject(true, 0);
-                }
-
+            case FunctionAggregateTypes.Exp:                
                 try
                 {
-                    double value = Convert.ToDouble(terms.FirstOrDefault().Value ?? 0);
+                    double value = Convert.ToDouble(convertedTerms?.FirstOrDefault()?.Value  ?? 0.0);
                     return new OptionialObject(false, Math.Exp(value));
                 }
                 catch
                 {
-                    return new OptionialObject(true, 0);
+                    return new OptionialObject(true, 0.0);
                 }
 
 
             case FunctionAggregateTypes.Abs:
-                //var max = terms.Max(item => item?.Obj);
-                var hasNullTermAbs = terms.Any(item => item.IsNull);
-                if (hasNullTermAbs)
-                {
-                    return new OptionialObject(true, 0);
-                }
 
-                try
-                {
-                    double absValue = Math.Abs(Convert.ToDouble(terms.FirstOrDefault().Value ?? 0));
-                    return new OptionialObject(false, absValue);
-                }
-                catch
-                {
-                    return new OptionialObject(true, 0);
-                }
-
-            default: return new OptionialObject(true, 0);
+                double absValue = Math.Abs(Convert.ToDouble(convertedTerms?.FirstOrDefault()?.Value ?? 0.0));
+                return new OptionialObject(false, absValue);
+                
+            default: return new OptionialObject(true, 0.0);
 
 
         }
@@ -709,12 +699,14 @@ public partial class ExpressionEvaluator
     public static (ArithmeticOperators arithmeticOperator, string left, string right) SplitArithmeticExpression(string text)
     {
         //We have "*", "+", "-" inside parenthesis or other functions. We need to find the first valid "*","+","-"
+        //Precedence works in reverse: first split (-,+) then * and then unary -
         //Then, split the expression to left and right and return.
         //If no logical operator is found=> put everything in the left
         //The trick is to replace the parenthesis with letters and then find the split 
+        //"3 * -2+4x";=> "+", "3 * -2", "4x";
+        //"3 * -2";=> "*", "3", "-2";
 
-        //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus         
-        //var rgx = RgxAggregateFunctionSingle(); ////"^(imin|imax|max|isum)\\(((?>\\((?<c>)|[^()]+|\\)(?<-c>))*(?(c)(?!)))\\)$")        
+
         var rgx = new Regex(@"\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)");
         var matchParenthesis = rgx.Matches(text);
         var nestedFunctions = matchParenthesis.Select((match, i) => ($"Z{i:D2}", match.Value)).ToList();
@@ -728,64 +720,25 @@ public partial class ExpressionEvaluator
         ////
         var arOperator = FindOperator(contentFormulaWithSymbols);
         var opNewStr = arOperator?.op.ToString() ?? "";
-        ////
-        
-
-        char[] opeatorsToFind = { '+', '-' };
-        var plusOrMinusPosition = contentFormulaWithSymbols.IndexOfAny(opeatorsToFind);
-
-        var multiplyPosition = contentFormulaWithSymbols.IndexOf("*");
-
-        //yes break for + or minus , so that * has precedence
-        var operatorPosition = plusOrMinusPosition > -1
-            ? plusOrMinusPosition
-            : multiplyPosition > -1
-            ? multiplyPosition
-            : -1;
-
-        if (operatorPosition == -1)
+        var xLeft = "";
+        var xRight = "";
+        if (arOperator is not null)
+        {
+            xLeft = RestoreLeftSideNew(nestedFunctions, contentFormulaWithSymbols, arOperator.position).Trim();
+            xRight = RestoreRightSideNew(nestedFunctions, contentFormulaWithSymbols, arOperator.position).Trim();
+            return (arOperator.arithmeticOperator, xLeft, xRight);
+        }
+        else
         {
             return (ArithmeticOperators.None, text, "");
         }
 
-        var op = contentFormulaWithSymbols[operatorPosition].ToString();
 
-        if (opNewStr != op)
+        
+        static string RestoreLeftSideNew(List<(string, string Value)> nestedFunctions, string contentFormulaWithSymbols, int position)
         {
-            var xx = 3;
-        }
 
-
-        if (op == "*")
-        {
-            string newLeft = RestoreLeftSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
-            string newRight = RestoreRightSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
-            return (ArithmeticOperators.Multiply, newLeft, newRight);
-        }
-
-        if (op == "+")
-        {
-            string newLeft = RestoreLeftSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
-            string newRight = RestoreRightSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
-            return (ArithmeticOperators.Plus, newLeft, newRight);
-        }
-
-        if (op == "-")
-        {
-            string newLeft = RestoreLeftSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
-            string newRight = RestoreRightSide(nestedFunctions, contentFormulaWithSymbols, op).Trim();
-
-            return (ArithmeticOperators.Minus, newLeft, newRight);
-        }
-
-        return (ArithmeticOperators.None, text, "");
-        //***************************************
-
-        //****************************************
-        static string RestoreLeftSide(List<(string, string Value)> nestedFunctions, string contentFormulaWithSymbols, string logicalOperator)
-        {
-            var indexAnd = contentFormulaWithSymbols.IndexOf(logicalOperator);
-            var leftSide = contentFormulaWithSymbols[..indexAnd];
+            var leftSide = contentFormulaWithSymbols[..position];
             var newLeft = nestedFunctions.Aggregate(leftSide, (currentText, val) =>
             {
                 int index = currentText.IndexOf(val.Item1);
@@ -799,10 +752,10 @@ public partial class ExpressionEvaluator
             return newLeft.Trim();
         }
 
-        static string RestoreRightSide(List<(string, string Value)> nestedFunctions, string contentFormulaWithSymbols, string logicalOperator)
+        static string RestoreRightSideNew(List<(string, string Value)> nestedFunctions, string contentFormulaWithSymbols, int position)
         {
-            var indexAnd = contentFormulaWithSymbols.IndexOf(logicalOperator);
-            var rightSide = contentFormulaWithSymbols[(indexAnd + logicalOperator.Length)..];
+
+            var rightSide = contentFormulaWithSymbols[(position + 1)..];
             var newRight = nestedFunctions.Aggregate(rightSide, (currentText, val) =>
             {
                 int index = currentText.IndexOf(val.Item1);
@@ -815,6 +768,10 @@ public partial class ExpressionEvaluator
             });
             return newRight.Trim();
         }
+
+
+
+
 
         static OperatorManager.OperatorRecord FindOperator(string contentFormulaWithSymbols)
         {
@@ -831,7 +788,7 @@ public partial class ExpressionEvaluator
                     .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator == ArithmeticOperators.UnaryMinus))
                     .ToList();
             var opNew = ordered.FirstOrDefault();
-            
+
             return opNew;
         }
     }
