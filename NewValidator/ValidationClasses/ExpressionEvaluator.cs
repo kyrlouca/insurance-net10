@@ -27,7 +27,7 @@ public enum KleeneValue
 }
 public record OptionialObject(bool IsNull, object? Value);
 public record BooleanObject(bool IsNull, bool Value);
-public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain,Exp };
+public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain, Exp, Abs };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
 public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact, string Filter);
@@ -35,7 +35,7 @@ public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Obje
 public partial class ExpressionEvaluator
 {
     public enum LogicalOperators { None, IsAnd, IsOR };
-    
+
 
     public static bool ValidateRule(RuleStructure280 ruleStructure280)
     {
@@ -244,7 +244,7 @@ public partial class ExpressionEvaluator
             }
 
             if (resLeftDbl.Value is string || resRightDbl.Value is string)
-            {                
+            {
                 var resString = resLeftDbl.Value == resRightDbl.Value;
                 //var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)resLeftDbl.Value, leftDecimals, (double)resRightDbl.Value, rightDecimals);
                 return resString ? KleeneValue.True : KleeneValue.False;
@@ -263,8 +263,8 @@ public partial class ExpressionEvaluator
 
         var term = terms.FirstOrDefault(trm => trm.Key == letter).Value;
 
-        var resTerm = term is null ? new OptionialObject(true, null)            
-            : term.Obj is null ? new OptionialObject(true, null)            
+        var resTerm = term is null ? new OptionialObject(true, null)
+            : term.Obj is null ? new OptionialObject(true, null)
             : term.DataType == "D" ? new OptionialObject(false, ((DateTime)term.Obj).ToOADate())
             : new OptionialObject(false, Convert.ToDouble(term.Obj));
 
@@ -294,7 +294,7 @@ public partial class ExpressionEvaluator
         var matchTerm = rgxTerm.Match(generalExpression);
         if (matchTerm.Success)
         {
-            var resTermD = ToOptionalObject(matchTerm.Value, terms);            
+            var resTermD = ToOptionalObject(matchTerm.Value, terms);
             return resTermD;
         }
 
@@ -311,12 +311,12 @@ public partial class ExpressionEvaluator
         //*** it is an expression and above we checked that there is no operator, it is not function , it is not a term . What is it??
         if (resM.arithmeticOperator == ArithmeticOperators.None)
         {
-         
-            if(generalExpression is null)
+
+            if (generalExpression is null)
             {
-                return new OptionialObject(true,null);
+                return new OptionialObject(true, null);
             }
-            
+
             var rgxBrackets = new Regex(@"\[(.*)\]");
             var matchBrackets = rgxBrackets.Match(generalExpression);
             if (matchBrackets.Success)
@@ -371,7 +371,7 @@ public partial class ExpressionEvaluator
         throw new Exception($"Expression:{generalExpression}. Can not decifer Arithmetic Expression");
         //return new DoubleObject(true, 0);              
     }
-    
+
 
     public static OptionialObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm)
     {
@@ -483,13 +483,40 @@ public partial class ExpressionEvaluator
             case FunctionAggregateTypes.Exp:
                 //var max = terms.Max(item => item?.Obj);
                 var hasNullTermExp = terms.Any(item => item.IsNull);
+                if (hasNullTermExp)
+                {
+                    return new OptionialObject(true, 0);
+                }
 
-                double value = Convert.ToDouble(terms.FirstOrDefault().Value ?? 0);
+                try
+                {
+                    double value = Convert.ToDouble(terms.FirstOrDefault().Value ?? 0);
+                    return new OptionialObject(false, Math.Exp(value));
+                }
+                catch
+                {
+                    return new OptionialObject(true, 0);
+                }
+                
+                
+            case FunctionAggregateTypes.Abs:
+                //var max = terms.Max(item => item?.Obj);
+                var hasNullTermAbs = terms.Any(item => item.IsNull);
+                if (hasNullTermAbs)
+                {
+                    return new OptionialObject(true, 0);
+                }
 
-                var resExp = hasNullTermExp
-                    ? new OptionialObject(true, 0)
-                    : new OptionialObject(false, Math.Exp(value));
-                return resExp;
+                try
+                {
+                    double absValue = Math.Abs(Convert.ToDouble(terms.FirstOrDefault().Value ?? 0));
+                    return new OptionialObject(false, absValue);
+                }
+                catch
+                {                 
+                    return new OptionialObject(true, 0);
+                }                
+
             default: return new OptionialObject(true, 0);
 
 
@@ -507,6 +534,7 @@ public partial class ExpressionEvaluator
             "count" => FunctionAggregateTypes.Count,
             "plain" => FunctionAggregateTypes.Plain,
             "exp" => FunctionAggregateTypes.Exp,
+            "iabs" => FunctionAggregateTypes.Abs,
             _ => throw new ArgumentException("Invalid function type"),
         };
 
@@ -711,9 +739,9 @@ public partial class ExpressionEvaluator
                 .Where(op => OperatorManager.IsOperatorUnary(contentFormulaWithSymbols, allOps, op.position))
                 .ToList();
 
-        var allOperators=opPlusOrMinus.Concat(opMulti).Concat(opUnary).ToArray();
+        var allOperators = opPlusOrMinus.Concat(opMulti).Concat(opUnary).ToArray();
 
-        var firstOp=allOperators.First();
+        var firstOp = allOperators.First();
         ///
 
         char[] opeatorsToFind = { '+', '-' };
@@ -798,14 +826,14 @@ public partial class ExpressionEvaluator
 
 
 
-    [GeneratedRegex(@"^(imin|imax|max|isum|count|exp)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
+    [GeneratedRegex(@"^(imin|imax|max|isum|count|exp|iabs)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxStartingFunction();
 
-    [GeneratedRegex(@"^(imin|imax|max|isum|count|exp)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
+    [GeneratedRegex(@"^(imin|imax|max|isum|count|exp|iabs)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
     public static partial Regex RgxSingleFunction();
 
 
-    [GeneratedRegex(@"(imin|imax|max|isum|count|exp)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
+    [GeneratedRegex(@"(imin|imax|max|isum|count|exp|iabs)\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxAggregateFunctions();
 
     [GeneratedRegex(@"^\s*\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)$")]
