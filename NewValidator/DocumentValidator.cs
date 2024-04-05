@@ -95,10 +95,10 @@ public class DocumentValidator : IDocumentValidator
             .Where(rl=>rl.IsEnabled)
             .OrderBy(rl => rl.ValidationID).ToList();
 
-        var exempted = new[] { 1193, 1379, 1575, 2316, 5117,396,397,400 };
+        var exempted = new[] {   0 };
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
-        validationRules = validationRules.Where(vr => !vr.Rule.Contains("exp(")).ToList();
-        validationRules = validationRules.Where(vr => vr.ValidationID ==379).ToList();
+        //validationRules = validationRules.Where(vr => !vr.Rule.Contains("exp(")).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 430).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");

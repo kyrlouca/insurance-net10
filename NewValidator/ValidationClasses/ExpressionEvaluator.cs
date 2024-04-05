@@ -375,11 +375,11 @@ public partial class ExpressionEvaluator
             
             switch (resM.arithmeticOperator)
             {
-                case ArithmeticOperators.Multiply: return new OptionialObject(false, ((double)(leftRes?.Value ?? 0)) * ((double)(rightRes?.Value ?? 0)));
-                case ArithmeticOperators.Plus: return new OptionialObject(false, (double)(leftRes?.Value??0) + (double)(rightRes?.Value??0));
-                case ArithmeticOperators.Minus: return new OptionialObject(false, (double)(leftRes?.Value ?? 0) - (double)(rightRes?.Value ?? 0));
-                case ArithmeticOperators.UnaryMinus: return new OptionialObject(false, -(double)(rightRes?.Value ?? 0) );
-                default: return new OptionialObject(true, 0);
+                case ArithmeticOperators.Multiply: return new OptionialObject(false, ((double)(leftRes?.Value ?? 0.0)) * ((double)(rightRes?.Value ?? 0.0)));
+                case ArithmeticOperators.Plus: return new OptionialObject(false, (double)(leftRes?.Value??0.0) + (double)(rightRes?.Value??0.0));
+                case ArithmeticOperators.Minus: return new OptionialObject(false, (double)(leftRes?.Value ?? 0.0) - (double)(rightRes?.Value ?? 0.0));
+                case ArithmeticOperators.UnaryMinus: return new OptionialObject(false, -(double)(rightRes?.Value ?? 0.0) );
+                default: return new OptionialObject(true, 0.0);
             }
         }
 
