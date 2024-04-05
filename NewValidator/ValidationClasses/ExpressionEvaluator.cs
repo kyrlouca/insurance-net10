@@ -741,7 +741,7 @@ public partial class ExpressionEvaluator
 
         var allOperators = opPlusOrMinus.Concat(opMulti).Concat(opUnary).ToArray();
 
-        var firstOp = allOperators.First();
+        //var firstOp = allOperators.First().;
         ///
 
         char[] opeatorsToFind = { '+', '-' };
