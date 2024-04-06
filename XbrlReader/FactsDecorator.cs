@@ -97,7 +97,7 @@ public partial class FactsDecorator : IFactsDecorator
         //ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
 
         var moduleZets = new List<string>();
-        ModuleTables = ModuleTables.Where(mt => mt.TableID == 139).ToList();
+        //ModuleTables = ModuleTables.Where(mt => mt.TableID == 139).ToList();
         foreach (var table in ModuleTables)
         {            
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
@@ -137,10 +137,6 @@ public partial class FactsDecorator : IFactsDecorator
         }
         //***********  update foreing keys
         UpdateForeignKeysOfChildTablesNN();
-        //foreach (var openTable in ModuleTables.Where(tbl=>tbl.IsOpenTable))
-        //{
-         
-        //}
         
         //update tableSheetNames
         UpdateTableSheetNames(moduleZets);
@@ -367,7 +363,7 @@ public partial class FactsDecorator : IFactsDecorator
         //for each RowCol of this table, select the facts which have the exact dims (open or close) 
         //a rowcol position may contain more than one fact (currency and country)
         //also update the zetValues of each fact
-        tableCells = tableCells.Where(tc => tc.CellID == 12801).ToList();
+        //tableCells = tableCells.Where(tc => tc.CellID == 12801).ToList();
         foreach (var tableCell in tableCells)
         {
             var cellSignature = tableCell.DatapointSignature;
@@ -387,15 +383,9 @@ public partial class FactsDecorator : IFactsDecorator
             }
 
 
-
-            var cellFacts = SelectFactsFromCellSignature280(cellSignature);
-            var cellFactsNew = SelectFactsUsingDims(cellSignature);
-            if (cellFactsNew.Count() != cellFacts.Count)
-            {
-                var xx = 3;
-            }
-
-            var count = 0;
+            //var cellFactsOld = SelectFactsFromCellSignatureOldAndNotUsed(cellSignature);
+            var cellFacts = SelectFactsUsingDims(cellSignature);
+                        
             foreach (var cellFact in cellFacts)
             {
                 
@@ -504,7 +494,7 @@ public partial class FactsDecorator : IFactsDecorator
     }
 
 
-    private List<TemplateSheetFact> SelectFactsFromCellSignature280(string cellSignature)
+    private List<TemplateSheetFact> SelectFactsFromCellSignatureOldAndNotUsed(string cellSignature)
     {
         //match any facts with cell signature         
         var facts = new List<TemplateSheetFact>();
@@ -517,10 +507,7 @@ public partial class FactsDecorator : IFactsDecorator
             facts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);
             return facts;
         }
-
-        //serach for facts with optional dims
-        //there are maximum TWO optional dims(checked)
-        //start with No optional dims and try one by one
+        
         List<string> cellDims = cellSignature
             .Split("|").ToList();
 
@@ -552,37 +539,23 @@ public partial class FactsDecorator : IFactsDecorator
         return facts;
     }
 
-
-    static List<string> GenerateCombinations(string[] array)
-    {
-        List<string> result = new List<string>();
-        GenerateCombinationsHelper(array, "", 0, result);
-        return result;
-    }
-
-    static void GenerateCombinationsHelper(string[] array, string current, int index, List<string> result)
-    {
-        if (index == array.Length)
-        {
-            result.Add(current);
-            return;
-        }
-
-        // Include current element in the combination
-        GenerateCombinationsHelper(array, current + array[index] + "|", index + 1, result);
-
-        // Exclude current element in the combination
-        GenerateCombinationsHelper(array, current, index + 1, result);
-    }
-
-
+     
 
     private List<TemplateSheetFact> SelectFactsUsingDims(string cellSignature)
     {
-        
-
-
+        //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
+        //MET(s2md_met:ei2426)|s2c_dim:MP(ID:)|s2c_dim:NF(ID:SH)|s2c_dim:PX(ID:)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/XT72-PIRAEUS BANK S.A.-EUR-Shareholders' funds-SH-Neither unit-linked nor index-linked)|s2c_dim:XA(NB:13)
+        //Select fact which has dims (via context) that are exact, wild, and NOT exists any other
+        //for normal dims use s2c_dim:SU(s2c_MC:x168), for wild dims use just the DIM 
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        if (!cellSignature.Contains("(*") && !cellSignature.Contains("(*?"))
+        {
+            var simpleFacts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);
+            return simpleFacts;
+        }
+
+
 
         List<string> fullDims = cellSignature
             .Split("|").ToList();
@@ -593,7 +566,6 @@ public partial class FactsDecorator : IFactsDecorator
 
         List<TemplateSheetFact> facts;
         
-
         var rgxMet = new Regex(@"^MET\((.*?)\)");
         var xbrlCodeFull = fullDims.FirstOrDefault()??"";
         var xbrlCodeMatch = rgxMet.Match(xbrlCodeFull);
@@ -670,6 +642,7 @@ public partial class FactsDecorator : IFactsDecorator
 
         string ToJustDim(string dimSignature)
         {
+            //s2c_dim:BL(s2c_LB:x145)=> BL
             var rgxJustDim = new Regex(@"^s2c_dim:(\w\w)\(.*?\)");
             var matchJustDim= rgxJustDim.Match(dimSignature);
             return matchJustDim.Success? matchJustDim.Groups[1].Value : "";
