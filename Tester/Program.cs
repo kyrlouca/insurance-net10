@@ -7,7 +7,14 @@ using System.Xml.Schema;
 
 
 
-
+string[] array = { "a", "b", "c" };
+List<string> combinations = GenerateCombinations(array);
+foreach (var optionalCombination in combinations)
+{
+    var optinalDimsArr = optionalCombination.Split("|", StringSplitOptions.RemoveEmptyEntries).Where(tt=>!string.IsNullOrEmpty(tt));
+    var xx44 = 2;
+}
+    
 
 
 var inputfile = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ShortLabels.txt";
@@ -44,3 +51,24 @@ var xx = DimUtils.CreateRowCol(rowcol);
 
 var y = 5;
 
+static List<string> GenerateCombinations(string[] array)
+{
+    List<string> result = new List<string>();
+    GenerateCombinationsHelper(array, "", 0, result);
+    return result;
+}
+
+static void GenerateCombinationsHelper(string[] array, string current, int index, List<string> result)
+{
+    if (index == array.Length)
+    {
+        result.Add(current);
+        return;
+    }
+
+    // Include current element in the combination
+    GenerateCombinationsHelper(array, current + array[index] + "|", index + 1, result);
+
+    // Exclude current element in the combination
+    GenerateCombinationsHelper(array, current, index + 1, result);
+}

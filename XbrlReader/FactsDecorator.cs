@@ -96,7 +96,8 @@ public partial class FactsDecorator : IFactsDecorator
         }
         //ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
 
-        var moduleZets = new List<string>();  
+        var moduleZets = new List<string>();
+        ModuleTables = ModuleTables.Where(mt => mt.TableID == 139).ToList();
         foreach (var table in ModuleTables)
         {            
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
@@ -349,6 +350,7 @@ public partial class FactsDecorator : IFactsDecorator
         var tableFacts = new List<TemplateSheetFact>();
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);        
 
+
         var yDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
@@ -359,12 +361,13 @@ public partial class FactsDecorator : IFactsDecorator
 
         var currenciesAndCountryDims = new List<string>() { "OC", "CU" };
         var currencyDims = zDims.Where(zd => currenciesAndCountryDims.Contains(zd)).ToList();
-        var xxx = 2;    
+        var xxx = 2;
 
         //*********************************************************************************
         //for each RowCol of this table, select the facts which have the exact dims (open or close) 
         //a rowcol position may contain more than one fact (currency and country)
         //also update the zetValues of each fact
+        tableCells = tableCells.Where(tc => tc.CellID == 12801).ToList();
         foreach (var tableCell in tableCells)
         {
             var cellSignature = tableCell.DatapointSignature;
@@ -386,6 +389,12 @@ public partial class FactsDecorator : IFactsDecorator
 
 
             var cellFacts = SelectFactsFromCellSignature280(cellSignature);
+            var cellFactsNew = SelectFactsFromCellSignatureNEW(cellSignature);
+            if (cellFactsNew.Count() != cellFacts.Count)
+            {
+                var xx = 3;
+            }
+
             var count = 0;
             foreach (var cellFact in cellFacts)
             {
@@ -497,8 +506,7 @@ public partial class FactsDecorator : IFactsDecorator
 
     private List<TemplateSheetFact> SelectFactsFromCellSignature280(string cellSignature)
     {
-        //match any facts with cell signature 
-        //try without optional dims, optional dims one by one, all optional dims at once (max 2 optional dims)
+        //match any facts with cell signature         
         var facts = new List<TemplateSheetFact>();
         //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
         //MET(s2md_met:ei2426)|s2c_dim:MP(ID:)|s2c_dim:NF(ID:SH)|s2c_dim:PX(ID:)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/XT72-PIRAEUS BANK S.A.-EUR-Shareholders' funds-SH-Neither unit-linked nor index-linked)|s2c_dim:XA(NB:13)
@@ -511,7 +519,7 @@ public partial class FactsDecorator : IFactsDecorator
         }
 
         //serach for facts with optional dims
-        //there are maximum TWO optional dims(checked), so start with all maximum
+        //there are maximum TWO optional dims(checked)
         //start with No optional dims and try one by one
         List<string> cellDims = cellSignature
             .Split("|").ToList();
@@ -542,6 +550,72 @@ public partial class FactsDecorator : IFactsDecorator
             }
         }
         return facts;
+    }
+
+
+    private List<TemplateSheetFact> SelectFactsFromCellSignatureNEW(string cellSignature)
+    {
+        //NEW**********************************
+        //NEW**********************************
+        //NEW**********************************
+        //match any facts with cell signature         
+        var facts = new List<TemplateSheetFact>();
+        //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
+        //MET(s2md_met:ei2426)|s2c_dim:MP(ID:)|s2c_dim:NF(ID:SH)|s2c_dim:PX(ID:)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/XT72-PIRAEUS BANK S.A.-EUR-Shareholders' funds-SH-Neither unit-linked nor index-linked)|s2c_dim:XA(NB:13)
+
+        //if no wild chars match the exact fact signature        
+        if (!cellSignature.Contains("(*") && !cellSignature.Contains("(*?"))
+        {
+            facts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);
+            return facts;
+        }
+
+        //serach for facts with optional dims
+        //there are maximum TWO optional dims(checked)
+        //start with No optional dims and try one by one
+        List<string> cellDims = cellSignature
+            .Split("|").ToList();
+        
+        //check mandatory dims and add one by one the optional dims
+        //start with no optional and therefore always add "" as a dim
+        var mandatoryDims = cellDims.Where(cd => !cd.Contains('?')).ToArray();
+        var optionalDims = cellDims.Where(cd => cd.Contains('?')).ToArray();
+        
+
+        var optionalCombinations = GenerateCombinations(optionalDims);
+        
+        
+        foreach (var optionalCombination in optionalCombinations)
+        {            
+            var optinalDimsArr= optionalCombination.Split("|",StringSplitOptions.RemoveEmptyEntries).Where(tt => !string.IsNullOrEmpty(tt));
+            var mandatoryPlusOptional = mandatoryDims.Concat(optinalDimsArr).ToList();
+            var cFacts = FindFactsByLikeSignature(mandatoryPlusOptional);
+            facts.AddRange(cFacts);
+        }
+        return facts;               
+    
+    }
+
+    static List<string> GenerateCombinations(string[] array)
+    {
+        List<string> result = new List<string>();
+        GenerateCombinationsHelper(array, "", 0, result);
+        return result;
+    }
+
+    static void GenerateCombinationsHelper(string[] array, string current, int index, List<string> result)
+    {
+        if (index == array.Length)
+        {
+            result.Add(current);
+            return;
+        }
+
+        // Include current element in the combination
+        GenerateCombinationsHelper(array, current + array[index] + "|", index + 1, result);
+
+        // Exclude current element in the combination
+        GenerateCombinationsHelper(array, current, index + 1, result);
     }
 
     private List<TemplateSheetFact> FindFactsByLikeSignature(List<string> dims)
