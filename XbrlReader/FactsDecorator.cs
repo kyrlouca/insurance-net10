@@ -389,7 +389,7 @@ public partial class FactsDecorator : IFactsDecorator
 
 
             var cellFacts = SelectFactsFromCellSignature280(cellSignature);
-            var cellFactsNew = SelectFactsFromCellSignatureNEW(cellSignature);
+            var cellFactsNew = SelectFactsUsingDims(cellSignature);
             if (cellFactsNew.Count() != cellFacts.Count)
             {
                 var xx = 3;
@@ -553,49 +553,6 @@ public partial class FactsDecorator : IFactsDecorator
     }
 
 
-    private List<TemplateSheetFact> SelectFactsFromCellSignatureNEW(string cellSignature)
-    {
-        //NEW**********************************
-        //NEW**********************************
-        //NEW**********************************
-        //match any facts with cell signature         
-        var facts = new List<TemplateSheetFact>();
-        //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
-        //MET(s2md_met:ei2426)|s2c_dim:MP(ID:)|s2c_dim:NF(ID:SH)|s2c_dim:PX(ID:)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/XT72-PIRAEUS BANK S.A.-EUR-Shareholders' funds-SH-Neither unit-linked nor index-linked)|s2c_dim:XA(NB:13)
-
-        //if no wild chars match the exact fact signature        
-        if (!cellSignature.Contains("(*") && !cellSignature.Contains("(*?"))
-        {
-            facts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);
-            return facts;
-        }
-
-        //serach for facts with optional dims
-        //there are maximum TWO optional dims(checked)
-        //start with No optional dims and try one by one
-        List<string> cellDims = cellSignature
-            .Split("|").ToList();
-        
-        //check mandatory dims and add one by one the optional dims
-        //start with no optional and therefore always add "" as a dim
-        var mandatoryDims = cellDims.Where(cd => !cd.Contains('?')).ToArray();
-        var optionalDims = cellDims.Where(cd => cd.Contains('?')).ToArray();
-        
-
-        var optionalCombinations = GenerateCombinations(optionalDims);
-        
-        
-        foreach (var optionalCombination in optionalCombinations)
-        {            
-            var optinalDimsArr= optionalCombination.Split("|",StringSplitOptions.RemoveEmptyEntries).Where(tt => !string.IsNullOrEmpty(tt));
-            var mandatoryPlusOptional = mandatoryDims.Concat(optinalDimsArr).ToList();
-            var cFacts = FindFactsByLikeSignature(mandatoryPlusOptional);
-            facts.AddRange(cFacts);
-        }
-        return facts;               
-    
-    }
-
     static List<string> GenerateCombinations(string[] array)
     {
         List<string> result = new List<string>();
@@ -617,6 +574,108 @@ public partial class FactsDecorator : IFactsDecorator
         // Exclude current element in the combination
         GenerateCombinationsHelper(array, current, index + 1, result);
     }
+
+
+
+    private List<TemplateSheetFact> SelectFactsUsingDims(string cellSignature)
+    {
+        
+
+
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        List<string> fullDims = cellSignature
+            .Split("|").ToList();
+        var dims = fullDims.Skip(1);
+
+        var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
+        var evaluator = new MatchEvaluator(MatchReplacer);
+
+        List<TemplateSheetFact> facts;
+        
+
+        var rgxMet = new Regex(@"^MET\((.*?)\)");
+        var xbrlCodeFull = fullDims.FirstOrDefault()??"";
+        var xbrlCodeMatch = rgxMet.Match(xbrlCodeFull);
+        var xbrlCode = xbrlCodeMatch.Success ? xbrlCodeMatch.Groups[1].Value : "";
+
+        
+        var mandatoryExactDimsList = dims
+                        .Where(dim => !dim.Contains('*') && !dim.Contains('?'))
+                        .OrderBy(dim => dim);
+       
+        var mandatoryWildDimsList = dims
+                        .Where(dim => dim.Contains('*') || !dim.Contains('?'))
+                        .Select(dim => ToJustDim(dim))
+                        .OrderBy(dim => dim).ToList();
+
+        var allDimsList = dims                        
+                        .Select(dim => ToJustDim(dim))                        
+                        .OrderBy(dim => dim).ToList();
+
+
+        var mandatoryExactDims = string.Join(",", mandatoryExactDimsList.Select(dim => $"'{dim}'"));        
+        var mandatoryWildDims = string.Join(",", mandatoryWildDimsList.Select(dim => $"'{dim}'"));
+        var allDims = string.Join(",", allDimsList.Select(dim => $"'{dim}'"));
+
+        var mandatoryExactClause = string.IsNullOrEmpty(mandatoryExactDims) 
+            ? ""
+            : @$" AND EXISTS (
+                  SELECT 1
+                  FROM ContextLine cl2
+                  WHERE cl2.ContextId = fact.ContextNumberId
+                    AND cl2.Signature IN ({mandatoryExactDims})
+                )";
+
+        var mandatoryWildClause = string.IsNullOrEmpty(mandatoryWildDims)
+            ? ""
+            : @$" 
+                 AND EXISTS (
+                  SELECT 1
+                  FROM ContextLine cl2
+                  WHERE cl2.ContextId = fact.ContextNumberId
+                    AND cl2.Dimension IN ({mandatoryWildDims})
+                )
+             ";
+
+        var allDimsClause = string.IsNullOrEmpty(allDims)
+            ? ""
+            : @$" 
+                  and NOT EXISTS (
+                  SELECT 1
+                  FROM ContextLine cl
+                  WHERE cl.ContextId = fact.ContextNumberId
+                    and cl.Dimension NOT in ({allDims})
+                )
+             ";
+
+        var sqlSelect = @$"
+
+                SELECT fact.ContextNumberId, Fact.*
+                FROM TemplateSheetFact fact 
+                join ContextLine cl on cl.ContextId=fact.ContextNumberId
+                WHERE 
+                fact.InstanceId=@documentId
+                and fact.XBRLCode=@xbrlCode
+                {mandatoryExactClause}
+                {mandatoryWildClause}
+                {allDimsClause}
+                
+
+                ;
+
+";
+        facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
+        return facts;
+
+        string ToJustDim(string dimSignature)
+        {
+            var rgxJustDim = new Regex(@"^s2c_dim:(\w\w)\(.*?\)");
+            var matchJustDim= rgxJustDim.Match(dimSignature);
+            return matchJustDim.Success? matchJustDim.Groups[1].Value : "";
+        }
+    }
+
 
     private List<TemplateSheetFact> FindFactsByLikeSignature(List<string> dims)
     {
