@@ -95,9 +95,9 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => table.TableID == _testingTableId).ToList();
         }
         //ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
-
+        ModuleTables = ModuleTables.Where(mt => mt.TableID == 139).ToList();
         var moduleZets = new List<string>();
-        //ModuleTables = ModuleTables.Where(mt => mt.TableID == 139).ToList();
+        
         foreach (var table in ModuleTables)
         {            
             Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
@@ -105,26 +105,31 @@ public partial class FactsDecorator : IFactsDecorator
             table.IsOpenTable = _SqlFunctions.IsOpenTable(table.TableID);
 
             //*********** Select the facts for a template and update their zetvalues, RowSignatures and currencyDimValue            
-            var tableFacts = SelectFactsForTempateTable280(table);
-            Console.WriteLine($"\n---facts:{tableFacts.Count}");
+            var tableFactsCount = UpdateTableFactsWithCellValues(table);
+            Console.WriteLine($"\n---facts updated:{tableFactsCount}");
 
 
             //*********** Create one  sheet per zet group
             //** alternatively we could update each fact with zet and then do the grouping in sql
             //fact.ZetValues is a string concatenating the Facts' zet dims
             //facts with the same zet values(concatenated as a string) should be assigned to the same sheet
-            List<string> distinctTableZetStrings = tableFacts
-                    .GroupBy(fact => fact.ZetValues ?? "")
-                    .Select(group => group.Key).ToList();
-            
-            moduleZets.AddRange(distinctTableZetStrings);
+            //List<string> distinctTableZetStrings = tableFacts
+            //        .GroupBy(fact => fact.ZetValues ?? "")
+            //        .Select(group => group.Key).ToList();
+
+            var zetValues = FindDistinctZetValues(table.TableID);
+
+            moduleZets.AddRange(zetValues);
             Console.WriteLine($"\n---Grouping table facts by Zet");
 
-            List<SheetInfoType> sheetsInfo = CreateSheetForEachZetGroup(table, distinctTableZetStrings);
+            List<SheetInfoType> sheetsInfo = CreateSheetForEachZetGroup(table, zetValues);
             
             //*********** Assign facts to sheets and update fact row, col, etc
-            AssignFactsToSheet280(tableFacts, sheetsInfo);
-            
+            foreach(var sheetInfo in sheetsInfo)
+            {
+                AssignFactsToSheet280(table.TableID, sheetInfo);
+            }
+                        
             //**********  if the table is open, update the rows
             foreach (var sheetinfo in sheetsInfo)
             {                                
@@ -144,6 +149,23 @@ public partial class FactsDecorator : IFactsDecorator
         return 0;
 
     }
+
+    private List<TemplateSheetFact> SelectFactsForTableAndZet(int tableId,string zetValues)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"select * from TemplateSheetFact where InstanceId=@_documentId and TableID=@tableId and ZetValues = @ZetValues";
+        var facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { _documentId, tableId,zetValues }).ToList();
+        return facts;
+    }
+
+    private List<string> FindDistinctZetValues(int tableId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"select distinct ZetValues from TemplateSheetFact where InstanceId=@_documentId and TableID=@tableId";
+        var zetValues = connectionInsurance.Query<string>(sqlSelect, new { _documentId, tableId }).ToList();
+        return zetValues;
+    }
+
 
     private void UpdateTableSheetNames(List<string> ModuleZets)
     {
@@ -186,7 +208,7 @@ public partial class FactsDecorator : IFactsDecorator
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var sqlFacts = @"update TemplateSheetFact set TemplateSheetId=null where InstanceId =@_documentId";
+        var sqlFacts = @"update TemplateSheetFact set TemplateSheetId=null where InstanceId =@_documentId and TemplateSheetId is not null";
         var sqlSheets = @"delete  from TemplateSheetInstance where InstanceId = @_documentId";
 
         var xx = connectionInsurance.Execute(sqlFacts, new { _documentId });
@@ -338,12 +360,12 @@ public partial class FactsDecorator : IFactsDecorator
 
     }
 
-    private List<TemplateSheetFact> SelectFactsForTempateTable280(MTable table)
+    private int UpdateTableFactsWithCellValues(MTable table)
     {
         //****there are NO zet and Y dims on the table. They can be foun in Ordinates table
         //zet and y are included is in the cell signature
 
-        var tableFacts = new List<TemplateSheetFact>();
+        var count = 0;
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);        
 
 
@@ -384,7 +406,7 @@ public partial class FactsDecorator : IFactsDecorator
 
 
             //var cellFactsOld = SelectFactsFromCellSignatureOldAndNotUsed(cellSignature);
-            var cellFacts = SelectFactsUsingDims(cellSignature);
+            var cellFacts = SelectFactsForCellUsingDims(cellSignature);
                         
             foreach (var cellFact in cellFacts)
             {
@@ -394,25 +416,57 @@ public partial class FactsDecorator : IFactsDecorator
                 var zetValues = BuildFactZetValues(cellFact.DataPointSignature,zDims);
                 var currencyValues = BuildFactCurrencyDims(cellFact.DataPointSignature, currencyDims);
 
+                cellFact.TableID = table.TableID;
                 cellFact.RowSignature = rowSignature;
                 cellFact.ZetValues = zetValues;
                 cellFact.CurrencyDim = currencyValues;
                 cellFact.Col = cellRowCol.Col;
                 cellFact.Row = cellRowCol.Row;
                 cellFact.CellID= tableCell.CellID;
-                               
-                
+                var xx = UpdateCellFact(cellFact);
+                count++;
             }
 
             if (cellFacts.Any())
             {
                 Console.Write("#");
             }
-            tableFacts.AddRange(cellFacts);
+            //tableFacts.AddRange(cellFacts);
         }
-        return tableFacts;
+        return count;
     }
 
+    private int UpdateCellFact(TemplateSheetFact fact)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlUpdate = @"
+            UPDATE TemplateSheetFact
+            SET 
+              TableID = @TableID,
+              RowSignature = @rowSignature,
+              ZetValues =@zetValues,
+              CurrencyDim = @CurrencyDim,
+              Col = @Col,
+              Row= @Row,
+              [CellID]=@CellID
+            WHERE 
+              FactId= @FactId;
+            ";
+
+        try
+        {
+            var res = connectionInsurance.Execute(sqlUpdate, fact);
+            return res;
+        }
+        catch (Exception ex)
+        {
+            var message = $@"ERROR updating fact:{fact.FactId} -- {ex.Message} ";
+            _logger.Error(message);
+            return 0;
+        }
+        
+        
+    }
     private static string BuildRowSignature(string signature, IEnumerable<string> yDims)
     {
         //build the row signature using only the ydims
@@ -541,7 +595,7 @@ public partial class FactsDecorator : IFactsDecorator
 
      
 
-    private List<TemplateSheetFact> SelectFactsUsingDims(string cellSignature)
+    private List<TemplateSheetFact> SelectFactsForCellUsingDims(string cellSignature)
     {
         //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
         //MET(s2md_met:ei2426)|s2c_dim:MP(ID:)|s2c_dim:NF(ID:SH)|s2c_dim:PX(ID:)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/XT72-PIRAEUS BANK S.A.-EUR-Shareholders' funds-SH-Neither unit-linked nor index-linked)|s2c_dim:XA(NB:13)
@@ -681,26 +735,22 @@ public partial class FactsDecorator : IFactsDecorator
         return newVal;
     }
 
-    private void AssignFactsToSheet280(List<TemplateSheetFact> tableFacts, List<SheetInfoType> sheetInfo)
+    private void AssignFactsToSheet280(int tableId, SheetInfoType sh)
     {
 
-        
+
+        var tableFacts = SelectFactsForTableAndZet(tableId, sh.SheetCodeZet);
         //***** Assign each fact to ist sheet depending on the zet 
         foreach (var tableFact in tableFacts)
-        {
-            var sh = sheetInfo.FirstOrDefault(shi => shi.SheetCodeZet == (tableFact.ZetValues ?? ""));
-            if (sh is null)
-            {
-                throw new Exception($"No sheet was found for fact {tableFact.FactId}, Zvalues :{tableFact.ZetValues}");
-                continue;
-            };
+        {            
 
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId,tableFact.CellID,tableFact.Zet,  tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
             if (cnt == 0)
             {
-                Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
+                //Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
+                Console.Write("&");
                 tableFact.TemplateSheetId = sh.TemplateSheetId;
                 var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
             }
