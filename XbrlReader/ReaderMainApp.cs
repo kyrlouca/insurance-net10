@@ -29,31 +29,11 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 45;
-        var filingsSubmittedxx = new List<string>()
-        {
-            "S.20.01",            
-        };
+        var _documentId = 59;        
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
-
-
-        var filingsSubmitted = new List<string>()
-        {
-
-            "S.01.01",
-            "S.01.02",
-            "S.02.01",
-            "S.04.01",
-            "S.05.01",
-            "S.06.02",
-            "S.06.03",
-            "S.17.01",
-            "S.23.01",
-            "S.28.01",
-        };
-
-        if (1 == 2)
+        
+        if (1 == 1)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -64,9 +44,9 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (1 == 2)
+        if (1 == 1)
         {
-            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
+            _documentId = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)
             {
                 return 1;

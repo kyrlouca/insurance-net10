@@ -6,7 +6,7 @@ namespace XbrlReader
 	{
 		XElement RootNode { get; }
 
-		(int,List<string>) CreateLooseFacts();
+		int CreateLooseFacts();
 		public (bool success, string message) HandleExistingDocuments();
 
     }

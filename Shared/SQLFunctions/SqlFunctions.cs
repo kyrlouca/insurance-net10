@@ -168,6 +168,14 @@ public class SqlFunctions : ISqlFunctions
         var res = connectionInsurance.Execute(sqlUpdate, new { templateSheetId, sheetTabName });
     }
 
+    public TemplateSheetFact? SelectFact(int factId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = "select * from TemplateSheetFact fact where fact.FactId= @FactId";
+        var res = connectionInsurance?.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { factId });
+        return res;
+    }
+
 
     public List<TemplateSheetFactDim> SelectFactDims(int factId)
     {

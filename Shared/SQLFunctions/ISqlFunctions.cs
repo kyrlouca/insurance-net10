@@ -22,6 +22,7 @@ public interface ISqlFunctions
     public List<TemplateSheetInstance> SelectTemplateSheetsByTableId(int documentId, int tableId);
     public void UpdateTemplateSheetName(int templateSheetId, string sheetTabName);
     //*********facts
+    public TemplateSheetFact? SelectFact(int factId);
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet, string col);
     public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col);    

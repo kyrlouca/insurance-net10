@@ -20,6 +20,7 @@ using Syncfusion.XlsIO.Parser.Biff_Records;
 using Shared.SQLFunctions;
 using System.Reflection.Metadata;
 using System.Text;
+using System.Collections;
 
 
 public partial class FactsDecorator : IFactsDecorator
@@ -95,7 +96,7 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => table.TableID == _testingTableId).ToList();
         }
         //ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
-        ModuleTables = ModuleTables.Where(mt => mt.TableID == 114).ToList();
+        //ModuleTables = ModuleTables.Where(mt => mt.TableID == 114).ToList();
         var moduleZetsxx = new List<string>();
         
         foreach (var table in ModuleTables)
@@ -387,15 +388,14 @@ public partial class FactsDecorator : IFactsDecorator
                 //continue;
             }
 
-
-            //var cellFactsOld = SelectFactsFromCellSignatureOldAndNotUsed(cellSignature);
-            var cellFacts = SelectFactsForCellUsingDims(cellSignature);
+            
+            var cellFacts = SelectFactsForCellUsingDims(cellSignature);            
                         
             foreach (var cellFact in cellFacts)
             {
                 
                 Console.Write(".");                
-                var rowSignature = BuildRowSignature(cellFact.DataPointSignature, yDims);                
+                var rowSignature = BuildRowSignature(cellFact!.DataPointSignature, yDims);                
                 var zetValues = BuildFactZetValues(cellFact.DataPointSignature,zDims);
                 var currencyValues = BuildFactCurrencyDims(cellFact.DataPointSignature, currencyDims);
 
@@ -452,6 +452,10 @@ public partial class FactsDecorator : IFactsDecorator
     }
     private static string BuildRowSignature(string signature, IEnumerable<string> yDims)
     {
+        if (string.IsNullOrEmpty(signature))
+        {
+            return "";
+        }
         //build the row signature using only the ydims
         var dims = signature.Split("|",StringSplitOptions.RemoveEmptyEntries)
             .Where(dim => yDims.Contains(GetDimValue(dim)))
@@ -622,9 +626,12 @@ public partial class FactsDecorator : IFactsDecorator
                         .Select(dim => ToJustDim(dim))                        
                         .OrderBy(dim => dim).ToList();
 
+        var allWildList = dims
+                        .Where(dim => dim.Contains('*'))
+                        .OrderBy(dim => dim);
 
-        
-        var mandatoryExactDims = StringRoutines.JoinStringCreate( mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList(),",");        
+
+        var mandatoryExactDims = StringRoutines.JoinStringCreate( mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList(),",");           
         var mandatoryWildDims = StringRoutines.JoinStringCreate( mandatoryWildDimsList.Select(dim => $"'{dim}'").ToList(),",");
         var allDims = StringRoutines.JoinStringCreate(allDimsList.Select(dim => $"'{dim}'").ToList(), ",");
 
@@ -637,46 +644,32 @@ public partial class FactsDecorator : IFactsDecorator
                     AND cl2.Signature IN ({mandatoryExactDims})
                 )";
 
-        var mandatoryWildClause = string.IsNullOrEmpty(mandatoryWildDims)
-            ? ""
-            : @$" 
-                 AND EXISTS (
-                  SELECT 1
-                  FROM ContextLine cl2
-                  WHERE cl2.ContextId = fact.ContextNumberId
-                    AND cl2.Dimension IN ({mandatoryWildDims})
-                )
-             ";
-
-        var allDimsClause = string.IsNullOrEmpty(allDims)
-            ? ""
-            : @$" 
-                  and NOT EXISTS (
-                  SELECT 1
-                  FROM ContextLine cl
-                  WHERE cl.ContextId = fact.ContextNumberId
-                    and cl.Dimension NOT in ({allDims})
-                )
-             ";
+               
 
         var sqlSelect = @$"
 
-                SELECT fact.ContextNumberId, Fact.*
+                SELECT fact.FactId
                 FROM TemplateSheetFact fact 
                 join ContextLine cl on cl.ContextId=fact.ContextNumberId
                 WHERE 
                 fact.InstanceId=@documentId
                 and fact.XBRLCode=@xbrlCode
-                {mandatoryExactClause}
-                {mandatoryWildClause}
-                {allDimsClause}
-                
+                {mandatoryExactClause}                
+                group by fact.FactId having count(*) = @mandatoryCount;                
 
                 ;
 
 ";
-        facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
-        return facts;
+        var mandatoryCount = mandatoryExactDimsList.Count();
+        facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode,mandatoryCount }).ToList();
+        
+        foreach ( var wildManDim in allWildList)
+        {
+            facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, wildManDim, allDimsList)).ToList();
+        }
+        
+        var fullFacts= facts.Select(fact=>_SqlFunctions.SelectFact(fact.FactId));
+        return fullFacts.Where(fact => fact is not null).ToList();
 
         string ToJustDim(string dimSignature)
         {
@@ -685,6 +678,74 @@ public partial class FactsDecorator : IFactsDecorator
             var matchJustDim= rgxJustDim.Match(dimSignature);
             return matchJustDim.Success? matchJustDim.Groups[1].Value : "";
         }
+    }
+
+    bool IsMemberInHierarchy(int factId, string cellDim, List<string> allDims)
+    {
+
+        // factSignature: s2c_dim:RM(s2c_TI:x41)|s2c_dim:TA(s2c_AM:x57)
+        //cellDim: s2c_dim:AF(*?[79;432;1])
+
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlfact = "select * from TemplateSheetFact fact where fact.FactId= @FactId";
+        var fact =connectionInsurance.QuerySingleOrDefault<TemplateSheetFact>(sqlfact,new {factId });
+        if(fact is null)
+        {
+            return false;
+        }
+        var factSignature = fact?.DataPointSignature??"";
+
+        var rgxCell = new Regex(@"s2c_dim\:(\w\w)\(\*\??\[(.+?)\]\)"); 
+        //s2c_dim:AF(*?[79;432;1])=>"AF", "79;432;1"
+        //s2c_dim:AF(*)=>"AF", "*"
+        var matchCell = rgxCell.Match(cellDim);
+        if(!matchCell.Success)
+        {
+            return false;
+        }
+        if (matchCell.Groups[2].Value.Trim() == "*")
+        {
+            //cellDim: s2c_dim:AF(*?[79;432;1])
+            return true;
+        }
+        var cellDimWild = matchCell.Groups[1].Value;//AF
+        var cellParts = matchCell.Groups[2].Value.Split(";", StringSplitOptions.RemoveEmptyEntries); //79;432;1
+        if (cellParts.Length <3  ) {
+            return false;
+        }
+        
+        var cellHierarchyId= cellParts[0];//79
+        var cellMemberId= cellParts[2];//1
+
+        var rgxFactDim = new Regex($@"s2c_dim\:{cellDimWild}\(.+?\:(.+?)\)");
+        var matchMember= rgxFactDim.Match(factSignature); //s2c_dim\:AF\(.+?\:(.+?)\)=>x21
+        if (!matchMember.Success )
+        {            
+            return cellDim.Contains("?"); //optional dim is ok not to be found
+        }
+        
+        var factMemberCode= matchMember.Groups[1].Value; //x41
+        var sqlSelectHiMembers = @"
+            select mem.MemberCode
+                from mHierarchyNode hn
+                join mMember mem on mem.MemberID=hn.MemberID
+                where  HierarchyID=@HierarchyID and MemberCode=@MemberCode
+
+        ";
+        var memberFound = connectionEiopa.QueryFirstOrDefault<string>(sqlSelectHiMembers, new { HierarchyID = cellHierarchyId, memberCode=factMemberCode });
+        if (memberFound is null)
+        {
+            return false;
+        }
+
+        var rgxfactDims = new Regex(@"s2c_dim\:(\w\w)");
+        var matchFactDims= rgxfactDims.Matches(factSignature);
+        var factDims= matchFactDims.Select(m => m.Groups[1].Value).ToList();
+        
+        bool allDimsPresent = factDims.All(item => allDims.Contains(item));
+        return allDimsPresent;
     }
 
 
