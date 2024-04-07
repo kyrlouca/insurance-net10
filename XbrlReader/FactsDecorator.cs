@@ -742,8 +742,8 @@ public partial class FactsDecorator : IFactsDecorator
         var tableFacts = SelectFactsForTableAndZet(tableId, sh.SheetCodeZet);
         //***** Assign each fact to ist sheet depending on the zet 
         foreach (var tableFact in tableFacts)
-        {            
-
+        {
+            Console.Write("+");
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId,tableFact.CellID,tableFact.Zet,  tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
