@@ -29,7 +29,24 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 59;        
+        var _documentId = 59;
+        var filingsSubmitted = new List<string>()
+        {
+            "S.01.01",
+            "S.01.02",
+            "S.02.01",
+            "S.05.01",
+            "S.06.01",
+            "S.06.02",
+            "S.06.03",
+            "S.08.01",
+            "S.12.01",
+            "S.17.01",
+            "S.23.01",
+            "S.28.01",
+            "S.28.02",
+
+        };
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
         
