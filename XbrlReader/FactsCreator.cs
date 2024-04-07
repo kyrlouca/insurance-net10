@@ -179,7 +179,7 @@ public class FactsCreator : IFactsCreator
 		{
 			//filing indicators
 			var filingsHeader = RootNode.Element(findNs + "fIndicators");
-			var filingIndicators = filingsHeader?.Elements(findNs + "filingIndicator").ToList();
+			var filingIndicators = filingsHeader?.Elements(findNs + "filingIndicator").Where(element=>element is not null).ToList();
 			foreach (var fi in filingIndicators)
 			{
 				var isNotFiled = fi.Attribute(findNs + "filed")?.Value == "false";

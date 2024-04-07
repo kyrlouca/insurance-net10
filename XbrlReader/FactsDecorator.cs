@@ -33,7 +33,7 @@ public partial class FactsDecorator : IFactsDecorator
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
     private int _documentId = 0;
-    //private List<string> _filings = new();
+        private List<string> _filings = new();
     private DocInstance _document = new();
 
 
@@ -56,10 +56,11 @@ public partial class FactsDecorator : IFactsDecorator
     }
 
     record SheetInfoType(int TableId, int TemplateSheetId, string SheetCode, string SheetCodeZet, string SheetName, string YDims);
-    public int DecorateFactsAndAssignToSheets(int documentId)
+    
+    public int DecorateFactsAndAssignToSheets(int documentId, List<string> filings)    
     {
         _documentId = documentId;
-        //_filings = filings;
+        _filings = filings;
         _parameterData = _parameterHandler.GetParameterData();
 
         var document = _SqlFunctions.SelectDocInstance(documentId);
@@ -87,7 +88,11 @@ public partial class FactsDecorator : IFactsDecorator
             .Where(tab => tab.TableCode.StartsWith("S"))
             .OrderBy(tab => tab.TableCode)
             .ToList();
-
+        if(filings.Count > 0)
+        {
+            ModuleTables = ModuleTables.Where(mt => filings.Contains(mt.TableCode)).ToList();
+        }
+        
 
         //_testingTableId = 68; //"S.06.02.01.01"
         //_testingTableId = 69;
