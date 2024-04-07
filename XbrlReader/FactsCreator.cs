@@ -171,11 +171,11 @@ public class FactsCreator : IFactsCreator
 		Console.WriteLine("\nCreate Facts");
 		AddFacts();
 
-		//DeleteContexts();
-		return _documentId;
+        //DeleteContexts();
+        return (_documentId, FilingsSubmitted);
 
 
-		void AddValidFilingIndicators()
+        void AddValidFilingIndicators()
 		{
 			//filing indicators
 			var filingsHeader = RootNode.Element(findNs + "fIndicators");

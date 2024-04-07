@@ -95,6 +95,7 @@ public partial class FactsDecorator : IFactsDecorator
         {
             ModuleTables = ModuleTables.Where(table => table.TableID == _testingTableId).ToList();
         }
+        //ModuleTables= ModuleTables.Where(mt=>filin)
         //ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
         //ModuleTables = ModuleTables.Where(mt => mt.TableID == 114).ToList();
         var moduleZetsxx = new List<string>();
