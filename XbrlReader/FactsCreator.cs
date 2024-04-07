@@ -82,8 +82,8 @@ public class FactsCreator : IFactsCreator
         return (true, "");
     }
 
-    
-    public int CreateLooseFacts()
+
+    public (int, List<string>) CreateLooseFacts()    
 	{
 
 
@@ -93,7 +93,7 @@ public class FactsCreator : IFactsCreator
             var messagex = $"fund {_parameterData.FundId} NOT found";
             _logger.Error(messagex);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, messagex);
-            return 0;
+            return (0,new List<string>());
         }
 		_fund = fund;
 
@@ -106,8 +106,8 @@ public class FactsCreator : IFactsCreator
 		{
 			_logger.Error(parseMessage);
 			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, parseMessage);
-			return 0;
-		}
+            return (0, new List<string>());
+        }
         _xmlDoc = parsexmlDoc!;
 
         var RootNode = _xmlDoc.Root;		
@@ -121,7 +121,7 @@ public class FactsCreator : IFactsCreator
 			var moduleMessage = @$"The Module Code in the Xbrl file is ""{moduleCodeXbrl}"" instead of ""{_mModule.ModuleCode}""";
             _logger.Error(moduleMessage);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, moduleMessage);            
-			return 0;
+			return (0, new List<string>());
 		}
 
 		var (isValidReferenceDate, referenceMessage) = IsValidReferenceDate();
@@ -129,8 +129,8 @@ public class FactsCreator : IFactsCreator
 		{
 			_logger.Error(referenceMessage);
 			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, referenceMessage);
-			return 0;
-		}
+            return (0, new List<string>());
+        }
 
 		var fundLei = GetXmlElementFromXbrl(_xmlDoc, "si1899");
 		var fundFromDb = GetDbFundByLei(fundLei);
@@ -139,7 +139,7 @@ public class FactsCreator : IFactsCreator
 			message = $"The license number is incorrect:{fundLei}";
 			_logger.Error(message);
 			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
-			return 0;
+			return (0, new List<string>());
 		}
 
 		///////////////////////////
@@ -154,7 +154,7 @@ public class FactsCreator : IFactsCreator
 			Console.WriteLine(message);
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
-            return 0;
+            return (0, new List<string>());
 		}
 
 
