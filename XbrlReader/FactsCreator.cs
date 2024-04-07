@@ -441,7 +441,9 @@ public class FactsCreator : IFactsCreator
 
                     ctxLines.Sort();
                     ctxLines.Insert(0, metXbrlCode);
-                    var newSignature = StringRoutines.JoinStringCreate(ctxLines.ToList(), "|");
+
+                    //var newSignature = StringRoutines.JoinStringCreate(ctxLines.ToList(), "|");
+                    var newSignature = string.Join( "|",ctxLines.ToList());
 
 
                     return newSignature;

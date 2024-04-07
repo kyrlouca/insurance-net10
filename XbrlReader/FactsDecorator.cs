@@ -631,9 +631,12 @@ public partial class FactsDecorator : IFactsDecorator
                         .OrderBy(dim => dim);
 
 
-        var mandatoryExactDims = StringRoutines.JoinStringCreate( mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList(),",");           
-        var mandatoryWildDims = StringRoutines.JoinStringCreate( mandatoryWildDimsList.Select(dim => $"'{dim}'").ToList(),",");
-        var allDims = StringRoutines.JoinStringCreate(allDimsList.Select(dim => $"'{dim}'").ToList(), ",");
+        //var mandatoryExactDims = StringRoutines.JoinStringCreate(mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList(), ",");
+        //var mandatoryWildDims = StringRoutines.JoinStringCreate(mandatoryWildDimsList.Select(dim => $"'{dim}'").ToList(), ",");
+
+        var mandatoryExactDims = string.Join( ",", mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList());           
+        var mandatoryWildDims = string.Join(",", mandatoryWildDimsList.Select(dim => $"'{dim}'").ToList());
+        var allDims = string.Join( ",",allDimsList.Select(dim => $"'{dim}'").ToList());
 
         var mandatoryExactClause = string.IsNullOrEmpty(mandatoryExactDims) 
             ? ""
