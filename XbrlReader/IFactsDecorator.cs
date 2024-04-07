@@ -7,7 +7,7 @@ namespace XbrlReader
         string DefaultCurrency { get; set; }
         List<MTable> ModuleTables { get; }
 
-        int DecorateFactsAndAssignToSheets(int documentId, List<string> filings);        
+        int DecorateFactsAndAssignToSheets(int documentId);        
         
     }
 }

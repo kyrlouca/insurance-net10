@@ -29,7 +29,7 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 48;
+        var _documentId = 45;
         var filingsSubmittedxx = new List<string>()
         {
             "S.20.01",            
@@ -76,7 +76,7 @@ public class ReaderMainApp : IReaderMainApp
         
         if (1 == 1)
         {
-            var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
+            var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId);
             if (res != 0)
             {
                 return res;

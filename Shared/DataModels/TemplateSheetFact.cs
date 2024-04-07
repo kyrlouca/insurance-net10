@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Shared.GeneralUtils;
-
-
+using Shared.Various;
 
 public class TemplateSheetFact
 {
@@ -85,7 +84,7 @@ public class TemplateSheetFact
 
         ctxLines.Sort();
         ctxLines.Insert(0, metXbrlCode);
-        var newSignature = string.Join("|", ctxLines);
+        var newSignature = StringRoutines.JoinStringCreate(ctxLines.ToList(), "|");
         
 
         return newSignature;

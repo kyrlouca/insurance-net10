@@ -6,6 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Shared.Various;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.PivotAnalysis;
 
@@ -95,7 +96,9 @@ public class HelperRoutines
     {
         if (row is null) { return ""; };
         var cellList = row?.Cells.ToList().Select(a => a.Value2.ToString()) ?? new List<string>();
-        var result = string.Join("#", cellList);
+        var result = StringRoutines.JoinStringCreate(cellList?.ToList(), "#");
+        
+
         return result;
     }
 

@@ -18,6 +18,7 @@ using XbrlReader;
 using System.Text;
 using Syncfusion.XlsIO;
 using Shared.SQLFunctions;
+using Shared.Various;
 
 public class FactsCreator : IFactsCreator
 {
@@ -261,7 +262,7 @@ public class FactsCreator : IFactsCreator
                 }
 
 				var ctLines = contextLines.Select(cl => cl.Signature).Order();
-                var contexSignature = string.Join("|", ctLines);
+                var contexSignature = StringRoutines.JoinStringCreate(ctLines.ToList(), "|");
                 
                 
                 var context = _SqlFunctions.CreateContext(new ContextModel() {InstanceId= _documentId, ContextId= 0,ContextXbrlId= contextXbrlId,Signature= contexSignature??"", TableId=0 });
@@ -439,7 +440,7 @@ public class FactsCreator : IFactsCreator
 
                     ctxLines.Sort();
                     ctxLines.Insert(0, metXbrlCode);
-                    var newSignature = string.Join("|", ctxLines);
+                    var newSignature = StringRoutines.JoinStringCreate(ctxLines.ToList(), "|");
 
 
                     return newSignature;

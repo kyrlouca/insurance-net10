@@ -32,7 +32,7 @@ public partial class FactsDecorator : IFactsDecorator
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
     private int _documentId = 0;
-    private List<string> _filings = new();
+    //private List<string> _filings = new();
     private DocInstance _document = new();
 
 
@@ -55,10 +55,10 @@ public partial class FactsDecorator : IFactsDecorator
     }
 
     record SheetInfoType(int TableId, int TemplateSheetId, string SheetCode, string SheetCodeZet, string SheetName, string YDims);
-    public int DecorateFactsAndAssignToSheets(int documentId, List<string> filings)
+    public int DecorateFactsAndAssignToSheets(int documentId)
     {
         _documentId = documentId;
-        _filings = filings;
+        //_filings = filings;
         _parameterData = _parameterHandler.GetParameterData();
 
         var document = _SqlFunctions.SelectDocInstance(documentId);
@@ -95,7 +95,7 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => table.TableID == _testingTableId).ToList();
         }
         //ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
-        //ModuleTables = ModuleTables.Where(mt => mt.TableID == 139).ToList();
+        ModuleTables = ModuleTables.Where(mt => mt.TableID == 114).ToList();
         var moduleZetsxx = new List<string>();
         
         foreach (var table in ModuleTables)
@@ -141,9 +141,7 @@ public partial class FactsDecorator : IFactsDecorator
         }
         //***********  update foreing keys
         UpdateForeignKeysOfChildTablesNN();
-        
-        
-        //UpdateTableSheetNames();
+                        
         Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
         return 0;
 
@@ -165,39 +163,6 @@ public partial class FactsDecorator : IFactsDecorator
         return zetValues;
     }
 
-
-    private void UpdateTableSheetNames()
-    {
-        //since excel tabsheet names cannot exceed 30 characters, map each table zet to a unique number
-        //var uniqueModuleZets = ModuleZets.Distinct().ToList();
-        var sheets = _SqlFunctions.SelectTemplateSheets(_documentId);
-        
-
-
-
-        //foreach(var sheet in sheets)
-        //{            
-        //    var idx = uniqueModuleZets.IndexOf(sheet.SheetCodeZet);
-        //    var sheetName = $"{sheet.TableCode}_{idx:d3}";
-        //    _SqlFunctions.UpdateTemplateSheetName(sheet.TemplateSheetId,sheetName);
-        //}
-
-        var tableIds = sheets.Select(sh => sh.TableID).Distinct();
-        foreach (var tableId in tableIds)
-        {
-            var sheetsInTable = sheets.Where(sh => sh.TableID == tableId);
-            var cnt = 0;
-            foreach (var sheet in sheetsInTable)
-            {
-                var sheetName = $"{sheet.TableCode}_{cnt:d3}";
-                _SqlFunctions.UpdateTemplateSheetName(sheet.TemplateSheetId, sheetName);
-                cnt++;
-            }
-            
-            
-        }
-
-    }    
     private List<string> UpdateRowForOpenTables(int sheetId)
     {
         //only open tables have row signatures
@@ -649,7 +614,7 @@ public partial class FactsDecorator : IFactsDecorator
                         .OrderBy(dim => dim);
        
         var mandatoryWildDimsList = dims
-                        .Where(dim => dim.Contains('*') || !dim.Contains('?'))
+                        .Where(dim => dim.Contains('*') && !dim.Contains('?'))
                         .Select(dim => ToJustDim(dim))
                         .OrderBy(dim => dim).ToList();
 
@@ -658,9 +623,10 @@ public partial class FactsDecorator : IFactsDecorator
                         .OrderBy(dim => dim).ToList();
 
 
-        var mandatoryExactDims = string.Join(",", mandatoryExactDimsList.Select(dim => $"'{dim}'"));        
-        var mandatoryWildDims = string.Join(",", mandatoryWildDimsList.Select(dim => $"'{dim}'"));
-        var allDims = string.Join(",", allDimsList.Select(dim => $"'{dim}'"));
+        
+        var mandatoryExactDims = StringRoutines.JoinStringCreate( mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList(),",");        
+        var mandatoryWildDims = StringRoutines.JoinStringCreate( mandatoryWildDimsList.Select(dim => $"'{dim}'").ToList(),",");
+        var allDims = StringRoutines.JoinStringCreate(allDimsList.Select(dim => $"'{dim}'").ToList(), ",");
 
         var mandatoryExactClause = string.IsNullOrEmpty(mandatoryExactDims) 
             ? ""
@@ -737,7 +703,7 @@ public partial class FactsDecorator : IFactsDecorator
                         .Select(dim => dim.Contains('*') ? rgx.Replace(dim, evaluator) : dim)
                         .Select(dim => dim.Contains('?') ? rgx.Replace(dim, evaluator) : dim)
                         .OrderBy(dim => dim).ToList();
-        var sig = string.Join("|", dimsToCheck);
+        var sig = StringRoutines.JoinStringCreate(dimsToCheck.ToList(), "|");
 
         var sqlSelectContext = @"select * from TemplateSheetFact fact where InstanceId=@DocumentId and fact.DataPointSignature like @signature;	";
         facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId = _documentId, signature = sig }).ToList();
