@@ -88,9 +88,11 @@ public partial class FactsDecorator : IFactsDecorator
             .Where(tab => tab.TableCode.StartsWith("S"))
             .OrderBy(tab => tab.TableCode)
             .ToList();
+
+        
         if(filings.Count > 0)
         {
-            ModuleTables = ModuleTables.Where(mt => filings.Contains(mt.TableCode)).ToList();
+            ModuleTables = ModuleTables.Where(table => filings.Contains(table.XbrlFilingIndicatorCode)).ToList();
         }
         
 
@@ -98,11 +100,10 @@ public partial class FactsDecorator : IFactsDecorator
         //_testingTableId = 69;
         if (_testingTableId > 0)
         {
-            ModuleTables = ModuleTables.Where(table => table.TableID == _testingTableId).ToList();
+            //ModuleTables = ModuleTables.Where(mt => mt.TableID == 114).ToList();
         }
-        //ModuleTables= ModuleTables.Where(mt=>filin)
-        //ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
-        //ModuleTables = ModuleTables.Where(mt => mt.TableID == 114).ToList();
+
+
         var moduleZetsxx = new List<string>();
         
         foreach (var table in ModuleTables)
@@ -152,6 +153,14 @@ public partial class FactsDecorator : IFactsDecorator
         Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
         return 0;
 
+    }
+
+    private string ToShortVersion(string tableCode)
+    {
+        var rgxFiling = new Regex(@"^(\w{1,3}\.\d\d\.\d\d)");
+        var matchFiling = rgxFiling.Match(tableCode);
+        var res = matchFiling.Success ? matchFiling.Groups[0].Value : "xxxx";
+        return res;
     }
 
     private List<TemplateSheetFact> SelectFactsForTableAndZet(int tableId,string zetValues)

@@ -2,7 +2,7 @@
   "profiles": {
     "ExcelWriter": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=48\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\alt34.xlsx\"",
+      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=66\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\euross.xlsx\"",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }
