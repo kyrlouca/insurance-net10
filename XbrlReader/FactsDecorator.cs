@@ -96,7 +96,7 @@ public partial class FactsDecorator : IFactsDecorator
         }
         //ModuleTables = ModuleTables.Where(table => new int[]{68,69 }.Contains( table.TableID) ).ToList();
         //ModuleTables = ModuleTables.Where(mt => mt.TableID == 139).ToList();
-        var moduleZets = new List<string>();
+        var moduleZetsxx = new List<string>();
         
         foreach (var table in ModuleTables)
         {            
@@ -107,22 +107,21 @@ public partial class FactsDecorator : IFactsDecorator
             //*********** Select the facts for a template and update their zetvalues, RowSignatures and currencyDimValue            
             var tableFactsCount = UpdateTableFactsWithCellValues(table);
             Console.WriteLine($"\n---facts updated:{tableFactsCount}");
+            if (tableFactsCount == 0)
+            {
+                continue;
+            }
 
-
-            //*********** Create one  sheet per zet group
-            //** alternatively we could update each fact with zet and then do the grouping in sql
+            //*********** Create one  sheet per zet group            
             //fact.ZetValues is a string concatenating the Facts' zet dims
             //facts with the same zet values(concatenated as a string) should be assigned to the same sheet
-            //List<string> distinctTableZetStrings = tableFacts
-            //        .GroupBy(fact => fact.ZetValues ?? "")
-            //        .Select(group => group.Key).ToList();
-
+            
             var zetValues = FindDistinctZetValues(table.TableID);
 
-            moduleZets.AddRange(zetValues);
+            //moduleZets.AddRange(zetValues);
             Console.WriteLine($"\n---Grouping table facts by Zet");
 
-            List<SheetInfoType> sheetsInfo = CreateSheetForEachZetGroup(table, zetValues);
+            List<SheetInfoType> sheetsInfo = CreateSheetForEachZet(table, zetValues);
             
             //*********** Assign facts to sheets and update fact row, col, etc
             foreach(var sheetInfo in sheetsInfo)
@@ -136,15 +135,15 @@ public partial class FactsDecorator : IFactsDecorator
                 UpdateRowForOpenTables(sheetinfo.TemplateSheetId);
             }
 
-            CreateYFactsForOpenTables280(sheetsInfo);
+            CreateYFactsForOpenTable280(sheetsInfo);
 
             
         }
         //***********  update foreing keys
         UpdateForeignKeysOfChildTablesNN();
         
-        //update tableSheetNames
-        UpdateTableSheetNames(moduleZets);
+        
+        //UpdateTableSheetNames();
         Console.WriteLine($"\nFinished Processing documentId: {_documentId}");
         return 0;
 
@@ -167,16 +166,35 @@ public partial class FactsDecorator : IFactsDecorator
     }
 
 
-    private void UpdateTableSheetNames(List<string> ModuleZets)
+    private void UpdateTableSheetNames()
     {
         //since excel tabsheet names cannot exceed 30 characters, map each table zet to a unique number
-        var uniqueModuleZets = ModuleZets.Distinct().ToList();
+        //var uniqueModuleZets = ModuleZets.Distinct().ToList();
         var sheets = _SqlFunctions.SelectTemplateSheets(_documentId);
-        foreach(var sheet in sheets)
-        {            
-            var idx = uniqueModuleZets.IndexOf(sheet.SheetCodeZet);
-            var sheetName = $"{sheet.TableCode}_{idx:d3}";
-            _SqlFunctions.UpdateTemplateSheetName(sheet.TemplateSheetId,sheetName);
+        
+
+
+
+        //foreach(var sheet in sheets)
+        //{            
+        //    var idx = uniqueModuleZets.IndexOf(sheet.SheetCodeZet);
+        //    var sheetName = $"{sheet.TableCode}_{idx:d3}";
+        //    _SqlFunctions.UpdateTemplateSheetName(sheet.TemplateSheetId,sheetName);
+        //}
+
+        var tableIds = sheets.Select(sh => sh.TableID).Distinct();
+        foreach (var tableId in tableIds)
+        {
+            var sheetsInTable = sheets.Where(sh => sh.TableID == tableId);
+            var cnt = 0;
+            foreach (var sheet in sheetsInTable)
+            {
+                var sheetName = $"{sheet.TableCode}_{cnt:d3}";
+                _SqlFunctions.UpdateTemplateSheetName(sheet.TemplateSheetId, sheetName);
+                cnt++;
+            }
+            
+            
         }
 
     }    
@@ -216,7 +234,7 @@ public partial class FactsDecorator : IFactsDecorator
         return sheets;
     }
 
-    private List<SheetInfoType> CreateSheetForEachZetGroup(MTable? table, List<string> FactZetValuesList)
+    private List<SheetInfoType> CreateSheetForEachZet(MTable? table, List<string> FactZetValuesList)
     {
         //all the facts assigned to the sheet will have the same Zet values (except for county/currency)
         //concatenate the zets and assign it to SheetZetCode
@@ -237,8 +255,8 @@ public partial class FactsDecorator : IFactsDecorator
                     ? table.TableCode
                     : $"{table.TableCode}__{FactZetValue}";
 
-            var sheetName = $"update later";
-            
+            var sheetName = $"{table.TableCode}__{zetCount:d2}";
+
             var sheet = _SqlFunctions.CreateTemplateSheet(_documentId, sheetCode, FactZetValue, sheetName,FactZetValue, table);
             Console.WriteLine($"Create SheetCode: {sheetCode} {sheetName}");
             sheetInfo.Add(new SheetInfoType(sheet.TableID, sheet.TemplateSheetId, sheetCode, FactZetValue, sheetName, sheet.YDimVal));
@@ -249,7 +267,7 @@ public partial class FactsDecorator : IFactsDecorator
     }
 
 
-    private int CreateYFactsForOpenTables280(List<SheetInfoType> sheetsInfo)
+    private int CreateYFactsForOpenTable280(List<SheetInfoType> sheetsInfo)
     {
         //create facts for each y dim of a table (for each row)
         //for each row, use the first non-null fact as a clone
