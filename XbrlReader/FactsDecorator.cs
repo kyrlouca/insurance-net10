@@ -25,6 +25,7 @@ using System.Collections;
 
 public partial class FactsDecorator : IFactsDecorator
 {
+    
     //public int TestingTableId { get; set; } = 54;
     private int _testingTableId = 0;
 
@@ -49,7 +50,7 @@ public partial class FactsDecorator : IFactsDecorator
         //process all the tables (S.01.01.01.01, S.01.01.02.01, etc ) related to the filings (S.01.01)
         //for each cell in each table, create a sheet and associate the mathcing facts (or create new facts if a fact should be in two tables)            
         //for open tables, create  facts for the Y columns in each row based on rowContext
-
+         MissingFieldException S.6.0 tables
         _parameterHandler = getParameters;
         _logger = logger;
         _SqlFunctions = sqlFunctions;
