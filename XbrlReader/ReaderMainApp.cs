@@ -63,7 +63,7 @@ public class ReaderMainApp : IReaderMainApp
 
         if (1 == 1)
         {
-            _documentId = _factsCreator.CreateLooseFacts();
+            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
             if (_documentId == 0)
             {
                 return 1;
