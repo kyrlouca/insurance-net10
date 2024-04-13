@@ -629,11 +629,12 @@ public partial class FactsDecorator : IFactsDecorator
         var xbrlCode = xbrlCodeMatch.Success ? xbrlCodeMatch.Groups[1].Value : "";
 
         
-        var mandatoryExactDimsList = dims
-                        .Where(dim => !dim.Contains('*') && !dim.Contains('?'))
+        var mandatoryDimsList = dims
+                        .Where(dim => !dim.Contains('?'))
+                        .Select(dim => ToJustDim(dim))
                         .OrderBy(dim => dim);
        
-        var mandatoryWildDimsList = dims
+        var wildDimsList = dims
                         .Where(dim => dim.Contains('*') && !dim.Contains('?'))
                         .Select(dim => ToJustDim(dim))
                         .OrderBy(dim => dim).ToList();
@@ -641,48 +642,46 @@ public partial class FactsDecorator : IFactsDecorator
         var allDimsList = dims                        
                         .Select(dim => ToJustDim(dim))                        
                         .OrderBy(dim => dim).ToList();
-
-        var allWildList = dims
-                        .Where(dim => dim.Contains('*'))
-                        .OrderBy(dim => dim);
+        
 
 
         //var mandatoryExactDims = StringRoutines.JoinStringCreate(mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList(), ",");
         //var mandatoryWildDims = StringRoutines.JoinStringCreate(mandatoryWildDimsList.Select(dim => $"'{dim}'").ToList(), ",");
 
-        var mandatoryExactDims = string.Join( ",", mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList());           
-        var mandatoryWildDims = string.Join(",", mandatoryWildDimsList.Select(dim => $"'{dim}'").ToList());
+        var mandatoryDims = string.Join( ",", mandatoryDimsList.Select(dim => $"'{dim}'").ToList());           
+        var wildDims = string.Join(",", wildDimsList.Select(dim => $"'{dim}'").ToList());
         var allDims = string.Join( ",",allDimsList.Select(dim => $"'{dim}'").ToList());
 
-        var mandatoryExactClause = string.IsNullOrEmpty(mandatoryExactDims) 
+        var dimsClause = string.IsNullOrEmpty(mandatoryDims) 
             ? ""
             : @$" AND EXISTS (
                   SELECT 1
                   FROM ContextLine cl2
                   WHERE cl2.ContextId = fact.ContextNumberId
-                    AND cl2.Signature IN ({mandatoryExactDims})
+                    AND cl2.Dimension IN ({mandatoryDims})                    
+                    and NOT cl2.Dimension NOT IN ({allDims})
                 )";
 
                
 
         var sqlSelect = @$"
 
-                SELECT fact.FactId
+                SELECT distinct fact.FactId
                 FROM TemplateSheetFact fact 
                 join ContextLine cl on cl.ContextId=fact.ContextNumberId
                 WHERE 
                 fact.InstanceId=@documentId
                 and fact.XBRLCode=@xbrlCode
-                {mandatoryExactClause}                                
+                {dimsClause}                                
                 ;
 
 ";
         
         facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
         
-        foreach ( var wildManDim in allWildList)
+        foreach ( var wildDim in wildDimsList)
         {
-            facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, wildManDim, allDimsList)).ToList();
+            facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, wildDim, allDimsList)).ToList();
         }
         
         var fullFacts= facts.Select(fact=>_SqlFunctions.SelectFact(fact.FactId));
