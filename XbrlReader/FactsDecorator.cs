@@ -50,7 +50,7 @@ public partial class FactsDecorator : IFactsDecorator
         //process all the tables (S.01.01.01.01, S.01.01.02.01, etc ) related to the filings (S.01.01)
         //for each cell in each table, create a sheet and associate the mathcing facts (or create new facts if a fact should be in two tables)            
         //for open tables, create  facts for the Y columns in each row based on rowContext
-         MissingFieldException S.6.0 tables
+        //MissingFieldException S.6.0 tables
         _parameterHandler = getParameters;
         _logger = logger;
         _SqlFunctions = sqlFunctions;
@@ -97,11 +97,11 @@ public partial class FactsDecorator : IFactsDecorator
         }
         
 
-        //_testingTableId = 68; //"S.06.02.01.01"
+        _testingTableId = 68; //"S.06.02.01.01"
         //_testingTableId = 69;
         if (_testingTableId > 0)
         {
-            //ModuleTables = ModuleTables.Where(mt => mt.TableID == 114).ToList();
+            ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
         }
 
 
@@ -673,14 +673,12 @@ public partial class FactsDecorator : IFactsDecorator
                 WHERE 
                 fact.InstanceId=@documentId
                 and fact.XBRLCode=@xbrlCode
-                {mandatoryExactClause}                
-                group by fact.FactId having count(*) = @mandatoryCount;                
-
+                {mandatoryExactClause}                                
                 ;
 
 ";
-        var mandatoryCount = mandatoryExactDimsList.Count();
-        facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode,mandatoryCount }).ToList();
+        
+        facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
         
         foreach ( var wildManDim in allWildList)
         {

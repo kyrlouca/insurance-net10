@@ -29,7 +29,7 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 59;
+        var _documentId = 67;
         var filingsSubmitted = new List<string>()
         {
             "S.01.01",
@@ -50,7 +50,7 @@ public class ReaderMainApp : IReaderMainApp
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
         
-        if (1 == 1)
+        if (1 == 2)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -61,7 +61,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (1 == 1)
+        if (1 == 2)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
             if (_documentId == 0)
