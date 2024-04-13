@@ -25,8 +25,8 @@ using System.Collections;
 
 public partial class FactsDecorator : IFactsDecorator
 {
-    
-    //public int TestingTableId { get; set; } = 54;
+    //_testingTableId = 69; //"S.06.02.01.01"
+    //public int TestingTableId { get; set; } = 433;
     private int _testingTableId = 0;
 
     private readonly IParameterHandler _parameterHandler;
@@ -97,8 +97,8 @@ public partial class FactsDecorator : IFactsDecorator
         }
         
 
-        _testingTableId = 68; //"S.06.02.01.01"
-        //_testingTableId = 69;
+        
+        
         if (_testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
@@ -109,7 +109,7 @@ public partial class FactsDecorator : IFactsDecorator
         
         foreach (var table in ModuleTables)
         {            
-            Console.WriteLine($"\nTemplate being Processed : {table.TableCode}");
+            Console.WriteLine($"\nTemplate being Processed :{table.TableID} - {table.TableCode}");
 
             table.IsOpenTable = _SqlFunctions.IsOpenTable(table.TableID);
 
@@ -628,41 +628,46 @@ public partial class FactsDecorator : IFactsDecorator
         var xbrlCodeMatch = rgxMet.Match(xbrlCodeFull);
         var xbrlCode = xbrlCodeMatch.Success ? xbrlCodeMatch.Groups[1].Value : "";
 
-        
+
+        var mandatoryExactList = dims
+                        .Where(dim => !dim.Contains('*') && !dim.Contains('?'))                        
+                        .OrderBy(dim => dim);
+
         var mandatoryDimsList = dims
                         .Where(dim => !dim.Contains('?'))
                         .Select(dim => ToJustDim(dim))
                         .OrderBy(dim => dim);
-       
-        var wildDimsList = dims
-                        .Where(dim => dim.Contains('*') && !dim.Contains('?'))
-                        .Select(dim => ToJustDim(dim))
-                        .OrderBy(dim => dim).ToList();
-
-        var allDimsList = dims                        
+               
+        var allCellDimsList = dims                        
                         .Select(dim => ToJustDim(dim))                        
                         .OrderBy(dim => dim).ToList();
         
 
 
-        //var mandatoryExactDims = StringRoutines.JoinStringCreate(mandatoryExactDimsList.Select(dim => $"'{dim}'").ToList(), ",");
-        //var mandatoryWildDims = StringRoutines.JoinStringCreate(mandatoryWildDimsList.Select(dim => $"'{dim}'").ToList(), ",");
+        var mandatoryExactDims = string.Join(",",mandatoryExactList.Select(dim => $"'{dim}'"));        
+        var mandatoryDims = string.Join( ",", mandatoryDimsList.Select(dim => $"'{dim}'"));           
+        
+        var allCellDims = string.Join( ",",allCellDimsList.Select(dim => $"'{dim}'"));
 
-        var mandatoryDims = string.Join( ",", mandatoryDimsList.Select(dim => $"'{dim}'").ToList());           
-        var wildDims = string.Join(",", wildDimsList.Select(dim => $"'{dim}'").ToList());
-        var allDims = string.Join( ",",allDimsList.Select(dim => $"'{dim}'").ToList());
-
+        var mandatoryExactSQL = mandatoryExactList.Any() ? $"AND cl2.Signature IN ({mandatoryExactDims})" : "";
+        var mandarotryDimsSQL = mandatoryDimsList.Any() ? $"AND cl2.Dimension IN ({mandatoryDims})" : "";
+        var allCellDimsSQL = allCellDimsList.Any() ? $"and NOT cl2.Dimension NOT IN ({allCellDims})" : "";
+        
+        
+        //do not look for optinal, but check that there are no fact dims not specified in  celldims (Alldims)
         var dimsClause = string.IsNullOrEmpty(mandatoryDims) 
             ? ""
             : @$" AND EXISTS (
                   SELECT 1
                   FROM ContextLine cl2
                   WHERE cl2.ContextId = fact.ContextNumberId
-                    AND cl2.Dimension IN ({mandatoryDims})                    
-                    and NOT cl2.Dimension NOT IN ({allDims})
+                    {mandatoryExactSQL}
+                    {mandarotryDimsSQL}
+                    {allCellDimsSQL}
                 )";
 
-               
+        
+
 
         var sqlSelect = @$"
 
@@ -674,14 +679,18 @@ public partial class FactsDecorator : IFactsDecorator
                 and fact.XBRLCode=@xbrlCode
                 {dimsClause}                                
                 ;
-
 ";
-        
+
+                
         facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
-        
-        foreach ( var wildDim in wildDimsList)
+
+        var hierarchyList = dims
+                        .Where(dim => dim.Contains('['))
+                        .OrderBy(dim => dim).ToList();
+        foreach ( var hierarchyDim in hierarchyList)
         {
-            facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, wildDim, allDimsList)).ToList();
+            var cellDimRecord = CellDim.ParseHierarchy(hierarchyDim);
+            facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, cellDimRecord)).ToList();
         }
         
         var fullFacts= facts.Select(fact=>_SqlFunctions.SelectFact(fact.FactId));
@@ -696,7 +705,7 @@ public partial class FactsDecorator : IFactsDecorator
         }
     }
 
-    bool IsMemberInHierarchy(int factId, string cellDim, List<string> allDims)
+    bool IsMemberInHierarchy(int factId, CellDim cellDimRecord)
     {
 
         // factSignature: s2c_dim:RM(s2c_TI:x41)|s2c_dim:TA(s2c_AM:x57)
@@ -705,63 +714,47 @@ public partial class FactsDecorator : IFactsDecorator
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var sqlfact = "select * from TemplateSheetFact fact where fact.FactId= @FactId";
-        var fact =connectionInsurance.QuerySingleOrDefault<TemplateSheetFact>(sqlfact,new {factId });
-        if(fact is null)
-        {
-            return false;
-        }
-        var factSignature = fact?.DataPointSignature??"";
 
-        var rgxCell = new Regex(@"s2c_dim\:(\w\w)\(\*\??\[(.+?)\]\)"); 
-        //s2c_dim:AF(*?[79;432;1])=>"AF", "79;432;1"
-        //s2c_dim:AF(*)=>"AF", "*"
-        var matchCell = rgxCell.Match(cellDim);
-        if(!matchCell.Success)
+        //s2c_dim:AF(*?[79;432;1])=> we need the dim "AF" to find the dim (context line) of the fact, and then hierarchy Id=79 to check if the context line  of the fact is in the hierarchy
+        //var cellDimRecord = CellDim.ParseHierarchy(cellDim);
+        if (!cellDimRecord.IsValid)
         {
-            return false;
-        }
-        if (matchCell.Groups[2].Value.Trim() == "*")
-        {
-            //cellDim: s2c_dim:AF(*?[79;432;1])
             return true;
         }
-        var cellDimWild = matchCell.Groups[1].Value;//AF
-        var cellParts = matchCell.Groups[2].Value.Split(";", StringSplitOptions.RemoveEmptyEntries); //79;432;1
-        if (cellParts.Length <3  ) {
-            return false;
-        }
-        
-        var cellHierarchyId= cellParts[0];//79
-        var cellMemberId= cellParts[2];//1
+               
 
-        var rgxFactDim = new Regex($@"s2c_dim\:{cellDimWild}\(.+?\:(.+?)\)");
-        var matchMember= rgxFactDim.Match(factSignature); //s2c_dim\:AF\(.+?\:(.+?)\)=>x21
-        if (!matchMember.Success )
+        var sqlFactDim = @"
+			SELECT cl.DomainAndValue
+            FROM TemplateSheetFact fact 
+            join ContextLine cl on cl.ContextId=fact.ContextNumberId				
+             WHERE 
+                fact.FactId= @FactId
+                and cl.Dimension=@dim  
+            
+        ";
+        var factDomainAndValue = connectionInsurance.QuerySingleOrDefault<string>(sqlFactDim, new { factId, cellDimRecord.Dim });
+        if (factDomainAndValue is null )
         {            
-            return cellDim.Contains("?"); //optional dim is ok not to be found
+            return cellDimRecord.IsOptional; //return valid if optional
         }
         
-        var factMemberCode= matchMember.Groups[1].Value; //x41
+        var cellHierarchyId= cellDimRecord.HierarchyId;//79        
+               
+        
+        //var factMemberCode= matchMember.Groups[1].Value; //x41
         var sqlSelectHiMembers = @"
-            select mem.MemberCode
+            select hn.HierarchyNodeLabel, mem.MemberCode, mem.*
                 from mHierarchyNode hn
                 join mMember mem on mem.MemberID=hn.MemberID
-                where  HierarchyID=@HierarchyID and MemberCode=@MemberCode
+                where  HierarchyID=@HierarchyID
+				and MemberXBRLCode =@MemberXbrlCode
 
         ";
-        var memberFound = connectionEiopa.QueryFirstOrDefault<string>(sqlSelectHiMembers, new { HierarchyID = cellHierarchyId, memberCode=factMemberCode });
-        if (memberFound is null)
-        {
-            return false;
-        }
-
-        var rgxfactDims = new Regex(@"s2c_dim\:(\w\w)");
-        var matchFactDims= rgxfactDims.Matches(factSignature);
-        var factDims= matchFactDims.Select(m => m.Groups[1].Value).ToList();
         
-        bool allDimsPresent = factDims.All(item => allDims.Contains(item));
-        return allDimsPresent;
+        var memberFound = connectionEiopa.QueryFirstOrDefault<string>(sqlSelectHiMembers, new { HierarchyID = cellHierarchyId, MemberXbrlCode = factDomainAndValue??"" });
+
+        return memberFound is not null;
+        
     }
 
 

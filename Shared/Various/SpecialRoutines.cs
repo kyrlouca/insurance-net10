@@ -64,6 +64,53 @@ public class DimDom
 
 }
 
+
+public record CellDim
+{
+
+
+    public string Signature { get; init; } = ""; //s2c_dim:VC(*?[481;1655;1])
+    public string Dim { get; init; } = "";
+                                                  
+    public bool IsValid { get; init; } 
+    public bool IsWild { get; init; }
+    public bool IsOptional { get; init; } 
+    public int HierarchyId { get; init; } 
+    public int HierarchyDefaultMember { get; init; } 
+    public int HierarchyZeroOrOne { get; init; } 
+    
+    
+    public static CellDim ParseHierarchy(string cellSignature)
+    {
+
+        //Signature = @"s2c_dim:OC(s2c_CU:USD)";
+        //Signature = @"s2c_dim:OC(ID:USD)";
+        //Signature = @"s2c_dim:OC(*[xxxx])";            
+        //Signature= s2c_dim:VC(*?[481;1655;1])
+
+
+        var res = new Regex(@"s2c_dim\:(\w\w)\((\*?)(\??)\[(\d+)\;(\d+)\;(\d+)\]\)");
+        var match= res.Match(cellSignature);
+        if (!match.Success)
+        {
+            return new CellDim() {IsValid=false };
+        }
+
+        var dim = match.Groups[1].Value;
+        var isOptional = match.Groups[2].Value == "*";
+        var isWild = match.Groups[3].Value == "?";
+        var hierarchyId = int.TryParse(match.Groups[4].Value, out int hiVal) ? hiVal : 0;
+        var hierarchyDefaultMember = int.TryParse(match.Groups[5].Value, out int hdVal) ? hdVal : 0;
+        var hierarchyLastNumber = int.TryParse(match.Groups[6].Value, out int hmVal) ? hmVal : 0;
+        return new CellDim() {IsValid=true, Signature= cellSignature,Dim=dim,IsOptional=isOptional,IsWild=isWild
+            ,HierarchyId=hierarchyId,HierarchyDefaultMember=hierarchyDefaultMember,HierarchyZeroOrOne=hierarchyLastNumber };
+        
+    }
+        
+
+}
+
+
 public record RowColRecord(string rowcol, string Row, string Col, bool IsValid, bool HasOnlyCol);
 
 public record CellRowColRecord(string businessCode, string TableCode, string Zet, string Row, string Col, bool IsOpen, bool IsValid);
