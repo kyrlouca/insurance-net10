@@ -27,6 +27,7 @@ public partial class FactsDecorator : IFactsDecorator
 {
     //_testingTableId = 69; //"S.06.02.01.01"
     //public int TestingTableId { get; set; } = 433;
+    //private int _testingTableId = 114;
     private int _testingTableId = 0;
 
     private readonly IParameterHandler _parameterHandler;
@@ -314,7 +315,7 @@ public partial class FactsDecorator : IFactsDecorator
             newFact.FieldOrigin = "K";
             newFact.CellID = 0;
             var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
-            Console.Write("+");
+            Console.Write("y");
         }
         return;
     }
@@ -386,15 +387,11 @@ public partial class FactsDecorator : IFactsDecorator
         //a rowcol position may contain more than one fact (currency and country)
         //also update the zetValues of each fact
         //tableCells = tableCells.Where(tc => tc.CellID == 12801).ToList();
+        tableCells = tableCells.Where(cell => !string.IsNullOrEmpty(cell.DatapointSignature)).ToList();
         foreach (var tableCell in tableCells)
         {
             var cellSignature = tableCell.DatapointSignature;
-
-            if (cellSignature is null)
-            {
-                continue;
-            }
-
+            
             var cellRowCol = DimUtils.ParseCellRowCol(tableCell.BusinessCode);                                   
             if (!cellRowCol.IsValid)
             {
@@ -405,8 +402,9 @@ public partial class FactsDecorator : IFactsDecorator
             }
 
             
-            var cellFacts = SelectFactsForCellUsingDims(cellSignature);            
-                        
+            var cellFacts = SelectFactsForCellUsingDims(cellSignature);
+
+            Console.WriteLine($"Updating facts with zet values and tableId for table: {table.TableID} {tableCell.BusinessCode}   ");
             foreach (var cellFact in cellFacts)
             {
                 
@@ -445,12 +443,12 @@ public partial class FactsDecorator : IFactsDecorator
               RowSignature = @rowSignature,
               ZetValues =@zetValues,
               CurrencyDim = @CurrencyDim,
-              Col = @Col,
+              Col = @Col, 
               Row= @Row,
               [CellID]=@CellID
             WHERE 
               FactId= @FactId;
-            ";
+            "; 
 
         try
         {
@@ -551,51 +549,6 @@ public partial class FactsDecorator : IFactsDecorator
     }
 
 
-    private List<TemplateSheetFact> SelectFactsFromCellSignatureOldAndNotUsed(string cellSignature)
-    {
-        //match any facts with cell signature         
-        var facts = new List<TemplateSheetFact>();
-        //MET(s2md_met:ei2426)|s2c_dim:MP(*)|s2c_dim:NF(*)|s2c_dim:PX(*)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(*)|s2c_dim:VC(*?[481;1655;1])|s2c_dim:XA(*)
-        //MET(s2md_met:ei2426)|s2c_dim:MP(ID:)|s2c_dim:NF(ID:SH)|s2c_dim:PX(ID:)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/XT72-PIRAEUS BANK S.A.-EUR-Shareholders' funds-SH-Neither unit-linked nor index-linked)|s2c_dim:XA(NB:13)
-
-        //if no wild chars match the exact fact signature        
-        if (!cellSignature.Contains("(*") && !cellSignature.Contains("(*?"))
-        {
-            facts = _SqlFunctions.SelectFactsBySignature(_documentId, cellSignature);
-            return facts;
-        }
-        
-        List<string> cellDims = cellSignature
-            .Split("|").ToList();
-
-        //check all dims (mandatory and optional)
-        facts = FindFactsByLikeSignature(cellDims);
-        if (facts.Any())
-        {
-            return facts;
-        }
-
-        //check mandatory dims and add one by one the optional dims
-        //start with no optional and therefore always add "" as a dim
-        var mandatoryDims = cellDims.Where(cd => !cd.Contains('?')).ToList();
-        var optionalDims = cellDims.Where(cd => cd.Contains('?')).ToList();
-        optionalDims.Add("");
-
-        foreach (var optionalDim in optionalDims)
-        {
-            var dims = new List<string>(mandatoryDims)
-            {
-                optionalDim
-            };
-            facts = FindFactsByLikeSignature(dims);
-            if (facts.Any())
-            {
-                break;
-            }
-        }
-        return facts;
-    }
-
      
 
     private List<TemplateSheetFact> SelectFactsForCellUsingDims(string cellSignature)
@@ -617,11 +570,13 @@ public partial class FactsDecorator : IFactsDecorator
         List<string> fullDims = cellSignature
             .Split("|").ToList();
         var dims = fullDims.Skip(1);
+        
 
-        var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
-        var evaluator = new MatchEvaluator(MatchReplacer);
 
-        List<TemplateSheetFact> facts;
+        //var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
+        //var evaluator = new MatchEvaluator(MatchReplacer);
+
+        List<TemplateSheetFact> facts=new();
         
         var rgxMet = new Regex(@"^MET\((.*?)\)");
         var xbrlCodeFull = fullDims.FirstOrDefault()??"";
@@ -650,8 +605,8 @@ public partial class FactsDecorator : IFactsDecorator
         var allCellDims = string.Join( ",",allCellDimsList.Select(dim => $"'{dim}'"));
 
         var mandatoryExactSQL = mandatoryExactList.Any() ? $"AND cl2.Signature IN ({mandatoryExactDims})" : "";
-        var mandarotryDimsSQL = mandatoryDimsList.Any() ? $"AND cl2.Dimension IN ({mandatoryDims})" : "";
-        var allCellDimsSQL = allCellDimsList.Any() ? $"and NOT cl2.Dimension NOT IN ({allCellDims})" : "";
+        var mandatoryDimsSQL = mandatoryDimsList.Any() ? $"AND cl2.Dimension IN ({mandatoryDims})" : "";
+        var exclusionFromDimsSQL = allCellDimsList.Any() ? $"and NOT cl2.Dimension NOT IN ({allCellDims})" : "";
         
         
         //do not look for optinal, but check that there are no fact dims not specified in  celldims (Alldims)
@@ -662,12 +617,12 @@ public partial class FactsDecorator : IFactsDecorator
                   FROM ContextLine cl2
                   WHERE cl2.ContextId = fact.ContextNumberId
                     {mandatoryExactSQL}
-                    {mandarotryDimsSQL}
-                    {allCellDimsSQL}
+                    {mandatoryDimsSQL}
+                    {exclusionFromDimsSQL}
                 )";
 
         
-
+        var count= mandatoryExactList.Count();
 
         var sqlSelect = @$"
 
@@ -681,16 +636,41 @@ public partial class FactsDecorator : IFactsDecorator
                 ;
 ";
 
-                
-        facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
+        var sqlSelect2 = @$"
+                WITH fff AS (
+                SELECT DISTINCT fact.FactId
+                  FROM TemplateSheetFact fact
+                  inner join ContextLine cl2 on cl2.ContextId= fact.ContextNumberId
 
+                  WHERE
+                    fact.InstanceId = @documentId
+                    AND fact.XBRLCode = @xbrlCode
+	                {exclusionFromDimsSQL}
+	                {mandatoryExactSQL}
+	                {mandatoryDimsSQL}
+	                group by FactId
+	                having count(*) >= {count}
+		
+	                )
+	                SELECT fff.factId, fct.DataPointSignature
+                FROM TemplateSheetFact fct  
+                JOIN fff ON fff.FactId = fct.FactId;
+";
+                        
+        var facts1 = connectionInsurance.Query<TemplateSheetFact>(sqlSelect2, new { documentId = _documentId, xbrlCode }).ToList();
+        var facts3 = facts1.Select(ff => $"{ff.FactId}-{ff.DataPointSignature}");
+
+        return facts1;
+
+        //facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
         var hierarchyList = dims
                         .Where(dim => dim.Contains('['))
                         .OrderBy(dim => dim).ToList();
         foreach ( var hierarchyDim in hierarchyList)
         {
-            var cellDimRecord = CellDim.ParseHierarchy(hierarchyDim);
-            facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, cellDimRecord)).ToList();
+            //no need to check. it is highly unlikely to have the same dim but different member
+            //var cellDimRecord = CellDim.ParseHierarchy(hierarchyDim);
+             //facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, cellDimRecord)).ToList();
         }
         
         var fullFacts= facts.Select(fact=>_SqlFunctions.SelectFact(fact.FactId));
@@ -757,28 +737,6 @@ public partial class FactsDecorator : IFactsDecorator
         
     }
 
-
-    private List<TemplateSheetFact> FindFactsByLikeSignature(List<string> dims)
-    {
-        //select the facts using signature 
-        //Replace * or ? with % 
-
-        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
-        var evaluator = new MatchEvaluator(MatchReplacer);
-
-        List<TemplateSheetFact> facts;
-        var dimsToCheck = dims
-                        .Where(dim => !string.IsNullOrEmpty(dim))
-                        .Select(dim => dim.Contains('*') ? rgx.Replace(dim, evaluator) : dim)
-                        .Select(dim => dim.Contains('?') ? rgx.Replace(dim, evaluator) : dim)
-                        .OrderBy(dim => dim).ToList();
-        var sig = StringRoutines.JoinStringCreate(dimsToCheck.ToList(), "|");
-
-        var sqlSelectContext = @"select * from TemplateSheetFact fact where InstanceId=@DocumentId and fact.DataPointSignature like @signature;	";
-        facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelectContext, new { documentId = _documentId, signature = sig }).ToList();
-        return facts;
-    }
     static string MatchReplacer(Match match)
     {
         if (!match.Success)
@@ -797,7 +755,7 @@ public partial class FactsDecorator : IFactsDecorator
         //***** Assign each fact to ist sheet depending on the zet 
         foreach (var tableFact in tableFacts)
         {
-            Console.Write("+");
+            Console.Write(";");
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId,tableFact.CellID,tableFact.Zet,  tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
@@ -850,6 +808,7 @@ public partial class FactsDecorator : IFactsDecorator
                 {
                     continue;
                 }
+                Console.WriteLine($"Update keys for {masterSheet.SheetTabName}");
                 var masterFacts = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.FK_TableCode, childSeet.SheetCodeZet, kyrTable.FK_TableCol);
                 //find the single fact in each row  to get the Foreign key value 'ISIN/CAN...'
                 var childFactsWithForeignKey = _SqlFunctions.SelectFactsByCol(_documentId, kyrTable.TableCode, childSeet.SheetCodeZet, kyrTable.TableCol);

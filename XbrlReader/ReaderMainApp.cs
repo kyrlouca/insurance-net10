@@ -29,8 +29,9 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 67;
-        var filingsSubmitted = new List<string>()
+        var _documentId = 68;
+        var filingsSubmitted = new List<string>();
+        var filingsSubmitted1 = new List<string>()
         {
             "S.01.01",
             "S.01.02",
@@ -42,6 +43,7 @@ public class ReaderMainApp : IReaderMainApp
             "S.08.01",
             "S.12.01",
             "S.17.01",
+            "S.19.01",
             "S.23.01",
             "S.28.01",
             "S.28.02",

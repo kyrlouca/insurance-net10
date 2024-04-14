@@ -30,10 +30,10 @@ public class FactsCreator : IFactsCreator
 
 
 	MModule _mModule = new();
-	XDocument _xmlDoc;
+	XDocument? _xmlDoc;
 	private readonly DocInstance? _docInstance;
 	private int _documentId = 0;
-	private FundModel _fund;
+	private FundModel? _fund;
 
 	public XElement? RootNode { get; private set; }
 	readonly XNamespace xbrli = "http://www.xbrl.org/2003/instance";
