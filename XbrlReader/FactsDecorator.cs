@@ -28,7 +28,7 @@ public partial class FactsDecorator : IFactsDecorator
     //_testingTableId = 69; //"S.06.02.01.01"
     //public int TestingTableId { get; set; } = 433;
     //private int _testingTableId = 114;
-    private int _testingTableId = 0;
+    private int _testingTableId =0;
 
     private readonly IParameterHandler _parameterHandler;
     ParameterData _parameterData = new();
@@ -612,15 +612,38 @@ public partial class FactsDecorator : IFactsDecorator
         var exactCount = mandatoryExactList.Count();
         var mandatoryCount = mandatoryDimsList.Count();
 
-        var sqlSelect3 = @$"
+
+        var sqlSelectWithoutMandatory = @"
+                SELECT fact.FactId
+                  FROM TemplateSheetFact fact                
+                  WHERE
+                    fact.InstanceId = @documentId
+                  AND fact.XBRLCode = @xbrlCode                    			  
+        ";
+
+        var sqlSelectWithoutExact = @$"
+           
+                  SELECT DISTINCT fact.FactId
+                  FROM TemplateSheetFact fact
+                  INNER JOIN ContextLine cl1 ON cl1.ContextId = fact.ContextNumberId
+                  WHERE
+                    fact.InstanceId = @documentId
+                    AND fact.XBRLCode = @xbrlCode                    
+                    {mandatoryDimsSQL}
+                  GROUP BY FactId
+                  HAVING COUNT(*) = {mandatoryCount}           
+            
+            ";
+
+
+        var sqlSelectWithExact = @$"
            WITH f1 AS (
                   SELECT DISTINCT fact.FactId
                   FROM TemplateSheetFact fact
                   INNER JOIN ContextLine cl1 ON cl1.ContextId = fact.ContextNumberId
                   WHERE
                     fact.InstanceId = @documentId
-                    AND fact.XBRLCode = @xbrlCode
-                    {exclusionFromDimsSQL}                    
+                    AND fact.XBRLCode = @xbrlCode                    
                     {mandatoryDimsSQL}
                   GROUP BY FactId
                   HAVING COUNT(*) = {mandatoryCount}
@@ -636,32 +659,29 @@ public partial class FactsDecorator : IFactsDecorator
             
             ";
 
-        var sqlSelectWrong = @$"
-                WITH fff AS (
-                SELECT DISTINCT fact.FactId
-                  FROM TemplateSheetFact fact
-                  inner join ContextLine cl2 on cl2.ContextId= fact.ContextNumberId
 
-                  WHERE
-                    fact.InstanceId = @documentId
-                    AND fact.XBRLCode = @xbrlCode
-	                {exclusionFromDimsSQL}
-	                {mandatoryExactSQL}
-	                {mandatoryDimsSQL}
-	                group by FactId
-	                having count(*) >= {exactCount}
-		
-	                )
-	                SELECT fff.factId, fct.DataPointSignature
-                FROM TemplateSheetFact fct  
-                JOIN fff ON fff.FactId = fct.FactId;
-";
-                        
-        var facts1 = connectionInsurance.Query<int>(sqlSelect3, new { documentId = _documentId, xbrlCode }).ToList();
+
+
+        var sqlSelect = mandatoryCount == 0 ? sqlSelectWithoutMandatory
+                        : exactCount == 0 ? sqlSelectWithoutExact
+                        : sqlSelectWithExact;
+
+        var facts1 = connectionInsurance.Query<int>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
         
 
-        var fullFacts = facts1.Select(factId => _SqlFunctions.SelectFact(factId)).Where(f=>f is not null);
-        return fullFacts.ToList();
+        var fullFacts = facts1
+            .Where(factId=>IsFactDimInCellDims(factId, allCellDimsList))
+            .Select(factId => _SqlFunctions.SelectFact(factId))
+            .Where(f=>f is not null)
+            .ToList();
+
+        if(facts1.Count!= fullFacts.Count)
+        {
+            var ss = 3;
+        }
+
+        var temp = fullFacts.Select(ff => ff.DataPointSignature).ToList();
+        return fullFacts;
         
 
         //facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
@@ -684,6 +704,34 @@ public partial class FactsDecorator : IFactsDecorator
             var matchJustDim= rgxJustDim.Match(dimSignature);
             return matchJustDim.Success? matchJustDim.Groups[1].Value : "";
         }
+    }
+
+
+    bool IsFactDimInCellDims(int factId, List<string> cellDims)
+    {
+
+        // factSignature: s2c_dim:RM(s2c_TI:x41)|s2c_dim:TA(s2c_AM:x57)
+        //cellDim: s2c_dim:AF(*?[79;432;1])
+
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+
+        //s2c_dim:AF(*?[79;432;1])=> we need the dim "AF" to find the dim (context line) of the fact, and then hierarchy Id=79 to check if the context line  of the fact is in the hierarchy
+        //var cellDimRecord = CellDim.ParseHierarchy(cellDim);
+        
+        
+        var sqlFactDim = @"
+		    select cl.Dimension from TemplateSheetFact fact
+			join ContextLine cl on cl.ContextId=fact.ContextNumberId
+			where FactId=@FactId            
+        ";
+        var factDims = connectionInsurance.Query<string>(sqlFactDim, new { factId });
+
+        bool isAllContained = factDims.All(item => cellDims.Contains(item));
+
+        return isAllContained;
+
     }
 
     bool IsMemberInHierarchy(int factId, CellDim cellDimRecord)
