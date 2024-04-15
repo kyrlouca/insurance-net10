@@ -115,28 +115,20 @@ public class ExcelBookMerger : IExcelBookMerger
 
         ///////////////////////
         var s6Zet = "";
-        tableGroupsList = tableGroupsList.Where(gl => gl.TemplateCode == "S.19.01.01").ToList();
+        //tableGroupsList = tableGroupsList.Where(gl => gl.TemplateCode == "S.19.01.01").ToList();
         foreach (var tableGroup in tableGroupsList)
         {
 
-
-
-
-            var distinctSheetCodeZets = tableGroup.TableCodes
+            var distinctBlZets = tableGroup.TableCodes
             .SelectMany(tc => SelectSheetCodeZets(tc))
             .Select(tc=>ExtractZetForBusinessLine(tc))
             .Distinct()
             .ToList();
+            
 
-            var distinctBLs = tableGroup.TableCodes
-            .SelectMany(tc => SelectSheetCodeZets(tc))            
-            .Distinct()
-            .ToList();
-
-
-            if (!distinctSheetCodeZets.Any())
+            if (!distinctBlZets.Any())
             {
-                distinctSheetCodeZets.Add("");
+                distinctBlZets.Add("");
             }
 
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCode(tableGroup.TemplateCode);
@@ -145,10 +137,10 @@ public class ExcelBookMerger : IExcelBookMerger
             if (!specialTemplateLayout?.IsZetImportant ?? false)
             {
                 //to avoid rendering twice the same mergedsheet for multiple zets (case S.28.01.01)
-                distinctSheetCodeZets = new() { "" };
+                distinctBlZets = new() { "" };
             }
             var line = 0;
-            foreach (var sheetCodeZet in distinctSheetCodeZets)
+            foreach (var sheetCodeZet in distinctBlZets)
             {
                 line++;
                 //use the specialTemplateLayout if is  found in the static list, otherwise create one using the tables in the table group
@@ -163,7 +155,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
 
                 var specialSheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;                                
-                if (distinctSheetCodeZets.Count > 1) {
+                if (distinctBlZets.Count > 1) {
                     specialSheetName = $"{specialSheetName}_{line:D2}";
                 }
 
@@ -247,7 +239,7 @@ public class ExcelBookMerger : IExcelBookMerger
         string ExtractZetForBusinessLine(string zetVal)
         {
             var xx = zetVal.Split("|", StringSplitOptions.RemoveEmptyEntries)
-                .FirstOrDefault(val => val.StartsWith("s2c_dim:BL"));
+                .FirstOrDefault(val => val.StartsWith("s2c_dim:BL")) ??"";
             return xx;
         }
     }
