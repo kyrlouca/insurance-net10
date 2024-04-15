@@ -374,7 +374,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 {
                     return dimDom.DomAndValRaw;
                 }
-                return $"{dimDom?.Dim.Trim()}-{member?.MemberLabel?.Trim()}";
+                return $"{dimDom?.Dim.Trim()}-{member?.MemberLabel?.Trim()}"; 
             })
             .Where(dim => dim is not null);
         
