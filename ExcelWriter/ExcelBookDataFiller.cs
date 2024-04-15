@@ -349,17 +349,40 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
     string SelectZetValues(TemplateSheetInstance dbSheet)
     {
-        var zDims = dbSheet.ZDimVal
-            .Split("|")
-            .Select(zdim =>
+
+        var zDimsAll = dbSheet.ZDimVal
+            .Split("|",StringSplitOptions.RemoveEmptyEntries)
+            .Select(zdim => DimDom.GetParts(zdim))
+            .Where(dim => dim is not null)
+            .ToList();
+
+        var blDimDom = zDimsAll.FirstOrDefault(dd => dd.Dim == "BL");
+        var blDesc = "";
+        if (blDimDom != null)
+        {
+            var blMember = _SqlFunctions.SelectMMember(blDimDom.DomAndValRaw);
+            blDesc= $"{blDimDom.Dim.Trim()}-{blMember?.MemberLabel?.Trim()}****";
+        }
+
+        var restDimDoms = zDimsAll.Where(dd => dd.Dim != "BL");
+        
+        var stringDims = restDimDoms            
+            .Select(dimDom =>
             {
-                var dim = DimDom.GetParts(zdim);
-                var dimObj = _SqlFunctions.SelectDimensionByCode(dim.Dom, dim.Dim);
-                return $"{dim.Dim}-{dimObj?.DimensionLabel}";
+                var member = _SqlFunctions.SelectMMember(dimDom.DomAndValRaw);
+                if (member is null)
+                {
+                    return dimDom.DomAndValRaw;
+                }
+                return $"{dimDom?.Dim.Trim()}-{member?.MemberLabel?.Trim()}";
             })
             .Where(dim => dim is not null);
-        var res = string.Join("|", zDims);
-        return res ?? "";
+        
+        var resDesc = string.Join("**", stringDims);
+        var fullDesc = $"{blDesc}{resDesc}";
+
+        var xx222 = 33;
+        return fullDesc;
     }
 
     private  void FormatDataSectionForProtectedCells(IRange dataRange)

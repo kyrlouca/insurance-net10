@@ -583,6 +583,10 @@ public partial class FactsDecorator : IFactsDecorator
         var xbrlCodeMatch = rgxMet.Match(xbrlCodeFull);
         var xbrlCode = xbrlCodeMatch.Success ? xbrlCodeMatch.Groups[1].Value : "";
 
+        var onlyOptionalDims = dims
+                        .Where(dim => !dim.Contains('*') && dim.Contains('?'))
+                        .OrderBy(dim => dim);
+
 
         var mandatoryExactList = dims
                         .Where(dim => !dim.Contains('*') && !dim.Contains('?'))                        
@@ -612,6 +616,10 @@ public partial class FactsDecorator : IFactsDecorator
         var exactCount = mandatoryExactList.Count();
         var mandatoryCount = mandatoryDimsList.Count();
 
+        if(onlyOptionalDims.Count() > 0)
+        {
+            var xxxx = 33;
+        }
 
         var sqlSelectWithoutMandatory = @"
                 SELECT fact.FactId
@@ -621,7 +629,7 @@ public partial class FactsDecorator : IFactsDecorator
                   AND fact.XBRLCode = @xbrlCode                    			  
         ";
 
-        var sqlSelectWithoutExact = @$"
+        var sqlSelectWithOnlyMandatory = @$"
            
                   SELECT DISTINCT fact.FactId
                   FROM TemplateSheetFact fact
@@ -662,9 +670,9 @@ public partial class FactsDecorator : IFactsDecorator
 
 
 
-        var sqlSelect = mandatoryCount == 0 ? sqlSelectWithoutMandatory
-                        : exactCount == 0 ? sqlSelectWithoutExact
-                        : sqlSelectWithExact;
+        var sqlSelect = exactCount > 0 ? sqlSelectWithExact
+                        :mandatoryCount > 0 ? sqlSelectWithOnlyMandatory                        
+                        :sqlSelectWithoutMandatory;
 
         var facts1 = connectionInsurance.Query<int>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
         
