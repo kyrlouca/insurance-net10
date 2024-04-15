@@ -404,7 +404,7 @@ public partial class FactsDecorator : IFactsDecorator
             
             var cellFacts = SelectFactsForCellUsingDims(cellSignature);
 
-            Console.WriteLine($"Updating facts with zet values and tableId for table: {table.TableID} {tableCell.BusinessCode}   ");
+            //Console.WriteLine($"Updating facts with zet values and tableId for table: {table.TableID} {tableCell.BusinessCode}   ");
             foreach (var cellFact in cellFacts)
             {
                 
@@ -576,7 +576,7 @@ public partial class FactsDecorator : IFactsDecorator
         //var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
         //var evaluator = new MatchEvaluator(MatchReplacer);
 
-        List<TemplateSheetFact> facts=new();
+        List<TemplateSheetFact> factss=new();
         
         var rgxMet = new Regex(@"^MET\((.*?)\)");
         var xbrlCodeFull = fullDims.FirstOrDefault()??"";
@@ -604,39 +604,39 @@ public partial class FactsDecorator : IFactsDecorator
         
         var allCellDims = string.Join( ",",allCellDimsList.Select(dim => $"'{dim}'"));
 
+        var exclusionFromDimsSQL = allCellDimsList.Any() ? $"AND NOT cl1.Dimension NOT IN ({allCellDims})" : "";
+        var mandatoryDimsSQL = mandatoryDimsList.Any() ? $"AND cl1.Dimension IN ({mandatoryDims})" : "";        
         var mandatoryExactSQL = mandatoryExactList.Any() ? $"AND cl2.Signature IN ({mandatoryExactDims})" : "";
-        var mandatoryDimsSQL = mandatoryDimsList.Any() ? $"AND cl2.Dimension IN ({mandatoryDims})" : "";
-        var exclusionFromDimsSQL = allCellDimsList.Any() ? $"and NOT cl2.Dimension NOT IN ({allCellDims})" : "";
-        
-        
-        //do not look for optinal, but check that there are no fact dims not specified in  celldims (Alldims)
-        var dimsClause = string.IsNullOrEmpty(mandatoryDims) 
-            ? ""
-            : @$" AND EXISTS (
-                  SELECT 1
-                  FROM ContextLine cl2
-                  WHERE cl2.ContextId = fact.ContextNumberId
-                    {mandatoryExactSQL}
+
+        //do not look for optinal, but check that there are no fact dims not specified in  celldims (Alldims)        
+        var exactCount = mandatoryExactList.Count();
+        var mandatoryCount = mandatoryDimsList.Count();
+
+        var sqlSelect3 = @$"
+           WITH f1 AS (
+                  SELECT DISTINCT fact.FactId
+                  FROM TemplateSheetFact fact
+                  INNER JOIN ContextLine cl1 ON cl1.ContextId = fact.ContextNumberId
+                  WHERE
+                    fact.InstanceId = @documentId
+                    AND fact.XBRLCode = @xbrlCode
+                    {exclusionFromDimsSQL}                    
                     {mandatoryDimsSQL}
-                    {exclusionFromDimsSQL}
-                )";
+                  GROUP BY FactId
+                  HAVING COUNT(*) = {mandatoryCount}
+                )
+                SELECT f2.FactId
+                FROM TemplateSheetFact f2
+                INNER JOIN f1 ON f1.FactId = f2.FactId
+                INNER JOIN ContextLine cl2 ON cl2.ContextId = f2.ContextNumberId
+                WHERE 1=1
+                  {mandatoryExactSQL}
+                GROUP BY f2.FactId
+                HAVING COUNT(*) = {exactCount};
+            
+            ";
 
-        
-        var count= mandatoryExactList.Count();
-
-        var sqlSelect = @$"
-
-                SELECT distinct fact.FactId
-                FROM TemplateSheetFact fact 
-                join ContextLine cl on cl.ContextId=fact.ContextNumberId
-                WHERE 
-                fact.InstanceId=@documentId
-                and fact.XBRLCode=@xbrlCode
-                {dimsClause}                                
-                ;
-";
-
-        var sqlSelect2 = @$"
+        var sqlSelectWrong = @$"
                 WITH fff AS (
                 SELECT DISTINCT fact.FactId
                   FROM TemplateSheetFact fact
@@ -649,7 +649,7 @@ public partial class FactsDecorator : IFactsDecorator
 	                {mandatoryExactSQL}
 	                {mandatoryDimsSQL}
 	                group by FactId
-	                having count(*) >= {count}
+	                having count(*) >= {exactCount}
 		
 	                )
 	                SELECT fff.factId, fct.DataPointSignature
@@ -657,10 +657,12 @@ public partial class FactsDecorator : IFactsDecorator
                 JOIN fff ON fff.FactId = fct.FactId;
 ";
                         
-        var facts1 = connectionInsurance.Query<TemplateSheetFact>(sqlSelect2, new { documentId = _documentId, xbrlCode }).ToList();
-        var facts3 = facts1.Select(ff => $"{ff.FactId}-{ff.DataPointSignature}");
+        var facts1 = connectionInsurance.Query<int>(sqlSelect3, new { documentId = _documentId, xbrlCode }).ToList();
+        
 
-        return facts1;
+        var fullFacts = facts1.Select(factId => _SqlFunctions.SelectFact(factId)).Where(f=>f is not null);
+        return fullFacts.ToList();
+        
 
         //facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
         var hierarchyList = dims
@@ -673,8 +675,7 @@ public partial class FactsDecorator : IFactsDecorator
              //facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, cellDimRecord)).ToList();
         }
         
-        var fullFacts= facts.Select(fact=>_SqlFunctions.SelectFact(fact.FactId));
-        return fullFacts.Where(fact => fact is not null).ToList();
+        
 
         string ToJustDim(string dimSignature)
         {
