@@ -15,6 +15,7 @@ using Syncfusion.XlsIO.Implementation;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Shared.SpecialRoutines;
 
 public class ExcelBookMerger : IExcelBookMerger
 {
@@ -106,7 +107,7 @@ public class ExcelBookMerger : IExcelBookMerger
             .Where(sp => sp is not null)
             .Select(sp => new TableGroup(sp!.TemplateCode, "", new List<string>()))
             .ToList();
-
+         
         tableGroupsList.AddRange(specialGroups);
 
 
@@ -114,14 +115,24 @@ public class ExcelBookMerger : IExcelBookMerger
 
         ///////////////////////
         var s6Zet = "";
+        tableGroupsList = tableGroupsList.Where(gl => gl.TemplateCode == "S.19.01.01").ToList();
         foreach (var tableGroup in tableGroupsList)
         {
 
 
+
+
             var distinctSheetCodeZets = tableGroup.TableCodes
             .SelectMany(tc => SelectSheetCodeZets(tc))
+            .Select(tc=>ExtractZetForBusinessLine(tc))
             .Distinct()
             .ToList();
+
+            var distinctBLs = tableGroup.TableCodes
+            .SelectMany(tc => SelectSheetCodeZets(tc))            
+            .Distinct()
+            .ToList();
+
 
             if (!distinctSheetCodeZets.Any())
             {
@@ -145,16 +156,21 @@ public class ExcelBookMerger : IExcelBookMerger
                     ? ToZetTemplateLayout(tableGroup, sheetCodeZet)
                     : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, sheetCodeZet);
 
-                var sheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;
-                if(distinctSheetCodeZets.Count > 1) {
-                    sheetName = $"{sheetName}_{line:D2}";
-                }
-                zetTemplateLayout.SheetName = sheetName;
-                //zetTemplateLayout.SheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName
-                //                                   : distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}"
+
+                //zetTemplateLayout.SheetName =  distinctSheetCodeZets.Count > 1 ? $"{zetTemplateLayout.GroupTableCode}_{line:D2}"
+                //                                   :    specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName                                                   
                 //                                   : $"{zetTemplateLayout.GroupTableCode}";
 
-                 zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(specialTemplateLayout is not null, zetTemplateLayout);
+
+                var specialSheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;                                
+                if (distinctSheetCodeZets.Count > 1) {
+                    specialSheetName = $"{specialSheetName}_{line:D2}";
+                }
+
+                zetTemplateLayout.SheetName = specialSheetName;                
+
+                
+                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(specialTemplateLayout is not null, zetTemplateLayout);
                 (var isRendered, var sheet) = RenderOneZetSheet(zetTemplateLayout);
                 if (isRendered)
                 {
@@ -200,14 +216,18 @@ public class ExcelBookMerger : IExcelBookMerger
 
         string BuildMergedTableDescription(bool isSpecialTemplate, ZetTemplateLayout zetTemplateBundle)
         {
-            using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-            var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
-            var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.SheetCodeZet });
+            //using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+
+            var dimDomZet = DimDom.GetParts( zetTemplateBundle.SheetCodeZet).DomAndValRaw;
+            var label = _SqlFunctions.SelectMMember(dimDomZet)?.MemberLabel??"";
+
+            //var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
+            //var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.SheetCodeZet });
 
 
-            var templateDesciption = string.IsNullOrEmpty(zetLabel)
+            var templateDesciption = string.IsNullOrEmpty(label)
                 ? $"{zetTemplateBundle.TemplateDescription.Trim()}"
-                : $"{zetTemplateBundle.TemplateDescription.Trim()} -- {zetLabel}";
+                : $"{zetTemplateBundle.TemplateDescription.Trim()} -- {label}";
             return templateDesciption;
         }
 
@@ -223,6 +243,12 @@ public class ExcelBookMerger : IExcelBookMerger
                 return sheet;
             }
             return null;
+        }
+        string ExtractZetForBusinessLine(string zetVal)
+        {
+            var xx = zetVal.Split("|", StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault(val => val.StartsWith("s2c_dim:BL"));
+            return xx;
         }
     }
 
@@ -291,9 +317,21 @@ public class ExcelBookMerger : IExcelBookMerger
     }
     private SheetExtensiveInfo CreateSheetExtensiveInfo(string tableCode, string sheetCodeZet, bool isZetImportant)
     {
-        var dbSheet = isZetImportant
-            ? _SqlFunctions.SelectTemplateSheetBySheetCodeZet(_documentId, tableCode, sheetCodeZet)
-            : _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode).FirstOrDefault();
+        TemplateSheetInstance? dbSheet;
+        if (string.IsNullOrWhiteSpace(sheetCodeZet) || !isZetImportant )
+        {
+            dbSheet= _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode).FirstOrDefault();
+        }
+        else 
+        {
+             dbSheet= _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode)
+                                            .FirstOrDefault(sh => sh.ZDimVal.Contains(sheetCodeZet));
+        }
+        
+            
+        //var dbSheet = isZetImportant
+        //    ? _SqlFunctions.SelectTemplateSheetBySheetCodeZet(_documentId, tableCode, sheetCodeZet)
+        //    : _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode).FirstOrDefault();
 
         var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";
