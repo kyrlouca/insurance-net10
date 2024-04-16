@@ -23,7 +23,7 @@ public class NewValidatorMain : INewValidatorMain
 
 
 
-    public int id = 12;
+    
     public NewValidatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
     {
         _parameterHandler = getParameters;

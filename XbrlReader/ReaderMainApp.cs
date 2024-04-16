@@ -29,24 +29,40 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 72;
+        var _documentId = 74;
         var filingsSubmitted = new List<string>();
-        var OldfilingsSubmitted1 = new List<string>()
+        var filingsSubmitted = new List<string>()
         {
-            "S.01.01",
-            "S.01.02",
-            "S.02.01",
-            "S.05.01",
-            "S.06.01",
-            "S.06.02",
-            "S.06.03",
-            "S.08.01",
-            "S.12.01",
-            "S.17.01",
-            "S.19.01",
-            "S.23.01",
-            "S.28.01",
-            "S.28.02",
+                "S.01.01",
+                "S.01.02",
+                "S.02.01",
+                "S.02.02",
+                "S.04.01",
+                "S.05.01",
+                "S.05.02",
+                "S.06.02",
+                "S.06.03",
+                "S.07.01",
+                "S.09.01",
+                "S.12.01",
+                "S.12.02",
+                "S.13.01",
+                "S.14.01",
+                "S.23.01",
+                "S.23.02",
+                "S.23.03",
+                "S.23.04",
+                "S.24.01",
+                "S.25.01",
+                "S.26.01",
+                "S.26.02",
+                "S.26.03",
+                "S.26.06",
+                "S.28.01",
+                "S.29.01",
+                "S.29.02",
+                "S.29.03",
+                "S.29.04",
 
         };
 
