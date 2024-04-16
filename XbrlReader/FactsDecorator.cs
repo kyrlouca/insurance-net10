@@ -325,7 +325,7 @@ public partial class FactsDecorator : IFactsDecorator
             newFact.DataTypeUse = "S";
             newFact.FieldOrigin = "K";
             newFact.CellID = 0;
-            var x = _SqlFunctions.CreateTemplateSheetFact(newFact);
+            var x = _SqlFunctions.CreateTemplateSheetFact(newFact,false);
             Console.Write("y");
         }
         return;
@@ -826,13 +826,14 @@ public partial class FactsDecorator : IFactsDecorator
             Console.Write(";");
             //******* Assign the facts to the sheet
             //if the fact is alreate assigned to antoher shhet, create a clone fact
+            
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.CellID, tableFact.Zet, tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
             if (cnt == 0)
             {
                 //Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
                 Console.Write("&");
                 tableFact.TemplateSheetId = sh.TemplateSheetId;
-                var x = _SqlFunctions.CreateTemplateSheetFact(tableFact);
+                var x = _SqlFunctions.CreateTemplateSheetFact(tableFact, false);
             }
         }
     }

@@ -30,7 +30,7 @@ public class ReaderMainApp : IReaderMainApp
         _parameterData = _parameterHandler.GetParameterData();
 
         var _documentId = 74;
-        var filingsSubmitted = new List<string>();
+        var filingsSubmittedz = new List<string>();
         var filingsSubmitted = new List<string>()
         {
                 "S.01.01",

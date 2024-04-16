@@ -359,7 +359,7 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
-    public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact)
+    public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact,bool isLooseFact)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         if (fact is null)

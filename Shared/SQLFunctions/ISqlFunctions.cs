@@ -40,8 +40,10 @@ public interface ISqlFunctions
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mapping);
     public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
-    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, string zDimVal, MTable table);    
-    public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact);
+    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, string zDimVal, MTable table);
+
+    public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact);
+    
     public ContextModel? CreateContext(ContextModel context);
 
     public ContextLine? CreateContextLine(ContextLine contextLine);
