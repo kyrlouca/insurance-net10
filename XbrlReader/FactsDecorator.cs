@@ -28,7 +28,7 @@ public partial class FactsDecorator : IFactsDecorator
     //_testingTableId = 69; //"S.06.02.01.01"
     //public int TestingTableId { get; set; } = 433;
     //private int _testingTableId = 114;
-    private int _testingTableId =0;
+    private int _testingTableId =455;
 
     private readonly IParameterHandler _parameterHandler;
     ParameterData _parameterData = new();
@@ -311,6 +311,11 @@ public partial class FactsDecorator : IFactsDecorator
                 : ctxLine.DomainValue;
 
             newFact.TextValue = textValue;
+            newFact.NumericValue = 0;
+            newFact.ContextId = "";
+            newFact.ContextNumberId=0;
+            newFact.XBRLCode = "";
+
             newFact.DataTypeUse = "S";
             newFact.FieldOrigin = "K";
             newFact.CellID = 0;

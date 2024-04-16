@@ -1102,7 +1102,7 @@ internal class ValidationFunctions
                 {
                     return true;
                 }
-                if (region == "XA" &&  xaSupranationalCountries392.Contains(termValue))
+                if (region == "XA" && aaCountries380.Contains(termValue) &&  !euCountries377.Contains(termValue))
                 {
                     return true;
                 }

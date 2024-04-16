@@ -361,7 +361,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (blDimDom != null)
         {
             var blMember = _SqlFunctions.SelectMMember(blDimDom.DomAndValRaw);
-            blDesc= $"{blDimDom.Dim.Trim()}-{blMember?.MemberLabel?.Trim()}****";
+            blDesc= $"{blDimDom.Dim.Trim()}-{blMember?.MemberLabel?.Trim()}**";
         }
 
         var restDimDoms = zDimsAll.Where(dd => dd.Dim != "BL");
@@ -378,7 +378,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             })
             .Where(dim => dim is not null);
         
-        var resDesc = string.Join("**", stringDims);
+        var resDesc = string.Join("*", stringDims);
         var fullDesc = $"{blDesc}{resDesc}";
 
         var xx222 = 33;

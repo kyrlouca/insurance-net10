@@ -98,7 +98,7 @@ public class DocumentValidator : IDocumentValidator
         var exempted = new[] {   0 };
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
         //validationRules = validationRules.Where(vr => !vr.Rule.Contains("exp(")).ToList();
-        //validationRules = validationRules.Where(vr => vr.ValidationID == 3547).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 3214).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -139,7 +139,7 @@ public class DocumentValidator : IDocumentValidator
                 //for open tables use all the rows and apply filter and :filter
                 //Closed Tables: sum without seq , use the R: to create terms (3780) OR the terms are separated by commas
 
-                var hasAggregateFn = ruleForScope.IfComponent.RuleTerms.Any(rt => rt.IsSequence);
+                var hasAggregateFn = ruleForScope.IfComponent.RuleTerms.Any(rt => rt.IsSequence) || ruleForScope.ThenComponent.RuleTerms.Any(rt => rt.IsSequence);
                 if ((!hasAggregateFn || hasAggregateFn) && hasOnlyClosedTables)
                 {
                     var mainTable = tablesInValidation.FirstOrDefault();
