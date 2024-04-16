@@ -50,7 +50,7 @@ public static class SpecialTemplateList
             new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",true, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
             new SpecialTemplateLayout("S.04.01.01", "S.04.01.01","XX", true, new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
             new SpecialTemplateLayout("S.05.02.01", "S.05.02.01","xx", true, new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
-            new SpecialTemplateLayout("S.19.01.01", "S.19.01.01","Non-life insurance claims", true, new[] {
+            new SpecialTemplateLayout("XS.19.01.01", "S.19.01.01","Non-life insurance claims", true, new[] {
                 new string[] { "S.19.01.01.01", "S.19.01.01.02", "S.19.01.01.03", "S.19.01.01.04", "S.19.01.01.05" ,"S.19.01.01.06" },
                 new string[] { "S.19.01.01.07", "S.19.01.01.08", "S.19.01.01.09", "S.19.01.01.10", "S.19.01.01.11" ,"S.19.01.01.12" },
                 new string[] { "S.19.01.01.13", "S.19.01.01.14", "S.19.01.01.15", "S.19.01.01.16", "S.19.01.01.17" ,"S.19.01.01.18" },

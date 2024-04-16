@@ -396,9 +396,10 @@ public class FactsCreator : IFactsCreator
 					throw new InvalidOperationException($"signature:{factSignature}");
 				}
 				
-				var cFact = _SqlFunctions.CreateTemplateSheetFact(newFact);
-				if(cFact is null)
+				var cFact = _SqlFunctions.CreateTemplateSheetFact(newFact,true);
+				if(cFact ==0)
 				{
+					_logger.Error($"signature:{newFact.Signature} Fact cannot be created");
 					continue;
 				}
 

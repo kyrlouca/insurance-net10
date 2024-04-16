@@ -104,7 +104,7 @@ public partial class FactsDecorator : IFactsDecorator
         }
         if (1 == 1)
         {
-            var tlist = new[] { 107, 432 };
+            //var tlist = new[] { 107, 432 };
             //ModuleTables = ModuleTables.Where(mt => tlist.Contains(mt.TableID)).ToList();
         }
 
@@ -215,11 +215,11 @@ public partial class FactsDecorator : IFactsDecorator
 
         var sqlFacts = @"update TemplateSheetFact set TemplateSheetId=null where InstanceId =@_documentId and TemplateSheetId is not null";
         var sqlSheets = @"delete  from TemplateSheetInstance where InstanceId = @_documentId";
-        var sqlKeyFacts = @"delete from TemplateSheetFact  where InstanceId =@_documentId and fieldOrigin='K'";
+        var sqlKeyFacts = @"delete from TemplateSheetFact  where InstanceId =@_documentId and (fieldOrigin='K' OR fieldOrigin='D') ";
 
         var xx = connectionInsurance.Execute(sqlFacts, new { _documentId });
         var sheets = connectionInsurance.Execute(sqlSheets, new { _documentId });
-        var delK=connectionInsurance.Execute(sqlKeyFacts, new { _documentId });
+        var delK = connectionInsurance.Execute(sqlKeyFacts, new { _documentId });
         return sheets;
     }
 
@@ -325,7 +325,7 @@ public partial class FactsDecorator : IFactsDecorator
             newFact.DataTypeUse = "S";
             newFact.FieldOrigin = "K";
             newFact.CellID = 0;
-            var x = _SqlFunctions.CreateTemplateSheetFact(newFact,false);
+            var x = _SqlFunctions.CreateTemplateSheetFact(newFact, false);
             Console.Write("y");
         }
         return;
@@ -418,6 +418,15 @@ public partial class FactsDecorator : IFactsDecorator
             //Console.WriteLine($"Updating facts with zet values and tableId for table: {table.TableID} {tableCell.BusinessCode}   ");
             foreach (var cellFact in cellFacts)
             {
+
+                if (cellFact.TemplateSheetId > 0)
+                {
+                    Console.Write("&");
+                    cellFact!.FieldOrigin = "D";
+                    var newFactId = _SqlFunctions.CreateTemplateSheetFact(cellFact, true);//loose fact without TemplateSheetId                               
+                    cellFact.FactId = newFactId;
+                }
+
 
                 Console.Write(".");
                 var rowSignature = BuildRowSignature(cellFact!.DataPointSignature, yDims);
@@ -703,18 +712,7 @@ public partial class FactsDecorator : IFactsDecorator
         return fullFacts;
 
 
-        //facts = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { documentId = _documentId, xbrlCode }).ToList();
-        var hierarchyList = dims
-                        .Where(dim => dim.Contains('['))
-                        .OrderBy(dim => dim).ToList();
-        foreach (var hierarchyDim in hierarchyList)
-        {
-            //no need to check. it is highly unlikely to have the same dim but different member
-            //var cellDimRecord = CellDim.ParseHierarchy(hierarchyDim);
-            //facts = facts.Where(fact => IsMemberInHierarchy(fact.FactId, cellDimRecord)).ToList();
-        }
-
-
+       
 
         string ToJustDim(string dimSignature)
         {
@@ -825,16 +823,12 @@ public partial class FactsDecorator : IFactsDecorator
         {
             Console.Write(";");
             //******* Assign the facts to the sheet
-            //if the fact is alreate assigned to antoher shhet, create a clone fact
+            //if the fact is already assigned to antoher shhet, create a clone fact
+
             
+
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.CellID, tableFact.Zet, tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
-            if (cnt == 0)
-            {
-                //Console.WriteLine($"+ double FactId:{tableFact.FactId} Row:{tableFact.Row}-{tableFact.Col} ");
-                Console.Write("&");
-                tableFact.TemplateSheetId = sh.TemplateSheetId;
-                var x = _SqlFunctions.CreateTemplateSheetFact(tableFact, false);
-            }
+
         }
     }
 

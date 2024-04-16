@@ -359,12 +359,12 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
-    public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact,bool isLooseFact)
+    public int CreateTemplateSheetFact(TemplateSheetFact fact,bool isLooseFact)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         if (fact is null)
         {
-            return null;
+            return 0;
         }
         var sqlInsertLooseFact = @"
              INSERT INTO TemplateSheetFact 
@@ -382,7 +382,7 @@ public class SqlFunctions : ISqlFunctions
              SELECT CAST(SCOPE_IDENTITY() as int);            
             ";
         int factId = 0;
-        var sqlInsert = fact.TemplateSheetId > 0 ? sqlInsertSheetFact : sqlInsertLooseFact;
+        var sqlInsert = isLooseFact ? sqlInsertLooseFact:sqlInsertSheetFact ;
         try
         {
             factId = connectionInsurance.QuerySingle<int>(sqlInsert, fact);
@@ -390,10 +390,9 @@ public class SqlFunctions : ISqlFunctions
         catch (Exception ex)
         {
             Log.Error($"error creating Fact :{fact.Row} col:{fact.Col} - {ex.Message}");
-            return null;
-        }
-        fact.FactId = factId;
-        return fact;
+            return 0;
+        }        
+        return factId;
     }
 
 

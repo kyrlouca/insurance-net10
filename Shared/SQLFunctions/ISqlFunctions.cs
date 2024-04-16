@@ -42,7 +42,7 @@ public interface ISqlFunctions
 
     public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, string zDimVal, MTable table);
 
-    public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact);
+    public int CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact);
     
     public ContextModel? CreateContext(ContextModel context);
 
