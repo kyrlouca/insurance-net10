@@ -105,8 +105,8 @@ public class ExcelBookMerger : IExcelBookMerger
             .Where(tgl => SpecialTemplateList.SingleTableGroupsNew.Contains(tgl.TemplateCode))
             .SelectMany(tgl => BreakTableGroup(tgl)).ToList();
 
-        newSingePageBreakdownListNew.Add(new TableGroup("AS.06.02.01.01_single", "xx", new List<string>()));
-        newSingePageBreakdownListNew.Add(new TableGroup("AS.06.02.01.02_single", "xx", new List<string>()));
+        newSingePageBreakdownListNew.Add(new TableGroup("ZS.06.02.01.01_single", "xx", new List<string>()));
+        newSingePageBreakdownListNew.Add(new TableGroup("ZS.06.02.01.02_single", "xx", new List<string>()));
 
         //remove first the groups that will break to single page and then concat the new single page groups
         var newTableGroupList = newTableGroupsFromEiopa
@@ -187,7 +187,7 @@ public class ExcelBookMerger : IExcelBookMerger
         //var sheet62 = CreateSheetFromLayout("", "S.06.02.01.02_Single");
 
 
-        //FixCombinedS6Form(s6Zet);
+        FixCombinedS6Form(s6Zet);
 
 
         var sortedItems = indexList.ListItems.OrderBy(li => li.templateCode).ToList();
@@ -228,19 +228,19 @@ public class ExcelBookMerger : IExcelBookMerger
             return templateDesciption;
         }
 
-        IWorksheet? CreateSheetFromLayout(string s6Zet, string specialTemplateLayoutCode)
-        {
-            var specialLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCode(specialTemplateLayoutCode);
-            var specialLayoutZet = ToZetTemplateUsingSpecialLayout(specialLayout, s6Zet);
-            (var isRenderedx, var sheet) = RenderOneZetSheet(specialLayoutZet);
-            if (isRenderedx)
-            {
-                var indexItem = new IndexSheetListItem(specialLayoutZet.SheetName, specialLayoutZet.SheetName, specialLayoutZet.TemplateDescription);
-                indexList.ListItems.Add(indexItem);
-                return sheet;
-            }
-            return null;
-        }
+        //IWorksheet? CreateSheetFromLayout(string s6Zet, string specialTemplateLayoutCode)
+        //{
+        //    var specialLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCode(specialTemplateLayoutCode);
+        //    var specialLayoutZet = ToZetTemplateUsingSpecialLayout(specialLayout, s6Zet);
+        //    (var isRenderedx, var sheet) = RenderOneZetSheet(specialLayoutZet);
+        //    if (isRenderedx)
+        //    {
+        //        var indexItem = new IndexSheetListItem(specialLayoutZet.SheetName, specialLayoutZet.SheetName, specialLayoutZet.TemplateDescription);
+        //        indexList.ListItems.Add(indexItem);
+        //        return sheet;
+        //    }
+        //    return null;
+        //}
         string ExtractZetForBusinessLine(string zetVal)
         {
             var xx = zetVal.Split("|", StringSplitOptions.RemoveEmptyEntries)
