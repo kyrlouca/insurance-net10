@@ -20,7 +20,7 @@ public class SpecialTemplateLayout
     public String[][] TableCodesMatrix { get; init; }
     public ZMatrix ZMatrix { get; init; }
     public List<List<string>> TableCodes { get; init; }
-    public SpecialTemplateLayout(string templateCode, string templateSheetName,string templateSheetDescription, bool isZetImportant, string[][] tableCodes)
+    public SpecialTemplateLayout(string templateCode, string templateSheetName, string templateSheetDescription, bool isZetImportant, string[][] tableCodes)
     {
         TemplateCode = templateCode;
         TemplateSheetName = templateSheetName;
@@ -46,7 +46,7 @@ public static class SpecialTemplateList
             new SpecialTemplateLayout("S.05.01.02.02", "S.05.01.02.02","Premiums, claims and expenses by line of business - life",false, new[] { new string[] { "S.05.01.02.02" } }),
             new SpecialTemplateLayout("S.06.02.01.01_Single", "S.06.02.01.01","List of assets-Information on positions held",false, new[] { new string[] { "S.06.02.01.01" } }),
             new SpecialTemplateLayout("S.06.02.01.02_Single", "S.06.02.01.02","List of assets-Information on assets",false, new[] { new string[] { "S.06.02.01.02" } }),
-            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),            
+            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",true, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
             new SpecialTemplateLayout("S.04.01.01", "S.04.01.01","XX", true, new[] { new string[] { "S.04.01.01.01", "S.04.01.01.02", "S.04.01.01.03", "S.04.01.01.04" } }),
             new SpecialTemplateLayout("S.05.02.01", "S.05.02.01","xx", true, new[] { new string[] { "S.05.02.01.01", "S.05.02.01.02", "S.05.02.01.03" }, new string[] { "S.05.02.01.04", "S.05.02.01.05", "S.05.02.01.06" } }),
@@ -84,27 +84,50 @@ public static class SpecialTemplateList
         };
     }
 
-    //a list of excluded template groups because use wants to separate sheet for each table
+    //a list of excluded template groups because user wants to separate sheet for each table
     //the tables should be added in SinglePageTemplateGroups
     public static List<string> ExcludeTemplateGroups()
     {
-        return new List<string> { "S.05.01.02","S.06.02.01", "S.04.04.01", "S.05.01.01", "S.14.01.01", "S.30.01.01", "S.30.01.02", "S.30.01.03" , "S.30.01.04" };
+        return new List<string> { 
+            "S.05.01.02", 
+            "S.06.02.01",
+            "S.04.04.01",
+        };
     }
 
     public static List<string> IncludeSinglePageTemplateGroups()
     {
-        return new List<string> { "S.06.02.01", "S.05.01.02.01_Single", "S.05.01.02.02_Single" };
+        return new List<string> { 
+            "S.06.02.01", 
+            "S.05.01.02.01_Single", 
+            "S.05.01.02.02_Single" 
+        };
     }
 
     public static List<string> SinglePageTableGroupsId()
     {
         return new List<string> {
-            "S.05.01.02.01",        
-            "S.05.01.02.02",                    
-            "S.06.02.01",           
+            "S.05.01.02.01",
+            "S.05.01.02.02",
+            "S.06.02.01",
+            "S.05.01.02", 
+            "S.06.02.01", 
+            "S.04.04.01", 
+            "S.05.01.01", 
+            "S.14.01.01", 
+            "S.30.01.01", 
+            "S.30.01.02", 
+            "S.30.01.03",
+            "S.30.01.04" 
         };
+
+        //return new List<string> {
+        //    "S.05.01.02.01",
+        //    "S.05.01.02.02",
+        //    "S.06.02.01",
+        //};
     }
-    
+
 
     public static SpecialTemplateLayout? FindSpecialTemplateLayoutByCode(string templateCode)
     {
