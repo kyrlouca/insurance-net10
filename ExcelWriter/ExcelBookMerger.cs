@@ -110,7 +110,6 @@ public class ExcelBookMerger : IExcelBookMerger
         tableGroupsList.AddRange(specialGroups);
 
 
-
         var newTableGroupsFromEiopa = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
         var newSingePageBreakdownListNew = newTableGroupsFromEiopa
             .Where(tgl => SpecialTemplateList.SingleTableGroupsNew.Contains(tgl.TemplateCode))
@@ -195,7 +194,7 @@ public class ExcelBookMerger : IExcelBookMerger
         //var sheet62 = CreateSheetFromLayout("", "S.06.02.01.02_Single");
 
 
-        //FixCombinedS6Form(s6Zet);
+        CreateCombinedS6Form(s6Zet);
 
 
         var sortedItems = indexList.ListItems.OrderBy(li => li.templateCode).ToList();
@@ -581,12 +580,13 @@ public class ExcelBookMerger : IExcelBookMerger
         return indexSheet;
     }
 
-    private IWorksheet? FixCombinedS6Form(string s6Zet)
+    private IWorksheet? CreateCombinedS6Form(string s6Zet)
     {
         var combinedCode = "S.06.02.01_Combined";
         var s61Code = "S.06.02.01.01";
         var s62Code = "S.06.02.01.02";
 
+        //var sCombinedWorksheet = DestWorkbook.Worksheets.Create(combinedCode);
         var sCombinedWorksheet = DestWorkbook.Worksheets[combinedCode];
         var s61Worksheet = DestWorkbook.Worksheets[s61Code];
         var s62Worksheet = DestWorkbook.Worksheets[s62Code];

@@ -38,7 +38,7 @@ public static class SpecialTemplateList
 
     public static List<SpecialTemplateLayout> SpecialLayoutsNew = new()
         {            
-            //new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
+            new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             new SpecialTemplateLayout("S.22.06.01", "S.22.06.01", "Best estimate subject to volatility adjustment by country and currency", true, new[]
                 {
                     new string[] { "S.22.06.01.01", "S.22.06.01.01" },
