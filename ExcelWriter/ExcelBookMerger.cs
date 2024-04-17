@@ -31,7 +31,7 @@ public class ExcelBookMerger : IExcelBookMerger
     private IWorkbook? DestWorkbook;
     int _documentId = 0;
     DocInstance _documentInstance;
-    const int SPACE_BETWEEN_TABLES_HORIZONTAL = 2;
+    const int SPACE_BETWEEN_TABLES_HORIZONTAL = 0;
     const int SPACE_BETWEEN_TABLES_VERTICAL = 3;
 
     //private IStyle? tableCodeStyle;
