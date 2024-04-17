@@ -767,6 +767,22 @@ public class SqlFunctions : ISqlFunctions
         return res;
     }
 
+    public MDimensionModel? SelectDimensionByCode(string dimensionCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelect = @"
+            select 
+	            dim.*
+            from 
+	            mDimension dim	
+	        where 
+                dim.DimensionCode= @DimensionCode
+        ";
+        var res = connectionEiopa.QuerySingleOrDefault<MDimensionModel>(sqlSelect, new { dimensionCode });
+        return res;
+    }
+
+
 
     public List<VValidationRuleExpressions> SelectValidationExpressionsWithTablesForModule(int ModuleId)
     {

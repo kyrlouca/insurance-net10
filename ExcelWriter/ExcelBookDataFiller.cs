@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using Shared.SQLFunctions;
 using Microsoft.IdentityModel.Tokens;
 using Shared.SpecialRoutines;
+using Microsoft.VisualBasic;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -146,8 +147,22 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
 
         var zetDescription = SelectZetValues(dbSheet);
+        var zetList= SelectZetValuesList(dbSheet);
+        var zetCell= wholeRange["A3"];
+        var zetRow = zetCell.Row;
+        var zetCol = zetCell.Column;
+        foreach (var zet in zetList)
+        {
+            var currentDimVal = wholeRange[zetRow, zetCol];
+            var currentDomVal = wholeRange[zetRow, zetCol + 1];
+            currentDimVal.Text = zet.dimension;
+            currentDomVal.Text = zet.domValue;
+            zetRow ++;            
+        }
+
+
         var ZetRange = wholeRange["A3"];
-        ZetRange.Text = zetDescription;
+        //ZetRange.Text = zetDescription;
         ZetRange.CellStyle = _pensionStyles.ZetLabelStyle;
         
 
@@ -181,6 +196,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (titles is not null)
         {
             titles.CellStyle.Font.Size = 12;
+            titles.CellStyle.WrapText=true;
         }
 
 
@@ -385,7 +401,47 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return fullDesc;
     }
 
-    private  void FormatDataSectionForProtectedCells(IRange dataRange)
+
+    List<(string dimension, string domValue)> SelectZetValuesList(TemplateSheetInstance dbSheet)
+    {
+
+        var zDimsAll = dbSheet.ZDimVal
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)
+            .Select(zdim => DimDom.GetParts(zdim))
+            .Where(dim => dim is not null)
+        .ToList();
+
+        if (!zDimsAll.Any()) return new List<(string,string)>();
+
+        var index = zDimsAll.FindIndex(item => item.Dim == "BL");
+        if (index != -1)
+        {
+            var blItem= zDimsAll.ElementAt(index);
+            zDimsAll.RemoveAt(index); 
+            zDimsAll.Insert(0, blItem);
+        }
+
+        List<(string dim,string memberVal)> allVals = zDimsAll
+            .Where(dm => dm.Dim is not null)
+            .Select(dimDom =>
+            {
+                var dimension = _SqlFunctions.SelectDimensionByCode(dimDom.Dim);
+                var member = _SqlFunctions.SelectMMember(dimDom.DomAndValRaw);
+                if (dimension is null) return ("","");
+                var tx = member is null
+                    ? (dimension?.DimensionLabel?.Trim()??"", dimDom ?.DomAndValRaw ?.Trim()??"")
+                    : (dimension?.DimensionLabel?.Trim()??"",member?.MemberLabel?.Trim()??"");
+                return tx;
+            })            
+            .ToList();
+
+
+        return allVals;
+    }
+
+
+
+    private void FormatDataSectionForProtectedCells(IRange dataRange)
     {
         foreach (var cell in dataRange.Cells)
         {
