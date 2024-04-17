@@ -9,7 +9,7 @@ using Shared.CommonRoutines;
 using Shared.SQLFunctions;
 using Shared.ExcelHelperRoutines;
 
-public class WriterMainApp : IWriterMainApp
+public class WriterMainApp : IExcelWriterMainApp
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -78,7 +78,7 @@ public class WriterMainApp : IWriterMainApp
         var mergedFilename = Path.Combine(dir, $"{fileNoExtension}.xlsx");
 
 
-        if (1 == 1)
+        if (1 == 2)
         {
             Console.WriteLine($"\n Create excel Fil3e : {filledFilename}");
             //****************************************************************************************************
@@ -91,7 +91,7 @@ public class WriterMainApp : IWriterMainApp
                 return 1;
             }
         }
-        if (1 == 1)
+        if (1 == 2)
         {
             Console.WriteLine($"\n Fill Excel : {filledFilename}");
             //****************************************************************************************************

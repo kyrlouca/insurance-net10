@@ -4,17 +4,13 @@ using Shared.SpecialRoutines;
 using System.Linq;
 using NewValidator.ValidationClasses;
 using System.Xml.Schema;
+using ExcelWriter.ExcelDataModels;
 
 
+var xx = new TableGroup("S.04.01.01", "lable ", new List<String>() { "S.04.01.01.01" , "S.04.01.01.02", "S.04.01.01.03" });
 
-string[] array = { "a", "b", "c" };
-List<string> combinations = GenerateCombinations(array);
-foreach (var optionalCombination in combinations)
-{
-    var optinalDimsArr = optionalCombination.Split("|", StringSplitOptions.RemoveEmptyEntries).Where(tt=>!string.IsNullOrEmpty(tt));
-    var xx44 = 2;
-}
-    
+var tcs = BreakTableGroup(xx);
+ 
 
 
 var inputfile = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ShortLabels.txt";
@@ -47,15 +43,15 @@ if (match.Success)
 
 var rowcol = "C0023";
 
-var xx = DimUtils.CreateRowCol(rowcol);
+
 
 var y = 5;
 
-static List<string> GenerateCombinations(string[] array)
+
+static List<TableGroup> BreakTableGroup(TableGroup tableGroup)
 {
-    List<string> result = new List<string>();
-    GenerateCombinationsHelper(array, "", 0, result);
-    return result;
+    var list = tableGroup.TableCodes.Select(tc => new TableGroup(tc, tableGroup.TemplateDescription, new List<string>() { tc }) ).ToList();    
+    return list;
 }
 
 static void GenerateCombinationsHelper(string[] array, string current, int index, List<string> result)

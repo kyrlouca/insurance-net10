@@ -36,6 +36,34 @@ public class SpecialTemplateLayout
 public static class SpecialTemplateList
 {
 
+    public static List<SpecialTemplateLayout> SpecialLayoutsNew = new()
+        {            
+            //new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
+            new SpecialTemplateLayout("S.22.06.01", "S.22.06.01", "Best estimate subject to volatility adjustment by country and currency", true, new[]
+                {
+                    new string[] { "S.22.06.01.01", "S.22.06.01.01" },
+                    new string[] { "S.22.06.01.03", "S.22.06.01.04" }
+            }),         
+    };
+
+    public static List<string> SingleTableGroupsNew = new List<string> {
+            "S.04.04.01",
+            "S.05.01.02",            
+            "S.05.01.01",
+            "S.05.01.02",
+            "S.06.02.01",
+            "S.06.02.01",                        
+            "S.14.01.01",
+            "S.30.01.01",
+            "S.30.01.02",
+            "S.30.01.03",
+            "S.30.01.04",
+            "S.30.01.04",
+        };
+
+   
+
+
     public static List<SpecialTemplateLayout> Records { get; }
     static SpecialTemplateList()
     {
@@ -88,8 +116,8 @@ public static class SpecialTemplateList
     //the tables should be added in SinglePageTemplateGroups
     public static List<string> ExcludeTemplateGroups()
     {
-        return new List<string> { 
-            "S.05.01.02", 
+        return new List<string> {
+            "S.05.01.02",
             "S.06.02.01",
             "S.04.04.01",
         };
@@ -97,10 +125,10 @@ public static class SpecialTemplateList
 
     public static List<string> IncludeSinglePageTemplateGroups()
     {
-        return new List<string> { 
-            "S.06.02.01", 
-            "S.05.01.02.01_Single", 
-            "S.05.01.02.02_Single" 
+        return new List<string> {
+            "S.06.02.01",
+            "S.05.01.02.01_Single",
+            "S.05.01.02.02_Single"
         };
     }
 
@@ -110,15 +138,15 @@ public static class SpecialTemplateList
             "S.05.01.02.01",
             "S.05.01.02.02",
             "S.06.02.01",
-            "S.05.01.02", 
-            "S.06.02.01", 
-            "S.04.04.01", 
-            "S.05.01.01", 
-            "S.14.01.01", 
-            "S.30.01.01", 
-            "S.30.01.02", 
+            "S.05.01.02",
+            "S.06.02.01",
+            "S.04.04.01",
+            "S.05.01.01",
+            "S.14.01.01",
+            "S.30.01.01",
+            "S.30.01.02",
             "S.30.01.03",
-            "S.30.01.04" 
+            "S.30.01.04"
         };
 
         //return new List<string> {
@@ -134,6 +162,13 @@ public static class SpecialTemplateList
         var rec = Records.FirstOrDefault(line => line.TemplateCode == templateCode.Trim());
         return rec;
     }
+
+    public static SpecialTemplateLayout? FindSpecialTemplateLayoutByCodeNew(string templateCode)
+    {
+        var rec = SpecialTemplateList.SpecialLayoutsNew.FirstOrDefault(line => line.TemplateCode == templateCode.Trim());
+        return rec;
+    }
+
     public static SpecialTemplateLayout? FindSpecialTemplateLayoutByName(string templateSheetName)
     {
         var rec = Records.FirstOrDefault(line => line.TemplateSheetName == templateSheetName.Trim());
