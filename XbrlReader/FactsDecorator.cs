@@ -118,19 +118,19 @@ public partial class FactsDecorator : IFactsDecorator
 
             table.IsOpenTable = _SqlFunctions.IsOpenTable(table.TableID);
 
-            //*********** Select the facts for a template and update their zetvalues, RowSignatures and currencyDimValue            
-            var tableFactsCount = UpdateTableFactsWithCellValues(table);
+            //*********** Select the facts for a template and update their tableId, zetvalues, RowSignatures and currencyDimValue            
+            //not associated with 
+            var tableFactsCount = UpdateTableFactsWithCellRowCols(table);
             Console.WriteLine($"\n---facts updated:{tableFactsCount}");
             if (tableFactsCount == 0)
             {
                 continue;
             }
 
-            //*********** Create one  sheet per zet group            
+            //*********** Create one  sheet per zet             
             //fact.ZetValues is a string concatenating the Facts' zet dims
             //facts with the same zet values(concatenated as a string) should be assigned to the same sheet
-
-            var zetValues = FindDistinctZetValues(table.TableID);
+            var zetValues = GetDistinctZetValues(table.TableID);
 
             //moduleZets.AddRange(zetValues);
             Console.WriteLine($"\n---Grouping table facts by Zet");
@@ -177,7 +177,7 @@ public partial class FactsDecorator : IFactsDecorator
         return facts;
     }
 
-    private List<string> FindDistinctZetValues(int tableId)
+    private List<string> GetDistinctZetValues(int tableId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelect = @"select distinct ZetValues from TemplateSheetFact where InstanceId=@_documentId and TableID=@tableId";
@@ -372,7 +372,7 @@ public partial class FactsDecorator : IFactsDecorator
 
     }
 
-    private int UpdateTableFactsWithCellValues(MTable table)
+    private int UpdateTableFactsWithCellRowCols(MTable table)
     {
         //****there are NO zet and Y dims on the table. They can be foun in Ordinates table
         //zet and y are included is in the cell signature
@@ -394,9 +394,7 @@ public partial class FactsDecorator : IFactsDecorator
         var xxx = 2;
 
         //*********************************************************************************
-        //for each RowCol of this table, select the facts which have the exact dims (open or close) 
-        //a rowcol position may contain more than one fact (currency and country)
-        //also update the zetValues of each fact
+        //for each cell of this table, select the fact and update the talbeId,zet, and row/col
         //tableCells = tableCells.Where(tc => tc.CellID == 12801).ToList();
         tableCells = tableCells.Where(cell => !string.IsNullOrEmpty(cell.DatapointSignature)).ToList();
         foreach (var tableCell in tableCells)
@@ -412,7 +410,11 @@ public partial class FactsDecorator : IFactsDecorator
                 //continue;
             }
 
-
+            //*******************************************************
+            //The most important Procedure is to select the FACT which are associated with the cell
+            //which has the exact dims (exact dims, wild dims, optional dims)                
+            //Some facts may be associated with two cells. In this case, create a new fact
+            //*******************************************************
             var cellFacts = SelectFactsForCellUsingDims(cellSignature);
 
             //Console.WriteLine($"Updating facts with zet values and tableId for table: {table.TableID} {tableCell.BusinessCode}   ");

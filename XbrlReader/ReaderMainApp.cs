@@ -29,61 +29,53 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 76;
-        var filingsSubmittedz = new List<string>();
+        var _documentId = 77;
+        var filingsSubmittedxx = new List<string>();
         var filingsSubmitted = new List<string>()
         {
-            "S.01.01",
-            "S.02.01",
-            "S.02.02",
-            "S.04.02",
-            "S.04.03",
-            "S.04.04",
-            "S.04.05",
-            "S.05.01",
-            "S.06.02",
-            "S.06.04",
-            "S.09.01",
-            "S.12.01",
-            "S.13.01",
-            "S.14.01",
-            "S.14.02",
-            "S.17.01",
-            "S.17.03",
-            "S.18.01",
-            "S.19.01",
-            "S.20.01",
-            "S.21.01",
-            "S.21.02",
-            "S.21.03",
-            "S.23.01",
-            "S.23.02",
-            "S.23.03",
-            "S.25.01",
-            "S.26.01",
-            "S.26.02",
-            "S.26.03",
-            "S.26.04",
-            "S.26.05",
-            "S.26.06",
-            "S.27.01",
-            "S.28.02",
-            "S.29.01",
-            "S.29.02",
-            "S.29.03",
-            "S.29.04",
-            "S.30.01",
-            "S.30.02",
-            "S.30.03",
-            "S.30.04",
-            "S.31.01",
-            "S.01.02",
+    "S.01.01",
+    "S.01.02",
+    "S.02.01",
+    "S.05.01",
+    "S.06.02",
+    "S.06.04",
+    "S.09.01",
+    "S.14.02",
+    "S.17.01",
+    "S.17.03",
+    "S.18.01",
+    "S.19.01",
+    "S.20.01",
+    "S.21.01",
+    "S.21.02",
+    "S.21.03",
+    "S.23.01",
+    "S.23.02",
+    "S.23.03",
+    "S.23.04",
+    "S.25.01",
+    "S.26.01",
+    "S.26.02",
+    "S.26.04",
+    "S.26.05",
+    "S.26.06",
+    "S.27.01",
+    "S.28.01",
+    "S.29.01",
+    "S.29.02",
+    "S.29.03",
+    "S.29.04",
+    "S.30.01",
+    "S.30.02",
+    "S.30.03",
+    "S.30.04",
+    "S.31.01",
 
         };
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
         
-        if (1 == 2)
+        if (1 == 1)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -94,7 +86,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (1 == 2)
+        if (1 == 1)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
             if (_documentId == 0)
