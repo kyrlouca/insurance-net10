@@ -97,23 +97,16 @@ public class ExcelBookMerger : IExcelBookMerger
 
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
         
-        var tableGroupsList = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
-        tableGroupsList = tableGroupsList
-            .Where(tg => !SpecialTemplateList.ExcludeTemplateGroups().Contains(tg.TemplateCode)).ToList();
-
-        var specialGroups = SpecialTemplateList.SinglePageTableGroupsId()
-            .Select(code => SpecialTemplateList.FindSpecialTemplateLayoutByCode(code))
-            .Where(sp => sp is not null)
-            .Select(sp => new TableGroup(sp!.TemplateCode, "", new List<string>()))
-            .ToList();
-
-        tableGroupsList.AddRange(specialGroups);
+        
 
 
         var newTableGroupsFromEiopa = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
         var newSingePageBreakdownListNew = newTableGroupsFromEiopa
             .Where(tgl => SpecialTemplateList.SingleTableGroupsNew.Contains(tgl.TemplateCode))
             .SelectMany(tgl => BreakTableGroup(tgl)).ToList();
+
+        newSingePageBreakdownListNew.Add(new TableGroup("AS.06.02.01.01_single", "xx", new List<string>()));
+        newSingePageBreakdownListNew.Add(new TableGroup("AS.06.02.01.02_single", "xx", new List<string>()));
 
         //remove first the groups that will break to single page and then concat the new single page groups
         var newTableGroupList = newTableGroupsFromEiopa
@@ -194,7 +187,7 @@ public class ExcelBookMerger : IExcelBookMerger
         //var sheet62 = CreateSheetFromLayout("", "S.06.02.01.02_Single");
 
 
-        CreateCombinedS6Form(s6Zet);
+        //FixCombinedS6Form(s6Zet);
 
 
         var sortedItems = indexList.ListItems.OrderBy(li => li.templateCode).ToList();
@@ -580,7 +573,7 @@ public class ExcelBookMerger : IExcelBookMerger
         return indexSheet;
     }
 
-    private IWorksheet? CreateCombinedS6Form(string s6Zet)
+    private IWorksheet? FixCombinedS6Form(string s6Zet)
     {
         var combinedCode = "S.06.02.01_Combined";
         var s61Code = "S.06.02.01.01";
