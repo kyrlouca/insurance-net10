@@ -228,9 +228,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //var zetDescription = SelectZetValues(dbSheet);
         var zetList = SelectZetValuesList(dbSheet);
         if (zetList.Count > 0)
-        {
-            //var zetRange = wholeRange["A3"];
-            //zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, zetRange.Rows.Count() - 1, 1);
+        {            
             var zetRange = wholeRange[3, 1, lastTopEmptyRow, 2];
             zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
             var zetRow = zetRange.Row;
@@ -296,21 +294,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dataRange = dataRangeNameObject.RefersToRange;
 
 
-
         var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
         
-
-        var zetList = SelectZetValuesList(dbSheet);
-        var zetDescription = string.Join("**", zetList);
-        //var zetDescription = SelectZetValues(dbSheet);
-        var ZetRange = wholeRange["A3"];
-        ZetRange.Text = zetDescription;
-        ZetRange.CellStyle = _pensionStyles.ZetLabelStyle;
-
-
+       
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
               .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
               .OrderByDescending(ykey => ykey.OrdinateID);
@@ -355,7 +344,42 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         dataNamedObjectE.RefersToRange = expandedDataRows;
         dataRange = dataNamedObjectE.RefersToRange;
 
+
+        //clear topRange
+        var lastTopEmptyRow = FindTopLastEmptyRow(wholeRange, dataRange);
         
+        if (lastTopEmptyRow > 0 )
+        {
+            var topClearRange = wholeRange[1, 1, lastTopEmptyRow, dataRange.LastColumn];
+            if (topClearRange is not null)
+            {
+                topClearRange.Clear(ExcelClearOptions.ClearAll);
+            }
+        }
+
+        //************ set the zets
+
+        //var zetDescription = SelectZetValues(dbSheet);
+        if (1 == 1)
+        {
+            var zetList = SelectZetValuesList(dbSheet);
+            if (zetList.Count > 0)
+            {
+                var zetRange = wholeRange[3, 1, lastTopEmptyRow, 2];
+                zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
+                var zetRow = zetRange.Row;
+                var zetCol = zetRange.Column;
+                foreach (var zet in zetList)
+                {
+                    var currentDimVal = wholeRange[zetRow, zetCol];
+                    var currentDomVal = wholeRange[zetRow, zetCol + 1];
+                    currentDimVal.Text = zet.dimension;
+                    currentDomVal.Text = zet.domValue;
+                    zetRow++;
+                }
+            }
+        }
+
         // Table Code
         var tableCode = wholeRange["A1"];
         tableCode.Text = dbSheet.TableCode;
@@ -502,6 +526,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
     private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange)
     {
+
+        //find the range for the labels starting from the data until you find an empty line
+        //if no empty line, then return the row above the datarange
         IRange aboveRange = null; ;
         var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
         var xx = 33;
@@ -521,6 +548,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
         if (aboveRange == null)
         {
+            var fftitleRange = wholeRange[dataRange.Row-1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
+            return fftitleRange;
             return null;
         }
         var titleRange = wholeRange[aboveRange.Row + 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];

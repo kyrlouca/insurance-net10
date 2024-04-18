@@ -38,6 +38,7 @@ public static class SpecialTemplateList
 
     public static List<SpecialTemplateLayout> SpecialLayoutsNew = new()
         {
+           new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",false, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
             new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             new SpecialTemplateLayout("ZS.06.02.01.01_single", "S.06.02.01.01","List of assets-Information on positions held",false, new[] { new string[] { "S.06.02.01.01" } }),
             new SpecialTemplateLayout("ZS.06.02.01.02_single", "S.06.02.01.02","List of assets-Information on assets",false, new[] { new string[] { "S.06.02.01.02" } }),
