@@ -179,7 +179,7 @@ public class SqlFunctions : ISqlFunctions
     public List<TemplateSheetFact> SelectFactsForSheetId(int sheetId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
-        var sqlSelect = "//select * from  TemplateSheetFact where TemplateSheetId= @sheetId;";
+        var sqlSelect = "select * from  TemplateSheetFact where TemplateSheetId= @sheetId;";
         var res = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { sheetId}).ToList();
         return res;
     }

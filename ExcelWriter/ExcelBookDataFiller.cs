@@ -156,7 +156,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var currencies = new List<string>();
         if (isCurrencyTemplate)
         {
-            currencies = FindSheetCurrencies(dbSheet.TemplateSheetId);
+            currencies = GetSheetDistinctCurrencies(dbSheet.TemplateSheetId);
             for (var i = 0; i < currencies.Count; i++)
             {
                 var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column +1+ i];
@@ -683,11 +683,23 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return rowLabels;
     }
 
-    private List<string> FindSheetCurrencies(int TemplateSheetId)
+    private List<string> GetSheetDistinctCurrencies(int TemplateSheetId)
     {
-        var facts=_SqlFunctions.SelectFactsForSheetId(TemplateSheetId)
-            .SelectMany(f=>f.DataPointSignature);
-        return new List<string>() { "EUR", "USD" };
+        var rgx = new Regex(@"s2c_dim:OC\(s2c_CU:(.+?)\)");
+        var facts = _SqlFunctions.SelectFactsForSheetId(TemplateSheetId);
+        
+        var distinctCurrencies = facts
+                .SelectMany(fact => rgx.Matches(fact.DataPointSignature)
+                .Cast<Match>()
+                .SelectMany(match => match.Groups
+                    .Cast<Group>()
+                    .Skip(1) // Skip group 0 (the entire match)
+                    .Select(group => group.Value))
+                 ).Distinct()
+                 .ToList();
+
+
+        return distinctCurrencies;
     }
 
 
