@@ -141,34 +141,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
         var wholeRange = wholeRangeName.RefersToRange;
 
-        ClearLinks(wholeRange);
-
-        var topPageRange = wholeRange[1, 1, 2, 2];
-
-        wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
-
-        var zetDescription = SelectZetValues(dbSheet);
-        var zetList= SelectZetValuesList(dbSheet);
-        if(zetList.Count > 0)
-        {
-            var zetRange = wholeRange["A3"];
-            zetRange = zetRange.Resize(zetRange.Rows.Count()-1 + zetList.Count, 1);
-            zetRange.CellStyle.Color = Syncfusion.Drawing.Color.Red;
-            //zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
-            var zetRow = zetRange.Row;
-            var zetCol = zetRange.Column;
-            foreach (var zet in zetList)
-            {
-                var currentDimVal = wholeRange[zetRow, zetCol];
-                var currentDomVal = wholeRange[zetRow, zetCol + 1];
-                currentDimVal.Text = zet.dimension;
-                currentDomVal.Text = zet.domValue;
-                zetRow++;
-            }
-        }
-                            
-        
-        
+        ClearLinks(wholeRange);        
+        wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);                        
 
         var columnRow = dataRange.Rows.First();
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
@@ -195,6 +169,41 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 SaveCellValue(cell, factX);
             }
         }
+
+
+        //clear topRange
+        var topEmptyRow = FindTopLastEmptyRow(wholeRange, dataRange);
+        if (topEmptyRow > 0)
+        {
+            var topRange = wholeRange[2, 1, topEmptyRow, dataRange.LastColumn];
+            if (topRange is not null)
+            {
+                topRange.Clear();
+            }
+        }
+
+        //************ set the zets
+        var zetDescription = SelectZetValues(dbSheet);
+        var zetList = SelectZetValuesList(dbSheet);
+        if (zetList.Count > 0)
+        {
+            var zetRange = wholeRange["A3"];
+            zetRange = zetRange.Resize(zetRange.Rows.Count() - 1 + zetList.Count, 2);
+            zetRange.CellStyle.Color = Syncfusion.Drawing.Color.Red;
+            zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
+            var zetRow = zetRange.Row;
+            var zetCol = zetRange.Column;
+            foreach (var zet in zetList)
+            {
+                var currentDimVal = wholeRange[zetRow, zetCol];
+                var currentDomVal = wholeRange[zetRow, zetCol + 1];
+                currentDimVal.Text = zet.dimension;
+                currentDomVal.Text = zet.domValue;
+                zetRow++;
+            }
+        }
+
+
 
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
@@ -459,6 +468,26 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
 
         }
+    }
+
+
+
+    private static int FindTopLastEmptyRow(IRange wholeRange, IRange dataRange)
+    {
+        
+        //find the row above the labels which is empty
+        var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
+        
+        foreach (var row in rowsTocheck.Rows.Reverse())
+        {
+            var cells = row.Cells.Select(cel => cel.Text).ToList();
+            var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
+            if (!hasValue)
+            {                
+                return row.Row;                
+            }
+        }        
+            return 0;                        
     }
 
     private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange)
