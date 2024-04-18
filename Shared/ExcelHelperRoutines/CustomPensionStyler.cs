@@ -71,8 +71,8 @@ public class CustomPensionStyler : ICustomPensionStyler
         style.Borders.LineStyle = ExcelLineStyle.Thin;
         style.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
         style.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
-
-        //style.ColorIndex =  ExcelKnownColors.Grey_25_percent;
+        style.Color = Syncfusion.Drawing.Color.LightGray;
+        
         return style;
     }
 

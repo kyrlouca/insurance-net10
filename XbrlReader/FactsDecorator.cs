@@ -322,7 +322,8 @@ public partial class FactsDecorator : IFactsDecorator
             newFact.ContextNumberId = 0;
             newFact.XBRLCode = "";
 
-            newFact.DataTypeUse = "S";
+            //Integer s2c_dim:BL(s2c_LB: x142)
+            newFact.DataTypeUse = newFact.TextValue.Contains("s2c_dim:")?  "E":"S";
             newFact.FieldOrigin = "K";
             newFact.CellID = 0;
             var x = _SqlFunctions.CreateTemplateSheetFact(newFact, false);

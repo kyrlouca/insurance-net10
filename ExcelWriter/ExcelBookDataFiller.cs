@@ -567,7 +567,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 break;
             case "E": // Enumeration/Code"					  
                 var memDescription = XbrlCodeToValue(fact.TextValue);
-                cell.Text = memDescription;
+                cell.Text = string.IsNullOrEmpty( memDescription)? fact.TextValue :memDescription ;
                 break;
             case "I": //integer
                 cell.Number = (int)Math.Floor(fact.NumericValue);
