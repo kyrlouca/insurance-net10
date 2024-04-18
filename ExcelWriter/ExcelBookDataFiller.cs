@@ -74,8 +74,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
 
-        var debugClosedTableCode = "S.02.02.01.02";
-        //var debugClosedTableCode = "";
+        //var debugClosedTableCode = "S.02.02.01.02";
+        var debugClosedTableCode = "";
         dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -94,8 +94,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        var debugOpenTableCode = "xxS.06.02.01.01";
-        //var debugOpenTableCode = "";
+        //var debugOpenTableCode = "xxS.06.02.01.01";
+        var debugOpenTableCode = "";
         dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
              ? dbOpenSheets
              : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
@@ -143,7 +143,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
-        wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
+        
 
         var columnRow = dataRange.Rows.First();
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
@@ -152,6 +152,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
 
 
+        ///CURRENCY LABELS
         var isCurrencyTemplate = CurrencyTemplate.CurrencyTemplates.Contains(dbSheet.TableCode);
         var currencies = new List<string>();
         if (isCurrencyTemplate)
@@ -166,8 +167,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
         };
 
-        
-
+        var currencyCount = currencies.Count == 0 ? 1 : currencies.Count;//to loop even for non-currencies
         foreach (var dataRow in dataRange.Rows)
         {
             //rowLabelCell the cell which has the row : R0110
@@ -179,13 +179,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 continue;
             }
 
+
             foreach (var colCell in columnCells)
             {
-                for (var i = 0; i < currencies.Count; i++)
+                for (var i = 0; i < currencyCount; i++)
                 {
                     var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
-
-                    var currency = currencies[i];
+                    
+                    var currency = isCurrencyTemplate? currencies[i] :"";
                     var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, currency);
                     if (factX is null)
                     {
@@ -215,16 +216,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         tableCode.Text = dbSheet.TableCode;
         tableCode.CellStyle = _pensionStyles.TableCodeStyle;
 
-        //template code
-        var filingSheetCode = string.Join(".", dbSheet.TableCode.Split(".").ToList().GetRange(0, 4));
-        var parentTemplate = _SqlFunctions.GetTableOrTemplate(filingSheetCode);
+        //template code        
+        var tbl = _SqlFunctions.SelectTable(dbSheet.TableCode);
         var tblLabel = wholeRange["A2"];
-        tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
+        tblLabel.Text = tbl?.TableLabel;
         tblLabel.CellStyle = _pensionStyles.HeaderStyle;
 
 
         //************ set the zets
-        var zetDescription = SelectZetValues(dbSheet);
+        
+        //var zetDescription = SelectZetValues(dbSheet);
         var zetList = SelectZetValuesList(dbSheet);
         if (zetList.Count > 0)
         {
@@ -252,10 +253,6 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             titles.CellStyle.Font.Size = 12;
             titles.CellStyle.WrapText = true;
         }
-
-
-
-
 
 
         ////table code
@@ -304,15 +301,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
+        
 
-        wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
-
-        //wholeRange["A4"].Clear(true);
-        //IDataValidation validation = wholeRange["A3"].DataValidation;
-        //validation.AllowType = ExcelDataType.Any;
-        //validation.ListOfValues = Array.Empty<string>();
-
-        var zetDescription = SelectZetValues(dbSheet);
+        var zetList = SelectZetValuesList(dbSheet);
+        var zetDescription = string.Join("**", zetList);
+        //var zetDescription = SelectZetValues(dbSheet);
         var ZetRange = wholeRange["A3"];
         ZetRange.Text = zetDescription;
         ZetRange.CellStyle = _pensionStyles.ZetLabelStyle;
@@ -362,8 +355,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         dataNamedObjectE.RefersToRange = expandedDataRows;
         dataRange = dataNamedObjectE.RefersToRange;
 
-        var xx3 = 33;
+        
+        // Table Code
+        var tableCode = wholeRange["A1"];
+        tableCode.Text = dbSheet.TableCode;
+        tableCode.CellStyle = _pensionStyles.TableCodeStyle;
 
+        //template code        
+        var tbl = _SqlFunctions.SelectTable(dbSheet.TableCode);
+        var tblLabel = wholeRange["A2"];
+        tblLabel.Text = tbl?.TableLabel;
+        tblLabel.CellStyle = _pensionStyles.HeaderStyle;
 
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
@@ -420,44 +422,6 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
             return yOrdinatesForKeys.Count();
         }
-    }
-
-    string SelectZetValues(TemplateSheetInstance dbSheet)
-    {
-
-        var zDimsAll = dbSheet.ZDimVal
-            .Split("|", StringSplitOptions.RemoveEmptyEntries)
-            .Select(zdim => DimDom.GetParts(zdim))
-            .Where(dim => dim is not null)
-            .ToList();
-
-        var blDimDom = zDimsAll.FirstOrDefault(dd => dd.Dim == "BL");
-        var blDesc = "";
-        if (blDimDom != null)
-        {
-            var blMember = _SqlFunctions.SelectMMember(blDimDom.DomAndValRaw);
-            blDesc = $"{blDimDom.Dim.Trim()}-{blMember?.MemberLabel?.Trim()}**";
-        }
-
-        var restDimDoms = zDimsAll.Where(dd => dd.Dim != "BL");
-
-        var stringDims = restDimDoms
-            .Select(dimDom =>
-            {
-                var member = _SqlFunctions.SelectMMember(dimDom.DomAndValRaw);
-                if (member is null)
-                {
-                    return dimDom.DomAndValRaw;
-                }
-                return $"{dimDom?.Dim.Trim()}-{member?.MemberLabel?.Trim()}";
-            })
-            .Where(dim => dim is not null);
-
-        var resDesc = string.Join("*", stringDims);
-        var fullDesc = $"{blDesc}{resDesc}";
-
-        var xx222 = 33;
-        return fullDesc;
     }
 
 
