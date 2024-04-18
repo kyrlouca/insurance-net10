@@ -863,5 +863,20 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public MTemplateOrTable? GetTableOrTemplate(string tableCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTemplate = @"
+				SELECT * 
+				FROM mTemplateOrTable tt
+				WHERE 
+				  1=1				  
+				  AND tt.TemplateOrTableCode = @tableCode
+                    AND TemplateOrTableType = 'BusinessTable' 
+				";
+        var template = connectionEiopa.QueryFirstOrDefault<MTemplateOrTable>(sqlTemplate, new { tableCode });
+        return template;
+
+    }
 }
 

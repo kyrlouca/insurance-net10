@@ -182,14 +182,15 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
         }
 
+        
+
         //************ set the zets
         var zetDescription = SelectZetValues(dbSheet);
         var zetList = SelectZetValuesList(dbSheet);
         if (zetList.Count > 0)
         {
             var zetRange = wholeRange["A3"];
-            zetRange = zetRange.Resize(zetRange.Rows.Count() - 1 + zetList.Count, 2);
-            zetRange.CellStyle.Color = Syncfusion.Drawing.Color.Red;
+            zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, zetRange.Rows.Count() - 1, 1);            
             zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
             var zetRow = zetRange.Row;
             var zetCol = zetRange.Column;
@@ -204,7 +205,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
 
 
-
+        //format the top row title
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
         {
@@ -213,9 +214,24 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
 
 
+        /////Table code
+        var tableCode = wholeRange["A1"];
+        tableCode.Text = dbSheet.TableCode;
+        tableCode.CellStyle = _pensionStyles.TableCodeStyle;
+
+        //template code
+        var filingSheetCode = string.Join(".", dbSheet.TableCode.Split(".").ToList().GetRange(0, 4));
+        var parentTemplate = _SqlFunctions.GetTableOrTemplate(filingSheetCode);
+        var tblLabel = wholeRange["A2"];
+        tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
+        tblLabel.CellStyle = _pensionStyles.HeaderStyle;
+
+
+
         //table code
         var tableCodeRange = wholeRange[1, 1];
         tableCodeRange.CellStyle = _pensionStyles.TableCodeStyle;
+        
         //tableCodeRange.                       
         dataRange.ColumnWidth = 30;
         dataRange.CellStyle = _pensionStyles.DataSectionStyle;

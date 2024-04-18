@@ -154,7 +154,7 @@ public class ExcelBookCreator : IExcelBookWriter
         foreach (var sheet in sheets)
         {
 
-            var template = GetTableOrTemplate(sheet.TableCode);
+            var template = _SqlFunctions.GetTableOrTemplate(sheet.TableCode);
             if (template is null)
                 continue;
 
@@ -174,7 +174,7 @@ public class ExcelBookCreator : IExcelBookWriter
             tableCode.CellStyle = _pensionStyles.TableCodeStyle;
 
             //template code
-            var parentTemplate = GetTableOrTemplate(filingSheetCode);
+            var parentTemplate = _SqlFunctions.GetTableOrTemplate(filingSheetCode);
             var tblLabel = destSheet.Range["A2"];
             tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
             tblLabel.CellStyle = _pensionStyles.HeaderStyle;
@@ -387,21 +387,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
     }
 
-    private MTemplateOrTable? GetTableOrTemplate(string tableCode)
-    {
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var sqlTemplate = @"
-				SELECT * 
-				FROM mTemplateOrTable tt
-				WHERE 
-				  1=1				  
-				  AND tt.TemplateOrTableCode = @tableCode
-                    AND TemplateOrTableType = 'BusinessTable' 
-				";
-        var template = connectionEiopa.QueryFirstOrDefault<MTemplateOrTable>(sqlTemplate, new { tableCode });
-        return template;
-
-    }
+    
     private void TestDebug()
     {
         using (ExcelEngine excelEngine = new ExcelEngine())

@@ -75,4 +75,5 @@ public interface ISqlFunctions
     public enum ErrorRuleTypes { Errors, Warnings, Both };
     public List<ERROR_Rule> SelectErrorRules(int documentId, ErrorRuleTypes errorType);
     public int CreateErrorDocument( ErrorDocumentModel errorDocument);
+    public MTemplateOrTable? GetTableOrTemplate(string tableCode);
 }
