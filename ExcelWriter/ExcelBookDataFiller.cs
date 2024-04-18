@@ -143,27 +143,31 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         ClearLinks(wholeRange);
 
+        var topPageRange = wholeRange[1, 1, 2, 2];
 
         wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
 
         var zetDescription = SelectZetValues(dbSheet);
         var zetList= SelectZetValuesList(dbSheet);
-        var zetCell= wholeRange["A3"];
-        var zetRow = zetCell.Row;
-        var zetCol = zetCell.Column;
-        foreach (var zet in zetList)
+        if(zetList.Count > 0)
         {
-            var currentDimVal = wholeRange[zetRow, zetCol];
-            var currentDomVal = wholeRange[zetRow, zetCol + 1];
-            currentDimVal.Text = zet.dimension;
-            currentDomVal.Text = zet.domValue;
-            zetRow ++;            
+            var zetRange = wholeRange["A3"];
+            zetRange = zetRange.Resize(zetRange.Rows.Count()-1 + zetList.Count, 1);
+            zetRange.CellStyle.Color = Syncfusion.Drawing.Color.Red;
+            //zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
+            var zetRow = zetRange.Row;
+            var zetCol = zetRange.Column;
+            foreach (var zet in zetList)
+            {
+                var currentDimVal = wholeRange[zetRow, zetCol];
+                var currentDomVal = wholeRange[zetRow, zetCol + 1];
+                currentDimVal.Text = zet.dimension;
+                currentDomVal.Text = zet.domValue;
+                zetRow++;
+            }
         }
-
-
-        var ZetRange = wholeRange["A3"];
-        //ZetRange.Text = zetDescription;
-        ZetRange.CellStyle = _pensionStyles.ZetLabelStyle;
+                            
+        
         
 
         var columnRow = dataRange.Rows.First();
@@ -422,7 +426,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
 
         List<(string dim,string memberVal)> allVals = zDimsAll
-            .Where(dm => dm.Dim is not null)
+            .Where(dm => !string.IsNullOrEmpty(dm.Dim))
             .Select(dimDom =>
             {
                 var dimension = _SqlFunctions.SelectDimensionByCode(dimDom.Dim);
