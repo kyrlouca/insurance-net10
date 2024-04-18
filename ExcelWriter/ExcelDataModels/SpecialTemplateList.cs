@@ -62,10 +62,7 @@ public static class SpecialTemplateList
             "S.30.01.04",
         };
 
-     
-
     
-
     public static SpecialTemplateLayout? FindSpecialTemplateLayoutByCodeNew(string templateCode)
     {
         var rec = SpecialTemplateList.SpecialLayoutsNew.FirstOrDefault(line => line.TemplateCode == templateCode.Trim());
@@ -73,4 +70,11 @@ public static class SpecialTemplateList
     }
 
     
+}
+
+public static class CurrencyTemplate
+{
+    public static List<string> CurrencyTemplates = new List<string> {
+            "S.02.02.01.02",
+    };
 }

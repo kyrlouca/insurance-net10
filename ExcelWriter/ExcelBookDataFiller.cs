@@ -21,6 +21,7 @@ using Shared.SQLFunctions;
 using Microsoft.IdentityModel.Tokens;
 using Shared.SpecialRoutines;
 using Microsoft.VisualBasic;
+using ExcelWriter.ExcelDataModels;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -73,8 +74,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
 
-        //var debugClosedTableCode = "S.06.02.01.01";
-        var debugClosedTableCode = "";
+        var debugClosedTableCode = "S.02.02.01.02";
+        //var debugClosedTableCode = "";
         dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -93,8 +94,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        //var debugOpenTableCode = "S.06.02.01.01";
-        var debugOpenTableCode = "";
+        var debugOpenTableCode = "xxS.06.02.01.01";
+        //var debugOpenTableCode = "";
         dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
              ? dbOpenSheets
              : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
@@ -141,8 +142,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
         var wholeRange = wholeRangeName.RefersToRange;
 
-        ClearLinks(wholeRange);        
-        wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);                        
+        ClearLinks(wholeRange);
+        wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
 
         var columnRow = dataRange.Rows.First();
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
@@ -150,23 +151,49 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
 
+
+        var isCurrencyTemplate = CurrencyTemplate.CurrencyTemplates.Contains(dbSheet.TableCode);
+        var currencies = new List<string>();
+        if (isCurrencyTemplate)
+        {
+            currencies = FindSheetCurrencies(dbSheet.TemplateSheetId);
+            for (var i = 0; i < currencies.Count; i++)
+            {
+                var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column +1+ i];
+                colLabel.Text = currencies[i];
+                colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                colLabel.ColumnWidth = 30;
+            }
+        };
+
+        
+
         foreach (var dataRow in dataRange.Rows)
         {
+            //rowLabelCell the cell which has the row : R0110
+            //then will go through all the columns for this row
+
             var rowLabelCell = dataRow.First();
             if (string.IsNullOrEmpty(rowLabelCell.Value))
             {
                 continue;
             }
-            var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
+
             foreach (var colCell in columnCells)
             {
-                var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, "");
-                if (factX is null)
+                for (var i = 0; i < currencies.Count; i++)
                 {
-                    continue;
+                    var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
+
+                    var currency = currencies[i];
+                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, currency);
+                    if (factX is null)
+                    {
+                        continue;
+                    }
+                    var cell = dataRange[rowLabelCell.Row, colCell.Column + i];
+                    SaveCellValue(cell, factX);
                 }
-                var cell = dataRange[rowLabelCell.Row, colCell.Column];
-                SaveCellValue(cell, factX);
             }
         }
 
@@ -178,7 +205,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             var topClearRange = wholeRange[1, 1, lastTopEmptyRow, dataRange.LastColumn];
             if (topClearRange is not null)
             {
-                topClearRange.Clear(ExcelClearOptions.ClearAll);               
+                topClearRange.Clear(ExcelClearOptions.ClearAll);
             }
         }
 
@@ -203,7 +230,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         {
             //var zetRange = wholeRange["A3"];
             //zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, zetRange.Rows.Count() - 1, 1);
-            var zetRange = wholeRange[3,1,lastTopEmptyRow,2];
+            var zetRange = wholeRange[3, 1, lastTopEmptyRow, 2];
             zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
             var zetRow = zetRange.Row;
             var zetCol = zetRange.Column;
@@ -223,18 +250,18 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (titles is not null)
         {
             titles.CellStyle.Font.Size = 12;
-            titles.CellStyle.WrapText=true;
+            titles.CellStyle.WrapText = true;
         }
 
 
-        
+
 
 
 
         ////table code
         //var tableCodeRange = wholeRange[1, 1];
         //tableCodeRange.CellStyle = _pensionStyles.TableCodeStyle;
-        
+
         //data Range.                       
         dataRange.ColumnWidth = 30;
         dataRange.CellStyle = _pensionStyles.DataSectionStyle;
@@ -277,9 +304,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
-        
+
         wholeRange["B3"].Clear(ExcelClearOptions.ClearAll);
-        
+
         //wholeRange["A4"].Clear(true);
         //IDataValidation validation = wholeRange["A3"].DataValidation;
         //validation.AllowType = ExcelDataType.Any;
@@ -289,7 +316,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var ZetRange = wholeRange["A3"];
         ZetRange.Text = zetDescription;
         ZetRange.CellStyle = _pensionStyles.ZetLabelStyle;
-        
+
 
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
               .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
@@ -341,7 +368,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
         {
-            titles.CellStyle = _pensionStyles.TopLabelsStyle;           
+            titles.CellStyle = _pensionStyles.TopLabelsStyle;
 
         }
 
@@ -350,7 +377,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (dataRange is not null)
         {
             dataRange.CellStyle = _pensionStyles.DataSectionStyle;
-            dataRange.ColumnWidth = 20;            
+            dataRange.ColumnWidth = 20;
 
             dataRange.Borders[ExcelBordersIndex.EdgeLeft].LineStyle = ExcelLineStyle.Thin;
             dataRange.Borders[ExcelBordersIndex.EdgeRight].LineStyle = ExcelLineStyle.Thin;
@@ -399,7 +426,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     {
 
         var zDimsAll = dbSheet.ZDimVal
-            .Split("|",StringSplitOptions.RemoveEmptyEntries)
+            .Split("|", StringSplitOptions.RemoveEmptyEntries)
             .Select(zdim => DimDom.GetParts(zdim))
             .Where(dim => dim is not null)
             .ToList();
@@ -409,12 +436,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (blDimDom != null)
         {
             var blMember = _SqlFunctions.SelectMMember(blDimDom.DomAndValRaw);
-            blDesc= $"{blDimDom.Dim.Trim()}-{blMember?.MemberLabel?.Trim()}**";
+            blDesc = $"{blDimDom.Dim.Trim()}-{blMember?.MemberLabel?.Trim()}**";
         }
 
         var restDimDoms = zDimsAll.Where(dd => dd.Dim != "BL");
-        
-        var stringDims = restDimDoms            
+
+        var stringDims = restDimDoms
             .Select(dimDom =>
             {
                 var member = _SqlFunctions.SelectMMember(dimDom.DomAndValRaw);
@@ -422,10 +449,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 {
                     return dimDom.DomAndValRaw;
                 }
-                return $"{dimDom?.Dim.Trim()}-{member?.MemberLabel?.Trim()}"; 
+                return $"{dimDom?.Dim.Trim()}-{member?.MemberLabel?.Trim()}";
             })
             .Where(dim => dim is not null);
-        
+
         var resDesc = string.Join("*", stringDims);
         var fullDesc = $"{blDesc}{resDesc}";
 
@@ -443,28 +470,28 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             .Where(dim => dim is not null)
         .ToList();
 
-        if (!zDimsAll.Any()) return new List<(string,string)>();
+        if (!zDimsAll.Any()) return new List<(string, string)>();
 
         var index = zDimsAll.FindIndex(item => item.Dim == "BL");
         if (index != -1)
         {
-            var blItem= zDimsAll.ElementAt(index);
-            zDimsAll.RemoveAt(index); 
+            var blItem = zDimsAll.ElementAt(index);
+            zDimsAll.RemoveAt(index);
             zDimsAll.Insert(0, blItem);
         }
 
-        List<(string dim,string memberVal)> allVals = zDimsAll
+        List<(string dim, string memberVal)> allVals = zDimsAll
             .Where(dm => !string.IsNullOrEmpty(dm.Dim))
             .Select(dimDom =>
             {
                 var dimension = _SqlFunctions.SelectDimensionByCode(dimDom.Dim);
                 var member = _SqlFunctions.SelectMMember(dimDom.DomAndValRaw);
-                if (dimension is null) return ("","");
+                if (dimension is null) return ("", "");
                 var tx = member is null
-                    ? (dimension?.DimensionLabel?.Trim()??"", dimDom ?.DomAndValRaw ?.Trim()??"")
-                    : (dimension?.DimensionLabel?.Trim()??"",member?.MemberLabel?.Trim()??"");
+                    ? (dimension?.DimensionLabel?.Trim() ?? "", dimDom?.DomAndValRaw?.Trim() ?? "")
+                    : (dimension?.DimensionLabel?.Trim() ?? "", member?.MemberLabel?.Trim() ?? "");
                 return tx;
-            })            
+            })
             .ToList();
 
 
@@ -493,20 +520,20 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
     private static int FindTopLastEmptyRow(IRange wholeRange, IRange dataRange)
     {
-        
+
         //find the row above the labels which is empty
         var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
-        
+
         foreach (var row in rowsTocheck.Rows.Reverse())
         {
             var cells = row.Cells.Select(cel => cel.Text).ToList();
             var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
             if (!hasValue)
-            {                
-                return row.Row;                
+            {
+                return row.Row;
             }
-        }        
-            return 0;                        
+        }
+        return 0;
     }
 
     private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange)
@@ -569,9 +596,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 var rgx = new Regex(@"s2c_dim:\w\w\((.+)\)");
                 var match = rgx.Match(fact.TextValue);
                 //some operators place enum values in keys like this s2c_dim:BL(s2c_LB:x136)
-                var cleanVal = match.Success ? match.Groups[1].Value : fact.TextValue; 
-                var memDescription = XbrlCodeToValue(cleanVal);                                
-                cell.Text = string.IsNullOrEmpty( memDescription)? fact.TextValue :memDescription ;
+                var cleanVal = match.Success ? match.Groups[1].Value : fact.TextValue;
+                var memDescription = XbrlCodeToValue(cleanVal);
+                cell.Text = string.IsNullOrEmpty(memDescription) ? fact.TextValue : memDescription;
                 break;
             case "I": //integer
                 cell.Number = (int)Math.Floor(fact.NumericValue);
@@ -603,11 +630,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return facts;
     }
 
-    private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string currencyDomValue)
+    private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string currency)
     {
-        //more than one fact with the same row,col but with different currency
-        //currency dom value: s2c_GA:GR           
-        var sqlFactNoZet =
+
+        //more than one fact with the same row,col but with different currency        
+        //currency is "EUR" or "USD", ...
+        //but search for safety s2c_CU:EUR
+        var sqlFact =
       @"
 		SELECT *                  
 		FROM dbo.TemplateSheetFact fact
@@ -616,27 +645,29 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		  AND fact.Row = @row
 		  AND fact.Col = @col                                    
 	";
-        var sqlFactZet =
-      @"
+        //s2c_CU:EUR
+        var currencyLike = $"'%s2c_CU:{currency}%'";
+        var sqlFactCurrency =
+      @$"
             SELECT *    
-			FROM dbo.TemplateSheetFact fact
-			WHERE
-			  fact.TemplateSheetId = @sheetId
-			  AND fact.Row = @row
-			  AND fact.Col = @col
-			  AND fact.CurrencyDim = @currencyDomValue                
+            FROM dbo.TemplateSheetFact fact
+            WHERE
+              fact.TemplateSheetId = @sheetId
+              AND fact.Row = @row
+              AND fact.Col = @col
+              AND fact.DataPointSignature like {currencyLike}              
      ";
-        var sqlFact = string.IsNullOrEmpty(currencyDomValue) ? sqlFactNoZet : sqlFactZet;
+        var sqlSelectFact = string.IsNullOrEmpty(currency) ? sqlFact : sqlFactCurrency;
         using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlFact, new { sheetId = sheet.TemplateSheetId, row, col, currencyDomValue });
+        var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlSelectFact, new { sheetId = sheet.TemplateSheetId, row, col, currency });
         return fact;
     }
 
     private string XbrlCodeToValue(string xbrlValue)
     {
         using var connectionEiopaDb = new SqlConnection(_parameterData.EiopaConnectionString);
-        
+
 
         var sqlMember = "select mem.MemberLabel from mMember mem where mem.MemberXBRLCode = @xbrlCode";
         var memDescription = connectionEiopaDb.QuerySingleOrDefault<string>(sqlMember, new { xbrlCode = xbrlValue }) ?? "";
@@ -652,7 +683,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return rowLabels;
     }
 
-
+    private List<string> FindSheetCurrencies(int TemplateSheetId)
+    {
+        var facts=_SqlFunctions.SelectFactsForSheetId(TemplateSheetId)
+            .SelectMany(f=>f.DataPointSignature);
+        return new List<string>() { "EUR", "USD" };
+    }
 
 
 }
