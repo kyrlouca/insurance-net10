@@ -566,7 +566,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 cell.Text = fact.TextValue.Trim();
                 break;
             case "E": // Enumeration/Code"					  
-                var memDescription = XbrlCodeToValue(fact.TextValue);
+                var rgx = new Regex(@"s2c_dim:\w\w\((.+)\)");
+                var match = rgx.Match(fact.TextValue);
+                //some operators place enum values in keys like this s2c_dim:BL(s2c_LB:x136)
+                var cleanVal = match.Success ? match.Groups[1].Value : fact.TextValue; 
+                var memDescription = XbrlCodeToValue(cleanVal);                                
                 cell.Text = string.IsNullOrEmpty( memDescription)? fact.TextValue :memDescription ;
                 break;
             case "I": //integer
@@ -632,6 +636,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     private string XbrlCodeToValue(string xbrlValue)
     {
         using var connectionEiopaDb = new SqlConnection(_parameterData.EiopaConnectionString);
+        
 
         var sqlMember = "select mem.MemberLabel from mMember mem where mem.MemberXBRLCode = @xbrlCode";
         var memDescription = connectionEiopaDb.QuerySingleOrDefault<string>(sqlMember, new { xbrlCode = xbrlValue }) ?? "";
