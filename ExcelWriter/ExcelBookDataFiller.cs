@@ -172,25 +172,38 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //clear topRange
-        var topEmptyRow = FindTopLastEmptyRow(wholeRange, dataRange);
-        if (topEmptyRow > 0)
+        var lastTopEmptyRow = FindTopLastEmptyRow(wholeRange, dataRange);
+        if (lastTopEmptyRow > 0)
         {
-            var topRange = wholeRange[2, 1, topEmptyRow, dataRange.LastColumn];
-            if (topRange is not null)
+            var topClearRange = wholeRange[1, 1, lastTopEmptyRow, dataRange.LastColumn];
+            if (topClearRange is not null)
             {
-                topRange.Clear();
+                topClearRange.Clear(ExcelClearOptions.ClearAll);               
             }
         }
 
-        
+
+        //***********Table code
+        var tableCode = wholeRange["A1"];
+        tableCode.Text = dbSheet.TableCode;
+        tableCode.CellStyle = _pensionStyles.TableCodeStyle;
+
+        //template code
+        var filingSheetCode = string.Join(".", dbSheet.TableCode.Split(".").ToList().GetRange(0, 4));
+        var parentTemplate = _SqlFunctions.GetTableOrTemplate(filingSheetCode);
+        var tblLabel = wholeRange["A2"];
+        tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
+        tblLabel.CellStyle = _pensionStyles.HeaderStyle;
+
 
         //************ set the zets
         var zetDescription = SelectZetValues(dbSheet);
         var zetList = SelectZetValuesList(dbSheet);
         if (zetList.Count > 0)
         {
-            var zetRange = wholeRange["A3"];
-            zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, zetRange.Rows.Count() - 1, 1);            
+            //var zetRange = wholeRange["A3"];
+            //zetRange = HelperRoutines.ExtendRangeRowCols(zetRange, zetRange.Rows.Count() - 1, 1);
+            var zetRange = wholeRange[3,1,lastTopEmptyRow,2];
             zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
             var zetRow = zetRange.Row;
             var zetCol = zetRange.Column;
@@ -214,25 +227,15 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
 
 
-        /////Table code
-        var tableCode = wholeRange["A1"];
-        tableCode.Text = dbSheet.TableCode;
-        tableCode.CellStyle = _pensionStyles.TableCodeStyle;
-
-        //template code
-        var filingSheetCode = string.Join(".", dbSheet.TableCode.Split(".").ToList().GetRange(0, 4));
-        var parentTemplate = _SqlFunctions.GetTableOrTemplate(filingSheetCode);
-        var tblLabel = wholeRange["A2"];
-        tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
-        tblLabel.CellStyle = _pensionStyles.HeaderStyle;
-
-
-
-        //table code
-        var tableCodeRange = wholeRange[1, 1];
-        tableCodeRange.CellStyle = _pensionStyles.TableCodeStyle;
         
-        //tableCodeRange.                       
+
+
+
+        ////table code
+        //var tableCodeRange = wholeRange[1, 1];
+        //tableCodeRange.CellStyle = _pensionStyles.TableCodeStyle;
+        
+        //data Range.                       
         dataRange.ColumnWidth = 30;
         dataRange.CellStyle = _pensionStyles.DataSectionStyle;
         FormatDataSectionForProtectedCells(dataRange);
