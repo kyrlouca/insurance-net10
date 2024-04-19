@@ -78,7 +78,7 @@ public class WriterMainApp : IExcelWriterMainApp
         var mergedFilename = Path.Combine(dir, $"{fileNoExtension}.xlsx");
 
 
-        if (1 == 1)
+        if (1 == 2)
         {
             Console.WriteLine($"\n Create excel Fil3e : {filledFilename}");
             //****************************************************************************************************
@@ -91,7 +91,7 @@ public class WriterMainApp : IExcelWriterMainApp
                 return 1;
             }
         }
-        if (1 == 1)
+        if (1 == 2)
         {
             Console.WriteLine($"\n Fill Excel : {filledFilename}");
             //****************************************************************************************************
@@ -125,7 +125,7 @@ public class WriterMainApp : IExcelWriterMainApp
                 }
             }
         }
-        if (!_parameterData.IsDevelop && 1==1)
+        if (!_parameterData.IsDevelop && 1==2)
         {
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
             if (!isSuccess)
@@ -138,11 +138,6 @@ public class WriterMainApp : IExcelWriterMainApp
                 _logger.Error(sErrorMessage);
             }
 
-            //var (isRsuccess, rMessage) = FileUtilsKyr.MoveFile(mergedFilename, fileName);
-            //if (!isRsuccess)
-            //{
-            //    _logger.Error(rMessage);
-            //}
 
             var message = $"Excel File Created:{_parameterData.FileName}";
             _logger.Information(message);            
