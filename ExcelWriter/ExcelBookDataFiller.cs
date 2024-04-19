@@ -172,7 +172,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 _ => ""
             };
 
-            currenciesOrCountriesXbrlCodes = GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix);
+            currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)
+                .OrderBy(x => x)
+                .ToList();
+                
             var CurrencyOrCountryLabels = currenciesOrCountriesXbrlCodes
                 .Select(xbrlCode => _SqlFunctions.SelectMMember(xbrlCode))                
                 .Select(x => x?.MemberLabel??"")
