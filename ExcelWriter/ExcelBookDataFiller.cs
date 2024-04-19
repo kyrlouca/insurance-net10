@@ -131,6 +131,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
     }
 
+    private enum DimensionType { Currency,Country,None }
     private bool FillClosedTable280(TemplateSheetInstance dbSheet)
     {
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
@@ -155,14 +156,23 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ///CURRENCY LABELS
         var isCurrencyTemplate = MultiDimensionTemplates.CurrencyTemplates.Contains(dbSheet.TableCode);
         var isCountryTemplate = MultiDimensionTemplates.CountryTemplates.Contains(dbSheet.TableCode);
+        var dimensionType = isCurrencyTemplate ? DimensionType.Currency
+                           : isCountryTemplate ? DimensionType.Country
+                           : DimensionType.None;
+                
         var currenciesOrCountries = new List<string>();
-
-        if (isCurrencyTemplate||isCountryTemplate)
+        var memberXbrlPrefix = "";
+        if (dimensionType != DimensionType.None)
         {
-            currenciesOrCountries = isCurrencyTemplate
-                ? GetSheetDistinctCurrencies(dbSheet.TemplateSheetId)
-                : GetSheetDistinctCountries(dbSheet.TemplateSheetId);
+            
+            memberXbrlPrefix = dimensionType switch
+            {
+                DimensionType.Currency => "s2c_CU",
+                DimensionType.Country =>  "s2c_GA",                
+                _ => ""
+            };
 
+            currenciesOrCountries = GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix);
             for (var i = 0; i < currenciesOrCountries.Count; i++)
             {
                 var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column +1+ i];
@@ -192,21 +202,20 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
 
                     //s2c_dim:LR(s2c_GA:CY)
-                    //\(s2c_GA:(.+?)\)
-                    // AND fact.DataPointSignature like '%s2c_dim:LR(s2c_GA:CY)%'                    
-                    var likeValue = currenciesOrCountries[i];
-                    var bySignature = isCurrencyTemplate  ? @$"'%s2c_dim:LR(s2c_GA:{currenciesOrCountries[i]})%'"
-                                      : isCountryTemplate ? @$"'%s2c_dim:LR(s2c_GA:{currenciesOrCountries[i]})%'"
-                                      : "";
-
-
-                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, bySignature,FactSelection.BySignature);
+                                                            
+                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, currenciesOrCountries[i],dimensionType);
                     if (factX is null)
                     {
                         continue;
                     }
                     var cell = dataRange[rowLabelCell.Row, colCell.Column + i];
                     SaveCellValue(cell, factX);
+                    if (isCountryTemplate || isCurrencyTemplate)
+                    {
+                        cell.CellStyle.Borders.LineStyle = ExcelLineStyle.Thin;
+                        cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
+                        cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
+                    }
                 }
             }
         }
@@ -336,7 +345,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         {
             foreach (var colCell in columnCells)
             {
-                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colCell.Value, "", FactSelection.None);
+                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colCell.Value, "", DimensionType.None);
                 if (factX is null)
                 {
                     continue;
@@ -636,9 +645,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return facts;
     }
 
-    public enum FactSelection {BySignature,None}
+    
     //private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string currencyVal, DimensionSelection dimensionSelection = DimensionSelection.None)
-    private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string signatureLike, FactSelection factSelection )
+    private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string domMemberValue, DimensionType dimensionType )
     {
 
         //more than one fact with the same row,col but with different currency        
@@ -654,8 +663,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 		  AND fact.Col = @col                                    
 	";
         //s2c_CU:EUR
-        
-        
+
+
+        var sqlSignaturelike = $"AND fact.DataPointSignature like '%{domMemberValue}%'";
         var sqlFactBySignature =
         @$"
             SELECT *    
@@ -664,21 +674,21 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
               fact.TemplateSheetId = @sheetId
               AND fact.Row = @row
               AND fact.Col = @col
-              AND fact.DataPointSignature like {signatureLike}              
+            {sqlSignaturelike}
      ";
-        var sqlSelectFact = factSelection switch
+        
+        
+        var sqlSelectFact = dimensionType switch
         {
-            FactSelection.None => sqlFact,
-            FactSelection.BySignature => sqlFactBySignature,            
-            _ => sqlFact
+            DimensionType.Currency => sqlFactBySignature,
+            DimensionType.Country => sqlFactBySignature,
+            _ => sqlFact            
         };
-            
-            //string.IsNullOrEmpty(currency) ? sqlFact : sqlFactCurrency;
-       
+                               
         
         using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlSelectFact, new { sheetId = sheet.TemplateSheetId, row, col, signatureLike });
+        var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlSelectFact, new { sheetId = sheet.TemplateSheetId, row, col });
         return fact;
     }
 
@@ -701,11 +711,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return rowLabels;
     }
 
-    private List<string> GetSheetDistinctCurrencies(int TemplateSheetId)
+    
+    private List<string> GetSheetDistinctValues(int TemplateSheetId,string memberXbrlPrefix )
     {
-        var rgx = new Regex(@"s2c_dim:OC\(s2c_CU:(.+?)\)");
+        //var rgx = new Regex(@"s2c_CU:(.+?)\)");
+        //DimensionPrefix : "s2c_CU" Or "s2c_GA"
+        var rgx = new Regex(@$"\(({memberXbrlPrefix}:.+?)\)");
         var facts = _SqlFunctions.SelectFactsForSheetId(TemplateSheetId);
-        
+
         var distinctCurrencies = facts
                 .SelectMany(fact => rgx.Matches(fact.DataPointSignature)
                 .Cast<Match>()
@@ -720,25 +733,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return distinctCurrencies;
     }
 
-    private List<string> GetSheetDistinctCountries(int TemplateSheetId)
-    {
-        var rgx = new Regex(@"s2c_dim:LR\(s2c_GA:(.+?)\)");
-        var facts = _SqlFunctions.SelectFactsForSheetId(TemplateSheetId);
 
-        var distinctCountries = facts
-                .SelectMany(fact => rgx.Matches(fact.DataPointSignature)
-                .Cast<Match>()
-                .SelectMany(match => match.Groups
-                    .Cast<Group>()
-                    .Skip(1) // Skip group 0 (the entire match)
-                    .Select(group => group.Value))
-                 ).Distinct()
-                 .ToList();
-
-
-        return distinctCountries;
-    }
-
+    
 
 
 }
