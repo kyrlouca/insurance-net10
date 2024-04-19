@@ -213,34 +213,16 @@ public class ExcelBookMerger : IExcelBookMerger
 
         string BuildMergedTableDescription(bool isSpecialTemplate, ZetTemplateLayout zetTemplateBundle)
         {
-            //using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
             var dimDomZet = DimDom.GetParts(zetTemplateBundle.SheetCodeZet).DomAndValRaw;
             var label = _SqlFunctions.SelectMMember(dimDomZet)?.MemberLabel ?? "";
-
-            //var sqlZet = @" SELECT mem.MemberLabel  FROM mMember mem where MemberXBRLCode= @zetValue";
-            //var zetLabel = connectionEiopa.QuerySingleOrDefault<string>(sqlZet, new { zetValue = zetTemplateBundle.SheetCodeZet });
-
 
             var templateDesciption = string.IsNullOrEmpty(label)
                 ? $"{zetTemplateBundle.TemplateDescription.Trim()}"
                 : $"{zetTemplateBundle.TemplateDescription.Trim()} -- {label}";
             return templateDesciption;
         }
-
-        //IWorksheet? CreateSheetFromLayout(string s6Zet, string specialTemplateLayoutCode)
-        //{
-        //    var specialLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCode(specialTemplateLayoutCode);
-        //    var specialLayoutZet = ToZetTemplateUsingSpecialLayout(specialLayout, s6Zet);
-        //    (var isRenderedx, var sheet) = RenderOneZetSheet(specialLayoutZet);
-        //    if (isRenderedx)
-        //    {
-        //        var indexItem = new IndexSheetListItem(specialLayoutZet.SheetName, specialLayoutZet.SheetName, specialLayoutZet.TemplateDescription);
-        //        indexList.ListItems.Add(indexItem);
-        //        return sheet;
-        //    }
-        //    return null;
-        //}
+        
         string ExtractZetForBusinessLine(string zetVal)
         {
             var xx = zetVal.Split("|", StringSplitOptions.RemoveEmptyEntries)

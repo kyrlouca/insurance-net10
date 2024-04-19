@@ -73,9 +73,13 @@ public static class SpecialTemplateList
     
 }
 
-public static class CurrencyTemplate
+public static class MultiDimensionTemplates
 {
     public static List<string> CurrencyTemplates = new List<string> {
             "S.02.02.01.02",
     };
+    public static List<string> CountryTemplates = new List<string> {
+            "S.04.05.01.02",
+    };
+
 }
