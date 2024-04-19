@@ -160,7 +160,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                            : isCountryTemplate ? DimensionType.Country
                            : DimensionType.None;
                 
-        var currenciesOrCountries = new List<string>();
+        var currenciesOrCountriesXbrlCodes = new List<string>();
         var memberXbrlPrefix = "";
         if (dimensionType != DimensionType.None)
         {
@@ -172,17 +172,23 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 _ => ""
             };
 
-            currenciesOrCountries = GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix);
-            for (var i = 0; i < currenciesOrCountries.Count; i++)
+            currenciesOrCountriesXbrlCodes = GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix);
+            var CurrencyOrCountryLabels = currenciesOrCountriesXbrlCodes
+                .Select(xbrlCode => _SqlFunctions.SelectMMember(xbrlCode))                
+                .Select(x => x?.MemberLabel??"")
+                .ToList();
+                
+                
+            for (var i = 0; i < CurrencyOrCountryLabels.Count; i++)
             {
                 var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column +1+ i];
-                colLabel.Text = currenciesOrCountries[i];
+                colLabel.Text = CurrencyOrCountryLabels[i];
                 colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
                 colLabel.ColumnWidth = 30;
             }
         };
 
-        var currencyCount = currenciesOrCountries.Count == 0 ? 1 : currenciesOrCountries.Count;//to loop even for non-currencies
+        var currencyCount = currenciesOrCountriesXbrlCodes.Count == 0 ? 1 : currenciesOrCountriesXbrlCodes.Count;//to loop even for non-currencies
         foreach (var dataRow in dataRange.Rows)
         {
             //rowLabelCell the cell which has the row : R0110
@@ -203,7 +209,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
                     //s2c_dim:LR(s2c_GA:CY)
                                                             
-                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, currenciesOrCountries[i],dimensionType);
+                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, currenciesOrCountriesXbrlCodes[i],dimensionType);
                     if (factX is null)
                     {
                         continue;
