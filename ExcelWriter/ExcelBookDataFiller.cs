@@ -74,8 +74,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
 
-        var debugClosedTableCode = "S.04.05.01.02";
-        //var debugClosedTableCode = "";
+        //var debugClosedTableCode = "S.02.02.01.02";
+        var debugClosedTableCode = "";
         dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -94,8 +94,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        var debugOpenTableCode = "xxS.06.02.01.01";
-        //var debugOpenTableCode = "";
+        //var debugOpenTableCode = "xxS.06.02.01.01";
+        var debugOpenTableCode = "";
         dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
              ? dbOpenSheets
              : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
@@ -211,8 +211,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
 
                     //s2c_dim:LR(s2c_GA:CY)
-                                                            
-                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, currenciesOrCountriesXbrlCodes[i],dimensionType);
+                    var xbrlCode = dimensionType == DimensionType.None ? "" : currenciesOrCountriesXbrlCodes[i];
+
+
+                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value,xbrlCode ,dimensionType);
                     if (factX is null)
                     {
                         continue;
