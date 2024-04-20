@@ -75,8 +75,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
 
-        var debugClosedTableCode = "S..01.01.01";
-        //var debugClosedTableCode = "";
+        //var debugClosedTableCode = "S..01.01.01";
+        var debugClosedTableCode = "";
         dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -95,8 +95,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        var debugOpenTableCode = "S.31.01.01.01";
-        //var debugOpenTableCode = "";
+        //var debugOpenTableCode = "S.31.01.01.01";
+        var debugOpenTableCode = "";
         dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
              ? dbOpenSheets
              : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
@@ -222,7 +222,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                         cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
                     }
                     var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, xbrlCode, dimensionType);
-                    
+
                     FormatCellValue(cell, factX);
 
                 }
@@ -254,25 +254,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         tblLabel.CellStyle = _pensionStyles.HeaderStyle;
 
 
-        //************ set the zets
-
-        //var zetDescription = SelectZetValues(dbSheet);
-        var zetList = SelectZetValuesList(dbSheet);
-        if (zetList.Count > 0)
-        {
-            var zetRange = wholeRange[3, 1, lastTopEmptyRow, 2];
-            zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
-            var zetRow = zetRange.Row;
-            var zetCol = zetRange.Column;
-            foreach (var zet in zetList)
-            {
-                var currentDimVal = wholeRange[zetRow, zetCol];
-                var currentDomVal = wholeRange[zetRow, zetCol + 1];
-                currentDimVal.Text = zet.dimension;
-                currentDomVal.Text = zet.domValue;
-                zetRow++;
-            }
-        }
+        //************ set the zets        
+        FillZetValuesAtTheTop(dbSheet, wholeRange);
 
 
         //format the top row title
@@ -283,10 +266,6 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             titles.CellStyle.WrapText = true;
         }
 
-
-        ////table code
-        //var tableCodeRange = wholeRange[1, 1];
-        //tableCodeRange.CellStyle = _pensionStyles.TableCodeStyle;
 
         //data Range.                       
         dataRange.ColumnWidth = 30;
@@ -314,6 +293,26 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         return false;
+    }
+
+    private void FillZetValuesAtTheTop(TemplateSheetInstance dbSheet, IRange wholeRange)
+    {
+        var zetList = SelectZetValuesList(dbSheet);
+        if (zetList.Count > 0)
+        {
+            var zetRange = wholeRange[3, 1, 3 + zetList.Count - 1, 2];
+            zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
+            var zetRow = zetRange.Row;
+            var zetCol = zetRange.Column;
+            foreach (var zet in zetList)
+            {
+                var currentDimVal = wholeRange[zetRow, zetCol];
+                var currentDomVal = wholeRange[zetRow, zetCol + 1];
+                currentDimVal.Text = zet.dimension;
+                currentDomVal.Text = zet.domValue;
+                zetRow++;
+            }
+        }
     }
 
     private bool FillOpenTable280(TemplateSheetInstance dbSheet)
@@ -388,28 +387,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
         }
 
-        //************ set the zets
 
-        //var zetDescription = SelectZetValues(dbSheet);
-        if (1 == 1)
-        {
-            var zetList = SelectZetValuesList(dbSheet);
-            if (zetList.Count > 0)
-            {
-                var zetRange = wholeRange[3, 1, lastTopEmptyRow, 2];
-                zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
-                var zetRow = zetRange.Row;
-                var zetCol = zetRange.Column;
-                foreach (var zet in zetList)
-                {
-                    var currentDimVal = wholeRange[zetRow, zetCol];
-                    var currentDomVal = wholeRange[zetRow, zetCol + 1];
-                    currentDimVal.Text = zet.dimension;
-                    currentDomVal.Text = zet.domValue;
-                    zetRow++;
-                }
-            }
-        }
+        //************ set the zets        
+        FillZetValuesAtTheTop(dbSheet, wholeRange);
+
 
         // Table Code
         var tableCode = wholeRange["A1"];
@@ -527,7 +508,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             var diagonal = cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle;
             if (diagonal == ExcelLineStyle.Thin)
             {
-                cell.CellStyle = _pensionStyles.DiagonalStyle;                
+                cell.CellStyle = _pensionStyles.DiagonalStyle;
             }
 
         }
@@ -560,7 +541,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //if no empty line, then return the row above the datarange
         IRange aboveRange = null; ;
         var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
-        
+
         foreach (var row in rowsTocheck.Rows.Reverse())
         {
             //skip 2 to avoid zet values            
@@ -575,7 +556,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         {
             //fuck
             //var fftitleRange = wholeRange[dataRange.Row - 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
-            var fftitleRange = wholeRange[dataRange.Row , rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
+            var fftitleRange = wholeRange[dataRange.Row, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
             return fftitleRange;
             return null;
         }
@@ -627,7 +608,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             case "I": //integer
                 cell.Number = (int)Math.Floor(fact.NumericValue);
                 cell.HorizontalAlignment = ExcelHAlign.HAlignRight;
-                break;            
+                break;
             default:
                 cell.Text = "ERROR VALUE";
                 break;
