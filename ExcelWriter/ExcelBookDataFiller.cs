@@ -75,8 +75,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
 
-        var debugClosedTableCode = "S.04.04.01.01";
-        //var debugClosedTableCode = "";
+        //var debugClosedTableCode = "S.04.04.01.01";
+        var debugClosedTableCode = "";
         dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -95,8 +95,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-       var debugOpenTableCode = "xxS.31.01.01.01";
-        //var debugOpenTableCode = "";
+       //var debugOpenTableCode = "xxS.31.01.01.01";
+        var debugOpenTableCode = "";
         dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
              ? dbOpenSheets
              : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
@@ -177,6 +177,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 .OrderBy(x=>x)
                 .ToList();
 
+            if (1==1)
+            {
+
+            }
             var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();
 
 
