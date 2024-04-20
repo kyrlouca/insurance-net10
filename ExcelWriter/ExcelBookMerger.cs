@@ -96,9 +96,7 @@ public class ExcelBookMerger : IExcelBookMerger
         //
 
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
-        
-        
-
+               
 
         var newTableGroupsFromEiopa = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
         var newSingePageBreakdownListNew = newTableGroupsFromEiopa
@@ -114,7 +112,8 @@ public class ExcelBookMerger : IExcelBookMerger
             .Concat(newSingePageBreakdownListNew)
             .OrderBy(tgl => tgl.TemplateCode)
             .ToList();
-      
+
+        //newTableGroupList = newTableGroupList.Where(tg => (new[] { "S.04.04.01" }).Contains(tg.TemplateCode)).ToList();
 
         ///////////////////////
         var s6Zet = "";
@@ -133,8 +132,7 @@ public class ExcelBookMerger : IExcelBookMerger
             {
                 distinctBlZets.Add("");
             }
-
-            //var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCode(tableGroup.TemplateCode);
+            
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCodeNew(tableGroup.TemplateCode);
 
 
@@ -144,7 +142,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 distinctBlZets = new() { "" };
             }
             var line = 0;
-            foreach (var sheetCodeZet in distinctBlZets)
+            foreach (var blZet in distinctBlZets)
             {
                 line++;
                 //use the specialTemplateLayout if is  found in the static list, otherwise create one using the tables in the table group
@@ -153,8 +151,8 @@ public class ExcelBookMerger : IExcelBookMerger
                     var xx=3;
                 }
                 var zetTemplateLayout = specialTemplateLayout is null
-                    ? ToZetTemplateLayout(tableGroup, sheetCodeZet)
-                    : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, sheetCodeZet);
+                    ? ToZetTemplateLayout(tableGroup, blZet)
+                    : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, blZet);
 
 
                 var specialSheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;
@@ -166,7 +164,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 zetTemplateLayout.SheetName = specialSheetName;
 
 
-                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(specialTemplateLayout is not null, zetTemplateLayout);
+                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(zetTemplateLayout.TemplateDescription,blZet);
                 (var isRendered, var sheet) = RenderOneZetSheet(zetTemplateLayout);
                 if (isRendered)
                 {
@@ -176,7 +174,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 }
                 if (tableGroup.TemplateCode == "S.06.02.01")
                 {
-                    s6Zet = sheetCodeZet;
+                    s6Zet = blZet;
                 }
             }
         }
@@ -211,15 +209,15 @@ public class ExcelBookMerger : IExcelBookMerger
         return true;
 
 
-        string BuildMergedTableDescription(bool isSpecialTemplate, ZetTemplateLayout zetTemplateBundle)
+        string BuildMergedTableDescription(string templateDescription,string zetBlCode)
         {
 
-            var dimDomZet = DimDom.GetParts(zetTemplateBundle.SheetCodeZet).DomAndValRaw;
+            var dimDomZet = DimDom.GetParts(zetBlCode)?.DomAndValRaw??"" ;            
             var label = _SqlFunctions.SelectMMember(dimDomZet)?.MemberLabel ?? "";
 
             var templateDesciption = string.IsNullOrEmpty(label)
-                ? $"{zetTemplateBundle.TemplateDescription.Trim()}"
-                : $"{zetTemplateBundle.TemplateDescription.Trim()} -- {label}";
+                ? $"{templateDescription.Trim()}"
+                : $"{templateDescription.Trim()} -- {label}";
             return templateDesciption;
         }
         
