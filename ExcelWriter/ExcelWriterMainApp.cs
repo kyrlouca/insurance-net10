@@ -105,7 +105,7 @@ public class WriterMainApp : IExcelWriterMainApp
             }
 
         }
-        if (1 == 2)
+        if (1 == 1)
         {
             Console.WriteLine($"\n Merge TabSheets  : {mergedFilename}");
             //****************************************************************************************************
