@@ -173,7 +173,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 _ => ""
             };
 
-            currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)                
+            currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)  
+                .OrderBy(x=>x)
                 .ToList();
 
             var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();
