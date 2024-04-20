@@ -75,8 +75,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
 
-        //var debugClosedTableCode = "S.04.04.01.01";
-        var debugClosedTableCode = "";
+        var debugClosedTableCode = "S.04.04.01.01";
+        //var debugClosedTableCode = "";
         dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -95,8 +95,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        //var debugOpenTableCode = "xxS.31.01.01.01";
-        var debugOpenTableCode = "";
+       var debugOpenTableCode = "xxS.31.01.01.01";
+        //var debugOpenTableCode = "";
         dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
              ? dbOpenSheets
              : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
@@ -173,14 +173,19 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 _ => ""
             };
 
-            currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)
-                .OrderBy(x => x)
+            currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)                
                 .ToList();
+
+            var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();
+
 
             var CurrencyOrCountryLabels = currenciesOrCountriesXbrlCodes
                 .Select(xbrlCode => _SqlFunctions.SelectMMember(xbrlCode))
                 .Select(x => x?.MemberLabel ?? "")
                 .ToList();
+
+
+            
 
 
             for (var i = 0; i < CurrencyOrCountryLabels.Count; i++)
@@ -234,7 +239,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var lastTopEmptyRow = FindTopLastEmptyRow(wholeRange, dataRange);
         if (lastTopEmptyRow > 0)
         {
-            var topClearRange = wholeRange[1, 1, lastTopEmptyRow, dataRange.LastColumn];
+            var topClearRange = wholeRange[1, 1, lastTopEmptyRow, dataRange.LastColumn+4];
             if (topClearRange is not null)
             {
                 topClearRange.Clear(ExcelClearOptions.ClearAll);
@@ -726,6 +731,19 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return distinctCurrencies;
     }
 
+    public List<string> SpecialOrderBy(List<string> list, string firstElement)
+    {
+        var newList=list.Select(item=>item).ToList();
+
+        var index = newList.FindIndex(item => item.Contains(firstElement));
+        if (index != -1)
+        {
+            var blItem = newList.ElementAt(index);
+            newList.RemoveAt(index);
+            newList.Insert(0, blItem);
+        }
+        return newList;
+    }
 
 
 
