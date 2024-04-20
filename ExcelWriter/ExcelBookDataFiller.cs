@@ -259,7 +259,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //format the top row title
-        var titles = FindTopLabelsRange(wholeRange, dataRange);
+        var titles = FindTopLabelsRange(wholeRange, dataRange,false);
         if (titles is not null)
         {
             titles.CellStyle.Font.Size = 12;
@@ -295,8 +295,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return false;
     }
 
-    private void FillZetValuesAtTheTop(TemplateSheetInstance dbSheet, IRange wholeRange)
+    private int FillZetValuesAtTheTop(TemplateSheetInstance dbSheet, IRange wholeRange)
     {
+
         var zetList = SelectZetValuesList(dbSheet);
         if (zetList.Count > 0)
         {
@@ -313,6 +314,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 zetRow++;
             }
         }
+        return zetList.Count;
     }
 
     private bool FillOpenTable280(TemplateSheetInstance dbSheet)
@@ -389,7 +391,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //************ set the zets        
-        FillZetValuesAtTheTop(dbSheet, wholeRange);
+        var zetLines=FillZetValuesAtTheTop(dbSheet, wholeRange);
 
 
         // Table Code
@@ -404,7 +406,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         tblLabel.CellStyle = _pensionStyles.HeaderStyle;
 
         //style titles above datarange
-        var titles = FindTopLabelsRange(wholeRange, dataRange);
+        var titles = FindTopLabelsRange(wholeRange, dataRange,true);
         if (titles is not null)
         {
             titles.CellStyle = _pensionStyles.TopLabelsStyle;
@@ -534,7 +536,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return 0;
     }
 
-    private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange)
+    private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange,bool isOpenTable )
     {
 
         //find the range for the labels starting from the data until you find an empty line
@@ -544,8 +546,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         foreach (var row in rowsTocheck.Rows.Reverse())
         {
-            //skip 2 to avoid zet values            
-            var hasValue = row.Cells.Skip(2).Any(cell => !string.IsNullOrEmpty(cell.Value));
+            //skip 2 to avoid zet values if open table           
+            var cellsTocheck = isOpenTable
+                ? row.Cells.Skip(2)
+                : row.Cells;
+            var hasValue = cellsTocheck.Any(cell => !string.IsNullOrEmpty(cell.Value));
             if (!hasValue)
             {
                 aboveRange = row;
