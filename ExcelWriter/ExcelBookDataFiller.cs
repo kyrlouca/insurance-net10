@@ -22,6 +22,7 @@ using Microsoft.IdentityModel.Tokens;
 using Shared.SpecialRoutines;
 using Microsoft.VisualBasic;
 using ExcelWriter.ExcelDataModels;
+using System.ComponentModel;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -74,8 +75,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
 
-        //var debugClosedTableCode = "S.02.02.01.02";
-        var debugClosedTableCode = "";
+        var debugClosedTableCode = "S..01.01.01";
+        //var debugClosedTableCode = "";
         dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -94,8 +95,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        //var debugOpenTableCode = "xxS.06.02.01.01";
-        var debugOpenTableCode = "";
+        var debugOpenTableCode = "S.31.01.01.01";
+        //var debugOpenTableCode = "";
         dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
              ? dbOpenSheets
              : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
@@ -131,7 +132,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
     }
 
-    private enum DimensionType { Currency,Country,None }
+    private enum DimensionType { Currency, Country, None }
     private bool FillClosedTable280(TemplateSheetInstance dbSheet)
     {
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
@@ -144,7 +145,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
-        
+
 
         var columnRow = dataRange.Rows.First();
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
@@ -159,32 +160,32 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dimensionType = isCurrencyTemplate ? DimensionType.Currency
                            : isCountryTemplate ? DimensionType.Country
                            : DimensionType.None;
-                
+
         var currenciesOrCountriesXbrlCodes = new List<string>();
         var memberXbrlPrefix = "";
         if (dimensionType != DimensionType.None)
         {
-            
+
             memberXbrlPrefix = dimensionType switch
             {
                 DimensionType.Currency => "s2c_CU",
-                DimensionType.Country =>  "s2c_GA",                
+                DimensionType.Country => "s2c_GA",
                 _ => ""
             };
 
             currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)
                 .OrderBy(x => x)
                 .ToList();
-                
+
             var CurrencyOrCountryLabels = currenciesOrCountriesXbrlCodes
-                .Select(xbrlCode => _SqlFunctions.SelectMMember(xbrlCode))                
-                .Select(x => x?.MemberLabel??"")
+                .Select(xbrlCode => _SqlFunctions.SelectMMember(xbrlCode))
+                .Select(x => x?.MemberLabel ?? "")
                 .ToList();
-                
-                
+
+
             for (var i = 0; i < CurrencyOrCountryLabels.Count; i++)
             {
-                var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column +1+ i];
+                var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column + 1 + i];
                 colLabel.Text = CurrencyOrCountryLabels[i];
                 colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
                 colLabel.ColumnWidth = 30;
@@ -213,20 +214,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     //s2c_dim:LR(s2c_GA:CY)
                     var xbrlCode = dimensionType == DimensionType.None ? "" : currenciesOrCountriesXbrlCodes[i];
 
-
-                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value,xbrlCode ,dimensionType);
-                    if (factX is null)
-                    {
-                        continue;
-                    }
                     var cell = dataRange[rowLabelCell.Row, colCell.Column + i];
-                    SaveCellValue(cell, factX);
                     if (isCountryTemplate || isCurrencyTemplate)
                     {
                         cell.CellStyle.Borders.LineStyle = ExcelLineStyle.Thin;
                         cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
                         cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
                     }
+                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, xbrlCode, dimensionType);
+                    
+                    FormatCellValue(cell, factX);
+
                 }
             }
         }
@@ -257,11 +255,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //************ set the zets
-        
+
         //var zetDescription = SelectZetValues(dbSheet);
         var zetList = SelectZetValuesList(dbSheet);
         if (zetList.Count > 0)
-        {            
+        {
             var zetRange = wholeRange[3, 1, lastTopEmptyRow, 2];
             zetRange.CellStyle = _pensionStyles.ZetLabelStyle;
             var zetRow = zetRange.Row;
@@ -331,8 +329,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var wholeRange = wholeRangeName.RefersToRange;
 
         ClearLinks(wholeRange);
-        
-       
+
+
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
               .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
               .OrderByDescending(ykey => ykey.OrdinateID);
@@ -362,7 +360,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     continue;
                 }
                 var cell = dataRange[rowIndex, colCell.Column];
-                SaveCellValue(cell, factX);
+                FormatCellValue(cell, factX);
             }
             rowIndex++;
             Console.Write(".");
@@ -380,8 +378,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         //clear topRange
         var lastTopEmptyRow = FindTopLastEmptyRow(wholeRange, dataRange);
-        
-        if (lastTopEmptyRow > 0 )
+
+        if (lastTopEmptyRow > 0)
         {
             var topClearRange = wholeRange[1, 1, lastTopEmptyRow, dataRange.LastColumn];
             if (topClearRange is not null)
@@ -424,6 +422,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         tblLabel.Text = tbl?.TableLabel;
         tblLabel.CellStyle = _pensionStyles.HeaderStyle;
 
+        //style titles above datarange
         var titles = FindTopLabelsRange(wholeRange, dataRange);
         if (titles is not null)
         {
@@ -528,10 +527,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             var diagonal = cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle;
             if (diagonal == ExcelLineStyle.Thin)
             {
-                cell.CellStyle = _pensionStyles.DiagonalStyle;
-                //cell.CellStyle.ColorIndex = ExcelKnownColors.Grey_50_percent;
-                //cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
-                //cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
+                cell.CellStyle = _pensionStyles.DiagonalStyle;                
             }
 
         }
@@ -564,15 +560,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //if no empty line, then return the row above the datarange
         IRange aboveRange = null; ;
         var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
-        var xx = 33;
-
-
-
-
+        
         foreach (var row in rowsTocheck.Rows.Reverse())
         {
-            var cells = row.Cells.Select(cel => cel.Text).ToList();
-            var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
+            //skip 2 to avoid zet values            
+            var hasValue = row.Cells.Skip(2).Any(cell => !string.IsNullOrEmpty(cell.Value));
             if (!hasValue)
             {
                 aboveRange = row;
@@ -581,7 +573,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         }
         if (aboveRange == null)
         {
-            var fftitleRange = wholeRange[dataRange.Row-1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
+            //fuck
+            //var fftitleRange = wholeRange[dataRange.Row - 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
+            var fftitleRange = wholeRange[dataRange.Row , rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
             return fftitleRange;
             return null;
         }
@@ -590,9 +584,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
-    private void SaveCellValue(IRange cell, TemplateSheetFact fact)
+    private void FormatCellValue(IRange cell, TemplateSheetFact? fact)
     {
-
+        cell.CellStyle = _pensionStyles.DataSectionStyle;
+        if (fact == null)
+        {
+            return;
+        }
         var DataTypeUse = fact.DataTypeUse;
         cell.HorizontalAlignment = ExcelHAlign.HAlignLeft;
         switch (DataTypeUse)
@@ -629,9 +627,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             case "I": //integer
                 cell.Number = (int)Math.Floor(fact.NumericValue);
                 cell.HorizontalAlignment = ExcelHAlign.HAlignRight;
-                break;
-            case "NULL"://fact is null                            
-                break;
+                break;            
             default:
                 cell.Text = "ERROR VALUE";
                 break;
@@ -656,9 +652,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return facts;
     }
 
-    
+
     //private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string currencyVal, DimensionSelection dimensionSelection = DimensionSelection.None)
-    private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string domMemberValue, DimensionType dimensionType )
+    private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string domMemberValue, DimensionType dimensionType)
     {
 
         //more than one fact with the same row,col but with different currency        
@@ -687,16 +683,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
               AND fact.Col = @col
             {sqlSignaturelike}
      ";
-        
-        
+
+
         var sqlSelectFact = dimensionType switch
         {
             DimensionType.Currency => sqlFactBySignature,
             DimensionType.Country => sqlFactBySignature,
-            _ => sqlFact            
+            _ => sqlFact
         };
-                               
-        
+
+
         using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
 
         var fact = connectionLocalDb.QueryFirstOrDefault<TemplateSheetFact>(sqlSelectFact, new { sheetId = sheet.TemplateSheetId, row, col });
@@ -722,8 +718,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return rowLabels;
     }
 
-    
-    private List<string> GetSheetDistinctValues(int TemplateSheetId,string memberXbrlPrefix )
+
+    private List<string> GetSheetDistinctValues(int TemplateSheetId, string memberXbrlPrefix)
     {
         //var rgx = new Regex(@"s2c_CU:(.+?)\)");
         //DimensionPrefix : "s2c_CU" Or "s2c_GA"
@@ -745,7 +741,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
-    
+
 
 
 }
