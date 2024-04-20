@@ -51,7 +51,7 @@ public static class SpecialTemplateList
     };
 
     public static List<string> SingleTableGroupsNew = new List<string> {
-            "S.04.04.01",
+            
             "S.05.01.02",            
             "S.05.01.01",
             "S.05.01.02",            
@@ -61,6 +61,10 @@ public static class SpecialTemplateList
             "S.30.01.03",
             "S.30.01.04",
             "S.30.01.04",
+            "S.31.01.01",
+            "S.31.01.02",
+            "S.31.01.03",
+            "S.31.01.04",
         };
 
     
@@ -78,7 +82,9 @@ public static class MultiDimensionTemplates
     public static List<string> CurrencyTemplates = new List<string> {
             "S.02.02.01.02",
     };
-    public static List<string> CountryTemplates = new List<string> {
+    public static List<string> CountryTemplates = new List<string> {            
+            "S.04.04.01.01",
+            "S.04.04.01.02",
             "S.04.05.01.02",
     };
 
