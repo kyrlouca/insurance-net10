@@ -1056,7 +1056,7 @@ internal class ValidationFunctions
             var filter = termLeft.Filter;
             if (!string.IsNullOrEmpty(filter))
             {
-                var isFilterValid = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, filter, terms);
+                var isFilterValid = GeneralEvaluator.EvaluateBooleanExpression(0, filter, terms);
                 //if the filter is false, no need to check the rule and return a match
                 if (isFilterValid != KleeneValue.True)
                 {

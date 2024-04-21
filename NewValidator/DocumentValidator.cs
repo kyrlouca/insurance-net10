@@ -166,7 +166,7 @@ public class DocumentValidator : IDocumentValidator
                             ReplaceObjTerm(ruleClosed.IfComponent.ObjectTerms, sumTerm.Letter, -999, sum, count);
                         }
 
-                        var isValidClosedRule = ExpressionEvaluator.ValidateRule(ruleClosed);
+                        var isValidClosedRule = GeneralEvaluator.ValidateRule(ruleClosed);
                         if (!isValidClosedRule)
                         {
                             CreateRuleError(ruleClosed, validationRule);
@@ -219,7 +219,7 @@ public class DocumentValidator : IDocumentValidator
 
                             KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
                                 ? KleeneValue.True
-                                : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
+                                : GeneralEvaluator.EvaluateBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
 
                             //if filter has terms with null values, it is considered false here                            
                             if (filterKleeneValue != KleeneValue.True)
@@ -227,7 +227,7 @@ public class DocumentValidator : IDocumentValidator
                                 continue;
                             };
 
-                            var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
+                            var isValidRowRule = GeneralEvaluator.ValidateRule(ruleOpen);
 
                             if (!isValidRowRule)
                             {
@@ -277,7 +277,7 @@ public class DocumentValidator : IDocumentValidator
                         EvaluateSumTerms(rule.RuleId, rule.ThenComponent, rule.FilterComponent, string.Empty);
                         EvaluateSumTerms(rule.RuleId, rule.ElseComponent, rule.FilterComponent, string.Empty);
 
-                        var isValidRule = ExpressionEvaluator.ValidateRule(rule);
+                        var isValidRule = GeneralEvaluator.ValidateRule(rule);
                         if (!isValidRule)
                         {
                             Console.WriteLine($"{validationRule.Severity} ruleId:{rule.RuleId} ");
@@ -340,7 +340,7 @@ public class DocumentValidator : IDocumentValidator
 
                             KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
                                 ? KleeneValue.True
-                                : ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
+                                : GeneralEvaluator.EvaluateBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
 
                             //if filter has terms with null values, it is considered false here                            
                             if (filterKleeneValue != KleeneValue.True)
@@ -348,7 +348,7 @@ public class DocumentValidator : IDocumentValidator
                                 continue;
                             };
 
-                            var isValidRowRule = ExpressionEvaluator.ValidateRule(ruleOpen);
+                            var isValidRowRule = GeneralEvaluator.ValidateRule(ruleOpen);
 
                             if (!isValidRowRule)
                             {
@@ -621,7 +621,7 @@ public class DocumentValidator : IDocumentValidator
             Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms, zetValue);
             if (filterTerms.Any())
             {
-                var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms);
+                var res = GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms);
                 return res == KleeneValue.True;
             }
 

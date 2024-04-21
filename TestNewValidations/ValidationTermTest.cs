@@ -138,19 +138,19 @@ public class ValidationTermTest
     {
 
         var text = @"5>2 and 4>3";
-        var res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, text, new());
+        var res = GeneralEvaluator.EvaluateBooleanExpression(0, text, new());
         Assert.True(res == KleeneValue.True);
 
         text = @"(2>1 or 1<2) and (2>1)";
-        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, text, new());
+        res = GeneralEvaluator.EvaluateBooleanExpression(0, text, new());
         Assert.True(res == KleeneValue.True);
 
         text = @"(2>1 or 1<2) and (1>2)";
-        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, text, new());
+        res = GeneralEvaluator.EvaluateBooleanExpression(0, text, new());
         Assert.True(res == KleeneValue.False);
 
         text = @"(2>1 or 1<2) and not(1>2)";
-        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, text, new());
+        res = GeneralEvaluator.EvaluateBooleanExpression(0, text, new());
         Assert.True(res == KleeneValue.True);
 
         var qt = "\"";
@@ -159,12 +159,12 @@ public class ValidationTermTest
 
         //text = @"(1>2 or matches(""LEI/12301"", ""^LEI/[A-Z0-9]{3}(01|00)$"")) and not(1>2)";
         text = @$"(1>2 or matches({qt}LEI/12301{qt}, {qt}^LEI/[A-Z0-9]{x}3{y}(01|00)${qt})) and not(1>2)";
-        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, text, new());
+        res = GeneralEvaluator.EvaluateBooleanExpression(0, text, new());
         //Assert.True(res == KleeneValue.True);
 
 
         text = @$"(1>2 or matches({qt}LEI/12301{qt}, {qt}^LEI/[A-Z0-9]{x}3{y}(01|00)${qt})) and (matches({qt}Lei248{qt},{qt}Lei\d\d\d{qt}))";
-        res = ExpressionEvaluator.EvaluateGeneralBooleanExpression(0, text, new());
+        res = GeneralEvaluator.EvaluateBooleanExpression(0, text, new());
         //Assert.True(res == KleeneValue.True);
 
     }
@@ -176,12 +176,12 @@ public class ValidationTermTest
     {
 
         var text = @"imin(3, 4, 1 +1)";
-        var res = ExpressionEvaluator.EvaluateFunction(text, new(), "");
+        var res = GeneralEvaluator.EvaluateFunction(text, new(), "");
         Assert.Equal(new OptionialObject(false, (double)2), res);
 
 
         text = @"imax(imin(3, 7) , 4) ";
-        res = ExpressionEvaluator.EvaluateFunction(text, new(), "");
+        res = GeneralEvaluator.EvaluateFunction(text, new(), "");
         Assert.Equal(false, res.IsNull);
         Assert.Equal(4.0, res.Value);
 
@@ -196,13 +196,13 @@ public class ValidationTermTest
     {
 
         var text = @"5 + imin(3) +imax(4)";
-        var res = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text, new(), "");
+        var res = GeneralEvaluator.EvaluateArithmeticExpressionRecursively(text, new(), "");
         Assert.True(!res.IsNull);
         Assert.Equal(12, (double)(res?.Value ?? 0));
 
 
         text = @"7 + imin(imax(3,5),4)";
-        res = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text, new(), "");
+        res = GeneralEvaluator.EvaluateArithmeticExpressionRecursively(text, new(), "");
         Assert.Equal(11, (double)(res?.Value ?? 0));
 
 
@@ -213,21 +213,21 @@ public class ValidationTermTest
     {
 
         var text = @"5 + imin(3)+(a>3 or b<4) and imax(4+x3)> 5";
-        var res = ExpressionEvaluator.SplitAndOrExpression(text);
-        Assert.Equal(res.logicalOperator, ExpressionEvaluator.LogicalOperators.IsAnd);
+        var res = GeneralEvaluator.SplitAndOrExpression(text);
+        Assert.Equal(res.logicalOperator, GeneralEvaluator.LogicalOperators.IsAnd);
         Assert.Equal(res.left, "5 + imin(3)+(a>3 or b<4)");
         Assert.Equal(res.Right, "imax(4+x3)> 5");
 
 
         text = @"5 + imin(3)+(a>3 and b<4) or imax(4+x3)> 5";
-        res = ExpressionEvaluator.SplitAndOrExpression(text);
-        Assert.Equal(res.logicalOperator, ExpressionEvaluator.LogicalOperators.IsOR);
+        res = GeneralEvaluator.SplitAndOrExpression(text);
+        Assert.Equal(res.logicalOperator, GeneralEvaluator.LogicalOperators.IsOR);
         Assert.Equal(res.left, "5 + imin(3)+(a>3 and b<4)");
         Assert.Equal(res.Right, "imax(4+x3)> 5");
 
         text = @"5 + imin(3)+ imax(4+x3)> 5";
-        res = ExpressionEvaluator.SplitAndOrExpression(text);
-        Assert.Equal(res.logicalOperator, ExpressionEvaluator.LogicalOperators.None);
+        res = GeneralEvaluator.SplitAndOrExpression(text);
+        Assert.Equal(res.logicalOperator, GeneralEvaluator.LogicalOperators.None);
         Assert.Equal(res.left, "5 + imin(3)+ imax(4+x3)> 5");
         Assert.Equal(res.Right, "");
 
@@ -242,19 +242,19 @@ public class ValidationTermTest
     {
 
         var text = @"5 - 4 + (3 * X2)";
-        var res = ExpressionEvaluator.SplitArithmeticExpression(text);
+        var res = GeneralEvaluator.SplitArithmeticExpression(text);
         Assert.Equal(res.arithmeticOperator, ArithmeticOperators.Minus);
         Assert.Equal(res.left, "5");
         Assert.Equal(res.right, "4 + (3 * X2)");
 
         text = @"5 * X1 + (3 * X2)";
-        res = ExpressionEvaluator.SplitArithmeticExpression(text);
+        res = GeneralEvaluator.SplitArithmeticExpression(text);
         Assert.Equal(res.arithmeticOperator, ArithmeticOperators.Plus);
         Assert.Equal(res.left, "5 * X1");
         Assert.Equal(res.right, "(3 * X2)");
 
         text = @"X3";
-        res = ExpressionEvaluator.SplitArithmeticExpression(text);
+        res = GeneralEvaluator.SplitArithmeticExpression(text);
         Assert.Equal(res.arithmeticOperator, ArithmeticOperators.None);
         Assert.Equal(res.left, "X3");
         Assert.Equal(res.right, "");
@@ -268,18 +268,18 @@ public class ValidationTermTest
     {
 
         var text0 = @"3 + imin(4,3,2) * 7";
-        var res0 = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text0, new(), "");
+        var res0 = GeneralEvaluator.EvaluateArithmeticExpressionRecursively(text0, new(), "");
         Assert.True(res0.IsNull == false);
         Assert.True((double)res0.Value == 17);
 
 
         var text = @"3 * (2+4)";
-        var res = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text, new(), "");
+        var res = GeneralEvaluator.EvaluateArithmeticExpressionRecursively(text, new(), "");
         Assert.True(res.IsNull == false);
         Assert.True((double)res.Value == 18);
 
         text = @"3 + (2 * 4 -7)";
-        res = ExpressionEvaluator.EvaluateGeneralExpressionRecursively(text, new(), "");
+        res = GeneralEvaluator.EvaluateArithmeticExpressionRecursively(text, new(), "");
         Assert.True(res.IsNull == false);
         Assert.True((double)res.Value == 4);
 
