@@ -727,6 +727,7 @@ public class DocumentValidator : IDocumentValidator
 
     class ValidationRuleComparer : IEqualityComparer<VValidationRuleExpressions>
     {
+        //not used but usefull to know
         public bool Equals(VValidationRuleExpressions? b1, VValidationRuleExpressions? b2)
         {
             if (ReferenceEquals(b1, b2))
