@@ -414,33 +414,42 @@ public class ValidationTermTest
 
         
 
-        formula = "3 -2 + 4x";
+
+        formula = "3-2+4x";
         operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
         Assert.Equal(2, operators.Count());
         Assert.Equal(ArithmeticOperators.Minus, operators[0].arithmeticOperator);
-        Assert.Equal(2, operators[0].position);
+        Assert.Equal(1, operators[0].position);
         Assert.Equal(ArithmeticOperators.Plus, operators[1].arithmeticOperator);
-        Assert.Equal(5, operators[1].position);
+        Assert.Equal(3, operators[1].position);
 
 
-
-        formula = "3 + 4x * 1";
+        formula = "3 * -4x";
         operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
         Assert.Equal(2, operators.Count());
-        Assert.Equal(ArithmeticOperators.Plus, operators[0].arithmeticOperator);
-        Assert.Equal(2, operators[0].position);
+        Assert.Equal(ArithmeticOperators.UnaryMinus, operators[0].arithmeticOperator);
+        Assert.Equal(4, operators[0].position);
         Assert.Equal(ArithmeticOperators.Multiply, operators[1].arithmeticOperator);
-        Assert.Equal(7, operators[1].position);
+        Assert.Equal(2, operators[1].position);
 
 
-        formula = "3+4*-2";
+
+        formula = "2+3 * -4 - 6";
         operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
-        Assert.Equal(2, operators.Count());
-        Assert.Equal(ArithmeticOperators.Plus, operators[0].arithmeticOperator);
-        Assert.Equal(2, operators[0].position);
+        Assert.Equal(4, operators.Count());
+        Assert.Equal(ArithmeticOperators.UnaryMinus, operators[0].arithmeticOperator);
+        Assert.Equal(6, operators[0].position);
         Assert.Equal(ArithmeticOperators.Multiply, operators[1].arithmeticOperator);
-        Assert.Equal(7, operators[1].position);
+        Assert.Equal(4, operators[1].position);
+        Assert.Equal(ArithmeticOperators.Plus, operators[2].arithmeticOperator);
+        Assert.Equal(1, operators[2].position);
+        Assert.Equal(ArithmeticOperators.Minus, operators[3].arithmeticOperator);
+        Assert.Equal(9, operators[3].position);
 
+
+
+
+        
 
 
     }

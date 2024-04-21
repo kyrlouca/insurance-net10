@@ -31,7 +31,7 @@ public static class OperatorManager
 
     public static List<OperatorManager.OperatorRecord> PlaceOperatorsInOrderedList(string contentFormulaWithSymbols)
     {
-        //we place first the  mulitpy, then the plus,minus, then the unary
+        //we place first the unary, mulitpy, then the plus,minus
         //then you should use the last operator to split the expression
         //7 - 4*3 + 5 => *,-,+  and 7 - 4*3 (+) 5  
         //7 - 4*3=> *,- => 7 (-) 4*3 
