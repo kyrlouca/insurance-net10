@@ -274,7 +274,7 @@ public partial class GeneralEvaluator
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus         
         //var regStartingFunction = RgxAggregateStartingFunction();
-        var regSingleFunction = RgxSingleFunction();
+        var rgxToFindSingleFunction = RgxSingleFunction();
 
         generalExpression = generalExpression.Trim();
         generalExpression = FormulaCharacters.RemoveWeirdFormulaCharacters(generalExpression);
@@ -305,7 +305,7 @@ public partial class GeneralEvaluator
         }
 
         //*** A single function imin(imax(3,X01),X02
-        var matchSingleFunction = regSingleFunction.Match(generalExpression);
+        var matchSingleFunction = rgxToFindSingleFunction.Match(generalExpression);
         if (matchSingleFunction.Success)
         {
             var res = EvaluateFunction(generalExpression, terms, "");
@@ -356,14 +356,15 @@ public partial class GeneralEvaluator
 
             if (resM.arithmeticOperator != ArithmeticOperators.UnaryMinus)
             {
-                var matchLeftFunction = regSingleFunction.Match(resM.left);
+                //unary minus can only have  right expression 
+                var matchLeftFunction = rgxToFindSingleFunction.Match(resM.left);
                 leftRes = matchLeftFunction.Success
                 ? EvaluateFunction(resM.left, terms, "")
                 : EvaluateArithmeticExpressionRecursively(resM.left, terms, "");
             }
             
 
-            var matchRightFunction = regSingleFunction.Match(resM.right);
+            var matchRightFunction = rgxToFindSingleFunction.Match(resM.right);
             rightRes = matchRightFunction.Success
                 ? EvaluateFunction(resM.right, terms, "")
                 : EvaluateArithmeticExpressionRecursively(resM.right, terms, "");
@@ -709,10 +710,10 @@ public partial class GeneralEvaluator
             return replacedString;
         });
 
-        ////
-        //var operatorOld = selectOperatorToProcess(contentFormulaWithSymbols);
-        var arOperator = selectOperatorToProcessNew(contentFormulaWithSymbols);
-        var opNewStr = arOperator?.op.ToString() ?? "";
+        
+        var operators= OperatorManager.OperatorsInOrderedList(contentFormulaWithSymbols); ;
+        
+        var arOperator = operators.LastOrDefault();        
         var xLeft = "";
         var xRight = "";
         if (arOperator is not null)

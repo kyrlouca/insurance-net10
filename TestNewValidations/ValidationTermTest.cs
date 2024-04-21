@@ -409,14 +409,14 @@ public class ValidationTermTest
     {                
 
         var formula = "";
-        var operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
+        var operators = OperatorManager.OperatorsInOrderedList(formula);
         Assert.Equal(0, operators.Count());
 
         
 
 
         formula = "3-2+4x";
-        operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
+        operators = OperatorManager.OperatorsInOrderedList(formula);
         Assert.Equal(2, operators.Count());
         Assert.Equal(ArithmeticOperators.Minus, operators[0].arithmeticOperator);
         Assert.Equal(1, operators[0].position);
@@ -425,7 +425,7 @@ public class ValidationTermTest
 
 
         formula = "3 * -4x";
-        operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
+        operators = OperatorManager.OperatorsInOrderedList(formula);
         Assert.Equal(2, operators.Count());
         Assert.Equal(ArithmeticOperators.UnaryMinus, operators[0].arithmeticOperator);
         Assert.Equal(4, operators[0].position);
@@ -435,7 +435,7 @@ public class ValidationTermTest
 
 
         formula = "2+3 * -4 - 6";
-        operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
+        operators = OperatorManager.OperatorsInOrderedList(formula);
         Assert.Equal(4, operators.Count());
         Assert.Equal(ArithmeticOperators.UnaryMinus, operators[0].arithmeticOperator);
         Assert.Equal(6, operators[0].position);

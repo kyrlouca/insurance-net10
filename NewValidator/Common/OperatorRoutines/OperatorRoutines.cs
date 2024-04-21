@@ -29,7 +29,7 @@ public static class OperatorManager
 
 
 
-    public static List<OperatorManager.OperatorRecord> PlaceOperatorsInOrderedList(string contentFormulaWithSymbols)
+    public static List<OperatorManager.OperatorRecord> OperatorsInOrderedList(string contentFormulaWithSymbols)
     {
         //we place first the unary, mulitpy, then the plus,minus
         //then you should use the last operator to split the expression
