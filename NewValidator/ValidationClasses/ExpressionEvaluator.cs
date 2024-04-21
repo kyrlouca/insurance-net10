@@ -710,7 +710,8 @@ public partial class GeneralEvaluator
         });
 
         ////
-        var arOperator = FindOperator(contentFormulaWithSymbols);
+        //var operatorOld = selectOperatorToProcess(contentFormulaWithSymbols);
+        var arOperator = selectOperatorToProcessNew(contentFormulaWithSymbols);
         var opNewStr = arOperator?.op.ToString() ?? "";
         var xLeft = "";
         var xRight = "";
@@ -765,14 +766,14 @@ public partial class GeneralEvaluator
 
 
 
-        static OperatorManager.OperatorRecord FindOperator(string contentFormulaWithSymbols)
+        static OperatorManager.OperatorRecord selectOperatorToProcessOld(string contentFormulaWithSymbols)
         {
             char[] minusPlusOps = { '+', '-' };
             char[] multiplyOps = { '*' };
             char[] allOps = minusPlusOps.Concat(multiplyOps).ToArray();
 
-            var opPlusOrMinus = OperatorManager.FindOperators(contentFormulaWithSymbols, allOps, minusPlusOps);
-            var opMulti = OperatorManager.FindOperators(contentFormulaWithSymbols, allOps, multiplyOps);
+            var opPlusOrMinus = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, minusPlusOps);
+            var opMulti = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, multiplyOps);
 
             var ordered = new List<OperatorManager.OperatorRecord>()
                     .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator != ArithmeticOperators.UnaryMinus))
@@ -784,6 +785,29 @@ public partial class GeneralEvaluator
             return opNew;
         }
     }
+
+
+    static OperatorManager.OperatorRecord selectOperatorToProcessNew(string contentFormulaWithSymbols)
+    {
+        char[] minusPlusOps = { '+', '-' };
+        char[] multiplyOps = { '*' };
+        char[] allOps = minusPlusOps.Concat(multiplyOps).ToArray();
+
+
+        var opMulti = OperatorManager.PlaceOperatorsInList (contentFormulaWithSymbols, allOps, multiplyOps);
+        var opPlusOrMinus = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, minusPlusOps);        
+
+        var concatAndOrdered = new List<OperatorManager.OperatorRecord>()
+                .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator != ArithmeticOperators.UnaryMinus))
+                .Concat(opMulti)
+                .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator == ArithmeticOperators.UnaryMinus))
+                .ToList();
+        var opNew = concatAndOrdered.LastOrDefault();
+        return opNew;
+    }
+
+
+
 
 
 

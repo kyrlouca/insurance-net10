@@ -11,7 +11,7 @@ public static class OperatorManager
 {
 
     public record OperatorRecord(char op, ArithmeticOperators arithmeticOperator, int position);
-    public static List<OperatorRecord> FindOperators(string text, char[] allOperators, char[] operatorsToCheck)
+    public static List<OperatorRecord> PlaceOperatorsInList(string text, char[] allOperators, char[] operatorsToCheck)
     {
         //remember: find first the + and -, then *, and the unary -
         List<OperatorRecord> opList = text
@@ -26,6 +26,34 @@ public static class OperatorManager
        .ToList();
         return opList;
     }
+
+
+
+    public static List<OperatorManager.OperatorRecord> PlaceOperatorsInOrderedList(string contentFormulaWithSymbols)
+    {
+        //we place first the  mulitpy, then the plus,minus, then the unary
+        //then you should use the last operator to split the expression
+        //7 - 4*3 + 5 => *,-,+  and 7 - 4*3 (+) 5  
+        //7 - 4*3=> *,- => 7 (-) 4*3 
+        
+        char[] multiplyOps = { '*' };
+        char[] minusPlusOps = { '+', '-' };
+
+        char[] allOps = minusPlusOps.Concat(multiplyOps).ToArray();
+
+
+        
+        var opPlusOrMinus = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, minusPlusOps);
+        var opMulti = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, multiplyOps);
+
+        var concatAndOrdered = new List<OperatorManager.OperatorRecord>()
+                .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator != ArithmeticOperators.UnaryMinus))
+                .Concat(opMulti)
+                .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator == ArithmeticOperators.UnaryMinus))
+                .ToList();
+        return concatAndOrdered;
+    }
+
 
     public static bool IsOperatorUnary(string text, char[] allOperators, int index)
     {

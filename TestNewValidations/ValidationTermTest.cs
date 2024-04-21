@@ -347,27 +347,46 @@ public class ValidationTermTest
         char[] allOps = additionSymbols.Concat(multiplicationSymbols).ToArray();        
 
         var text = "";
-        var operators = OperatorManager.FindOperators(text, allOps, multiplicationSymbols);
+        var operators = OperatorManager.PlaceOperatorsInList(text, allOps, multiplicationSymbols);
         Assert.Equal(0, operators.Count());
 
         text = "+";
-        operators = OperatorManager.FindOperators(text, allOps, multiplicationSymbols);
+        operators = OperatorManager.PlaceOperatorsInList(text, allOps, multiplicationSymbols);
         Assert.Equal(0, operators.Count());
 
         text = "+";
-        operators = OperatorManager.FindOperators(text, allOps, additionSymbols);
+        operators = OperatorManager.PlaceOperatorsInList(text, allOps, additionSymbols);
         Assert.Equal(1, operators.Count());
         Assert.Equal(0, operators[0].position);
 
         text = "-1";
-        operators = OperatorManager.FindOperators(text, allOps, additionSymbols);
+        operators = OperatorManager.PlaceOperatorsInList(text, allOps, additionSymbols);
         Assert.Equal(1, operators.Count());
         Assert.Equal(ArithmeticOperators.UnaryMinus, operators[0].arithmeticOperator);
         Assert.Equal(0, operators[0].position);
 
 
+        text = "3 -2 + 4x";
+        operators = OperatorManager.PlaceOperatorsInList(text, allOps, additionSymbols);
+        Assert.Equal(2, operators.Count());
+        Assert.Equal(ArithmeticOperators.Minus, operators[0].arithmeticOperator);
+        Assert.Equal(2, operators[0].position);
+        Assert.Equal(ArithmeticOperators.Plus, operators[1].arithmeticOperator);
+        Assert.Equal(5, operators[1].position);
+
+        text = "4 - 3 + 2 * 3x";
+        operators = OperatorManager.PlaceOperatorsInList(text, allOps, multiplicationSymbols);
+        operators = OperatorManager.PlaceOperatorsInList(text, allOps, additionSymbols);
+        Assert.Equal(2, operators.Count());
+        Assert.Equal(ArithmeticOperators.Minus, operators[0].arithmeticOperator);
+        Assert.Equal(2, operators[0].position);
+        Assert.Equal(ArithmeticOperators.Plus, operators[1].arithmeticOperator);
+        Assert.Equal(5, operators[1].position);
+
+
+
         text = "3 * -2+4x";
-        operators = OperatorManager.FindOperators(text, allOps, additionSymbols);
+        operators = OperatorManager.PlaceOperatorsInList(text, allOps, additionSymbols);
         Assert.Equal(2, operators.Count());
         Assert.Equal(ArithmeticOperators.UnaryMinus, operators[0].arithmeticOperator);
         Assert.Equal(4, operators[0].position);
@@ -375,7 +394,7 @@ public class ValidationTermTest
         Assert.Equal(6, operators[1].position);
 
         text = "3 * -2+4x";
-        operators = OperatorManager.FindOperators(text, allOps, multiplicationSymbols);
+        operators = OperatorManager.PlaceOperatorsInList(text, allOps, multiplicationSymbols);
         Assert.Equal(1, operators.Count());
         Assert.Equal(ArithmeticOperators.Multiply, operators[0].arithmeticOperator);
         Assert.Equal(2, operators[0].position);
@@ -385,5 +404,45 @@ public class ValidationTermTest
 
     }
 
+    [Fact]
+    public void TestPlaceOperatorsInOrderedList()
+    {                
+
+        var formula = "";
+        var operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
+        Assert.Equal(0, operators.Count());
+
+        
+
+        formula = "3 -2 + 4x";
+        operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
+        Assert.Equal(2, operators.Count());
+        Assert.Equal(ArithmeticOperators.Minus, operators[0].arithmeticOperator);
+        Assert.Equal(2, operators[0].position);
+        Assert.Equal(ArithmeticOperators.Plus, operators[1].arithmeticOperator);
+        Assert.Equal(5, operators[1].position);
+
+
+
+        formula = "3 + 4x * 1";
+        operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
+        Assert.Equal(2, operators.Count());
+        Assert.Equal(ArithmeticOperators.Plus, operators[0].arithmeticOperator);
+        Assert.Equal(2, operators[0].position);
+        Assert.Equal(ArithmeticOperators.Multiply, operators[1].arithmeticOperator);
+        Assert.Equal(7, operators[1].position);
+
+
+        formula = "3+4*-2";
+        operators = OperatorManager.PlaceOperatorsInOrderedList(formula);
+        Assert.Equal(2, operators.Count());
+        Assert.Equal(ArithmeticOperators.Plus, operators[0].arithmeticOperator);
+        Assert.Equal(2, operators[0].position);
+        Assert.Equal(ArithmeticOperators.Multiply, operators[1].arithmeticOperator);
+        Assert.Equal(7, operators[1].position);
+
+
+
+    }
 
 }
