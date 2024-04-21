@@ -46,10 +46,11 @@ public static class OperatorManager
         var opPlusOrMinus = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, minusPlusOps);
         var opMulti = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, multiplyOps);
 
+        //order: unaray, *, +-
         var concatAndOrdered = new List<OperatorManager.OperatorRecord>()
-                .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator != ArithmeticOperators.UnaryMinus))
-                .Concat(opMulti)
                 .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator == ArithmeticOperators.UnaryMinus))
+                .Concat(opMulti)
+                .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator != ArithmeticOperators.UnaryMinus))
                 .ToList();
         return concatAndOrdered;
     }
