@@ -100,7 +100,7 @@ public class DocumentValidator : IDocumentValidator
         var exempted = new[] {   0 };
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
         //validationRules = validationRules.Where(vr => !vr.Rule.Contains("exp(")).ToList();
-        //validationRules = validationRules.Where(vr => vr.ValidationID == 3272).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 2151).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");

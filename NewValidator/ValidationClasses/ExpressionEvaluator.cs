@@ -501,7 +501,7 @@ public partial class GeneralEvaluator
                 var resMin = new OptionialObject(false, convertedTerms.Min(item => item.Value));
                 return resMin;
             case FunctionAggregateTypes.iMax:
-                var resMax = new OptionialObject(false, convertedTerms.Min(item => item.Value));
+                var resMax = new OptionialObject(false, convertedTerms.Max(item => item.Value));
                 return resMax;
             case FunctionAggregateTypes.Exp:
                 try
