@@ -368,7 +368,14 @@ public class ExcelBookMerger : IExcelBookMerger
                 }
 
                 var sheetLastRow = srcWorksheet.Rows.Last().LastRow;
-                var sheetLastCol = srcWorksheet.Columns.Last().LastColumn;
+               var sheetLastColOld = srcWorksheet.Columns.Last().LastColumn;
+                
+                var dataRangeName = $"{srcWorksheet.Name.Trim()}_data";
+                var dataRangeNameObject = srcWorksheet.Workbook!.Names[dataRangeName];                
+                var dataRange = dataRangeNameObject.RefersToRange;
+                var sheetLastCol = dataRange.LastColumn;
+
+                
 
                 var copyRange = srcWorksheet.Range[1, 1, sheetLastRow, sheetLastCol];
                 var dCol = OffesetHORIZONTAL + sheetLastCol + 1;

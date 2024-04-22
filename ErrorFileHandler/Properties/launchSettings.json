@@ -2,7 +2,7 @@
   "profiles": {
     "ErrorFileHandler": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=76\r\nfile-name-error=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280Annual\\ALTIUS Annual 2023-Error2.xlsx\"\r\nfile-name-warning=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280Annual\\ALTIUS Annual 2023-117Waring2.xlsx\"\r\n",
+      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=76\r\nfile-name-error=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280Annual\\ALTIUS Annual 2023-Error3.xlsx\"\r\nfile-name-warning=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280Annual\\ALTIUS Annual 2023-117Waring3.xlsx\"\r\n",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }
