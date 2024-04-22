@@ -188,16 +188,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 .Select(xbrlCode => _SqlFunctions.SelectMMember(xbrlCode))
                 .Select(x => x?.MemberLabel ?? "")
                 .ToList();
-
-
             
-
 
             for (var i = 0; i < CurrencyOrCountryLabels.Count; i++)
             {
                 var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column + 1 + i];
                 colLabel.Text = CurrencyOrCountryLabels[i];
-                colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                colLabel.CellStyle = _pensionStyles.TopLabelsStyle;
                 colLabel.ColumnWidth = 30;
             }
         };

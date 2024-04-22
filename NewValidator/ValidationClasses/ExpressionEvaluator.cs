@@ -239,13 +239,13 @@ public partial class GeneralEvaluator
 
             if (resLeftDbl.Value is double || resRightDbl.Value is double)
             {
-                var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value??0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
+                var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
             }
 
             if (resLeftDbl.Value is string || resRightDbl.Value is string)
             {
-                var resString = resLeftDbl.Value == resRightDbl.Value;                
+                var resString = resLeftDbl.Value == resRightDbl.Value;
                 return resString ? KleeneValue.True : KleeneValue.False;
             }
 
@@ -289,11 +289,12 @@ public partial class GeneralEvaluator
         }
 
         //*** just a number
-        if (double.TryParse(generalExpression, out double dValue))
+        var numberResult = ConvertToNumberUsingUSCulture(generalExpression);
+        if (!numberResult.IsNull)
         {
-            // The string represents a valid double
-            return new OptionialObject(false,  dValue);
+            return numberResult;
         }
+        
 
         //*** Just a Term X01 (could be double,date, string, or null. Dates are converted to double)
         var rgxTerm = new Regex(@"^X\d{2}$");
@@ -350,7 +351,7 @@ public partial class GeneralEvaluator
         //*** Multiply , add, subtract
         if (resM.arithmeticOperator != ArithmeticOperators.None)
         {
-            
+
             var leftRes = new OptionialObject(true, 0.0);
             var rightRes = new OptionialObject(true, 0.0);
 
@@ -362,26 +363,45 @@ public partial class GeneralEvaluator
                 ? EvaluateFunction(resM.left, terms, "")
                 : EvaluateArithmeticExpressionRecursively(resM.left, terms, "");
             }
-            
+
 
             var matchRightFunction = rgxToFindSingleFunction.Match(resM.right);
             rightRes = matchRightFunction.Success
                 ? EvaluateFunction(resM.right, terms, "")
                 : EvaluateArithmeticExpressionRecursively(resM.right, terms, "");
-            
-            switch (resM.arithmeticOperator)
+
+            var theResult = resM.arithmeticOperator switch
             {
-                case ArithmeticOperators.Multiply: return new OptionialObject(false, ((double)(leftRes?.Value ?? 0.0)) * ((double)(rightRes?.Value ?? 0.0)));
-                case ArithmeticOperators.Plus: return new OptionialObject(false, (double)(leftRes?.Value??0.0) + (double)(rightRes?.Value??0.0));
-                case ArithmeticOperators.Minus: return new OptionialObject(false, (double)(leftRes?.Value ?? 0.0) - (double)(rightRes?.Value ?? 0.0));
-                case ArithmeticOperators.UnaryMinus: return new OptionialObject(false, -(double)(rightRes?.Value ?? 0.0) );
-                default: return new OptionialObject(true, 0.0);
-            }
+                ArithmeticOperators.Multiply => new OptionialObject(false, ((double)(leftRes?.Value ?? 0.0)) * ((double)(rightRes?.Value ?? 0.0))),
+                ArithmeticOperators.Plus => new OptionialObject(false, (double)(leftRes?.Value ?? 0.0) + (double)(rightRes?.Value ?? 0.0)),
+                ArithmeticOperators.Minus => new OptionialObject(false, (double)(leftRes?.Value ?? 0.0) - (double)(rightRes?.Value ?? 0.0)),
+                ArithmeticOperators.UnaryMinus => new OptionialObject(false, -(double)(rightRes?.Value ?? 0.0)),
+                _ => new OptionialObject(true, 0.0)
+            };
+
+            return theResult;
         }
 
         //*** Should not reach up to here
         throw new Exception($"Expression:{generalExpression}. Can not decifer Arithmetic Expression");
         //return new DoubleObject(true, 0);              
+    }
+
+    static OptionialObject ConvertToNumberUsingUSCulture(string stringNumber)
+    {
+        // Specify US culture
+        CultureInfo usCulture = CultureInfo.CreateSpecificCulture("en-US");
+        var res = 0.0;
+        try
+        {
+            res = Convert.ToDouble(stringNumber,usCulture);            
+            return new OptionialObject(false, res);
+        }
+        catch
+        {
+            return new OptionialObject(true, 0);
+        }
+        
     }
 
 
@@ -476,17 +496,17 @@ public partial class GeneralEvaluator
         var convertedTerms = terms.Select(tr => tr.IsNull ? tr with { IsNull = false, Value = 0.0 } : tr);
         switch (functionType)
         {
-            
-            case FunctionAggregateTypes.iMin:                               
-                var resMin= new OptionialObject(false, convertedTerms.Min(item => item.Value));                
+
+            case FunctionAggregateTypes.iMin:
+                var resMin = new OptionialObject(false, convertedTerms.Min(item => item.Value));
                 return resMin;
             case FunctionAggregateTypes.iMax:
-                var resMax = new OptionialObject(false, convertedTerms.Min(item => item.Value));                                
+                var resMax = new OptionialObject(false, convertedTerms.Min(item => item.Value));
                 return resMax;
-            case FunctionAggregateTypes.Exp:                
+            case FunctionAggregateTypes.Exp:
                 try
                 {
-                    double value = Convert.ToDouble(convertedTerms?.FirstOrDefault()?.Value  ?? 0.0);
+                    double value = Convert.ToDouble(convertedTerms?.FirstOrDefault()?.Value ?? 0.0);
                     return new OptionialObject(false, Math.Exp(value));
                 }
                 catch
@@ -499,7 +519,7 @@ public partial class GeneralEvaluator
 
                 double absValue = Math.Abs(Convert.ToDouble(convertedTerms?.FirstOrDefault()?.Value ?? 0.0));
                 return new OptionialObject(false, absValue);
-                
+
             default: return new OptionialObject(true, 0.0);
 
 
@@ -710,10 +730,10 @@ public partial class GeneralEvaluator
             return replacedString;
         });
 
-        
-        var operators= OperatorManager.OperatorsInOrderedList(contentFormulaWithSymbols); ;
-        
-        var arOperator = operators.LastOrDefault();        
+
+        var operators = OperatorManager.OperatorsInOrderedList(contentFormulaWithSymbols); ;
+
+        var arOperator = operators.LastOrDefault();
         var xLeft = "";
         var xRight = "";
         if (arOperator is not null)
@@ -728,7 +748,7 @@ public partial class GeneralEvaluator
         }
 
 
-        
+
         static string RestoreLeftSideNew(List<(string, string Value)> nestedFunctions, string contentFormulaWithSymbols, int position)
         {
 
@@ -795,8 +815,8 @@ public partial class GeneralEvaluator
         char[] allOps = minusPlusOps.Concat(multiplyOps).ToArray();
 
 
-        var opMulti = OperatorManager.PlaceOperatorsInList (contentFormulaWithSymbols, allOps, multiplyOps);
-        var opPlusOrMinus = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, minusPlusOps);        
+        var opMulti = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, multiplyOps);
+        var opPlusOrMinus = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, minusPlusOps);
 
         var concatAndOrdered = new List<OperatorManager.OperatorRecord>()
                 .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator != ArithmeticOperators.UnaryMinus))
