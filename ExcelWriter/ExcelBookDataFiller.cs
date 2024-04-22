@@ -95,7 +95,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-       //var debugOpenTableCode = "xxS.31.01.01.01";
+        //var debugOpenTableCode = "xxS.31.01.01.01";
         var debugOpenTableCode = "";
         dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
              ? dbOpenSheets
@@ -138,7 +138,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
         //for multi facts, we need to create additional columns and write the currency/country above the column
 
-        var dataName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
+        var dataName = Workbook!.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
 
         var wholeRangeName = Workbook.Names[$"{dbSheet.SheetTabName.Trim()}_whole"];
@@ -173,11 +173,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 _ => ""
             };
 
-            currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)  
-                .OrderBy(x=>x)
+            currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)
+                .OrderBy(x => x)
                 .ToList();
 
-            if (1==1)
+            if (1 == 1)
             {
 
             }
@@ -188,7 +188,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 .Select(xbrlCode => _SqlFunctions.SelectMMember(xbrlCode))
                 .Select(x => x?.MemberLabel ?? "")
                 .ToList();
-            
+
 
             for (var i = 0; i < CurrencyOrCountryLabels.Count; i++)
             {
@@ -241,7 +241,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var lastTopEmptyRow = FindTopLastEmptyRow(wholeRange, dataRange);
         if (lastTopEmptyRow > 0)
         {
-            var topClearRange = wholeRange[1, 1, lastTopEmptyRow, dataRange.LastColumn+4];
+            var topClearRange = wholeRange[1, 1, lastTopEmptyRow, dataRange.LastColumn + 4];
             if (topClearRange is not null)
             {
                 topClearRange.Clear(ExcelClearOptions.ClearAll);
@@ -266,12 +266,26 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //format the top row title
-        var titles = FindTopLabelsRange(wholeRange, dataRange,false);
+        var titles = FindTopLabelsRange(wholeRange, dataRange, false);
         if (titles is not null)
         {
             titles.CellStyle.Font.Size = 12;
             titles.CellStyle.WrapText = true;
         }
+
+
+        //expand the Data range
+        if (currencyCount > 1)
+        {
+            var expandedDataRows = dataRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn + currencyCount -1];
+            var dataRangeName = dataName.Name;
+            Workbook.Names.Remove(dataRangeName);
+            var dataNamedObjectE = Workbook.Names.Add(dataRangeName);
+            dataNamedObjectE.RefersToRange = expandedDataRows;
+            dataRange = dataNamedObjectE.RefersToRange;
+
+
+        };
 
 
         //data Range.                       
@@ -398,7 +412,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //************ set the zets        
-        var zetLines=FillZetValuesAtTheTop(dbSheet, wholeRange);
+        var zetLines = FillZetValuesAtTheTop(dbSheet, wholeRange);
 
 
         // Table Code
@@ -413,7 +427,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         tblLabel.CellStyle = _pensionStyles.HeaderStyle;
 
         //style titles above datarange
-        var titles = FindTopLabelsRange(wholeRange, dataRange,true);
+        var titles = FindTopLabelsRange(wholeRange, dataRange, true);
         if (titles is not null)
         {
             titles.CellStyle = _pensionStyles.TopLabelsStyle;
@@ -543,7 +557,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         return 0;
     }
 
-    private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange,bool isOpenTable )
+    private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange, bool isOpenTable)
     {
 
         //find the range for the labels starting from the data until you find an empty line
@@ -735,7 +749,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
     public List<string> SpecialOrderBy(List<string> list, string firstElement)
     {
-        var newList=list.Select(item=>item).ToList();
+        var newList = list.Select(item => item).ToList();
 
         var index = newList.FindIndex(item => item.Contains(firstElement));
         if (index != -1)
