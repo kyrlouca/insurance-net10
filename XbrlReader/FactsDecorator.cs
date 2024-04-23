@@ -97,15 +97,15 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => filings.Contains(table.XbrlFilingIndicatorCode)).ToList();
         }
 
-
+        
         if (_testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
         }
-        if (1 == 1)
+        if (1 == 2)
         {
-            //var tlist = new[] { 107, 432 };
-            //ModuleTables = ModuleTables.Where(mt => tlist.Contains(mt.TableID)).ToList();
+            var tlist = new[] { 175 };
+            ModuleTables = ModuleTables.Where(mt => tlist.Contains(mt.TableID)).ToList();
         }
 
 
@@ -213,7 +213,7 @@ public partial class FactsDecorator : IFactsDecorator
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var sqlFacts = @"update TemplateSheetFact set TemplateSheetId=null where InstanceId =@_documentId and TemplateSheetId is not null";
+        var sqlFacts = @"update TemplateSheetFact set TemplateSheetId=null,cellId=0 where InstanceId =@_documentId and TemplateSheetId is not null";
         var sqlSheets = @"delete  from TemplateSheetInstance where InstanceId = @_documentId";
         var sqlKeyFacts = @"delete from TemplateSheetFact  where InstanceId =@_documentId and (fieldOrigin='K' OR fieldOrigin='D') ";
 
@@ -417,14 +417,16 @@ public partial class FactsDecorator : IFactsDecorator
             //Some facts may be associated with two cells. In this case, create a new fact
             //*******************************************************
             var cellFacts = SelectFactsForCellUsingDims(cellSignature);
+            cellFacts = cellFacts.Where(cf => cf.FieldOrigin is null).ToList();
 
             //Console.WriteLine($"Updating facts with zet values and tableId for table: {table.TableID} {tableCell.BusinessCode}   ");
             foreach (var cellFact in cellFacts)
             {
 
-                if (cellFact.TemplateSheetId > 0)
+                if (cellFact.CellID > 0)
                 {
                     Console.Write("&");
+                    //Maybe I neeed to change the row and col of the fact here based on the cellSignature
                     cellFact!.FieldOrigin = "D";
                     var newFactId = _SqlFunctions.CreateTemplateSheetFact(cellFact, true);//loose fact without TemplateSheetId                               
                     cellFact.FactId = newFactId;
@@ -445,12 +447,9 @@ public partial class FactsDecorator : IFactsDecorator
                 cellFact.CellID = tableCell.CellID;
                 var xx = UpdateCellFact(cellFact);
                 count++;
-            }
 
-            if (cellFacts.Any())
-            {
-                Console.Write("#");
             }
+            Console.Write("#");
             //tableFacts.AddRange(cellFacts);
         }
         return count;
