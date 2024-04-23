@@ -400,7 +400,7 @@ public partial class FactsDecorator : IFactsDecorator
         tableCells = tableCells.Where(cell => !string.IsNullOrEmpty(cell.DatapointSignature)).ToList();
         foreach (var tableCell in tableCells)
         {
-            var cellSignature = tableCell.DatapointSignature;
+             var cellSignature = tableCell.DatapointSignature;
 
             var cellRowCol = DimUtils.ParseCellRowCol(tableCell.BusinessCode);
             if (!cellRowCol.IsValid)
