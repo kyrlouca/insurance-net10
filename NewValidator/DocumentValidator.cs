@@ -99,8 +99,8 @@ public class DocumentValidator : IDocumentValidator
         //************************************************************* Exempt
         var exempted = new[] {   0 };
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
-        //validationRules = validationRules.Where(vr => !vr.Rule.Contains("exp(")).ToList();
-        //validationRules = validationRules.Where(vr => vr.ValidationID == 3462).ToList();
+
+        //validationRules = validationRules.Where(vr => vr.ValidationID == 4710).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -165,11 +165,13 @@ public class DocumentValidator : IDocumentValidator
 
                         ruleClosed.ZetValue = sheet.ZDimVal;
                         ruleClosed = FillRuleStructureWithFactValues(ruleClosed);
+                        var objs = ruleClosed.IfComponent.ObjectTerms.Select(ot => ot.Value.Obj).ToList();
                         var sumTerm = ruleClosed.IfComponent.RuleTerms.Where(rt => rt.IsSequence).FirstOrDefault();
+
                         if (sumTerm != null)
                         {
-                            var (count, sum) = CalculateSumOfClosedTable(sumTerm,sheet.ZDimVal);
-                            ReplaceObjTerm(ruleClosed.IfComponent.ObjectTerms, sumTerm.Letter, -999, sum, count);
+                            var (count, sum,sumDecimals) = CalculateSumOfClosedTable(sumTerm,sheet.ZDimVal);
+                            ReplaceObjTerm(ruleClosed.IfComponent.ObjectTerms, sumTerm.Letter, sumDecimals, sum, count);
                         }
 
                         var isValidClosedRule = GeneralEvaluator.ValidateRule(ruleClosed);
@@ -508,13 +510,14 @@ public class DocumentValidator : IDocumentValidator
         return res;
     }
 
-    private (int count, double sum) CalculateSumOfClosedTable(RuleTerm280 ruleTermRec,string zetValue)
+    private (int count, double sum,int decimals) CalculateSumOfClosedTable(RuleTerm280 ruleTermRec,string zetValue)
     {
         //isum({t: S.23.01.02.01, r: R0300; R0310; R0320; R0330; R0340; R0350; R0360; R0370, z: Z0001, dv: emptySequence(), seq: True,.. )
         //scope({t: S.23.01.02.01, c:C0010;C0040, f: solvency, fv: solvency2})
         var (sumScopeType, rowCols) = ParseRuleTerms(ruleTermRec);
         var sum = 0.0;
         var count = 0;
+        var decimals = 0;
         foreach (var rowCol in rowCols)
         {
             var row = sumScopeType == ScopeType.Rows ? rowCol : ruleTermRec.R;
@@ -523,8 +526,10 @@ public class DocumentValidator : IDocumentValidator
             var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTermRec.T, zet, row, col);
             sum += fact?.NumericValue ?? 0;
             count += fact is not null ? 1 : 0;
+            decimals= Math.Abs(fact?.Decimals??0)> Math.Abs(decimals)? fact?.Decimals??0 : decimals;
+
         }
-        return (count, sum);
+        return (count, sum,decimals);
 
         (ScopeType scopeType, List<string> rowCol) ParseRuleTerms(RuleTerm280 ruleTerm)
         {

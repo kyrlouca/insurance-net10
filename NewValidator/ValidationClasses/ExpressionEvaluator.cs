@@ -226,8 +226,12 @@ public partial class GeneralEvaluator
             }
 
 
-            var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Decimals ?? 0 : 0;
-            var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Decimals ?? 0 : 0;
+            var sumTerm = terms.FirstOrDefault(tm => tm.Value.sumValue > 0);
+            var sumTermDecimals = sumTerm.Value is null ? 0 : sumTerm.Value.Decimals;
+            
+            var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Decimals ?? 0 : sumTermDecimals;
+            var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Decimals ?? 0 : sumTermDecimals;
+            
 
             var resLeftDbl = EvaluateArithmeticExpressionRecursively(left, terms, "");
             var resRightDbl = EvaluateArithmeticExpressionRecursively(right, terms, "");
