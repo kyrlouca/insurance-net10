@@ -294,7 +294,7 @@ public partial class GeneralEvaluator
         {
             return numberResult;
         }
-        
+
 
         //*** Just a Term X01 (could be double,date, string, or null. Dates are converted to double)
         var rgxTerm = new Regex(@"^X\d{2}$");
@@ -394,14 +394,14 @@ public partial class GeneralEvaluator
         var res = 0.0;
         try
         {
-            res = Convert.ToDouble(stringNumber,usCulture);            
+            res = Convert.ToDouble(stringNumber, usCulture);
             return new OptionialObject(false, res);
         }
         catch
         {
             return new OptionialObject(true, 0);
         }
-        
+
     }
 
 
@@ -435,7 +435,8 @@ public partial class GeneralEvaluator
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
 
-        if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.Count)
+        //if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.Count)
+        if (functionType == FunctionAggregateTypes.Count)
         {
             var fterms = terms.Where(trm => functionText.Contains(trm.Key)).ToDictionary(tm => tm.Key, tm => tm.Value);
             //todo sum
@@ -473,6 +474,9 @@ public partial class GeneralEvaluator
 
             case FunctionAggregateTypes.iSum:
                 //there is only ONE terms inside a isum/count so no worries
+
+
+
                 var sumTerm = terms.FirstOrDefault();
                 var resSum = sumTerm.Key is null
                     ? new OptionialObject(true, 0)
@@ -496,7 +500,11 @@ public partial class GeneralEvaluator
         var convertedTerms = terms.Select(tr => tr.IsNull ? tr with { IsNull = false, Value = 0.0 } : tr);
         switch (functionType)
         {
-
+            case FunctionAggregateTypes.iSum:
+                var sum = terms
+                    .Where(term => !term.IsNull)
+                    .Aggregate(0.0, (sm, val) => sm + (double)(val?.Value??0));
+                return new OptionialObject(false, sum);                
             case FunctionAggregateTypes.iMin:
                 var resMin = new OptionialObject(false, convertedTerms.Min(item => item.Value));
                 return resMin;

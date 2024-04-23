@@ -105,8 +105,28 @@ public class SqlFunctions : ISqlFunctions
         var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
     }
 
+
+
+    public TemplateSheetInstance? SelectTemplateSheetByZetValue(int documentId, string tableCode, string ZDimVal)
+    {
+        //*** do NOT use this . the sheetCodeZet is the same with ZdimVal
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSheets = @"
+            SELECT 
+              sheet.*
+            FROM TemplateSheetInstance sheet    
+            WHERE 
+                sheet.InstanceId = @documentId        
+                and sheet.TableCode = @tableCode        
+                and ZDimVal = @ZDimVal
+             ";
+        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode, ZDimVal });
+        return sheet;
+    }
+
     public TemplateSheetInstance? SelectTemplateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet)
     {
+        //*** do NOT use this . the sheetCodeZet is the same with ZdimVal
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"
             SELECT 

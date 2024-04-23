@@ -15,6 +15,7 @@ public interface ISqlFunctions
     public IEnumerable<DocInstance> SelectDocInstances(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
     public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
     //**********sheets
+    public TemplateSheetInstance? SelectTemplateSheetByZetValue(int documentId, string tableCode, string ZDimVal);
     public TemplateSheetInstance? SelectTemplateSheetBySheetCodeZet(int documentId,string tableCode, string sheetCodeZet);
     public List<TemplateSheetInstance> SelectTemplateSheetByTableCodeAllZets(int documentId, string tableCode);
 

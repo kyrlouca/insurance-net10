@@ -100,7 +100,7 @@ public class DocumentValidator : IDocumentValidator
         var exempted = new[] {   0 };
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
         //validationRules = validationRules.Where(vr => !vr.Rule.Contains("exp(")).ToList();
-        validationRules = validationRules.Where(vr => vr.ValidationID == 2151).ToList();
+        //validationRules = validationRules.Where(vr => vr.ValidationID == 3462).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -144,10 +144,16 @@ public class DocumentValidator : IDocumentValidator
                 var hasAggregateFn = ruleForScope.IfComponent.RuleTerms.Any(rt => rt.IsSequence) || ruleForScope.ThenComponent.RuleTerms.Any(rt => rt.IsSequence);
                 if ((!hasAggregateFn || hasAggregateFn) && hasOnlyClosedTables)
                 {
-                    var mainTable = tablesInValidation.FirstOrDefault();
+                    var mainTable = tablesInValidation.FirstOrDefault(tbl => tbl.TableCode == ruleForScope.IfComponent.RuleTerms[0].T);                    
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
+                        //if any sheet with this zet is null do NOT check the rule
+                        var sheetsWithSameZet = tablesInValidation.DistinctBy(tbl=>tbl.TableID).Select(tbl=> _SqlFunctions.SelectTemplateSheetByZetValue(DocumentId, tbl.TableCode, sheet.ZDimVal));
+                        if(sheetsWithSameZet.Any(sh=>sh is null))
+                        {
+                            continue;
+                        }
                         var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                         if (scopeType != ScopeType.None)
                         {
@@ -193,9 +199,8 @@ public class DocumentValidator : IDocumentValidator
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
-                        var keySheet = _SqlFunctions.SelectTemplateSheetBySheetCodeZet(DocumentId, fklTableCode, sheet.ZDimVal);
+                        //var keySheetxx = _SqlFunctions.SelectTemplateSheetBySheetCodeZet(DocumentId, fklTableCode, sheet.ZDimVal);
                       
-
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
                         
                         var prevRowValid = true;
