@@ -25,7 +25,7 @@ public enum KleeneValue
     False,
     Unknown
 }
-public record OptionialObject(bool IsNull, object? Value);
+public record OptionalObject(bool IsNull, object? Value);
 public record BooleanObject(bool IsNull, bool Value);
 public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain, Exp, Abs };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
@@ -205,8 +205,7 @@ public partial class GeneralEvaluator
         //3. ****************************************arithmetic
         if (res.logicalOperator == LogicalOperators.None)
         {
-            var regSplit = new Regex(@"(.+?)\s*(!=|>=|>|<=|<|==|=)\s*(.+)");
-            var xxx = regSplit.Split(formula);
+            var regSplit = new Regex(@"(.+?)\s*(!=|>=|>|<=|<|==|=)\s*(.+)");            
             var matchSplit = regSplit.Match(formula);
             if (!matchSplit.Success)
             {
@@ -226,12 +225,14 @@ public partial class GeneralEvaluator
             }
 
 
-            var sumTerm = terms.FirstOrDefault(tm => tm.Value.sumValue > 0);
-            var sumTermDecimals = sumTerm.Value is null ? 0 : sumTerm.Value.Decimals;
-            
-            var leftDecimals = terms.ContainsKey(left) ? terms[left]?.Decimals ?? 0 : sumTermDecimals;
-            var rightDecimals = terms.ContainsKey(right) ? terms[right]?.Decimals ?? 0 : sumTermDecimals;
-            
+            //if the terms is coming from a sum then get the decimals from the terms NOT from the fact
+            var leftDecimals = terms.ContainsKey(left)
+                ? terms[left].Decimals
+                : terms.FirstOrDefault(tm => tm.Value.sumValue > 0).Value?.Decimals ?? 0;
+            var rightDecimals = terms.ContainsKey(right)
+                ? terms[right].Decimals
+                : terms.FirstOrDefault(tm => tm.Value.sumValue > 0).Value?.Decimals ??0;
+
 
             var resLeftDbl = EvaluateArithmeticExpressionRecursively(left, terms, "");
             var resRightDbl = EvaluateArithmeticExpressionRecursively(right, terms, "");
@@ -261,20 +262,20 @@ public partial class GeneralEvaluator
 
     }
 
-    private static OptionialObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms)
+    private static OptionalObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms)
     {
 
         var term = terms.FirstOrDefault(trm => trm.Key == letter).Value;
 
-        var resTerm = term is null ? new OptionialObject(true, null)
-            : term.Obj is null ? new OptionialObject(true, null)
-            : term.DataType == "D" ? new OptionialObject(false, ((DateTime)term.Obj).ToOADate())
-            : new OptionialObject(false, Convert.ToDouble(term.Obj));
+        var resTerm = term is null ? new OptionalObject(true, null)
+            : term.Obj is null ? new OptionalObject(true, null)
+            : term.DataType == "D" ? new OptionalObject(false, ((DateTime)term.Obj).ToOADate())
+            : new OptionalObject(false, Convert.ToDouble(term.Obj));
 
         return resTerm;
     }
 
-    public static OptionialObject EvaluateArithmeticExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms, string thisTerm)
+    public static OptionalObject EvaluateArithmeticExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms, string thisTerm)
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus         
         //var regStartingFunction = RgxAggregateStartingFunction();
@@ -325,7 +326,7 @@ public partial class GeneralEvaluator
 
             if (generalExpression is null)
             {
-                return new OptionialObject(true, null);
+                return new OptionalObject(true, null);
             }
 
             var rgxBrackets = new Regex(@"\[(.*)\]");
@@ -333,7 +334,7 @@ public partial class GeneralEvaluator
             if (matchBrackets.Success)
             {
                 var operandString = (string)matchBrackets.Value;
-                return new OptionialObject(false, operandString);
+                return new OptionalObject(false, operandString);
             }
 
             //date was converted to double when creating objecttERMS            
@@ -343,7 +344,7 @@ public partial class GeneralEvaluator
                 CultureInfo.CurrentCulture = usCulture;
 
                 var operand = Convert.ToDouble(generalExpression, usCulture);
-                return new OptionialObject(false, operand);
+                return new OptionalObject(false, operand);
             }
             catch
             {
@@ -356,8 +357,8 @@ public partial class GeneralEvaluator
         if (resM.arithmeticOperator != ArithmeticOperators.None)
         {
 
-            var leftRes = new OptionialObject(true, 0.0);
-            var rightRes = new OptionialObject(true, 0.0);
+            var leftRes = new OptionalObject(true, 0.0);
+            var rightRes = new OptionalObject(true, 0.0);
 
             if (resM.arithmeticOperator != ArithmeticOperators.UnaryMinus)
             {
@@ -376,11 +377,11 @@ public partial class GeneralEvaluator
 
             var theResult = resM.arithmeticOperator switch
             {
-                ArithmeticOperators.Multiply => new OptionialObject(false, ((double)(leftRes?.Value ?? 0.0)) * ((double)(rightRes?.Value ?? 0.0))),
-                ArithmeticOperators.Plus => new OptionialObject(false, (double)(leftRes?.Value ?? 0.0) + (double)(rightRes?.Value ?? 0.0)),
-                ArithmeticOperators.Minus => new OptionialObject(false, (double)(leftRes?.Value ?? 0.0) - (double)(rightRes?.Value ?? 0.0)),
-                ArithmeticOperators.UnaryMinus => new OptionialObject(false, -(double)(rightRes?.Value ?? 0.0)),
-                _ => new OptionialObject(true, 0.0)
+                ArithmeticOperators.Multiply => new OptionalObject(false, ((double)(leftRes?.Value ?? 0.0)) * ((double)(rightRes?.Value ?? 0.0))),
+                ArithmeticOperators.Plus => new OptionalObject(false, (double)(leftRes?.Value ?? 0.0) + (double)(rightRes?.Value ?? 0.0)),
+                ArithmeticOperators.Minus => new OptionalObject(false, (double)(leftRes?.Value ?? 0.0) - (double)(rightRes?.Value ?? 0.0)),
+                ArithmeticOperators.UnaryMinus => new OptionalObject(false, -(double)(rightRes?.Value ?? 0.0)),
+                _ => new OptionalObject(true, 0.0)
             };
 
             return theResult;
@@ -391,7 +392,7 @@ public partial class GeneralEvaluator
         //return new DoubleObject(true, 0);              
     }
 
-    static OptionialObject ConvertToNumberUsingUSCulture(string stringNumber)
+    static OptionalObject ConvertToNumberUsingUSCulture(string stringNumber)
     {
         // Specify US culture
         CultureInfo usCulture = CultureInfo.CreateSpecificCulture("en-US");
@@ -399,17 +400,17 @@ public partial class GeneralEvaluator
         try
         {
             res = Convert.ToDouble(stringNumber, usCulture);
-            return new OptionialObject(false, res);
+            return new OptionalObject(false, res);
         }
         catch
         {
-            return new OptionialObject(true, 0);
+            return new OptionalObject(true, 0);
         }
 
     }
 
 
-    public static OptionialObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm)
+    public static OptionalObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm)
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
@@ -444,7 +445,7 @@ public partial class GeneralEvaluator
         {
             var fterms = terms.Where(trm => functionText.Contains(trm.Key)).ToDictionary(tm => tm.Key, tm => tm.Value);
             //todo sum
-            var resSumOrCount = EvaluateSumOrCount(functionType, fterms);
+            var resSumOrCount = EvaluateCount(functionType, fterms);
             return resSumOrCount;
         }
 
@@ -453,7 +454,7 @@ public partial class GeneralEvaluator
         var innerArguments = innerSymbolFormula.Split(",", StringSplitOptions.RemoveEmptyEntries);
 
         var count = innerArguments.Length;
-        IEnumerable<OptionialObject> innerFunctionArguments = innerArguments.Select(argSplit =>
+        IEnumerable<OptionalObject> innerFunctionArguments = innerArguments.Select(argSplit =>
         {
             //here, we are processing each inner term (which are expressions) of the function. For example , x2+3, or even max(x3)+3
             //When all the inner terms are evaluated, we will evaluate the actual function
@@ -470,35 +471,25 @@ public partial class GeneralEvaluator
         return finalFunctionValue;
     }
 
-    static OptionialObject EvaluateSumOrCount(FunctionAggregateTypes functionType, Dictionary<string, ObjectTerm280> terms)
+    static OptionalObject EvaluateCount(FunctionAggregateTypes functionType, Dictionary<string, ObjectTerm280> terms)
     {
 
         switch (functionType)
         {
-
-            case FunctionAggregateTypes.iSum:
-                //there is only ONE terms inside a isum/count so no worries
-
-
-
-                var sumTerm = terms.FirstOrDefault();
-                var resSum = sumTerm.Key is null
-                    ? new OptionialObject(true, 0)
-                    : new OptionialObject(false, Convert.ToDouble(sumTerm.Value.sumValue));
-                return resSum;
+            
             case FunctionAggregateTypes.Count:
                 var countTerm = terms.FirstOrDefault();
                 var resCount = countTerm.Key is null
-                    ? new OptionialObject(true, 0)
-                    : new OptionialObject(false, Convert.ToDouble(countTerm.Value.countValue));
+                    ? new OptionalObject(true, 0)
+                    : new OptionalObject(false, Convert.ToDouble(countTerm.Value.countValue));
                 return resCount;
-            default: return new OptionialObject(true, 0);
+            default: return new OptionalObject(true, 0);
 
         }
 
     }
 
-    static OptionialObject EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<OptionialObject> terms)
+    static OptionalObject  EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<OptionalObject> terms)
     {
 
         var convertedTerms = terms.Select(tr => tr.IsNull ? tr with { IsNull = false, Value = 0.0 } : tr);
@@ -507,32 +498,32 @@ public partial class GeneralEvaluator
             case FunctionAggregateTypes.iSum:
                 var sum = terms
                     .Where(term => !term.IsNull)
-                    .Aggregate(0.0, (sm, val) => sm + (double)(val?.Value??0));
-                return new OptionialObject(false, sum);                
+                    .Aggregate(0.0, (sm, val) => sm + (double)(val?.Value ?? 0));
+                return new OptionalObject(false, sum);
             case FunctionAggregateTypes.iMin:
-                var resMin = new OptionialObject(false, convertedTerms.Min(item => item.Value));
+                var resMin = new OptionalObject(false, convertedTerms.Min(item => item.Value));
                 return resMin;
             case FunctionAggregateTypes.iMax:
-                var resMax = new OptionialObject(false, convertedTerms.Max(item => item.Value));
+                var resMax = new OptionalObject(false, convertedTerms.Max(item => item.Value));
                 return resMax;
             case FunctionAggregateTypes.Exp:
                 try
                 {
                     double value = Convert.ToDouble(convertedTerms?.FirstOrDefault()?.Value ?? 0.0);
-                    return new OptionialObject(false, Math.Exp(value));
+                    return new OptionalObject(false, Math.Exp(value));
                 }
                 catch
                 {
-                    return new OptionialObject(true, 0.0);
+                    return new OptionalObject(true, 0.0);
                 }
 
 
             case FunctionAggregateTypes.Abs:
 
                 double absValue = Math.Abs(Convert.ToDouble(convertedTerms?.FirstOrDefault()?.Value ?? 0.0));
-                return new OptionialObject(false, absValue);
+                return new OptionalObject(false, absValue);
 
-            default: return new OptionialObject(true, 0.0);
+            default: return new OptionalObject(true, 0.0);
 
 
         }
@@ -553,7 +544,7 @@ public partial class GeneralEvaluator
             _ => throw new ArgumentException("Invalid function type"),
         };
 
-    public static OptionialObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static OptionalObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
@@ -564,12 +555,12 @@ public partial class GeneralEvaluator
 
         if (isAnyTermNull)
         {
-            return new OptionialObject(true, 0);
+            return new OptionalObject(true, 0);
         }
 
         Dictionary<string, object> numericObjects = formulaTerms.ToDictionary(item => item.Key, item => FromStringToObj(item.Value?.Obj));
         var result = Eval.Execute<double>(symbolFormula, numericObjects);
-        return new OptionialObject(false, result);
+        return new OptionalObject(false, result);
 
 
 

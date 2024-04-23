@@ -642,7 +642,12 @@ public class SqlFunctions : ISqlFunctions
         
         if (facts.Count() > 1)
         {
-            _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}");
+            //multiple facts for each row/col because of either currency or multiple country f            
+            var sum = facts.Sum(fact=>fact.NumericValue);
+            var firstFact = facts.First();
+            firstFact.NumericValue = sum;
+            _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}, Zet:{zet}");
+            return firstFact;            
         }
 
         return facts.FirstOrDefault();

@@ -100,7 +100,7 @@ public class DocumentValidator : IDocumentValidator
         var exempted = new[] {   0 };
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
 
-        //validationRules = validationRules.Where(vr => vr.ValidationID == 4710).ToList();
+        validationRules = validationRules.Where(vr => vr.ValidationID == 4710).ToList();
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
@@ -165,7 +165,7 @@ public class DocumentValidator : IDocumentValidator
 
                         ruleClosed.ZetValue = sheet.ZDimVal;
                         ruleClosed = FillRuleStructureWithFactValues(ruleClosed);
-                        var objs = ruleClosed.IfComponent.ObjectTerms.Select(ot => ot.Value.Obj).ToList();
+                        //var objs = ruleClosed.IfComponent.ObjectTerms.Select(ot => ot.Value.Obj).ToList();
                         var sumTerm = ruleClosed.IfComponent.RuleTerms.Where(rt => rt.IsSequence).FirstOrDefault();
 
                         if (sumTerm != null)

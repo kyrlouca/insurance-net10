@@ -177,7 +177,7 @@ public class ValidationTermTest
 
         var text = @"imin(3, 4, 1 +1)";
         var res = GeneralEvaluator.EvaluateFunction(text, new(), "");
-        Assert.Equal(new OptionialObject(false, (double)2), res);
+        Assert.Equal(new OptionalObject(false, (double)2), res);
 
 
         text = @"imax(imin(3, 7) , 4) ";
