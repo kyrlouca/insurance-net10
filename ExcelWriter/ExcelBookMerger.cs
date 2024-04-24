@@ -107,18 +107,18 @@ public class ExcelBookMerger : IExcelBookMerger
         newSingePageBreakdownListNew.Add(new TableGroup("ZS.06.02.01.02_single", "xx", new List<string>()));
 
         //remove first the groups that will break to single page and then concat the new single page groups
-        var newTableGroupList = newTableGroupsFromEiopa
+        var tableGroupList = newTableGroupsFromEiopa
             .Where(tgl => !SpecialTemplateList.SingleTableGroupsNew.Contains(tgl.TemplateCode))
             .Concat(newSingePageBreakdownListNew)
             .OrderBy(tgl => tgl.TemplateCode)
             .ToList();
 
-        //newTableGroupList = newTableGroupList.Where(tg => (new[] { "S.04.04.01" }).Contains(tg.TemplateCode)).ToList();
+        tableGroupList = tableGroupList.Where(tg => (new[] { "S.14.01.01.01" }).Contains(tg.TemplateCode)).ToList();
 
         ///////////////////////
         var s6Zet = "";
         //foreach (var tableGroup in tableGroupsList)
-        foreach (var tableGroup in newTableGroupList)
+        foreach (var tableGroup in tableGroupList)
         {
 
             var distinctBlZets = tableGroup.TableCodes
@@ -382,7 +382,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 var dRow = offsetVERTICAL + sheetLastRow;
                 var destRange = destSheet.Range[offsetVERTICAL, OffesetHORIZONTAL, offsetVERTICAL + sheetLastRow - 1, OffesetHORIZONTAL + sheetLastCol - 1];
 
-                copyRange.CopyTo(destRange);
+                copyRange.CopyTo(destRange,ExcelCopyRangeOptions.All);
 
                 //save the ranges of the dest
                 SaveDestDataName(destSheet, offsetVERTICAL, OffesetHORIZONTAL, srcWorksheet);

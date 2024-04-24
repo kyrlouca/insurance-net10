@@ -74,12 +74,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ///
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
-
-        //var debugClosedTableCode = "S.04.04.01.01";
-        var debugClosedTableCode = "";
-        dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
+        
+        
+        if (_parameterData.IsDevelop)
+        {
+            //var debugClosedTableCode = "";
+            var debugClosedTableCode = "xS.04.04.01.01";
+            dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
+
+        }
 
 
         foreach (var dbClosedSheet in dbClosedSheets)
@@ -95,11 +100,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        //var debugOpenTableCode = "xxS.31.01.01.01";
-        var debugOpenTableCode = "";
-        dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
-             ? dbOpenSheets
-             : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
+        if (_parameterData.IsDevelop)
+        {
+            var debugOpenTableCode = "S.14.01.01.01";
+            //var debugOpenTableCode = "";
+            dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
+                 ? dbOpenSheets
+                 : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
+        }
 
         foreach (var dbOpenSheet in dbOpenSheets)
         {
@@ -450,9 +458,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         ///////////////////////fill keys
 
-
-        //style columns        
-        //var columnsRange = HelperRoutines.ExtendRangeRowColsDirectional(dataRangeWithKeys.Rows.First(), 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
+        
         var columnLabels = dataRangeWithKeys.Rows.First();
         columnLabels.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 

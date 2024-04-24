@@ -125,7 +125,7 @@ public class WriterMainApp : IExcelWriterMainApp
                 }
             }
         }
-        if (!_parameterData.IsDevelop && 1==1)
+        if (!_parameterData.IsDevelop )
         {
             var (isSuccess, errorMessage) = FileUtilsKyr.DeleteFile(EmptyFilename);
             if (!isSuccess)
