@@ -102,8 +102,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         if (_parameterData.IsDevelop)
         {
+            
             var debugOpenTableCode = "S.14.01.01.01";
             //var debugOpenTableCode = "";
+            Console.Write($"In Develop and filtering : {debugOpenTableCode}");
             dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
                  ? dbOpenSheets
                  : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);

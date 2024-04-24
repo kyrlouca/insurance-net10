@@ -112,8 +112,11 @@ public class ExcelBookMerger : IExcelBookMerger
             .Concat(newSingePageBreakdownListNew)
             .OrderBy(tgl => tgl.TemplateCode)
             .ToList();
-
-        tableGroupList = tableGroupList.Where(tg => (new[] { "S.14.01.01.01" }).Contains(tg.TemplateCode)).ToList();
+        if (_parameterData.IsDevelop)
+        {
+            tableGroupList = tableGroupList.Where(tg => (new[] { "S.14.01.01.01" }).Contains(tg.TemplateCode)).ToList();
+        }
+        
 
         ///////////////////////
         var s6Zet = "";
