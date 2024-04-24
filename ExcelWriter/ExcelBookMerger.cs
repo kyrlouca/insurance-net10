@@ -114,6 +114,7 @@ public class ExcelBookMerger : IExcelBookMerger
             .ToList();
         if (_parameterData.IsDevelop)
         {
+            Console.WriteLine("Develop and filtering");
             tableGroupList = tableGroupList.Where(tg => (new[] { "S.14.01.01.01" }).Contains(tg.TemplateCode)).ToList();
         }
         
