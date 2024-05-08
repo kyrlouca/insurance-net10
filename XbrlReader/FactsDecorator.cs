@@ -423,7 +423,7 @@ public partial class FactsDecorator : IFactsDecorator
             foreach (var cellFact in cellFacts)
             {
 
-                if (cellFact.CellID > 0)
+                if (cellFact.TableID > 0)
                 {
                     Console.Write("&");
                     //Maybe I neeed to change the row and col of the fact here based on the cellSignature

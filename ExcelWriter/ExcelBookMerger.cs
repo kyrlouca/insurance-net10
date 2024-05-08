@@ -47,7 +47,7 @@ public class ExcelBookMerger : IExcelBookMerger
         _SqlFunctions = sqlFunctions;
         _customPensionStyles = customPensionStyles;
     }
-    public bool MergeTables(int documentId, string sourceFile, string destFile)
+    public bool MergeTables(int documentId, string sourceFile, string destFile) 
     {
         _documentId = documentId;
         _documentInstance = _SqlFunctions.SelectDocInstance(_documentId)!;
