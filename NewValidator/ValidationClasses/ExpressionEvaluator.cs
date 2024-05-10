@@ -34,6 +34,9 @@ public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Obje
 
 public partial class GeneralEvaluator
 {
+    public static OptionalObject leftObject = new OptionalObject(true, null);
+    public static OptionalObject rightObject = new OptionalObject(true, null);
+
     public enum LogicalOperators { None, IsAnd, IsOR };
 
 
@@ -41,7 +44,8 @@ public partial class GeneralEvaluator
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-
+        leftObject = new OptionalObject(true, null);
+        rightObject = new OptionalObject(true, null);
         var ifResult = GeneralEvaluator.EvaluateBooleanExpression(ruleStructure280.RuleId, ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
         if (ruleStructure280.ThenComponent.IsEmpty)
         {
@@ -93,6 +97,7 @@ public partial class GeneralEvaluator
 
     public static KleeneValue EvaluateBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms)
     {
+        
 
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
         //1. outer parenthesis
@@ -244,6 +249,8 @@ public partial class GeneralEvaluator
 
             if (resLeftDbl.Value is double || resRightDbl.Value is double)
             {
+                GeneralEvaluator.leftObject = resLeftDbl;
+                GeneralEvaluator.rightObject = resRightDbl;
                 var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
             }

@@ -35,6 +35,9 @@ public class DocumentValidator : IDocumentValidator
     private int DocumentId { get => _documentInstance?.InstanceId ?? 0; }
     private MModule _mModule = new();
 
+    //private static OptionalObject leftObject = new OptionalObject(true, null);
+    //private static OptionalObject rightObject = new OptionalObject(true, null);
+
     public DocumentValidator(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
     {
         _parameterHandler = getParameters;
@@ -180,7 +183,7 @@ public class DocumentValidator : IDocumentValidator
                         var isValidClosedRule = GeneralEvaluator.ValidateRule(ruleClosed);
                         if (!isValidClosedRule)
                         {
-                            CreateRuleError(ruleClosed, validationRule);
+                            CreateRuleError(ruleClosed, validationRule,GeneralEvaluator.leftObject,GeneralEvaluator.rightObject);
                         }
                     }
                 }
@@ -226,7 +229,7 @@ public class DocumentValidator : IDocumentValidator
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
 
 
-
+                            
                             KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
                                 ? KleeneValue.True
                                 : GeneralEvaluator.EvaluateBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
@@ -243,7 +246,7 @@ public class DocumentValidator : IDocumentValidator
                             {
                                 if (prevRowValid) Console.WriteLine("");
                                 Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
-                                CreateRuleError(ruleOpen, validationRule);
+                                CreateRuleError(ruleOpen, validationRule,GeneralEvaluator.leftObject,GeneralEvaluator.rightObject);
                                 prevRowValid = false;
                             }
                             else
@@ -291,7 +294,7 @@ public class DocumentValidator : IDocumentValidator
                         if (!isValidRule)
                         {
                             Console.WriteLine($"{validationRule.Severity} ruleId:{rule.RuleId} ");
-                            CreateRuleError(rule, validationRule);
+                            CreateRuleError(rule, validationRule,GeneralEvaluator.leftObject,GeneralEvaluator.rightObject);
                         }
 
                     }
@@ -364,7 +367,7 @@ public class DocumentValidator : IDocumentValidator
                             {
                                 if (prevRowValid) Console.WriteLine("");
                                 Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
-                                CreateRuleError(ruleOpen, validationRule);
+                                CreateRuleError(ruleOpen, validationRule,GeneralEvaluator.leftObject,GeneralEvaluator.rightObject);
                                 prevRowValid = false;
                             }
                             else
@@ -665,7 +668,7 @@ public class DocumentValidator : IDocumentValidator
         return errorDocument;
     }
 
-    private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
+    private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule, OptionalObject leftOperator,OptionalObject rightOperator)
     {
 
         var errorRule = new ERROR_Rule
