@@ -698,7 +698,7 @@ public class DocumentValidator : IDocumentValidator
 
         string BuildComponentValues(RuleComponent280 component)
         {
-            var val = $"{component.DislayRuleTerms(component.GetExpressionInfo())}";
+            var val = $"{component.DislayRuleComponentTerms()}";
             return RegexUtils.TruncateString(val, 800);
         }
 

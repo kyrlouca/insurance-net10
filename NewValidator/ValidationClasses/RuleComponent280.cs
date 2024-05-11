@@ -61,12 +61,8 @@ public class RuleComponent280
         return rc;
     }
 
-    public ExpressionInfoType GetExpressionInfo()
-    {
-        return ExpressionInfo;
-    }
 
-    public string DislayRuleTerms(ExpressionInfoType expressionInfo)
+    public string DislayRuleComponentTerms()
     {
         var vals = RuleTerms.Aggregate("", (current, value) =>
         {
@@ -74,18 +70,17 @@ public class RuleComponent280
             return $"{current}#{value.Letter}-{value.T}:{value.R}:{value.C}={obj.Obj ?? "null"}";
         });
 
-        var equalityExpression = "";
-        if (expressionInfo is null)
+        if (ExpressionInfo is null)
         {
-            equalityExpression = "";
+            return $"{SymbolExpression}**{vals}";
         }
-        else
-        {
-            var left = expressionInfo.leftExpression.IsNull ? "null" : $"{expressionInfo.leftExpression.Value?.ToString()}";
-            var right = expressionInfo.rightExpression.IsNull ? "null" : $"{expressionInfo.rightExpression.Value?.ToString()}";
 
-            equalityExpression = $"{left} {expressionInfo.op} {right}";
-        }
+
+        var equalityExpression = "";
+        var left = ExpressionInfo.leftExpression.IsNull ? "null" : $"{ExpressionInfo.leftExpression.Value?.ToString()}";
+        var right = ExpressionInfo.rightExpression.IsNull ? "null" : $"{ExpressionInfo.rightExpression.Value?.ToString()}";
+        equalityExpression = $"{left} {ExpressionInfo.op} {right}";
+
 
 
         return $"{SymbolExpression}**{vals}***{equalityExpression}";
