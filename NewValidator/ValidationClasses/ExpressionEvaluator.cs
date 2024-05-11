@@ -2,6 +2,7 @@
 using Microsoft.Extensions.FileSystemGlobbing;
 using Shared.DataModels;
 using Shared.SpecialRoutines;
+using Validator.ValidationClasses;
 using Validator.Common.ParsingRoutines;
 
 using Syncfusion.XlsIO.Implementation.Collections.Grouping;
@@ -26,7 +27,7 @@ public enum KleeneValue
     Unknown
 }
 public record OptionalObject(bool IsNull, object? Value);
-public record ExpressionInfoType(string op,OptionalObject leftExpression, OptionalObject rightExpression);
+
 public record BooleanObject(bool IsNull, bool Value);
 public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain, Exp, Abs };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
@@ -48,6 +49,8 @@ public partial class GeneralEvaluator
 
         GeneralEvaluator.expressionInfo = null;        
         var ifResult = GeneralEvaluator.EvaluateBooleanExpression(ruleStructure280.RuleId, ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
+        ruleStructure280.IfComponent.ExpressionInfo = GeneralEvaluator.expressionInfo;
+
         if (ruleStructure280.ThenComponent.IsEmpty)
         {
             return ToBoolean(ifResult);
@@ -62,7 +65,9 @@ public partial class GeneralEvaluator
             }
             else if (ifResult == KleeneValue.True)
             {
+                GeneralEvaluator.expressionInfo = null;
                 var thenResult = GeneralEvaluator.EvaluateBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
+                ruleStructure280.ThenComponent.ExpressionInfo = GeneralEvaluator.expressionInfo;
                 return ToBoolean(thenResult);
             }
             else // (ifResult == KleeneValue.Unknown)
@@ -75,13 +80,16 @@ public partial class GeneralEvaluator
             //elseComponent EXISTS
             if (ifResult == KleeneValue.True)
             {
+                GeneralEvaluator.expressionInfo = null;
                 var thenRes = GeneralEvaluator.EvaluateBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ThenComponent.SymbolExpression, ruleStructure280.ThenComponent.ObjectTerms);
+                ruleStructure280.ThenComponent.ExpressionInfo = GeneralEvaluator.expressionInfo;
                 return ToBoolean(thenRes); // if is false and there is no else      
             }
             if (ifResult == KleeneValue.False)
             {
+                GeneralEvaluator.expressionInfo = null;
                 var elseRes = GeneralEvaluator.EvaluateBooleanExpression(ruleStructure280.RuleId, ruleStructure280.ElseComponent.SymbolExpression, ruleStructure280.ElseComponent.ObjectTerms);
-
+                ruleStructure280.ElseComponent.ExpressionInfo = GeneralEvaluator.expressionInfo;
                 return ToBoolean(elseRes); // if is false and there is no else
             }
             else //(ifResult == KleeneValue.Unknown)
@@ -245,6 +253,8 @@ public partial class GeneralEvaluator
 
             if (resLeftDbl.IsNull || resRightDbl.IsNull)
             {
+                
+                GeneralEvaluator.expressionInfo= new ExpressionInfoType(op,resLeftDbl,resRightDbl);
                 return KleeneValue.Unknown;
             }
 

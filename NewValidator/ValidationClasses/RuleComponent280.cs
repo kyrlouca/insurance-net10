@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Linq.Expressions;
 using Shared.SpecialRoutines;
+using Validator.ValidationClasses;
 
 namespace NewValidator.ValidationClasses;
 
@@ -21,11 +22,12 @@ public class RuleComponent280
 
     public bool IsEmpty { get; init; }
     public bool IsValid { get; set; } = true;
-    public string Expression { get; init; } 
+    public string Expression { get; init; }
     public List<RuleTerm280> RuleTerms { get; set; } = new();
     public string SymbolExpression { get; set; } = "";
     public Dictionary<string, ObjectTerm280> ObjectTerms { get; set; } = new();
-      
+
+    public ExpressionInfoType? ExpressionInfo { get; set; }
     public static RuleComponent280 CreateComponent(string textExpression)
     {
         //captures terms inside brackets , takes care of inner brackets in match statements        
@@ -33,19 +35,19 @@ public class RuleComponent280
         //=> X01 + X02 >= X03 - X04 + X05  
         //=> creates the RuleTerms280
         //also checks for the i interval and marks the term as interval          
-        
+
 
         if (string.IsNullOrEmpty(textExpression))
         {
-            return new RuleComponent280() {IsEmpty=true, Expression=textExpression};
+            return new RuleComponent280() { IsEmpty = true, Expression = textExpression };
         }
-                        
-        
-        var(formula,ruleTextTerms) = TermsExtraction.ExtractTerms(textExpression);
 
-        if (ruleTextTerms.Count==0)
+
+        var (formula, ruleTextTerms) = TermsExtraction.ExtractTerms(textExpression);
+
+        if (ruleTextTerms.Count == 0)
         {
-            return new RuleComponent280() { IsEmpty = false, IsValid = false, Expression = textExpression, SymbolExpression = formula , RuleTerms = new List<RuleTerm280>() };
+            return new RuleComponent280() { IsEmpty = false, IsValid = false, Expression = textExpression, SymbolExpression = formula, RuleTerms = new List<RuleTerm280>() };
         }
 
 
@@ -54,19 +56,39 @@ public class RuleComponent280
             .ToList();
 
         formula = formula.Replace(" = ", " == ");
-        
-        var rc = new RuleComponent280() {IsEmpty=false, Expression = textExpression, SymbolExpression = formula, RuleTerms = ruleTerms };
-        return rc;
-    }   
 
-    
-    public string DislayRuleTerms()
+        var rc = new RuleComponent280() { IsEmpty = false, Expression = textExpression, SymbolExpression = formula, RuleTerms = ruleTerms };
+        return rc;
+    }
+
+    public ExpressionInfoType GetExpressionInfo()
     {
-        var vals = RuleTerms.Aggregate("", (current, value) => {
-            var obj = ObjectTerms[value.Letter];    
-            return $"{current}#{value.Letter}-{value.T}:{value.R}:{value.C}={obj.Obj??"null"}"; 
+        return ExpressionInfo;
+    }
+
+    public string DislayRuleTerms(ExpressionInfoType expressionInfo)
+    {
+        var vals = RuleTerms.Aggregate("", (current, value) =>
+        {
+            var obj = ObjectTerms[value.Letter];
+            return $"{current}#{value.Letter}-{value.T}:{value.R}:{value.C}={obj.Obj ?? "null"}";
         });
-        return $"{SymbolExpression}***{vals}";
+
+        var equalityExpression = "";
+        if (expressionInfo is null)
+        {
+            equalityExpression = "";
+        }
+        else
+        {
+            var left = expressionInfo.leftExpression.IsNull ? "null" : $"{expressionInfo.leftExpression.Value?.ToString()}";
+            var right = expressionInfo.rightExpression.IsNull ? "null" : $"{expressionInfo.rightExpression.Value?.ToString()}";
+
+            equalityExpression = $"{left} {expressionInfo.op} {right}";
+        }
+
+
+        return $"{SymbolExpression}**{vals}***{equalityExpression}";
 
 
     }

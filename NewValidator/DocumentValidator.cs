@@ -21,7 +21,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-
+using Validator.ValidationClasses;
 namespace NewValidator;
 
 internal enum ValidStatus { Valid, Error, Waring };
@@ -103,7 +103,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            validationRules = validationRules.Where(vr => vr.ValidationID == 4685).ToList();
+            //validationRules = validationRules.Where(vr => vr.ValidationID == 4685).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -182,7 +182,7 @@ public class DocumentValidator : IDocumentValidator
                         var isValidClosedRule = GeneralEvaluator.ValidateRule(ruleClosed);
                         if (!isValidClosedRule)
                         {
-                            CreateRuleError(ruleClosed, validationRule,GeneralEvaluator.expressionInfo);
+                            CreateRuleError(ruleClosed, validationRule);
                         }
                     }
                 }
@@ -245,7 +245,7 @@ public class DocumentValidator : IDocumentValidator
                             {
                                 if (prevRowValid) Console.WriteLine("");
                                 Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
-                                CreateRuleError(ruleOpen, validationRule,GeneralEvaluator.expressionInfo);
+                                CreateRuleError(ruleOpen, validationRule);
                                 prevRowValid = false;
                             }
                             else
@@ -293,7 +293,7 @@ public class DocumentValidator : IDocumentValidator
                         if (!isValidRule)
                         {
                             Console.WriteLine($"{validationRule.Severity} ruleId:{rule.RuleId} ");
-                            CreateRuleError(rule, validationRule,GeneralEvaluator.expressionInfo);
+                            CreateRuleError(rule, validationRule);
                         }
 
                     }
@@ -366,7 +366,7 @@ public class DocumentValidator : IDocumentValidator
                             {
                                 if (prevRowValid) Console.WriteLine("");
                                 Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
-                                CreateRuleError(ruleOpen, validationRule,GeneralEvaluator.expressionInfo);
+                                CreateRuleError(ruleOpen, validationRule);
                                 prevRowValid = false;
                             }
                             else
@@ -667,7 +667,7 @@ public class DocumentValidator : IDocumentValidator
         return errorDocument;
     }
 
-    private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule, ExpressionInfoType? expressionInfo)
+    private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
     {
 
         var errorRule = new ERROR_Rule
@@ -698,7 +698,7 @@ public class DocumentValidator : IDocumentValidator
 
         string BuildComponentValues(RuleComponent280 component)
         {
-            var val = $"{component.DislayRuleTerms()}";
+            var val = $"{component.DislayRuleTerms(component.GetExpressionInfo())}";
             return RegexUtils.TruncateString(val, 800);
         }
 
