@@ -26,6 +26,7 @@ public enum KleeneValue
     Unknown
 }
 public record OptionalObject(bool IsNull, object? Value);
+public record ExpressionInfoType(string op,OptionalObject leftExpression, OptionalObject rightExpression);
 public record BooleanObject(bool IsNull, bool Value);
 public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain, Exp, Abs };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
@@ -34,8 +35,8 @@ public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Obje
 
 public partial class GeneralEvaluator
 {
-    public static OptionalObject leftObject = new OptionalObject(true, null);
-    public static OptionalObject rightObject = new OptionalObject(true, null);
+    
+    public static ExpressionInfoType? expressionInfo;
 
     public enum LogicalOperators { None, IsAnd, IsOR };
 
@@ -44,8 +45,8 @@ public partial class GeneralEvaluator
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-        leftObject = new OptionalObject(true, null);
-        rightObject = new OptionalObject(true, null);
+
+        GeneralEvaluator.expressionInfo = null;        
         var ifResult = GeneralEvaluator.EvaluateBooleanExpression(ruleStructure280.RuleId, ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
         if (ruleStructure280.ThenComponent.IsEmpty)
         {
@@ -248,9 +249,8 @@ public partial class GeneralEvaluator
             }
 
             if (resLeftDbl.Value is double || resRightDbl.Value is double)
-            {
-                GeneralEvaluator.leftObject = resLeftDbl;
-                GeneralEvaluator.rightObject = resRightDbl;
+            {                
+                GeneralEvaluator.expressionInfo= new ExpressionInfoType(op,resLeftDbl,resRightDbl);
                 var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
             }
