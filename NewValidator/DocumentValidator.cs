@@ -103,7 +103,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains( vr.ValidationID)).OrderBy(rl=>rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            //validationRules = validationRules.Where(vr => vr.ValidationID == 4685).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 648).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -197,6 +197,7 @@ public class DocumentValidator : IDocumentValidator
                         mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
                     }
 
+                    var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "");
                     var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
                     var kyrTableCol = kyrTable?.TableCol ?? "";
                     var fklTableCode = kyrTable?.FK_TableCode ?? "";
@@ -217,13 +218,25 @@ public class DocumentValidator : IDocumentValidator
                             //find the row from the column that has the foreign key
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                             var factKey = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, kyrTable?.TableCode??"", sheet.ZDimVal, row, kyrTableCol)?.TextValue?.Trim()??"";
-                            var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
-                                                        
-                            UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
-                            UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
-                            UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
-                            UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
 
+                            var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, kyrTable?.TableCode ?? "", sheet.ZDimVal, row, kyrTableCol);
+                            var tmp = factFromMain?.TextValue;
+                            var xxss = 2;
+                            foreach (var kyrTbl in kyrTables)
+                            {
+                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl.FK_TableCode, kyrTbl.FK_TableCol, factFromMain?.TextValue ?? "").FirstOrDefault(); ; 
+                                
+                                var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
+                                if (relatedRowNew != null)
+                                {
+                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+
+                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
+                                }
+                            }
                             ruleOpen.ZetValue = sheet.ZDimVal;
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
 

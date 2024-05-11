@@ -25,6 +25,7 @@ public interface ISqlFunctions
     //*********facts
     public TemplateSheetFact? SelectFact(int factId);
     public List<TemplateSheetFact> SelectFactsForSheetId(int sheetId);
+    public List<TemplateSheetFact> SelectFactsByColAndTextValue(int documentId, string tableCode, string col, string textValue);
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet, string col);
     public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col);    
@@ -64,6 +65,7 @@ public interface ISqlFunctions
 
     public List<MTableCell> SelectTableCells(int tableId);
 
+    public List<MTableKyrKeys> SelectTableKyrKeys(string tableCode);
     public MTableKyrKeys? SelectTableKyrKey(string tableCode);
     
 

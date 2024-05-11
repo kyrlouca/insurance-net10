@@ -579,6 +579,15 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public List<MTableKyrKeys> SelectTableKyrKeys(string tableCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTable = @"select * from mTableKyrKeys tk where tk.TableCode= @tableCode";
+
+        var result = connectionEiopa.Query<MTableKyrKeys>(sqlTable, new { tableCode }).ToList();
+        return result;
+    }
+
     public MTableKyrKeys? SelectTableKyrKey(string tableCode)
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
@@ -596,6 +605,21 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
+    public List<TemplateSheetFact> SelectFactsByColAndTextValue(int documentId,string tableCode,string col,string textValue)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+            select * from TemplateSheetFact fact 
+            join TemplateSheetInstance sheet on sheet.TemplateSheetId=fact.TemplateSheetId
+            where 1=1
+                and fact.InstanceId= @documentId
+                and sheet.TableCode= @tableCode
+                and fact.Col=@col
+                and fact.TextValue= @textValue
+";
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, col,textValue }).ToList();
+        return facts;
+    }
     public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col)
     {
         //ZET: sometimes is not used :  when  the closed table has an empty zet and the open tables have an actual zet
@@ -651,13 +675,7 @@ public class SqlFunctions : ISqlFunctions
         }
 
         return facts.FirstOrDefault();
-    }
-
-
-   
-
-
-
+    }   
     public TemplateSheetFact? SelectFactByRowCol(int documentId, int sheetId,  string row, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -678,7 +696,6 @@ public class SqlFunctions : ISqlFunctions
         var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { documentId, sheetId, row, col });
         return fact;
     }
-
 
     public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet,  string col)
     {
@@ -719,9 +736,7 @@ public class SqlFunctions : ISqlFunctions
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, col }).ToList();
         return facts;
     }
-
-    
-
+   
     public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
