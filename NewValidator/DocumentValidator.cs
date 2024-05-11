@@ -226,10 +226,10 @@ public class DocumentValidator : IDocumentValidator
                             {
                                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl.FK_TableCode, kyrTbl.FK_TableCol, factFromMain?.TextValue ?? "").FirstOrDefault(); ; 
                                 
-                                var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
+                                //var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
                                 if (relatedRowNew != null)
                                 {
-                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
+                                    //UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
 
                                     UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
                                     UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);

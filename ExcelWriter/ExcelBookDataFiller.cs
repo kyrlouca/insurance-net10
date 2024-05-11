@@ -81,7 +81,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
             var debugClosedTableCode = "";
             //var debugClosedTableCode = "xS.04.04.01.01";
-            Console.Write($"In Develop and filtering Closed: {debugClosedTableCode}");
+            if(!string.IsNullOrEmpty(debugClosedTableCode))
+            {
+                Console.Write($"In Develop and filtering Closed: {debugClosedTableCode}");
+            }
+            
             dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -102,11 +106,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             .Where(sheet => sheet.IsOpenTable);
 
         if (_parameterData.IsDevelop)
-        {
-            
+        {            
             //var debugOpenTableCode = "S.14.01.01.01";
             var debugOpenTableCode = "";
-            Console.Write($"In Develop and filtering : {debugOpenTableCode}");
+            if (!string.IsNullOrEmpty(debugOpenTableCode))
+            {
+                Console.Write($"In Develop and filtering Open: {debugOpenTableCode}");
+            }
+            
             dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
                  ? dbOpenSheets
                  : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);

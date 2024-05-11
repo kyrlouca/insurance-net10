@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Shared.SpecialRoutines;
+using Microsoft.IdentityModel.Tokens;
 
 public class ExcelBookMerger : IExcelBookMerger
 {
@@ -114,8 +115,15 @@ public class ExcelBookMerger : IExcelBookMerger
             .ToList();
         if (_parameterData.IsDevelop)
         {
-            Console.WriteLine("Develop and filtering");
-            tableGroupList = tableGroupList.Where(tg => (new[] { "S.14.01.01.01" }).Contains(tg.TemplateCode)).ToList();
+            var filterList = Array.Empty<string>();
+            //var filterList = new[] { "S.14.01.01.01" };
+            if(!filterList.IsNullOrEmpty())
+            {
+                tableGroupList = tableGroupList.Where(tg => filterList.Contains(tg.TemplateCode)).ToList();
+                Console.WriteLine("Develop and filtering Merge");
+            }
+            
+            
         }
         
 
