@@ -431,7 +431,7 @@ public class DocumentValidator : IDocumentValidator
         return newObjTerm;
     }
 
-    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType)
+    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType)
     {
 
         if (scopeType == ScopeType.Rows)
@@ -439,7 +439,15 @@ public class DocumentValidator : IDocumentValidator
             var rTerms = ruleTerms.Where(term => string.IsNullOrEmpty(term.R)).ToList();
             foreach (var term in rTerms)
             {
-                term.R = term.T.Trim() == slaveTableCode ? rowCol : relatedRowCol;
+                if (term.T.Trim() == mainTableCode)
+                {
+                    term.R = rowCol;
+                }
+                if (term.T.Trim() ==  )
+                {
+                    term.R = rowCol;
+                }
+
             }
         }
         if (scopeType == ScopeType.Cols)
