@@ -88,9 +88,13 @@ public class RuleComponent280
     {
         if (optionalObject.IsNull) return "null";
         var obj = optionalObject?.Value ?? "";
+        var xx = 3.2323;
+        var y = $"{xx:N2}";
         var res = (obj is double || obj is int || obj is float || obj is decimal || obj is long)
-           ? Convert.ToDouble(obj).ToString("D2")
-           : obj.ToString();
+           ? $"{Convert.ToDouble(obj):N2}"
+           : obj?.ToString()??"";
+        //Console.WriteLine($"xx:{xx:N2}, res:{res}");
+        //Console.WriteLine(res);
         return res;
     }
 }

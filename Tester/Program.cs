@@ -6,10 +6,11 @@ using NewValidator.ValidationClasses;
 using System.Xml.Schema;
 using ExcelWriter.ExcelDataModels;
 
+object x=-121233323.23;
+var obj = new OptionalObject(false,x );
+var xx = RuleComponent280.OptionalObjectToString(obj);
+Console.WriteLine(xx);
 
-var xx = new TableGroup("S.04.01.01", "lable ", new List<String>() { "S.04.01.01.01" , "S.04.01.01.02", "S.04.01.01.03" });
-
-var tcs = BreakTableGroup(xx);
  
 
 
