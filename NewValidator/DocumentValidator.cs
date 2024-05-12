@@ -208,45 +208,32 @@ public class DocumentValidator : IDocumentValidator
                         emptyKyr.TableCode = mainTable?.TableCode ?? "";
                         kyrTables.Add(emptyKyr);
                     }
-
-                    //var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
-                    //var kyrTableCol = kyrTable?.TableCol ?? "";
-                    //var fklTableCode = kyrTable?.FK_TableCode ?? "";
-                    //var fkCol = kyrTable?.FK_TableCol ?? "";
-                    //var relatedKeyFacts = _SqlFunctions.SelectFactsByCol(DocumentId, fklTableCode, "", fkCol);
-
+                    
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
                         //var keySheetxx = _SqlFunctions.SelectTemplateSheetBySheetCodeZet(DocumentId, fklTableCode, sheet.ZDimVal);
-
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
 
                         var prevRowValid = true;
                         foreach (var row in rows)
                         {
-
-                            //find the row from the column that has the foreign key
-                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-                            //var factKey = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, kyrTable?.TableCode ?? "", sheet.ZDimVal, row, kyrTableCol)?.TextValue?.Trim() ?? "";
-
-
+                            //create one rule for each rule
+                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);                            
+                            
                             foreach (var kyrTbl in kyrTables)
                             {
-                                var relatedTableCode = kyrTbl?.TableCode ?? "";
-                                var relatedTableCol = kyrTbl?.TableCol ?? "";
+                                //update the row number for each related table
+                                var relatedTableCode = kyrTbl?.FK_TableCode ?? "";
+                                var relatedTableCol = kyrTbl?.FK_TableCol ?? "";
 
-                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode , sheet.ZDimVal, row, kyrTbl?.TableCol ?? "");
-                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCode, factFromMain?.TextValue ?? "").FirstOrDefault(); ;
+                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode , sheet.ZDimVal, row, relatedTableCol);
+                                var factFromMainValue = factFromMain?.TextValue ?? "";
+                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, factFromMainValue).FirstOrDefault(); 
                                 var relatedRow = relatedRowNew?.Row ?? "";
-                                //var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
-                                
-                                
-                                
+                                                                
                                 if (relatedRowNew != null)
-                                {
-                                    //UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
-
+                                {                                
                                     UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                                     UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                                     UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
