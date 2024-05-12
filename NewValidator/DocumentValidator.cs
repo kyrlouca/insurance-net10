@@ -109,14 +109,16 @@ public class DocumentValidator : IDocumentValidator
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
-            var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID);
+            var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID)
+                .DistinctBy(tbl=>tbl.TableID)
+                .ToList();
 
             var hasOnlyOpenTables = tablesInValidation.All(tbl => tbl.IsOpenTable);
             var hasOnlyClosedTables = tablesInValidation.All(tbl => !tbl.IsOpenTable);
             var hasMixedTables = tablesInValidation.Any(tbl => tbl.IsOpenTable) && tablesInValidation.Any(tbl => !tbl.IsOpenTable);
 
 
-            var hasAggregateFunction = new[] { "sum", "count" }.Any(fn => validationRule.Rule.Contains(fn));
+            //var hasAggregateFunctionOld = new[] { "sum", "count" }.Any(fn => validationRule.Rule.Contains(fn));
             //**todo check if all the sheets exist for this rule??
 
             //*********** SCOPE 
@@ -147,6 +149,7 @@ public class DocumentValidator : IDocumentValidator
                 //Closed Tables: sum without seq , use the R: to create terms (3780) OR the terms are separated by commas
 
                 var hasAggregateFn = ruleForScope.IfComponent.RuleTerms.Any(rt => rt.IsSequence) || ruleForScope.ThenComponent.RuleTerms.Any(rt => rt.IsSequence);
+                
                 if ((!hasAggregateFn || hasAggregateFn) && hasOnlyClosedTables)
                 {
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => tbl.TableCode == ruleForScope.IfComponent.RuleTerms[0].T);
@@ -154,7 +157,7 @@ public class DocumentValidator : IDocumentValidator
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
-                        //if any sheet with this zet is null do NOT check the rule
+                        //if any sheet (with this zet) is null do NOT check the rule
                         var sheetsWithSameZet = tablesInValidation.DistinctBy(tbl => tbl.TableID).Select(tbl => _SqlFunctions.SelectTemplateSheetByZetValue(DocumentId, tbl.TableCode, sheet.ZDimVal));
                         if (sheetsWithSameZet.Any(sh => sh is null))
                         {
@@ -197,6 +200,7 @@ public class DocumentValidator : IDocumentValidator
                     {
                         mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
                     }
+                    var mainTableCode = mainTable?.TableCode ?? "";
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "");
                     if (!kyrTables.Any())
                     {
@@ -229,13 +233,16 @@ public class DocumentValidator : IDocumentValidator
 
                             foreach (var kyrTbl in kyrTables)
                             {
-                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTable?.TableCode ?? "", sheet.ZDimVal, row, kyrTbl?.TableCol ?? "");
-                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl?.FK_TableCode ?? "", kyrTbl?.FK_TableCol ?? "", factFromMain?.TextValue ?? "").FirstOrDefault(); ;
+                                var relatedTableCode = kyrTbl?.TableCode ?? "";
+                                var relatedTableCol = kyrTbl?.TableCol ?? "";
+
+                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode , sheet.ZDimVal, row, kyrTbl?.TableCol ?? "");
+                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCode, factFromMain?.TextValue ?? "").FirstOrDefault(); ;
                                 var relatedRow = relatedRowNew?.Row ?? "";
                                 //var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
                                 
-                                var mainTableCode = mainTable?.TableCode ?? "";
-                                var relatedTableCode = kyrTbl?.TableCol ?? "";
+                                
+                                
                                 if (relatedRowNew != null)
                                 {
                                     //UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
