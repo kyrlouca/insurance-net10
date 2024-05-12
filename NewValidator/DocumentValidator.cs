@@ -197,6 +197,12 @@ public class DocumentValidator : IDocumentValidator
                         mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
                     }
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "");
+                    if (!kyrTables.Any())
+                    {
+                        var emptyKyr = new MTableKyrKeys();
+                        emptyKyr.TableCode = mainTable?.TableCode ?? "";
+                        kyrTables.Add(emptyKyr);
+                    }
 
                     //var kyrTable = _SqlFunctions.SelectTableKyrKey(mainTable?.TableCode ?? "");
                     //var kyrTableCol = kyrTable?.TableCol ?? "";
@@ -219,22 +225,24 @@ public class DocumentValidator : IDocumentValidator
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                             //var factKey = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, kyrTable?.TableCode ?? "", sheet.ZDimVal, row, kyrTableCol)?.TextValue?.Trim() ?? "";
 
-                            //var tmp = factFromMain?.TextValue;
-                            var xxss = 2;
+
                             foreach (var kyrTbl in kyrTables)
                             {
-                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, kyrTbl?.TableCode ?? "", sheet.ZDimVal, row, kyrTbl?.TableCol ?? "");
-                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl.FK_TableCode, kyrTbl.FK_TableCol, factFromMain?.TextValue ?? "").FirstOrDefault(); ;
-
+                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTable?.TableCode ?? "", sheet.ZDimVal, row, kyrTbl?.TableCol ?? "");
+                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl?.FK_TableCode ?? "", kyrTbl?.FK_TableCol ?? "", factFromMain?.TextValue ?? "").FirstOrDefault(); ;
+                                var relatedRow = relatedRowNew?.Row ?? "";
                                 //var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
+                                
+                                var mainTableCode = mainTable?.TableCode ?? "";
+                                var relatedTableCode = kyrTbl?.TableCol ?? "";
                                 if (relatedRowNew != null)
                                 {
                                     //UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, row, relatedRow, ScopeType.Rows);
 
-                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, kyrTbl.FK_TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, kyrTbl.FK_TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, kyrTbl.FK_TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, kyrTbl.FK_TableCode, row, relatedRowNew?.Row ?? "", ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                                 }
                             }
                             ruleOpen.ZetValue = sheet.ZDimVal;
@@ -339,6 +347,13 @@ public class DocumentValidator : IDocumentValidator
                     }
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "");
 
+                    if (!kyrTables.Any())
+                    {
+                        var emptyKyr = new MTableKyrKeys();
+                        emptyKyr.TableCode = mainTable?.TableCode ?? "";
+                        kyrTables.Add(emptyKyr);
+                    }
+
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
@@ -349,30 +364,34 @@ public class DocumentValidator : IDocumentValidator
                         {
                             foreach (var kyrTbl in kyrTables)
                             {
-                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, kyrTbl?.TableCode ?? "", sheet.ZDimVal, row, kyrTbl?.TableCol ?? "");
-                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl.FK_TableCode, kyrTbl.FK_TableCol, factFromMain?.TextValue ?? "").FirstOrDefault(); ;
+
+                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTable?.TableCode ?? "", sheet.ZDimVal, row, kyrTbl?.TableCol ?? "");
+                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl?.FK_TableCode ?? "", kyrTbl?.FK_TableCol ?? "", factFromMain?.TextValue ?? "").FirstOrDefault(); ;
+                                var relatedRow = relatedRowNew?.Row ?? "";
+
+                                //var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, kyrTbl?.TableCode ?? "", sheet.ZDimVal, row, kyrTbl?.TableCol ?? "");
+                                //var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl.FK_TableCode, kyrTbl.FK_TableCol, factFromMain?.TextValue ?? "").FirstOrDefault(); ;
 
                                 //var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
-
+                                var mainTableCode = mainTable?.TableCode ?? "";
+                                var relatedTableCode = kyrTbl?.TableCol ?? "";
                                 if (relatedRowNew != null)
                                 {
-
                                     //find the row from the column that has the foreign key
 
                                     //var relatedRowZZ = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, sheet.TableCode, sheet.ZDimVal, row, kyrTbl.TableCol)?.RowForeign ?? "";
-                                    var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, kyrTbl.TableCol)?.RowForeign ?? "";
-
-                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTable.TableCode, kyrTbl.FK_TableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTable.TableCode, kyrTbl.FK_TableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTable.TableCode, kyrTbl.FK_TableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTable.TableCode, kyrTbl.FK_TableCode, row, relatedRow, ScopeType.Rows);
+                                    //var relatedRow = _SqlFunctions.SelectFactByRowCol(DocumentId, sheet.TemplateSheetId, row, kyrTbl.TableCol)?.RowForeign ?? "";
+                                    
+                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                    UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
 
                                 }
-
-
-                                ruleOpen.ZetValue = sheet.ZDimVal;
-                                ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
+                                
                             }
+                            ruleOpen.ZetValue = sheet.ZDimVal;
+                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
                             ///Sum for closed terms
                             EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.IfComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
                             EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.ThenComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
