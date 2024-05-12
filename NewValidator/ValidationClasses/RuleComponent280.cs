@@ -75,16 +75,22 @@ public class RuleComponent280
             return $"{SymbolExpression}**{vals}";
         }
 
-
         var equalityExpression = "";
-        var left = ExpressionInfo.leftExpression.IsNull ? "null" : $"{ExpressionInfo.leftExpression.Value?.ToString()}";
-        var right = ExpressionInfo.rightExpression.IsNull ? "null" : $"{ExpressionInfo.rightExpression.Value?.ToString()}";
+        var left = OptionalObjectToString(ExpressionInfo.leftExpression);
+        var right = OptionalObjectToString(ExpressionInfo.rightExpression);
         equalityExpression = $"{left} {ExpressionInfo.op} {right}";
-
-
 
         return $"{SymbolExpression}**{vals}***{equalityExpression}";
 
-
+        
+    }
+    public static string OptionalObjectToString(OptionalObject optionalObject)
+    {
+        if (optionalObject.IsNull) return "null";
+        var obj = optionalObject?.Value ?? "";
+        var res = (obj is double || obj is int || obj is float || obj is decimal || obj is long)
+           ? Convert.ToDouble(obj).ToString("D2")
+           : obj.ToString();
+        return res;
     }
 }

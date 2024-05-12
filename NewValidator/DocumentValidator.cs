@@ -317,8 +317,6 @@ public class DocumentValidator : IDocumentValidator
                     }
 
 
-
-
                 }
 
                 if (hasAggregateFn && hasOnlyOpenTables)
@@ -362,13 +360,12 @@ public class DocumentValidator : IDocumentValidator
                                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, factFromMainValue).FirstOrDefault();
                                 var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
 
-                                if (relatedRowNew != null)
-                                {
-                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                }
+
+                                UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+
                             }
 
 
