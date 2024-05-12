@@ -132,13 +132,13 @@ public class DocumentValidator : IDocumentValidator
             foreach (var scopeRowCol in scopeRowcols)
             {
                 //this must go , and update in each case
-                if (scopeType != ScopeType.None)
-                {
-                    UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
-                    UpdateRuleTermsWithRowCol(ruleForScope.ThenComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
-                    UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
-                    UpdateRuleTermsWithRowCol(ruleForScope.FilterComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
-                }
+                //if (scopeType != ScopeType.None)
+                //{
+                //    UpdateRuleTermsWithRowCol(ruleForScope.IfComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                //    UpdateRuleTermsWithRowCol(ruleForScope.ThenComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                //    UpdateRuleTermsWithRowCol(ruleForScope.ElseComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                //    UpdateRuleTermsWithRowCol(ruleForScope.FilterComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleForScope.ScopeType);
+                //}
 
                 //check if no seq and all tables are open                 
                 //--if there is a filter => it is an open table 
@@ -150,6 +150,7 @@ public class DocumentValidator : IDocumentValidator
                 if ((!hasAggregateFn || hasAggregateFn) && hasOnlyClosedTables)
                 {
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => tbl.TableCode == ruleForScope.IfComponent.RuleTerms[0].T);
+                    var mainTableCode = mainTable?.TableCode ?? "";
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
@@ -162,10 +163,10 @@ public class DocumentValidator : IDocumentValidator
                         var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                         if (scopeType != ScopeType.None)
                         {
-                            UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
-                            UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
-                            UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
-                            UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, "", "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                            UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                            UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                            UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                            UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
                         }
 
                         ruleClosed.ZetValue = sheet.ZDimVal;
