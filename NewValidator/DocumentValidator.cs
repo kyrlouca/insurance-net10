@@ -344,6 +344,7 @@ public class DocumentValidator : IDocumentValidator
                     {
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
                         var prevRowValid = true;
+                        var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                         foreach (var row in rows)
                         {
                             foreach (var kyrTbl in kyrTables)
@@ -352,7 +353,7 @@ public class DocumentValidator : IDocumentValidator
                                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, kyrTbl.FK_TableCode, kyrTbl.FK_TableCol, factFromMain?.TextValue ?? "").FirstOrDefault(); ;
 
                                 //var relatedRow = relatedKeyFacts.FirstOrDefault(kf => kf.TextValue == factKey)?.Row?.Trim() ?? "";
-                                var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+
                                 if (relatedRowNew != null)
                                 {
 
@@ -371,421 +372,421 @@ public class DocumentValidator : IDocumentValidator
 
                                 ruleOpen.ZetValue = sheet.ZDimVal;
                                 ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
-
-                                ///Sum for closed terms
-                                EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.IfComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
-                                EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.ThenComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
-                                EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.ElseComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
-
-
-                                KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
-                                    ? KleeneValue.True
-                                    : GeneralEvaluator.EvaluateBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
-
-                                //if filter has terms with null values, it is considered false here                            
-                                if (filterKleeneValue != KleeneValue.True)
-                                {
-                                    continue;
-                                };
-
-                                var isValidRowRule = GeneralEvaluator.ValidateRule(ruleOpen);
-
-                                if (!isValidRowRule)
-                                {
-                                    if (prevRowValid) Console.WriteLine("");
-                                    Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
-                                    CreateRuleError(ruleOpen, validationRule);
-                                    prevRowValid = false;
-                                }
-                                else
-                                {
-                                    prevRowValid = true;
-                                    //Console.WriteLine($"Valid:{validationRule.ValidationID} row:{row}");
-                                    Console.Write($".");
-                                }
-
                             }
+                            ///Sum for closed terms
+                            EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.IfComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
+                            EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.ThenComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
+                            EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.ElseComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
+
+
+                            KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
+                                ? KleeneValue.True
+                                : GeneralEvaluator.EvaluateBooleanExpression(ruleOpen.RuleId, ruleOpen.FilterComponent.SymbolExpression, ruleOpen.FilterComponent.ObjectTerms);
+
+                            //if filter has terms with null values, it is considered false here                            
+                            if (filterKleeneValue != KleeneValue.True)
+                            {
+                                continue;
+                            };
+
+                            var isValidRowRule = GeneralEvaluator.ValidateRule(ruleOpen);
+
+                            if (!isValidRowRule)
+                            {
+                                if (prevRowValid) Console.WriteLine("");
+                                Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
+                                CreateRuleError(ruleOpen, validationRule);
+                                prevRowValid = false;
+                            }
+                            else
+                            {
+                                prevRowValid = true;
+                                //Console.WriteLine($"Valid:{validationRule.ValidationID} row:{row}");
+                                Console.Write($".");
+                            }
+
                         }
-
-                        //we may have aggregates but the sum  are within ?
                     }
 
-                }
-
-
-            }
-            return 1;
-
-            void EvaluateSumTerms(int ruleId, RuleComponent280 ruleComponent, RuleComponent280 filterComponent, string zetValue)
-            {
-                var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
-                foreach (var thenSeqTerm in seqTerms)
-                {
-                    var res = CalculateSumofOpenTable(ruleId, thenSeqTerm, filterComponent, zetValue);
-                    ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
-                }
-            }
-
-            void EvaluateSumTermsForFixedCells(int ruleId, RuleComponent280 ruleComponent, RuleComponent280 filterComponent, string zetValue)
-            {
-                var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
-                foreach (var thenSeqTerm in seqTerms)
-                {
-                    var res = CalculateSumOfClosedTable(thenSeqTerm, zetValue);
-                    ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
-                }
-            }
-        }
-        ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count)
-        {
-            //maybe I need to set obj to zero instead of sum
-            var objTerm = objTerms[objKey];
-            var newObjTerm = objTerm with { Obj = sum, sumValue = Convert.ToDouble(sum), countValue = count, DataType = "N" };
-            objTerms.Remove(objKey);
-            objTerms.Add(objKey, newObjTerm);
-            return newObjTerm;
-        }
-
-        private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType)
-        {
-
-            if (scopeType == ScopeType.Rows)
-            {
-                var rTerms = ruleTerms.Where(term => string.IsNullOrEmpty(term.R)).ToList();
-                foreach (var term in rTerms)
-                {
-                    if (term.T.Trim() == mainTableCode)
-                    {
-                        term.R = rowCol;
-                    }
-                    if (term.T.Trim() == slaveTableCode)
-                    {
-                        term.R = relatedRowCol;
-                    }
-
-                }
-            }
-            if (scopeType == ScopeType.Cols)
-            {
-                var cTerms = ruleTerms.Where(term => string.IsNullOrEmpty(term.C)).ToList();
-
-                foreach (var term in cTerms)
-                {
-                    if (term.T.Trim() == mainTableCode)
-                    {
-                        term.C = rowCol;
-                    }
-                    if (term.T.Trim() == slaveTableCode)
-                    {
-                        term.C = relatedRowCol;
-                    }
-
+                    //we may have aggregates but the sum  are within ?
                 }
 
             }
 
-        }
 
-        private static ObjectTerm280 CreateObjectTerm280Empty()
-        {
-            return new ObjectTerm280("J", 0, false, null, 0, 0, null, true, "");
         }
-        private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance, string filter)
+        return 1;
+
+        void EvaluateSumTerms(int ruleId, RuleComponent280 ruleComponent, RuleComponent280 filterComponent, string zetValue)
         {
-            if (fact == null)
+            var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
+            foreach (var thenSeqTerm in seqTerms)
             {
-                var defaultDataType = defaultValue.Trim() switch
-                {
-                    "0" => "N",
-                    "[Default]" => "S",
-                    "emptySequence()" => "N",
-                    "CreateDate(1900,01,01)" => "D",
-                    _ => "S"
-                };
-
-
-                object? objValue = defaultValue.Trim() switch
-                {
-                    "0" => 0,
-                    "[Default]" => "[Default]",
-                    "emptySequence()" => 0,
-                    "CreateDate(1900,01,01)" => new DateOnly(1900, 1, 1),
-                    _ => null
-                };
-
-
-
-                return new ObjectTerm280(defaultDataType, 0, IsTolerance, null, 0, 0, null, true, "");
+                var res = CalculateSumofOpenTable(ruleId, thenSeqTerm, filterComponent, zetValue);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
             }
+        }
 
-
-            object obj = fact.DataTypeUse.Trim() switch
+        void EvaluateSumTermsForFixedCells(int ruleId, RuleComponent280 ruleComponent, RuleComponent280 filterComponent, string zetValue)
+        {
+            var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
+            foreach (var thenSeqTerm in seqTerms)
             {
-                "E" => fact.TextValue,
-                "S" => fact.TextValue,
-                "I" => fact.NumericValue,
-                "M" => fact.NumericValue,
-                "N" => fact.NumericValue,
-                "P" => fact.NumericValue,
-                "B" => fact.BooleanValue,
-                "D" => (DateTime)fact.DateTimeValue,
-                _ => throw new NotImplementedException()
-            };
-            var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false, filter);
-            return objTerm;
-        }
-
-        private Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms, string zetValue)
-        {
-
-            //check whether the term does not have a zet value (Z0001)
-            var ruleTermsWithZet = ruleTerms.Select(rt => rt with { Z = rt.Z.Contains("Z00") ? zetValue : "" });
-            Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithZet
-                .Select(rtm => new
-                {
-                    rtm.Letter,
-                    Zet = rtm.Z,
-                    Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C),
-                    ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C), rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter))
-                })
-                .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
-            return plainTerms;
-        }
-
-
-        private string UpdateRuleTermFilter(string letter, string filter)
-        {
-            //not(isNull({t: SR.26.01.01.03, r: R0012; R0014; R0020; R0030; R0040, c: C0010, z: Z0001, dv: emptySequence(), filter: dim(this(), [s2c_dim:PO]) = [s2c_PU:x60] and not(isNull(dim(this(), [s2c_dim:FN]))), seq: True, id: v1, f: solvency, fv: solvency2}))
-            //filter: dim(this(), [s2c_dim:PO]) = [s2c_PU:x60] and not(isNull(dim(this(), [s2c_dim:FN])))
-            var res = filter.Replace("this()", $"this({letter})");
-            return res;
-        }
-
-        private (int count, double sum, int decimals) CalculateSumOfClosedTable(RuleTerm280 ruleTermRec, string zetValue)
-        {
-            //isum({t: S.23.01.02.01, r: R0300; R0310; R0320; R0330; R0340; R0350; R0360; R0370, z: Z0001, dv: emptySequence(), seq: True,.. )
-            //scope({t: S.23.01.02.01, c:C0010;C0040, f: solvency, fv: solvency2})
-            var (sumScopeType, rowCols) = ParseRuleTerms(ruleTermRec);
-            var sum = 0.0;
-            var count = 0;
-            var decimals = 0;
-            foreach (var rowCol in rowCols)
-            {
-                var row = sumScopeType == ScopeType.Rows ? rowCol : ruleTermRec.R;
-                var col = sumScopeType == ScopeType.Cols ? rowCol : ruleTermRec.C;
-                var zet = ruleTermRec.Z.Contains("Z000") ? zetValue : "";
-                var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTermRec.T, zet, row, col);
-                sum += fact?.NumericValue ?? 0;
-                count += fact is not null ? 1 : 0;
-                decimals = Math.Abs(fact?.Decimals ?? 0) > Math.Abs(decimals) ? fact?.Decimals ?? 0 : decimals;
-
+                var res = CalculateSumOfClosedTable(thenSeqTerm, zetValue);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
             }
-            return (count, sum, decimals);
+        }
+    }
+    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count)
+    {
+        //maybe I need to set obj to zero instead of sum
+        var objTerm = objTerms[objKey];
+        var newObjTerm = objTerm with { Obj = sum, sumValue = Convert.ToDouble(sum), countValue = count, DataType = "N" };
+        objTerms.Remove(objKey);
+        objTerms.Add(objKey, newObjTerm);
+        return newObjTerm;
+    }
 
-            (ScopeType scopeType, List<string> rowCol) ParseRuleTerms(RuleTerm280 ruleTerm)
+    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType)
+    {
+
+        if (scopeType == ScopeType.Rows)
+        {
+            var rTerms = ruleTerms.Where(term => string.IsNullOrEmpty(term.R)).ToList();
+            foreach (var term in rTerms)
             {
-                var rows = string.IsNullOrEmpty(ruleTerm.R) ? new List<string>() : ruleTerm.R.Split(";", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-                var cols = string.IsNullOrEmpty(ruleTerm.C) ? new List<string>() : ruleTerm.C.Split(";", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-
-                ScopeType sumScopeType = rows switch
+                if (term.T.Trim() == mainTableCode)
                 {
-                    _ when (!rows.Any() && !cols.Any()) => ScopeType.None,
-                    _ when (cols.Count() > rows.Count()) => ScopeType.Cols,
-                    _ => ScopeType.Rows
-                };
-
-
-                ScopeType sumScopeTypeOld = rows switch
+                    term.R = rowCol;
+                }
+                if (term.T.Trim() == slaveTableCode)
                 {
-                    _ when rows.Any() => ScopeType.Rows,
-                    _ when cols.Any() => ScopeType.Cols,
-                    _ => ScopeType.None
-                };
-
-                if (sumScopeType != sumScopeTypeOld && !(rows.Any() && cols.Any()))
-                {
-                    throw new Exception($"sumScopeType DIFFERENT when there are rows AND cols");
+                    term.R = relatedRowCol;
                 }
 
-                var rowCols = sumScopeType switch
-                {
-                    ScopeType.Rows => rows,
-                    ScopeType.Cols => cols,
-                    _ => new List<string>()
-                };
-                return (sumScopeType, rowCols);
             }
-
         }
-
-        private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
+        if (scopeType == ScopeType.Cols)
         {
-            //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
-            //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
+            var cTerms = ruleTerms.Where(term => string.IsNullOrEmpty(term.C)).ToList();
 
-            Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms, ruleStructure.ZetValue);
-            ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
-
-
-            Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms, ruleStructure.ZetValue);
-            ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
-
-            Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms, ruleStructure.ZetValue);
-            ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
-
-            Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.FilterComponent.RuleTerms, ruleStructure.ZetValue);
-            ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
-
-            return ruleStructure;
-
-        }
-
-        private (double sum, int count) CalculateSumofOpenTable(int ruleId, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent, string zetValue)
-        {
-
-            var seqTable = seqTableTerm.T;
-            var kyrTable = _SqlFunctions.SelectTableKyrKey(seqTableTerm.T);
-            var relatedTable = kyrTable?.FK_TableCode ?? "";
-            //from the sqTableTErms
-            //find the related table.
-
-            var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqTableTerm.T, seqTableTerm.Z, seqTableTerm.C); ;
-            double sum = 0;
-            var count = 0;
-            foreach (var fact in facts)
+            foreach (var term in cTerms)
             {
-                var row = fact.Row;
-                var foreignKeyRow = fact.RowForeign;
-                var isFilterValid = EvaluateFilterRow(ruleId, filterComponent, relatedTable, fact.Row, fact.RowForeign, zetValue);
-                if (isFilterValid)
+                if (term.T.Trim() == mainTableCode)
                 {
-                    sum += fact.NumericValue;
-                    count++;
+                    term.C = rowCol;
                 }
-            }
-            return (sum, count);
-        }
-
-        private bool EvaluateFilterRow(int ruleId, RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow, string zetValue)
-        {
-            foreach (var filterTerm in filterComponent.RuleTerms)
-            {
-                filterTerm.R = filterTerm.T.Trim() == relatedTable.Trim()
-                    ? foreignRow
-                    : row;
-                var term = 1;
-            }
-
-            try
-            {
-
-                Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms, zetValue);
-                if (filterTerms.Any())
+                if (term.T.Trim() == slaveTableCode)
                 {
-                    var res = GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms);
-                    return res == KleeneValue.True;
+                    term.C = relatedRowCol;
                 }
 
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"EvaluateFilterRow : relatedTable:{relatedTable} row:{row} foreignRow:{foreignRow} ---- {ex}");
             }
 
         }
 
+    }
 
-
-        private int CreateErrorDocument()
+    private static ObjectTerm280 CreateObjectTerm280Empty()
+    {
+        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true, "");
+    }
+    private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance, string filter)
+    {
+        if (fact == null)
         {
-            var errorDoc = new ErrorDocumentModel
+            var defaultDataType = defaultValue.Trim() switch
             {
-                IsDocumentValid = true,
-                ErrorDocumentId = DocumentId,
-                OrganisationId = _parameterData.FundId,
-                UserId = _parameterData.UserId.ToString(),
-                ErrorCounter = true,
-                WarningCounter = true,
-            };
-            var errorDocument = _SqlFunctions.CreateErrorDocument(errorDoc);
-            return errorDocument;
-        }
-
-        private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
-        {
-
-            var errorRule = new ERROR_Rule
-            {
-                RuleId = ruleStructure.RuleId,
-                ErrorDocumentId = DocumentId,
-                //Scope = RegexUtils.TruncateString(rule.Sc, 800),
-                DataType = "",
-                TableBaseFormula = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
-                Filter = RegexUtils.TruncateString(ruleStructure.FilterComponent.Expression, 800),
-                SheetId = 0,
-                SheetCode = "",
-                RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
-                ShortLabel = RegexUtils.TruncateString(validationRule.ShortLabel, 900),
-                IsWarning = validationRule.Severity.Trim() == "Warning",
-                IsError = validationRule.Severity.Trim() == "Error",
-                IsDataError = false,
-
-                FormulaForIf = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.IfComponent), 800),
-                FormulaForThen = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ThenComponent), 800),
-                FormulaForElse = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ElseComponent), 800),
-                FormulaForFilter = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.FilterComponent), 800),
-
+                "0" => "N",
+                "[Default]" => "S",
+                "emptySequence()" => "N",
+                "CreateDate(1900,01,01)" => "D",
+                _ => "S"
             };
 
-            var res = _SqlFunctions.CreateErrorRule(errorRule);
-            return res;
 
-            string BuildComponentValues(RuleComponent280 component)
+            object? objValue = defaultValue.Trim() switch
             {
-                var val = $"{component.DislayRuleComponentTerms()}";
-                return RegexUtils.TruncateString(val, 800);
-            }
+                "0" => 0,
+                "[Default]" => "[Default]",
+                "emptySequence()" => 0,
+                "CreateDate(1900,01,01)" => new DateOnly(1900, 1, 1),
+                _ => null
+            };
 
+
+
+            return new ObjectTerm280(defaultDataType, 0, IsTolerance, null, 0, 0, null, true, "");
         }
 
 
-
-        public static void UpdateExpressionWithShortLabel(string inputFilePath, string outputFilePath)
+        object obj = fact.DataTypeUse.Trim() switch
         {
-            var connectionString = "Data Source = KYR-RYZEN\\MSSQLSERVER01; Initial Catalog =EIOPA_280_Hotfix; Integrated Security = true;TrustServerCertificate=True;";
-            using var connectionLocal = new SqlConnection(connectionString);
-            // Use 'using' for automatic file closing
-            using (StreamReader reader = new StreamReader(inputFilePath))
+            "E" => fact.TextValue,
+            "S" => fact.TextValue,
+            "I" => fact.NumericValue,
+            "M" => fact.NumericValue,
+            "N" => fact.NumericValue,
+            "P" => fact.NumericValue,
+            "B" => fact.BooleanValue,
+            "D" => (DateTime)fact.DateTimeValue,
+            _ => throw new NotImplementedException()
+        };
+        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false, filter);
+        return objTerm;
+    }
+
+    private Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<RuleTerm280> ruleTerms, string zetValue)
+    {
+
+        //check whether the term does not have a zet value (Z0001)
+        var ruleTermsWithZet = ruleTerms.Select(rt => rt with { Z = rt.Z.Contains("Z00") ? zetValue : "" });
+        Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithZet
+            .Select(rtm => new
             {
-                using (StreamWriter writer = new StreamWriter(outputFilePath))
+                rtm.Letter,
+                Zet = rtm.Z,
+                Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C),
+                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C), rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter))
+            })
+            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
+        return plainTerms;
+    }
+
+
+    private string UpdateRuleTermFilter(string letter, string filter)
+    {
+        //not(isNull({t: SR.26.01.01.03, r: R0012; R0014; R0020; R0030; R0040, c: C0010, z: Z0001, dv: emptySequence(), filter: dim(this(), [s2c_dim:PO]) = [s2c_PU:x60] and not(isNull(dim(this(), [s2c_dim:FN]))), seq: True, id: v1, f: solvency, fv: solvency2}))
+        //filter: dim(this(), [s2c_dim:PO]) = [s2c_PU:x60] and not(isNull(dim(this(), [s2c_dim:FN])))
+        var res = filter.Replace("this()", $"this({letter})");
+        return res;
+    }
+
+    private (int count, double sum, int decimals) CalculateSumOfClosedTable(RuleTerm280 ruleTermRec, string zetValue)
+    {
+        //isum({t: S.23.01.02.01, r: R0300; R0310; R0320; R0330; R0340; R0350; R0360; R0370, z: Z0001, dv: emptySequence(), seq: True,.. )
+        //scope({t: S.23.01.02.01, c:C0010;C0040, f: solvency, fv: solvency2})
+        var (sumScopeType, rowCols) = ParseRuleTerms(ruleTermRec);
+        var sum = 0.0;
+        var count = 0;
+        var decimals = 0;
+        foreach (var rowCol in rowCols)
+        {
+            var row = sumScopeType == ScopeType.Rows ? rowCol : ruleTermRec.R;
+            var col = sumScopeType == ScopeType.Cols ? rowCol : ruleTermRec.C;
+            var zet = ruleTermRec.Z.Contains("Z000") ? zetValue : "";
+            var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTermRec.T, zet, row, col);
+            sum += fact?.NumericValue ?? 0;
+            count += fact is not null ? 1 : 0;
+            decimals = Math.Abs(fact?.Decimals ?? 0) > Math.Abs(decimals) ? fact?.Decimals ?? 0 : decimals;
+
+        }
+        return (count, sum, decimals);
+
+        (ScopeType scopeType, List<string> rowCol) ParseRuleTerms(RuleTerm280 ruleTerm)
+        {
+            var rows = string.IsNullOrEmpty(ruleTerm.R) ? new List<string>() : ruleTerm.R.Split(";", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            var cols = string.IsNullOrEmpty(ruleTerm.C) ? new List<string>() : ruleTerm.C.Split(";", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+            ScopeType sumScopeType = rows switch
+            {
+                _ when (!rows.Any() && !cols.Any()) => ScopeType.None,
+                _ when (cols.Count() > rows.Count()) => ScopeType.Cols,
+                _ => ScopeType.Rows
+            };
+
+
+            ScopeType sumScopeTypeOld = rows switch
+            {
+                _ when rows.Any() => ScopeType.Rows,
+                _ when cols.Any() => ScopeType.Cols,
+                _ => ScopeType.None
+            };
+
+            if (sumScopeType != sumScopeTypeOld && !(rows.Any() && cols.Any()))
+            {
+                throw new Exception($"sumScopeType DIFFERENT when there are rows AND cols");
+            }
+
+            var rowCols = sumScopeType switch
+            {
+                ScopeType.Rows => rows,
+                ScopeType.Cols => cols,
+                _ => new List<string>()
+            };
+            return (sumScopeType, rowCols);
+        }
+
+    }
+
+    private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
+    {
+        //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
+        //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
+
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms, ruleStructure.ZetValue);
+        ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
+
+
+        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms, ruleStructure.ZetValue);
+        ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
+
+        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms, ruleStructure.ZetValue);
+        ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
+
+        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.FilterComponent.RuleTerms, ruleStructure.ZetValue);
+        ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
+
+        return ruleStructure;
+
+    }
+
+    private (double sum, int count) CalculateSumofOpenTable(int ruleId, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent, string zetValue)
+    {
+
+        var seqTable = seqTableTerm.T;
+        var kyrTable = _SqlFunctions.SelectTableKyrKey(seqTableTerm.T);
+        var relatedTable = kyrTable?.FK_TableCode ?? "";
+        //from the sqTableTErms
+        //find the related table.
+
+        var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqTableTerm.T, seqTableTerm.Z, seqTableTerm.C); ;
+        double sum = 0;
+        var count = 0;
+        foreach (var fact in facts)
+        {
+            var row = fact.Row;
+            var foreignKeyRow = fact.RowForeign;
+            var isFilterValid = EvaluateFilterRow(ruleId, filterComponent, relatedTable, fact.Row, fact.RowForeign, zetValue);
+            if (isFilterValid)
+            {
+                sum += fact.NumericValue;
+                count++;
+            }
+        }
+        return (sum, count);
+    }
+
+    private bool EvaluateFilterRow(int ruleId, RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow, string zetValue)
+    {
+        foreach (var filterTerm in filterComponent.RuleTerms)
+        {
+            filterTerm.R = filterTerm.T.Trim() == relatedTable.Trim()
+                ? foreignRow
+                : row;
+            var term = 1;
+        }
+
+        try
+        {
+
+            Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(filterComponent.RuleTerms, zetValue);
+            if (filterTerms.Any())
+            {
+                var res = GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms);
+                return res == KleeneValue.True;
+            }
+
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"EvaluateFilterRow : relatedTable:{relatedTable} row:{row} foreignRow:{foreignRow} ---- {ex}");
+        }
+
+    }
+
+
+
+    private int CreateErrorDocument()
+    {
+        var errorDoc = new ErrorDocumentModel
+        {
+            IsDocumentValid = true,
+            ErrorDocumentId = DocumentId,
+            OrganisationId = _parameterData.FundId,
+            UserId = _parameterData.UserId.ToString(),
+            ErrorCounter = true,
+            WarningCounter = true,
+        };
+        var errorDocument = _SqlFunctions.CreateErrorDocument(errorDoc);
+        return errorDocument;
+    }
+
+    private int CreateRuleError(RuleStructure280 ruleStructure, VValidationRuleExpressions validationRule)
+    {
+
+        var errorRule = new ERROR_Rule
+        {
+            RuleId = ruleStructure.RuleId,
+            ErrorDocumentId = DocumentId,
+            //Scope = RegexUtils.TruncateString(rule.Sc, 800),
+            DataType = "",
+            TableBaseFormula = RegexUtils.TruncateString(ruleStructure.RuleFormula, 990),
+            Filter = RegexUtils.TruncateString(ruleStructure.FilterComponent.Expression, 800),
+            SheetId = 0,
+            SheetCode = "",
+            RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
+            ShortLabel = RegexUtils.TruncateString(validationRule.ShortLabel, 900),
+            IsWarning = validationRule.Severity.Trim() == "Warning",
+            IsError = validationRule.Severity.Trim() == "Error",
+            IsDataError = false,
+
+            FormulaForIf = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.IfComponent), 800),
+            FormulaForThen = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ThenComponent), 800),
+            FormulaForElse = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.ElseComponent), 800),
+            FormulaForFilter = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.FilterComponent), 800),
+
+        };
+
+        var res = _SqlFunctions.CreateErrorRule(errorRule);
+        return res;
+
+        string BuildComponentValues(RuleComponent280 component)
+        {
+            var val = $"{component.DislayRuleComponentTerms()}";
+            return RegexUtils.TruncateString(val, 800);
+        }
+
+    }
+
+
+
+    public static void UpdateExpressionWithShortLabel(string inputFilePath, string outputFilePath)
+    {
+        var connectionString = "Data Source = KYR-RYZEN\\MSSQLSERVER01; Initial Catalog =EIOPA_280_Hotfix; Integrated Security = true;TrustServerCertificate=True;";
+        using var connectionLocal = new SqlConnection(connectionString);
+        // Use 'using' for automatic file closing
+        using (StreamReader reader = new StreamReader(inputFilePath))
+        {
+            using (StreamWriter writer = new StreamWriter(outputFilePath))
+            {
+                string line;
+                // Read line by line until null (end of file)
+                //$$$SHORT_LABEL(en) - BV1296: T.99.01 c0070 must not be reported.$$$BV1296
+                var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*-(.*)\${3}(.*)");
+
+                while ((line = reader.ReadLine()) != null)
                 {
-                    string line;
-                    // Read line by line until null (end of file)
-                    //$$$SHORT_LABEL(en) - BV1296: T.99.01 c0070 must not be reported.$$$BV1296
-                    var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*-(.*)\${3}(.*)");
-
-                    while ((line = reader.ReadLine()) != null)
+                    var match = rgxLine.Match(line);
+                    if (match.Success)
                     {
-                        var match = rgxLine.Match(line);
-                        if (match.Success)
-                        {
-                            var shortLabel = match.Groups[1].Value;
-                            var validationCode = match.Groups[2].Value;
-                            var sqlRule = @"update vValidationRuleExpressions set ShortLabel= @shortLabel where ValidationCode = @ValidationCode";
+                        var shortLabel = match.Groups[1].Value;
+                        var validationCode = match.Groups[2].Value;
+                        var sqlRule = @"update vValidationRuleExpressions set ShortLabel= @shortLabel where ValidationCode = @ValidationCode";
 
-                            writer.WriteLine($"{sqlRule}");
-                            var res = connectionLocal.Execute(sqlRule, new { shortLabel, validationCode });
-                            var y = 3;
-                        }
-                        // Write the line wrapped in quotes
-
+                        writer.WriteLine($"{sqlRule}");
+                        var res = connectionLocal.Execute(sqlRule, new { shortLabel, validationCode });
+                        var y = 3;
                     }
+                    // Write the line wrapped in quotes
+
                 }
             }
         }
     }
+
     class ValidationRuleComparer : IEqualityComparer<VValidationRuleExpressions>
     {
         //not used but usefull to know
