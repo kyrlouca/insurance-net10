@@ -801,9 +801,9 @@ public class DocumentValidator : IDocumentValidator
             return b1.ValidationID == b2.ValidationID;
 
         }
-    }
-    public int GetHashCode(VValidationRuleExpressions vr) => vr.ValidationID;
 
+        public int GetHashCode(VValidationRuleExpressions vr) => vr.ValidationID;
+    }
 
 
 
