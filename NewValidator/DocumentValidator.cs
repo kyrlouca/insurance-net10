@@ -412,9 +412,9 @@ public class DocumentValidator : IDocumentValidator
 
                 }
 
-                return 1;
+                
             }
-            
+            return 1;
 
             void EvaluateSumTerms(int ruleId, RuleComponent280 ruleComponent, RuleComponent280 filterComponent, string zetValue)
             {
