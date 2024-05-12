@@ -103,14 +103,14 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            validationRules = validationRules.Where(vr => vr.ValidationID == 648).ToList();
+            //validationRules = validationRules.Where(vr => vr.ValidationID == 4040).ToList();
         }
 
         foreach (var validationRule in validationRules)
         {
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID)
-                .DistinctBy(tbl=>tbl.TableID)
+                .DistinctBy(tbl => tbl.TableID)
                 .ToList();
 
             var hasOnlyOpenTables = tablesInValidation.All(tbl => tbl.IsOpenTable);
@@ -149,7 +149,7 @@ public class DocumentValidator : IDocumentValidator
                 //Closed Tables: sum without seq , use the R: to create terms (3780) OR the terms are separated by commas
 
                 var hasAggregateFn = ruleForScope.IfComponent.RuleTerms.Any(rt => rt.IsSequence) || ruleForScope.ThenComponent.RuleTerms.Any(rt => rt.IsSequence);
-                
+
                 if ((!hasAggregateFn || hasAggregateFn) && hasOnlyClosedTables)
                 {
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => tbl.TableCode == ruleForScope.IfComponent.RuleTerms[0].T);
@@ -202,7 +202,7 @@ public class DocumentValidator : IDocumentValidator
                         mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
                     }
                     var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
-                    
+
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "");
                     if (!kyrTables.Any())
                     {
@@ -210,7 +210,7 @@ public class DocumentValidator : IDocumentValidator
                         emptyKyr.TableCode = mainTable?.TableCode ?? "";
                         kyrTables.Add(emptyKyr);
                     }
-                    
+
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
@@ -221,8 +221,8 @@ public class DocumentValidator : IDocumentValidator
                         foreach (var row in rows)
                         {
                             //create one rule for each rule
-                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);                            
-                            
+                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+
                             foreach (var kyrTbl in kyrTables)
                             {
                                 //update the row number for each related table
@@ -230,18 +230,17 @@ public class DocumentValidator : IDocumentValidator
                                 var relatedTableCol = kyrTbl?.FK_TableCol?.Trim() ?? "";
                                 var mainTableCol = kyrTbl?.TableCol?.Trim() ?? "";
 
-                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode , sheet.ZDimVal, row, mainTableCol);
+                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode, sheet.ZDimVal, row, mainTableCol);
                                 var factFromMainValue = factFromMain?.TextValue.Trim() ?? "";
-                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, factFromMainValue).FirstOrDefault(); 
+                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, factFromMainValue).FirstOrDefault();
                                 var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
-                                                                
-                                if (relatedRowNew != null)
-                                {                                
-                                    UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                    UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                }
+
+
+                                UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+                                UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+
                             }
                             ruleOpen.ZetValue = sheet.ZDimVal;
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
@@ -323,9 +322,9 @@ public class DocumentValidator : IDocumentValidator
                 }
 
                 if (hasAggregateFn && hasOnlyOpenTables)
-                {                    
+                {
                     //create one rule for each row and apply filter 
-                    
+
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
                     if (mainTable is null)
                     {
@@ -350,7 +349,7 @@ public class DocumentValidator : IDocumentValidator
                         var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                         foreach (var row in rows)
                         {
-                         
+
                             foreach (var kyrTbl in kyrTables)
                             {
                                 //update the row number for each related table
