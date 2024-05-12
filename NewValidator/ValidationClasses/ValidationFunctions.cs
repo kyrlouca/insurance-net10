@@ -1015,7 +1015,7 @@ internal class ValidationFunctions
     }
 
 
-    public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
+    public static KleeneValue ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
     {
         //matches may be inside a formula or in a filter, a metric m: with filter , a dim , a term with filter
         //1. inside the term matches : matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")                        
@@ -1060,7 +1060,7 @@ internal class ValidationFunctions
                 //if the filter is false, no need to check the rule and return a match
                 if (isFilterValid != KleeneValue.True)
                 {
-                    return true;
+                    return KleeneValue.True;
                 };
             }
             termValue = termLeft.Obj;
@@ -1069,7 +1069,7 @@ internal class ValidationFunctions
         if (termValue is null)
         {
             //match could return a kleene value?
-            return true;
+            return KleeneValue.Unknown;
         }
 
 
@@ -1078,7 +1078,7 @@ internal class ValidationFunctions
         {
             //matches(X00, "ISO 8601 'yyyy-mm-dd' pattern ")
             //since termValue is of type DateTime, it means it was processed successfully and we do not care about formatting
-            return true; 
+            return KleeneValue.True; 
         }
         if (rgxFromValue.Contains("ISO 3166"))
         {
@@ -1087,7 +1087,9 @@ internal class ValidationFunctions
             var regions= rgxRegions.Matches(rgxFromValue).Select(rg => rg.Groups[1].Value);
             if (regions.Count()==0) 
             {
-                return allCountries363.Contains(termValue);
+                var res= allCountries363.Contains(termValue);
+                return res?KleeneValue.True:KleeneValue.False;
+                //return allCountries363.Contains(termValue);
                 
             }
             
@@ -1096,39 +1098,46 @@ internal class ValidationFunctions
 
                 if (region == "AA" && aaCountries380.Contains(termValue))
                 {
-                    return true;
+                    return KleeneValue.True;
                 }
                 if (region == "EU" && euCountries377.Contains(termValue))
                 {
-                    return true;
+                    return KleeneValue.True;
                 }
                 if (region == "XA" && aaCountries380.Contains(termValue) &&  !euCountries377.Contains(termValue))
                 {
-                    return true;
+                    return KleeneValue.True;
                 }
 
             }
-            return false;
+            return KleeneValue.False;
+            
             
             //matches(X00, "one of options as per ISO 3166-1")
         }
         if (rgxFromValue.Contains("ISO 4217"))
         {
-            //matches(X00, "one of options as per ISO 4217")***X00=S.06.02.01.02:R0001:C0280##s2c_CU:EUR,    
-                return (currencies317.Contains(termValue));            
+            //matches(X00, "one of options as per ISO 4217")***X00=S.06.02.01.02:R0001:C0280##s2c_CU:EUR,
+             var res= (currencies317.Contains(termValue));
+            return res ? KleeneValue.True : KleeneValue.False;
+            //return (currencies317.Contains(termValue));            
         }
 
         if (rgxFromValue.Contains("ISO 639-1"))
         {
             //matches(X00, "one of options as per ISO 639-1")***#X00-S.01.02.01.01:R0070:C0010==s2c_LA:en,
-            return (languages648.Contains(termValue));
+            var res= (languages648.Contains(termValue));
+            return res ? KleeneValue.True : KleeneValue.False;
+            //return (languages648.Contains(termValue));
         }
 
 
 
         var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
         var matchValidation = rgx.Match((string)termValue!);
-        return matchValidation.Success;
+        var resM =matchValidation.Success;
+        return resM ? KleeneValue.True : KleeneValue.False;
+        //return matchValidation.Success;
     }
 
 

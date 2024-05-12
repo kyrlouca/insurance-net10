@@ -201,6 +201,7 @@ public class DocumentValidator : IDocumentValidator
                         mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
                     }
                     var mainTableCode = mainTable?.TableCode ?? "";
+                    
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "");
                     if (!kyrTables.Any())
                     {
@@ -224,13 +225,14 @@ public class DocumentValidator : IDocumentValidator
                             foreach (var kyrTbl in kyrTables)
                             {
                                 //update the row number for each related table
-                                var relatedTableCode = kyrTbl?.FK_TableCode ?? "";
-                                var relatedTableCol = kyrTbl?.FK_TableCol ?? "";
+                                var relatedTableCode = kyrTbl?.FK_TableCode?.Trim() ?? "";
+                                var relatedTableCol = kyrTbl?.FK_TableCol?.Trim() ?? "";
+                                var mainTableCol = kyrTbl?.TableCol?.Trim() ?? "";
 
-                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode , sheet.ZDimVal, row, relatedTableCol);
-                                var factFromMainValue = factFromMain?.TextValue ?? "";
+                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode , sheet.ZDimVal, row, mainTableCol);
+                                var factFromMainValue = factFromMain?.TextValue.Trim() ?? "";
                                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, factFromMainValue).FirstOrDefault(); 
-                                var relatedRow = relatedRowNew?.Row ?? "";
+                                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
                                                                 
                                 if (relatedRowNew != null)
                                 {                                
@@ -469,11 +471,11 @@ public class DocumentValidator : IDocumentValidator
             var rTerms = ruleTerms.Where(term => string.IsNullOrEmpty(term.R)).ToList();
             foreach (var term in rTerms)
             {
-                if (term.T.Trim() == mainTableCode)
+                if (term.T.Trim() == mainTableCode.Trim())
                 {
                     term.R = rowCol;
                 }
-                if (term.T.Trim() == slaveTableCode)
+                if (term.T.Trim() == slaveTableCode.Trim())
                 {
                     term.R = relatedRowCol;
                 }
@@ -486,11 +488,11 @@ public class DocumentValidator : IDocumentValidator
 
             foreach (var term in cTerms)
             {
-                if (term.T.Trim() == mainTableCode)
+                if (term.T.Trim() == mainTableCode.Trim())
                 {
                     term.C = rowCol;
                 }
-                if (term.T.Trim() == slaveTableCode)
+                if (term.T.Trim() == slaveTableCode.Trim())
                 {
                     term.C = relatedRowCol;
                 }

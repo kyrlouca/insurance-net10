@@ -165,7 +165,8 @@ public partial class GeneralEvaluator
                     return resn ? KleeneValue.True : KleeneValue.False;
                 case "matches":
                     var resm = ValidationFunctions.ValidateMatch(formula, terms);
-                    return resm ? KleeneValue.True : KleeneValue.False;
+                    //return resm ? KleeneValue.True : KleeneValue.False;
+                    return resm;
                 //case "dim":
                 //it is not a function returning boolean. It is only used inside isNull
                 //    var resdim = ValidationFunctions.ExtractDimValueFormFact(formula,"", terms);
