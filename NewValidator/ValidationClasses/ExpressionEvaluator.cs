@@ -230,12 +230,13 @@ public partial class GeneralEvaluator
             var op = matchSplit.Groups[2].Value;
             var right = matchSplit.Groups[3].Value;
 
+            //Check if it is a string expression
             var isExpressionWithStrings = terms
                 .Where(term => formula.Contains(term.Key))
                 .Any(t => (t.Value?.DataType ?? "") == "S" || (t.Value?.DataType ?? "") == "E"); //check for "E"
             if (isExpressionWithStrings)
             {
-                var resStr = EvaluateSimpleString(formula, terms);
+                var resStr = EvaluateSimpleStringExpression(formula, terms);
                 return resStr;
             }
 
@@ -562,7 +563,7 @@ public partial class GeneralEvaluator
             _ => throw new ArgumentException("Invalid function type"),
         };
 
-    public static OptionalObject EvaluateSimpleArithmetic(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static OptionalObject EvaluateSimpleArithmeticNotUsed(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);
@@ -608,7 +609,7 @@ public partial class GeneralEvaluator
 
     }
 
-    public static KleeneValue EvaluateSimpleString(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
+    public static KleeneValue EvaluateSimpleStringExpression(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)");
         var matchTersm = rgxTerm.Match(symbolFormula);

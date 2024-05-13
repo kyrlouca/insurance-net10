@@ -1041,7 +1041,7 @@ internal class ValidationFunctions
         if (hasDimOnTheLeft)
         {
             //*** you are in a filter. Do NOT check for filter since you are using the same term
-            //find the  dim
+            //find the  dim //dim(this(X00), [s2c_dim:UI])
             termValue = ExtractDimValueFormFact(leftPart, terms);
             //check the match
         }
