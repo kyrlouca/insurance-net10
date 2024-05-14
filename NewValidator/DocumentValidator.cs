@@ -103,7 +103,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            //validationRules = validationRules.Where(vr => vr.ValidationID == 4040).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 378).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -172,8 +172,9 @@ public class DocumentValidator : IDocumentValidator
                             UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
                         }
 
+                        //MAKE usingZet to true to  find facts using zet. 
                         ruleClosed.ZetValue = sheet.ZDimVal;
-                        ruleClosed = FillRuleStructureWithFactValues(ruleClosed);
+                        ruleClosed = FillRuleStructureWithFactValues(ruleClosed,true);
                         //var objs = ruleClosed.IfComponent.ObjectTerms.Select(ot => ot.Value.Obj).ToList();
                         var sumTerm = ruleClosed.IfComponent.RuleTerms.Where(rt => rt.IsSequence).FirstOrDefault();
 
@@ -193,8 +194,7 @@ public class DocumentValidator : IDocumentValidator
 
                 if (!hasAggregateFn && (hasMixedTables || hasOnlyOpenTables))
                 {
-                    //create one rule for each row and apply filter 
-                    //***this was CORRECT and tested ****
+                    //create one rule for each row and apply filter                     
 
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
                     if (mainTable is null)
@@ -213,8 +213,7 @@ public class DocumentValidator : IDocumentValidator
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
-                    {
-                        //var keySheetxx = _SqlFunctions.SelectTemplateSheetBySheetCodeZet(DocumentId, fklTableCode, sheet.ZDimVal);
+                    {                     
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
 
                         var prevRowValid = true;
@@ -240,12 +239,10 @@ public class DocumentValidator : IDocumentValidator
                                 UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                                 UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                                 UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-
                             }
                             ruleOpen.ZetValue = sheet.ZDimVal;
-                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
-
-
+                            //MAKE usingZet to false to avoid finding facts using zet. the closed table has no zet but the open tables for sum do have a zet
+                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen,false);
 
                             KleeneValue filterKleeneValue = ruleOpen!.FilterComponent.IsEmpty
                                 ? KleeneValue.True
@@ -301,7 +298,7 @@ public class DocumentValidator : IDocumentValidator
                         //sumTersm will be evaluated again below
                         //MAKE ZET EMPTY. the closed table has no zet but the open tables for sum do have a zet
                         rule.ZetValue = "";
-                        rule = FillRuleStructureWithFactValues(rule);
+                        rule = FillRuleStructureWithFactValues(rule,false);
 
                         EvaluateSumTerms(rule.RuleId, rule.IfComponent, rule.FilterComponent, string.Empty);
                         EvaluateSumTerms(rule.RuleId, rule.ThenComponent, rule.FilterComponent, string.Empty);
@@ -369,8 +366,9 @@ public class DocumentValidator : IDocumentValidator
                             }
 
 
+                            //MAKE usingZet to false to avoid finding facts using zet. the closed table has no zet but the open tables for sum do have a zet
                             ruleOpen.ZetValue = sheet.ZDimVal;
-                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
+                            ruleOpen = FillRuleStructureWithFactValues(ruleOpen, false);
                             ///Sum for closed terms
                             EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.IfComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
                             EvaluateSumTermsForFixedCells(ruleOpen.RuleId, ruleOpen.ThenComponent, ruleOpen.FilterComponent, ruleOpen.ZetValue);
@@ -538,6 +536,8 @@ public class DocumentValidator : IDocumentValidator
     {
 
         //check whether the term does not have a zet value (Z0001)
+        //I changed the program, and in some cases I pass deliberately zetValue="" to avoid using the Zet 
+        //this was necessary for rule 348. because open tables S.06.02.01.01 and S.07.01.01.01 have  zets with different values
         var ruleTermsWithZet = ruleTerms.Select(rt => rt with { Z = rt.Z.Contains("Z00") ? zetValue : "" });
         Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithZet
             .Select(rtm => new
@@ -617,22 +617,26 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
-    private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
+    private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure, bool isUsingZet)
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms, ruleStructure.ZetValue);
+        //if we have only closed tables or mixed tables isUsingZet comes as zero
+        var zetValue = isUsingZet ? ruleStructure.ZetValue : "";
+        //var zetValue = ruleStructure.ZetValue ;
+
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.IfComponent.RuleTerms,zetValue);
         ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
 
 
-        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms, ruleStructure.ZetValue);
+        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ThenComponent.RuleTerms, zetValue);
         ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
 
-        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms, ruleStructure.ZetValue);
+        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.ElseComponent.RuleTerms, zetValue);
         ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
 
-        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.FilterComponent.RuleTerms, ruleStructure.ZetValue);
+        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.FilterComponent.RuleTerms, zetValue);
         ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
 
         return ruleStructure;
