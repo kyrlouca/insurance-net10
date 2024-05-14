@@ -1,4 +1,5 @@
-﻿using Shared.GeneralUtils;
+﻿using Shared.DataModels;
+using Shared.GeneralUtils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,17 +13,17 @@ public enum ScopeType { Rows, Cols, None }
 public class RuleStructure280
 {
     public int RuleId { get; init; }
-    public string RuleFormula { get; init; }    
+    public string RuleFormula { get; init; }
     public RuleComponent280 IfComponent { get; init; }
     public RuleComponent280 ThenComponent { get; init; }
     public RuleComponent280 ElseComponent { get; init; }
-
     public RuleComponent280 FilterComponent { get; init; }
-    public List<string> ScopeRowCols { get; init; }    
+    public List<string> ScopeRowCols { get; init; }
     public ScopeType ScopeType { get; init; }
     public string ZetValue { get; set; }
 
-    private RuleStructure280(int ruleId, string ruleFormula, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent, RuleComponent280 filter, List<string> rowsCols, ScopeType scopeType)
+    public List<MTable> RuleTables { get; set; } = new List<MTable>();
+    private RuleStructure280(int ruleId, List<MTable> ruleTables, string ruleFormula, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent, RuleComponent280 filter, List<string> rowsCols, ScopeType scopeType)
     {
         RuleId = ruleId;
         RuleFormula = ruleFormula;
@@ -33,6 +34,7 @@ public class RuleStructure280
         ScopeType = scopeType;
         ScopeRowCols = rowsCols;
         ZetValue = "";
+        RuleTables = ruleTables;
 
     }
 
@@ -63,7 +65,7 @@ public class RuleStructure280
         return res;
     }
 
-    public static RuleStructure280 CreateRuleStructure(int ruleId, string ruleFormula, string filterFormula, string scopeFormula)
+    public static RuleStructure280 CreateRuleStructure(int ruleId, List<MTable> ruleTables, string ruleFormula, string filterFormula, string scopeFormula)
     {
         //text = """if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)""";
         //@"if matches(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), "^ISIN/[A-Z0-9]{12}$") then isinChecksum(substring(dim({d: [s2c_dim:IW], seq: False, id: v0},[s2c_dim:IW]), 6)";
@@ -77,8 +79,9 @@ public class RuleStructure280
         var filter = RuleComponent280.CreateComponent(filterFormula);
         var scope = RuleComponent280.CreateComponent(scopeFormula);
         var (scopeType, scopeRowCols) = GetScopeItems(scope);
+        
 
-        var rec = new RuleStructure280(ruleId, ruleFormula, ifComponent, thenComponent, elseComponent, filter, scopeRowCols, scopeType);
+        var rec = new RuleStructure280(ruleId,ruleTables, ruleFormula, ifComponent, thenComponent, elseComponent, filter, scopeRowCols, scopeType);
         return rec;
     }
 
@@ -89,8 +92,8 @@ public class RuleStructure280
         {
             return (ScopeType.None, new List<string>());
         }
-        var rows = (scope == null) ? new List<string>() : scope.R.Split(";",StringSplitOptions.RemoveEmptyEntries).ToList();
-        var cols = (scope == null) ? new List<string>() : scope.C.Split(";",StringSplitOptions.RemoveEmptyEntries).ToList();
+        var rows = (scope == null) ? new List<string>() : scope.R.Split(";", StringSplitOptions.RemoveEmptyEntries).ToList();
+        var cols = (scope == null) ? new List<string>() : scope.C.Split(";", StringSplitOptions.RemoveEmptyEntries).ToList();
 
         ScopeType scopeType = rows switch
         {
@@ -104,12 +107,12 @@ public class RuleStructure280
             ScopeType.Rows => rows,
             ScopeType.Cols => cols,
             _ => new List<string>()
-        };        
+        };
         return (scopeType, rowCols);
 
     }
 
-    
+
 }
 
 
