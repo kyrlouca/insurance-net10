@@ -2,7 +2,7 @@
   "profiles": {
     "ErrorFileHandler": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=103\r\nfile-name-error=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280Annual\\alt103.xlsx\"\r\nfile-name-warning=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280Annual\\alt103.xlsx\"\r\n",
+      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=103\r\nfile-name-error=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280Annual\\alt103zz.xlsx\"\r\nfile-name-warning=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280Annual\\alt103z.xlsx\"\r\n",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }

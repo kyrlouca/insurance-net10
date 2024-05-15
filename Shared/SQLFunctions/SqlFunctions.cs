@@ -671,7 +671,7 @@ public class SqlFunctions : ISqlFunctions
                   AND fact.ZetValues= @Zet
                   AND fact.Row= @Row
                   AND fact.Col= @Col
-                  AND (fact.FieldOrigin is null or fact.FieldOrigin='')
+                  
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
@@ -686,8 +686,7 @@ public class SqlFunctions : ISqlFunctions
                   and sheet.TableCode= @TableCode
                   --AND fact.ZetValues= @Zet
                   AND fact.Row= @Row
-                  AND fact.Col= @Col
-                    AND (fact.FieldOrigin is null or fact.FieldOrigin='')
+                  AND fact.Col= @Col                  
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
