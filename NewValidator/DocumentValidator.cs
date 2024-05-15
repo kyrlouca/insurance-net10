@@ -173,7 +173,7 @@ public class DocumentValidator : IDocumentValidator
                         if (sumTerm != null)
                         {
                             var (count, sum, sumDecimals) = CalculateSumOfClosedTable(sumTerm, sheet.ZDimVal);
-                            ReplaceObjTerm(ruleClosed.IfComponent.ObjectTerms, sumTerm.Letter, sumDecimals, sum, count);
+                            ReplaceObjTerm(ruleClosed.IfComponent.ObjectTerms, sumTerm.Letter, sum, sum, count,sumDecimals);
                         }
 
                         var isValidClosedRule = GeneralEvaluator.ValidateRule(ruleClosed);
@@ -411,7 +411,7 @@ public class DocumentValidator : IDocumentValidator
             foreach (var thenSeqTerm in seqTerms)
             {
                 var res = CalculateSumofOpenTable(ruleId,ruleTables, thenSeqTerm, filterComponent, zetValue);
-                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, res.sum, res.sum, res.count,2);
             }
         }
 
@@ -421,15 +421,15 @@ public class DocumentValidator : IDocumentValidator
             foreach (var thenSeqTerm in seqTerms)
             {
                 var res = CalculateSumOfClosedTable(thenSeqTerm, zetValue);
-                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, -999, res.sum, res.count);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, res.sum, res.sum, res.count,res.decimals);
             }
         }
     }
-    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count)
+    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count ,int decimals)
     {
         //maybe I need to set obj to zero instead of sum
         var objTerm = objTerms[objKey];
-        var newObjTerm = objTerm with { Obj = sum, sumValue = Convert.ToDouble(sum), countValue = count, DataType = "N" };
+        var newObjTerm = objTerm with { Obj = sum, sumValue =sum, countValue = count, DataType = "N" ,Decimals=decimals };
         objTerms.Remove(objKey);
         objTerms.Add(objKey, newObjTerm);
         return newObjTerm;
@@ -568,10 +568,14 @@ public class DocumentValidator : IDocumentValidator
             var row = sumScopeType == ScopeType.Rows ? rowCol : ruleTermRec.R;
             var col = sumScopeType == ScopeType.Cols ? rowCol : ruleTermRec.C;
             var zet = ruleTermRec.Z.Contains("Z000") ? zetValue : "";
-            var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTermRec.T, zet, row, col);
-            sum += fact?.NumericValue ?? 0;
-            count += fact is not null ? 1 : 0;
-            decimals = Math.Abs(fact?.Decimals ?? 0) > Math.Abs(decimals) ? fact?.Decimals ?? 0 : decimals;
+
+            var res  = _SqlFunctions.GetSumofTableCode(DocumentId, ruleTermRec.T, zet, row, col);
+            //var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTermRec.T, zet, row, col);
+
+            sum += res.sum;
+            count += res.count;
+            
+            decimals = Math.Abs(decimals) > Math.Abs(res.decimals) ? decimals : res.decimals;
 
         }
         return (count, sum, decimals);

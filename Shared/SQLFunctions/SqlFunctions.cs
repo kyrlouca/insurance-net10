@@ -620,6 +620,40 @@ public class SqlFunctions : ISqlFunctions
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, col,textValue }).ToList();
         return facts;
     }
+
+
+    public (int count, double sum, int decimals) GetSumofTableCode(int documentId, string tableCode, string zet, string row, string col)
+    {
+        //ZET: sometimes is not used :  when  the closed table has an empty zet and the open tables have an actual zet
+        //for example rule 647 : 
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelectZet = @"
+                 SELECT count(*), sum(fact.NumericValue),max(fact.decimals)
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode
+                  AND fact.ZetValues= @Zet
+                  AND fact.Row= @Row
+                  AND fact.Col= @Col
+                AND (fact.FieldOrigin is null or fact.FieldOrigin='')
+               "
+        ;               
+        row = (row ?? "").Trim();
+        col = (col ?? "").Trim();
+        tableCode = (tableCode ?? "").Trim();
+        //var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectZet;
+        var sqlSelect =  sqlSelectZet;
+
+
+
+        var res = connectionLocal.QuerySingleOrDefault<(int count, double sum, int decimals)>(sqlSelect, new { documentId, tableCode, zet, row, col });        
+        return res;
+    }
+
     public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col)
     {
         //ZET: sometimes is not used :  when  the closed table has an empty zet and the open tables have an actual zet
@@ -637,6 +671,7 @@ public class SqlFunctions : ISqlFunctions
                   AND fact.ZetValues= @Zet
                   AND fact.Row= @Row
                   AND fact.Col= @Col
+                  AND (fact.FieldOrigin is null or fact.FieldOrigin='')
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
@@ -652,6 +687,7 @@ public class SqlFunctions : ISqlFunctions
                   --AND fact.ZetValues= @Zet
                   AND fact.Row= @Row
                   AND fact.Col= @Col
+                    AND (fact.FieldOrigin is null or fact.FieldOrigin='')
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
@@ -712,11 +748,11 @@ public class SqlFunctions : ISqlFunctions
                   and sheet.TableCode= @TableCode
                   AND fact.ZetValues= @Zet                  
                   AND fact.Col= @Col
+                  AND (fact.FieldOrigin is null or fact.FieldOrigin='')
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
-
-
+        
 
         var sqlSelectWithoutZet = @"
                 SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
@@ -728,6 +764,7 @@ public class SqlFunctions : ISqlFunctions
                   AND sheet.InstanceId= @documentId
                   and sheet.TableCode= @TableCode                  
                   AND fact.Col= @Col
+                  AND (fact.FieldOrigin is null or fact.FieldOrigin='')
                 ORDER BY fact.Row, fact.Col;
                 "
         ;

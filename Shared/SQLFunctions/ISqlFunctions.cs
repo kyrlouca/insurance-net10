@@ -31,7 +31,9 @@ public interface ISqlFunctions
     public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col);    
     public TemplateSheetFact? SelectFactByRowCol(int documentId, int sheetId, string row, string col);
     public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col);
+
     
+    public (int count, double sum, int decimals) GetSumofTableCode(int documentId, string tableCode, string zet, string row, string col);
     public List<string> SelectDistinctRowsInSheet(int documentId, int sheetId);
 
 
