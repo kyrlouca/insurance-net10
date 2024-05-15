@@ -624,8 +624,14 @@ public class SqlFunctions : ISqlFunctions
 
     public (int count, double sum, int decimals) GetSumofTableCode(int documentId, string tableCode, string zet, string row, string col)
     {
-        //ZET: sometimes is not used :  when  the closed table has an empty zet and the open tables have an actual zet
-        //for example rule 647 : 
+        
+        //**** For Some reason rule 4078 in the calculation of sum, it does'nt take into account "other than home countries" which is a fact of type "D"
+        //Sums for other tables do take into account facts with fieldOrigin="D"
+        //Therefore a special exception here
+
+        //and fact.FieldOrigin is null
+        var tableS4212Exception = " and fact.FieldOrigin is null";
+
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelectZet = @"
                  SELECT count(*), sum(fact.NumericValue),max(fact.decimals)
@@ -645,7 +651,7 @@ public class SqlFunctions : ISqlFunctions
         col = (col ?? "").Trim();
         tableCode = (tableCode ?? "").Trim();
         //var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectZet;
-        var sqlSelect =  sqlSelectZet;
+        var sqlSelect = tableCode.Trim()== "S.04.04.01.02" ?  (sqlSelectZet + tableS4212Exception) : sqlSelectZet ;
 
 
 
@@ -698,7 +704,7 @@ public class SqlFunctions : ISqlFunctions
 
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
         
-        if (facts.Count() > 1)
+        if (facts.Count() > 1 && tableCode.Trim()!= "S.04.04.01.02")
         {
             //multiple facts for each row/col because of either currency or multiple country f            
             var sum = facts.Sum(fact=>fact.NumericValue);

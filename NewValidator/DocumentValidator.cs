@@ -103,7 +103,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            validationRules = validationRules.Where(vr => vr.ValidationID == 472).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 4078).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -658,6 +658,7 @@ public class DocumentValidator : IDocumentValidator
         var decimals = 0;
         foreach (var fact in facts)
         {
+            Console.Write("?");
             var row = fact.Row;
             var foreignKeyRow = fact.RowForeign;
             var isFilterValid = EvaluateFilterRow(ruleId,ruleTables, filterComponent, relatedTable, fact.Row, fact.RowForeign, zetValue);
