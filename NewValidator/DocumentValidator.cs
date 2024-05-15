@@ -103,7 +103,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            validationRules = validationRules.Where(vr => vr.ValidationID == 4710).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 4079).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -158,10 +158,10 @@ public class DocumentValidator : IDocumentValidator
                         var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID,tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                         if (scopeType != ScopeType.None)
                         {
-                            UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
-                            UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
-                            UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
-                            UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType);
+                            UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType,true);
+                            UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType,true);
+                            UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
+                            UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
                         }
 
                         //MAKE usingZet to true to  find facts using zet. 
@@ -435,19 +435,20 @@ public class DocumentValidator : IDocumentValidator
         return newObjTerm;
     }
 
-    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType)
+    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType ,bool IsClosedTables=false)
     {
-
+        //We do not have the concept of master-slave table for closed tables.
+        //Therefore, the rowcol of the main table as difened in the scope, should be applied to the other closed tables
         if (scopeType == ScopeType.Rows)
         {
             var rTerms = ruleTerms.Where(term => string.IsNullOrEmpty(term.R)).ToList();
             foreach (var term in rTerms)
             {
-                if (term.T.Trim() == mainTableCode.Trim())
+                if (term.T.Trim() == mainTableCode.Trim() || IsClosedTables)
                 {
                     term.R = rowCol;
                 }
-                if (term.T.Trim() == slaveTableCode.Trim())
+                else  if (term.T.Trim() == slaveTableCode.Trim())
                 {
                     term.R = relatedRowCol;
                 }
@@ -460,11 +461,11 @@ public class DocumentValidator : IDocumentValidator
 
             foreach (var term in cTerms)
             {
-                if (term.T.Trim() == mainTableCode.Trim())
+                if (term.T.Trim() == mainTableCode.Trim() || IsClosedTables)
                 {
                     term.C = rowCol;
                 }
-                if (term.T.Trim() == slaveTableCode.Trim())
+                else if (term.T.Trim() == slaveTableCode.Trim())
                 {
                     term.C = relatedRowCol;
                 }
@@ -558,7 +559,7 @@ public class DocumentValidator : IDocumentValidator
     {
         //isum({t: S.23.01.02.01, r: R0300; R0310; R0320; R0330; R0340; R0350; R0360; R0370, z: Z0001, dv: emptySequence(), seq: True,.. )
         //scope({t: S.23.01.02.01, c:C0010;C0040, f: solvency, fv: solvency2})
-        var (sumScopeType, rowCols) = ParseRuleTerms(ruleTermRec);
+        var (sumScopeType, rowCols) = GetScopeRowCols(ruleTermRec);
         var sum = 0.0;
         var count = 0;
         var decimals = 0;
@@ -575,7 +576,7 @@ public class DocumentValidator : IDocumentValidator
         }
         return (count, sum, decimals);
 
-        (ScopeType scopeType, List<string> rowCol) ParseRuleTerms(RuleTerm280 ruleTerm)
+        (ScopeType scopeType, List<string> rowCol) GetScopeRowCols(RuleTerm280 ruleTerm)
         {
             var rows = string.IsNullOrEmpty(ruleTerm.R) ? new List<string>() : ruleTerm.R.Split(";", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
             var cols = string.IsNullOrEmpty(ruleTerm.C) ? new List<string>() : ruleTerm.C.Split(";", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
