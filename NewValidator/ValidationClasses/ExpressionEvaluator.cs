@@ -256,22 +256,10 @@ public partial class GeneralEvaluator
             if (resLeftDbl.Value is double || resRightDbl.Value is double)
             {
 
-                var leftTerms = FindTerms(left);
-                var leftTermsD = terms
-                    .Where(dt => leftTerms.Contains(dt.Key))
-                    .Select(dt => dt.Value.Decimals)
-                    .ToList();
-                var leftDecimals = GetMaxAbsDecimals(leftTermsD);
+                var leftDecimals = FindMaxDecimals(left, terms);
+                var rightDecimals = FindMaxDecimals(right, terms);                
 
-                var rightTerms = FindTerms(right);
-                var rightTermsD = terms
-                    .Where(dt => rightTerms.Contains(dt.Key))
-                    .Select(dt => dt.Value.Decimals)
-                    .ToList();
-                var rightDecimals = GetMaxAbsDecimals(rightTermsD);
-
-
-                GeneralEvaluator.expressionInfo= new ExpressionInfoType(op,resLeftDbl,resRightDbl);
+                GeneralEvaluator.expressionInfo = new ExpressionInfoType(op, resLeftDbl, resRightDbl);
                 var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
             }
@@ -306,7 +294,19 @@ public partial class GeneralEvaluator
             var maxDecimal= numbers.OrderByDescending(n => Math.Abs(n)).First();
             return maxDecimal;
         }
-        
+
+
+        static int FindMaxDecimals (string expression, Dictionary<string, ObjectTerm280> terms)
+        {
+            var expressionTerms = FindTerms(expression);
+            var leftTermsD = terms
+                .Where(dt => expressionTerms.Contains(dt.Key))
+                .Select(dt => dt.Value.Decimals)
+                .ToList();
+            var maxDecimals = GetMaxAbsDecimals(leftTermsD);
+            return maxDecimals;
+        }
+
     }
 
     private static OptionalObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms)
