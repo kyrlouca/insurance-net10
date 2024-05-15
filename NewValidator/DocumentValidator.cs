@@ -103,7 +103,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            //validationRules = validationRules.Where(vr => vr.ValidationID == 712).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 472).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -411,7 +411,7 @@ public class DocumentValidator : IDocumentValidator
             foreach (var thenSeqTerm in seqTerms)
             {
                 var res = CalculateSumofOpenTable(ruleId,ruleTables, thenSeqTerm, filterComponent, zetValue);
-                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, res.sum, res.sum, res.count,2);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, res.sum, res.sum, res.count,res.decimals);
             }
         }
 
@@ -555,6 +555,33 @@ public class DocumentValidator : IDocumentValidator
         return res;
     }
 
+    private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
+    {
+        //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
+        //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
+
+        //if we have only closed tables or mixed tables isUsingZet comes as zero
+        
+        var zetValue = ruleStructure.ZetValue ;
+
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.IfComponent.RuleTerms,zetValue);
+        ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
+
+
+        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ThenComponent.RuleTerms, zetValue);
+        ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
+
+        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ElseComponent.RuleTerms, zetValue);
+        ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
+
+        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.FilterComponent.RuleTerms, zetValue);
+        ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
+
+        return ruleStructure;
+
+    }
+
+
     private (int count, double sum, int decimals) CalculateSumOfClosedTable(RuleTerm280 ruleTermRec, string zetValue)
     {
         //isum({t: S.23.01.02.01, r: R0300; R0310; R0320; R0330; R0340; R0350; R0360; R0370, z: Z0001, dv: emptySequence(), seq: True,.. )
@@ -569,12 +596,12 @@ public class DocumentValidator : IDocumentValidator
             var col = sumScopeType == ScopeType.Cols ? rowCol : ruleTermRec.C;
             var zet = ruleTermRec.Z.Contains("Z000") ? zetValue : "";
 
-            var res  = _SqlFunctions.GetSumofTableCode(DocumentId, ruleTermRec.T, zet, row, col);
+            var res = _SqlFunctions.GetSumofTableCode(DocumentId, ruleTermRec.T, zet, row, col);
             //var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, ruleTermRec.T, zet, row, col);
 
             sum += res.sum;
             count += res.count;
-            
+
             decimals = Math.Abs(decimals) > Math.Abs(res.decimals) ? decimals : res.decimals;
 
         }
@@ -616,33 +643,7 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
-    private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
-    {
-        //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
-        //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
-
-        //if we have only closed tables or mixed tables isUsingZet comes as zero
-        
-        var zetValue = ruleStructure.ZetValue ;
-
-        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.IfComponent.RuleTerms,zetValue);
-        ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
-
-
-        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ThenComponent.RuleTerms, zetValue);
-        ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
-
-        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ElseComponent.RuleTerms, zetValue);
-        ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
-
-        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.FilterComponent.RuleTerms, zetValue);
-        ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
-
-        return ruleStructure;
-
-    }
-
-    private (double sum, int count) CalculateSumofOpenTable(int ruleId,List<MTable> ruleTables, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent, string zetValue)
+    private ( int count, double sum, int decimals) CalculateSumofOpenTable(int ruleId,List<MTable> ruleTables, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent, string zetValue)
     {
 
         var seqTable = seqTableTerm.T;
@@ -654,6 +655,7 @@ public class DocumentValidator : IDocumentValidator
         var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqTableTerm.T, seqTableTerm.Z, seqTableTerm.C); ;
         double sum = 0;
         var count = 0;
+        var decimals = 0;
         foreach (var fact in facts)
         {
             var row = fact.Row;
@@ -663,9 +665,10 @@ public class DocumentValidator : IDocumentValidator
             {
                 sum += fact.NumericValue;
                 count++;
+                decimals = Math.Abs(decimals) > Math.Abs(fact.Decimals) ? decimals : fact.Decimals;
             }
         }
-        return (sum, count);
+        return ( count, sum, decimals);
     }
 
     private bool EvaluateFilterRow(int ruleId,List<MTable> ruleTables, RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow, string zetValue)

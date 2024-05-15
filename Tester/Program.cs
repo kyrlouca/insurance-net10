@@ -6,16 +6,14 @@ using NewValidator.ValidationClasses;
 using System.Xml.Schema;
 using ExcelWriter.ExcelDataModels;
 
-object x=-121233323.23;
-var obj = new OptionalObject(false,x );
-var xx = RuleComponent280.OptionalObjectToString(obj);
-Console.WriteLine(xx);
+//var expression = "X00 + X01";
+var expression = ")";
 
- 
+var xxx=FindTerms(expression);
+var x2 = 22; ;
 
 
-var inputfile = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ShortLabels.txt";
-var outputfile = "C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\ShortLabelsSql.txt";
+
 //NewValidator.DocumentValidator.UpdateExpressionWithShortLabel(inputfile, outputfile);
 return;
 var zz1 = "abc (acx or x3) or imin(x1>x3 and x3<x1) + x3";
@@ -68,4 +66,12 @@ static void GenerateCombinationsHelper(string[] array, string current, int index
 
     // Exclude current element in the combination
     GenerateCombinationsHelper(array, current, index + 1, result);
+}
+
+static List<string> FindTerms(string expression)
+{
+    var regx = new Regex(@"(X\d{2})");
+    var matches= regx.Matches(expression);
+    var captures = matches.Select(m => m.Captures[0].Value).ToList();    
+    return captures;
 }

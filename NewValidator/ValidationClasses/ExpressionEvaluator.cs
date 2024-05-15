@@ -240,14 +240,7 @@ public partial class GeneralEvaluator
                 return resStr;
             }
 
-
-            //if the terms is coming from a sum then get the decimals from the terms NOT from the fact
-            var leftDecimals = terms.ContainsKey(left)
-                ? terms[left].Decimals
-                : terms.FirstOrDefault(tm => tm.Value.sumValue > 0).Value?.Decimals ?? 0;
-            var rightDecimals = terms.ContainsKey(right)
-                ? terms[right].Decimals
-                : terms.FirstOrDefault(tm => tm.Value.sumValue > 0).Value?.Decimals ??0;
+                      
 
 
             var resLeftDbl = EvaluateArithmeticExpressionRecursively(left, terms, "");
@@ -261,7 +254,23 @@ public partial class GeneralEvaluator
             }
 
             if (resLeftDbl.Value is double || resRightDbl.Value is double)
-            {                
+            {
+
+                var leftTerms = FindTerms(left);
+                var leftTermsD = terms
+                    .Where(dt => leftTerms.Contains(dt.Key))
+                    .Select(dt => dt.Value.Decimals)
+                    .ToList();
+                var leftDecimals = GetMaxAbsDecimals(leftTermsD);
+
+                var rightTerms = FindTerms(right);
+                var rightTermsD = terms
+                    .Where(dt => rightTerms.Contains(dt.Key))
+                    .Select(dt => dt.Value.Decimals)
+                    .ToList();
+                var rightDecimals = GetMaxAbsDecimals(rightTermsD);
+
+
                 GeneralEvaluator.expressionInfo= new ExpressionInfoType(op,resLeftDbl,resRightDbl);
                 var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
@@ -279,6 +288,25 @@ public partial class GeneralEvaluator
 
         return KleeneValue.True;
 
+
+        static List<string> FindTerms(string expression)
+        {
+            var regx = new Regex(@"(X\d{2})");
+            var matches = regx.Matches(expression);
+            var captures = matches.Select(m => m.Captures[0].Value).ToList();
+            return captures;
+        }
+
+        static int GetMaxAbsDecimals(IEnumerable<int> numbers)
+        {
+            if (numbers == null || !numbers.Any())
+            {
+                return 0;
+            }
+            var maxDecimal= numbers.OrderByDescending(n => Math.Abs(n)).First();
+            return maxDecimal;
+        }
+        
     }
 
     private static OptionalObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms)
