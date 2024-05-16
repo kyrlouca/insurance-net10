@@ -40,7 +40,8 @@ public interface ISqlFunctions
     public List<TemplateSheetFactDim> SelectFactDims(int factId);
     MModule? SelectModuleByCode(string moduleCode);
 
-    public MMember? SelectMMember(string domainString);
+    public MMember? SelectMMember(string domainString);    
+
     public List<MMember> SelectMMembersFromHierarchy(int hierarchyId);
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mapping);
     public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
