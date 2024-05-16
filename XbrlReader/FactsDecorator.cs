@@ -97,12 +97,12 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => filings.Contains(table.XbrlFilingIndicatorCode)).ToList();
         }
 
-        
-        if (_testingTableId > 0)
+        _testingTableId = 48;
+        if (_parameterData.IsDevelop && _testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
         }
-        if (1 == 2)
+        if (_parameterData.IsDevelop && 1 == 2)
         {
             var tlist = new[] { 175 };
             ModuleTables = ModuleTables.Where(mt => tlist.Contains(mt.TableID)).ToList();

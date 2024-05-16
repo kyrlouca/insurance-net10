@@ -78,7 +78,7 @@ public class WriterMainApp : IExcelWriterMainApp
         var mergedFilename = Path.Combine(dir, $"{fileNoExtension}.xlsx");
 
 
-        if (1 == 1)
+        if (1 == 2)
         {
             Console.WriteLine($"\n Create excel Fil3e : {filledFilename}");
             //****************************************************************************************************
@@ -91,7 +91,7 @@ public class WriterMainApp : IExcelWriterMainApp
                 return 1;
             }
         }
-        if (1 == 1)
+        if (1 == 2)
         {
             Console.WriteLine($"\n Fill Excel : {filledFilename}");
             //****************************************************************************************************

@@ -115,11 +115,11 @@ public class ExcelBookMerger : IExcelBookMerger
             .ToList();
         if (_parameterData.IsDevelop)
         {
-            var filterList = Array.Empty<string>();
-            //var filterList = new[] { "S.14.01.01.01" };
-            if(!filterList.IsNullOrEmpty())
+            var debugFilterList = Array.Empty<string>();
+            //var filterList = new[] { "S.04.04.01.01" };
+            if(!debugFilterList.IsNullOrEmpty())
             {
-                tableGroupList = tableGroupList.Where(tg => filterList.Contains(tg.TemplateCode)).ToList();
+                tableGroupList = tableGroupList.Where(tg => debugFilterList.Contains(tg.TemplateCode)).ToList();
                 Console.WriteLine("Develop and filtering Merge");
             }
             
@@ -249,8 +249,10 @@ public class ExcelBookMerger : IExcelBookMerger
         //A template bundle defines a layout ( a list of horizontal lines where each line contains many sheets)
         //populate the special template layout with the sheets of the specified sheetCodeZet
 
+        
+
         var tableMatrix = tableGroup.TableCodes
-            .Select(tableCode => new HorizontalLine(new List<SheetExtensiveInfo>() { CreateSheetExtensiveInfo(tableCode, sheetCodeZet, true) }))
+            .Select(tableCode => new HorizontalLine( CreateExtensiveInfoForSheetsWithThisBLdimension(tableCode, sheetCodeZet, true) ))
             .ToList();
 
 
@@ -271,8 +273,15 @@ public class ExcelBookMerger : IExcelBookMerger
         //populate the special template layout with the se of the specified sheetCodeZet
         //each horizontalLine contains a set of sheets to be rendered next to each other 
         //some sheets may be null
+
+        //var tableMatrix = specialTemplateLayout.TableCodesMatrix
+        //    .Select(line => new HorizontalLine(line.Select(code => CreateSheetExtensiveInfo(code, sheetCodeZet, specialTemplateLayout.IsZetImportant)).ToList()))
+        //    .ToList();
+
+
+        // each line in the matrix is like : new string[] { "S.22.06.01.01", "S.22.06.01.01" },
         var tableMatrix = specialTemplateLayout.TableCodesMatrix
-            .Select(line => new HorizontalLine(line.Select(code => CreateSheetExtensiveInfo(code, sheetCodeZet, specialTemplateLayout.IsZetImportant)).ToList()))
+            .Select(line => new HorizontalLine(line.SelectMany(code => CreateExtensiveInfoForSheetsWithThisBLdimension(code, sheetCodeZet, specialTemplateLayout.IsZetImportant)).ToList()))
             .ToList();
 
         var ztb = new ZetTemplateLayout()
@@ -304,17 +313,19 @@ public class ExcelBookMerger : IExcelBookMerger
         return distinctList;
 
     }
-    private SheetExtensiveInfo CreateSheetExtensiveInfo(string tableCode, string sheetCodeZet, bool isZetImportant)
+    private SheetExtensiveInfo CreateSheetExtensiveInfoOld(string tableCode, string bLdimension, bool isZetImportant)
     {
         TemplateSheetInstance? dbSheet;
-        if (string.IsNullOrWhiteSpace(sheetCodeZet) || !isZetImportant)
+        if (string.IsNullOrWhiteSpace(bLdimension) || !isZetImportant)
         {
             dbSheet = _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode).FirstOrDefault();
         }
         else
         {
-            dbSheet = _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode)
-                                           .FirstOrDefault(sh => sh.ZDimVal.Contains(sheetCodeZet));
+            var dbSheets = _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode);
+                                           
+                 dbSheet= dbSheets.FirstOrDefault(sh => sh.ZDimVal.Contains(bLdimension));
+
         }
 
 
@@ -326,6 +337,33 @@ public class ExcelBookMerger : IExcelBookMerger
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";
         return new SheetExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet, TableDescription = tableDesc };
     }
+
+    private List<SheetExtensiveInfo> CreateExtensiveInfoForSheetsWithThisBLdimension(string tableCode, string blDimension, bool isZetImportant)
+    {
+        List<TemplateSheetInstance> dbSheets = new();
+        if (string.IsNullOrWhiteSpace(blDimension) || !isZetImportant)
+        {
+            dbSheets = _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode);
+        }
+        else
+        {
+            dbSheets = _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode);
+            dbSheets = dbSheets.Where(sh => sh.ZDimVal.Contains(blDimension)).ToList();
+
+        }
+      
+        var worksheets  = dbSheets.Select(dbSheet=>  SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""]);
+        var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";
+        var infos = dbSheets.Select(dbSheet =>
+        {
+            var worksheet = SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""];
+            var sh = new SheetExtensiveInfo { TableCode = tableCode, DbSheet = dbSheet, WorkSheet = worksheet, TableDescription = tableDesc };
+            return sh;
+        })
+            .ToList();
+        return infos;
+    }
+
 
     private (bool, IWorksheet?) RenderOneZetSheet(ZetTemplateLayout zetTemplateLayout)
     {

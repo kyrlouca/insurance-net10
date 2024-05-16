@@ -38,8 +38,8 @@ public static class SpecialTemplateList
 
     public static List<SpecialTemplateLayout> SpecialLayoutsNew = new()
         {
-        new SpecialTemplateLayout("S.04.04.01", "S.04.04.01","Activity by country",true, new[] { new string[] { "S.04.04.01.01", "S.04.04.01.02" } }),
-        new SpecialTemplateLayout("S.04.05.01", "S.04.05.01","Activity by country",true, new[] { new string[] { "S.04.05.01.01", "S.04.05.01.02" } }),
+        //new SpecialTemplateLayout("S.04.04.01", "S.04.04.01","Activity by country",true, new[] { new string[] { "S.04.04.01.01", "S.04.04.01.02" } }),
+        //new SpecialTemplateLayout("S.04.05.01", "S.04.05.01","Activity by country",true, new[] { new string[] { "S.04.05.01.01", "S.04.05.01.02" } }),
            new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",false, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
             new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             new SpecialTemplateLayout("ZS.06.02.01.01_single", "S.06.02.01.01","List of assets-Information on positions held",false, new[] { new string[] { "S.06.02.01.01" } }),
@@ -53,8 +53,11 @@ public static class SpecialTemplateList
     };
 
     public static List<string> SingleTableGroupsNew = new List<string> {
-            
-            "S.05.01.02",            
+
+        "S.04.02.01",
+        "S.04.04.01",
+        "S.04.04.02",
+            "S.05.01.02",
             "S.05.01.01",
             "S.05.01.02",            
             "S.14.01.01",
