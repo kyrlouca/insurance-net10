@@ -172,27 +172,29 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         exactColumnRow.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
-        var columnLabels=columnCells.Select(cc=>cc.Value).ToList();
+        var columnLabels = columnCells.Select(cc => cc.Value).ToList();
         var extendedColumnsRow = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, 10, HelperRoutines.HorizontalDirection.Right, HelperRoutines.VerticalDirection.None);
 
-        var descriptionCells = wholeRange[dataRange.Row - 1, dataRange.Column+1, dataRange.Row - 1, dataRange.LastColumn];
+        var descriptionCells = wholeRange[dataRange.Row - 1, dataRange.Column + 1, dataRange.Row - 1, dataRange.LastColumn];
         var desriptionLabels = descriptionCells.Select(cc => cc.Value).ToList();
 
 
         ///CURRENCY/COUNTRY LABELS
         var multiTemplate = MultiDimensionTemplatesNew.Templates.FirstOrDefault(tmp => tmp.TemplateCode == dbSheet.TableCode);
         var isMultiTemplate = multiTemplate is not null;
-    
-        var rowForZetlabels= wholeRange[dataRange.Row - 3,dataRange.Column, dataRange.Row - 3,dataRange.LastColumn ];
+
+        var rowForZetlabels = wholeRange[dataRange.Row - 3, dataRange.Column, dataRange.Row - 3, dataRange.LastColumn];
         rowForZetlabels.UnMerge();
 
         var zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
         var zetMembersCount = zetMembers.Count;
-        
+
+        var workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
+
         if (isMultiTemplate)
         {
             //var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();                        
-            //datarange includes the column numbers
+            //datarange includes the row for the column numbers and the column for the row numbers
             for (var i = 0; i < columnLabels.Count(); i++)
             {
                 var columnLabelStr = columnLabels[i];
@@ -203,7 +205,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 {
                     if (j > 0)
                     {
-                        workSheet.InsertColumn(columnLabelCell.Column +1);
+                        workSheet.InsertColumn(columnLabelCell.Column + 1);
                     }
                     //zetLabels
                     var colZetLabel = wholeRange[dataRange.Row - 3, columnLabelCell.Column + j];
@@ -212,20 +214,23 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     colZetLabel.ColumnWidth = 30;
 
                     //description labels (above column labels) 
-                    var descLabel = wholeRange[dataRange.Row-1, colZetLabel.Column];
+                    var descLabel = wholeRange[dataRange.Row - 1, colZetLabel.Column];
                     descLabel.Text = descriptionLabel;
                     descLabel.CellStyle = _pensionStyles.ZetLabelStyle;
 
                     //colLabels
-                    var colLabel= wholeRange[dataRange.Row, colZetLabel.Column ];
+                    var colLabel = wholeRange[dataRange.Row, colZetLabel.Column];
                     colLabel.Text = columnLabelStr;
                     colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
                 }
             }
+            var lastDataColumn = dataRange.LastColumn + columnLabels.Count * (zetMembersCount - 1);
+            workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, lastDataColumn];
+
         };
 
         var currencyCount = zetMembers.Count == 0 ? 1 : zetMembers.Count;//to loop even for non-currencies
-        foreach (var dataRow in dataRange.Rows)
+        foreach (var dataRow in workingDataRange.Rows)
         {
             //rowLabelCell the cell which has the row : R0110
             //then will go through all the columns for this row
@@ -236,29 +241,22 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 continue;
             }
 
-
-            foreach (var colCell in columnCells)
+            var workingColumnCells = dataRow.Rows.First().Cells.Skip(1);
+            foreach (var colCell in workingColumnCells)
             {
-                for (var i = 0; i < currencyCount; i++)
+
+                var cell = dataRange[rowLabelCell.Row, colCell.Column];
+                if (isMultiTemplate)
                 {
-                    var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
-
-                    //s2c_dim:LR(s2c_GA:CY)
-                    //var xbrlCode = dimensionType == DimensionType.None ? "" : currenciesOrCountriesXbrlCodes[i];
-                    //var xbrlCode = isMultiTemplate ?  currenciesOrCountriesXbrlCodes[i]:"";
-
-                    var cell = dataRange[rowLabelCell.Row, colCell.Column + i];
-                    if (isMultiTemplate)
-                    {
-                        cell.CellStyle.Borders.LineStyle = ExcelLineStyle.Thin;
-                        cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
-                        cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
-                    }
-                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, zetMembers[i].MemberXBRLCode, isMultiTemplate);
-
-                    FormatCellValue(cell, factX);
-
+                    cell.CellStyle.Borders.LineStyle = ExcelLineStyle.Thin;
+                    cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
+                    cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
                 }
+                var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, zetMembers[i].MemberXBRLCode, isMultiTemplate);
+
+                FormatCellValue(cell, factX);
+
+
             }
         }
 
@@ -684,7 +682,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
-    
+
     //private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string domMemberValue, DimensionType dimensionType)
     private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string domMemberValue, bool isUseSignature)
     {
@@ -718,7 +716,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         var sqlSelectFact = isUseSignature ? sqlFactBySignature : sqlFact;
-        
+
 
 
         using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
@@ -779,7 +777,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                  ).Distinct()
                  .ToList();
 
-        var members = (domainValues?? new List<string>())
+        var members = (domainValues ?? new List<string>())
             .Select(dm => _SqlFunctions.SelectMMember(dm))
             .Where(m => m is not null)
             .ToList();
