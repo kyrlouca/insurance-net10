@@ -180,17 +180,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var desriptionLabels = descriptionCells.Select(cc => cc.Value).ToList();
 
         var workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
-        
-        
+
+
         ///CURRENCY/COUNTRY LABELS
+        var ZET_ROW = 0;
         var multiTemplate = MultiDimensionTemplatesNew.Templates.FirstOrDefault(tmp => tmp.TemplateCode == dbSheet.TableCode);
         var isMultiTemplate = multiTemplate is not null;
         var zetMembers = new List<MMember>();        
         
         if (isMultiTemplate)
         {
-
-            var ZET_ROW = dataRange.Row - 2;
+            ZET_ROW = dataRange.Row - 2;
 
             zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
             var zetMembersCount = zetMembers.Count;
@@ -247,6 +247,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         
         var colLabelsRange = workingDataRange.Rows.First();
         var rowLabelsRange = workingDataRange.Columns.First();
+        var zetLabelsRange = wholeRange[ZET_ROW, workingDataRange.Column, ZET_ROW, workingDataRange.LastColumn];
 
         foreach (var dataRow in workingDataRange.Rows.Skip(1))
         {
@@ -256,12 +257,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
                 var row = rowLabelsRange[cell.Row, colLabelsRange.Column].Value;
                 var col = colLabelsRange[colLabelsRange.Row,cell.Column].Value;
-                
 
-                var idx = columnLabelsOriginal.IndexOf(col);
-                var zetValu = idx>-1 ? zetMembers[idx].MemberXBRLCode:"";
-                //var cell = dataRange [rowCell.Row, rowCell.Column];
-                var factX = FindFactFromRowColCurrency(dbSheet, row, col, zetValu, isMultiTemplate);
+                var zetDescription = isMultiTemplate ? zetLabelsRange[zetLabelsRange.Row, cell.Column].Value : "xxx";
+                var zetXbrl = isMultiTemplate ? zetMembers.FirstOrDefault(zm => zm.MemberLabel == zetDescription)?.MemberXBRLCode ?? "" : "";
+                                
+                var factX = FindFactFromRowColCurrency(dbSheet, row, col, zetXbrl, isMultiTemplate);
                 FormatCellValue(cell, factX);
                 if (isMultiTemplate)
                 {
