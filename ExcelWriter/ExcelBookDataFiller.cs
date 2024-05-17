@@ -24,6 +24,7 @@ using Microsoft.VisualBasic;
 using ExcelWriter.ExcelDataModels;
 using System.ComponentModel;
 using Syncfusion.XlsIO.Parser.Biff_Records.ObjRecords;
+using System.Data;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -171,8 +172,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
         exactColumnRow.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
-        var columnCells = dataRange.Rows.First().Cells.Skip(1);
-        var columnLabels = columnCells.Select(cc => cc.Value).ToList();
+        var columnCellsOriginal = dataRange.Rows.First().Cells.Skip(1);
+        var columnLabelsOriginal = columnCellsOriginal.Select(cc => cc.Value).ToList();
         var extendedColumnsRow = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, 10, HelperRoutines.HorizontalDirection.Right, HelperRoutines.VerticalDirection.None);
 
         var descriptionCells = wholeRange[dataRange.Row - 1, dataRange.Column + 1, dataRange.Row - 1, dataRange.LastColumn];
@@ -195,9 +196,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         {
             //var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();                        
             //datarange includes the row for the column numbers and the column for the row numbers
-            for (var i = 0; i < columnLabels.Count(); i++)
+            for (var i = 0; i < columnLabelsOriginal.Count(); i++)
             {
-                var columnLabelStr = columnLabels[i];
+                var columnLabelStr = columnLabelsOriginal[i];
                 var descriptionLabel = desriptionLabels[i];
                 //columns have been inserted but still columnLabelCell will point to the first label found 
                 var columnLabelCell = extendedColumnsRow.FirstOrDefault(cc => cc.Value == columnLabelStr);
@@ -224,38 +225,37 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
                 }
             }
-            var lastDataColumn = dataRange.LastColumn + columnLabels.Count * (zetMembersCount - 1);
+            var lastDataColumn = dataRange.LastColumn + columnLabelsOriginal.Count * (zetMembersCount - 1);
             workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, lastDataColumn];
 
         };
 
-        var currencyCount = zetMembers.Count == 0 ? 1 : zetMembers.Count;//to loop even for non-currencies
-        foreach (var dataRow in workingDataRange.Rows)
+        var zetCount = zetMembers.Count == 0 ? 1 : zetMembers.Count;//to loop even for non-currencies        
+        
+        var colLabelsRange = workingDataRange.Rows.First();
+        var rowLabelsRange = workingDataRange.Columns.First();
+
+        foreach (var dataRow in workingDataRange.Rows.Skip(1))
         {
-            //rowLabelCell the cell which has the row : R0110
-            //then will go through all the columns for this row
-
-            var rowLabelCell = dataRow.First();
-            if (string.IsNullOrEmpty(rowLabelCell.Value))
-            {
-                continue;
-            }
-
-            var workingColumnCells = dataRow.Rows.First().Cells.Skip(1);
-            foreach (var colCell in workingColumnCells)
+            var rowCells = dataRow.Cells.Skip(1);
+            foreach (var cell in rowCells)
             {
 
-                var cell = dataRange[rowLabelCell.Row, colCell.Column];
+                var row = rowLabelsRange[cell.Row, colLabelsRange.Column].Value;
+                var col = colLabelsRange[colLabelsRange.Row,cell.Column].Value;
+                
+
+                var idx = columnLabelsOriginal.IndexOf(col);
+                var zetValu = idx>-1 ? zetMembers[idx].MemberXBRLCode:"";
+                //var cell = dataRange [rowCell.Row, rowCell.Column];
+                var factX = FindFactFromRowColCurrency(dbSheet, row, col, zetValu, isMultiTemplate);
+                FormatCellValue(cell, factX);
                 if (isMultiTemplate)
                 {
                     cell.CellStyle.Borders.LineStyle = ExcelLineStyle.Thin;
                     cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
                     cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
-                }
-                var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, zetMembers[i].MemberXBRLCode, isMultiTemplate);
-
-                FormatCellValue(cell, factX);
-
+                }                                
 
             }
         }
@@ -299,15 +299,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //expand the Data range
-        if (currencyCount > 1)
+        if (isMultiTemplate )
         {
-            var expandedDataRows = dataRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn + currencyCount - 1];
+            //var expandedDataRows = dataRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn + zetCount - 1];
             var dataRangeName = dataName.Name;
             Workbook.Names.Remove(dataRangeName);
             var dataNamedObjectE = Workbook.Names.Add(dataRangeName);
-            dataNamedObjectE.RefersToRange = expandedDataRows;
+            dataNamedObjectE.RefersToRange = workingDataRange;
             dataRange = dataNamedObjectE.RefersToRange;
-
 
         };
 
