@@ -179,21 +179,28 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var descriptionCells = wholeRange[dataRange.Row - 1, dataRange.Column + 1, dataRange.Row - 1, dataRange.LastColumn];
         var desriptionLabels = descriptionCells.Select(cc => cc.Value).ToList();
 
-
+        var workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
+        
+        
         ///CURRENCY/COUNTRY LABELS
         var multiTemplate = MultiDimensionTemplatesNew.Templates.FirstOrDefault(tmp => tmp.TemplateCode == dbSheet.TableCode);
         var isMultiTemplate = multiTemplate is not null;
-
-        var rowForZetlabels = wholeRange[dataRange.Row - 3, dataRange.Column, dataRange.Row - 3, dataRange.LastColumn];
-        rowForZetlabels.UnMerge();
-
-        var zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
-        var zetMembersCount = zetMembers.Count;
-
-        var workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
-
+        var zetMembers = new List<MMember>();        
+        
         if (isMultiTemplate)
         {
+
+            var ZET_ROW = dataRange.Row - 2;
+
+            zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
+            var zetMembersCount = zetMembers.Count;
+
+            var originalDescriptionRange= wholeRange[dataRange.Row - 2, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
+            originalDescriptionRange.UnMerge();
+            var tDesc = originalDescriptionRange.Cells.FirstOrDefault(cl => !string.IsNullOrWhiteSpace(cl.Value))?.Value ??"";
+
+            var rowForZetlabels = wholeRange[ZET_ROW, dataRange.Column, ZET_ROW, dataRange.LastColumn];
+            rowForZetlabels.UnMerge();
             //var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();                        
             //datarange includes the row for the column numbers and the column for the row numbers
             for (var i = 0; i < columnLabelsOriginal.Count(); i++)
@@ -209,7 +216,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                         workSheet.InsertColumn(columnLabelCell.Column + 1);
                     }
                     //zetLabels
-                    var colZetLabel = wholeRange[dataRange.Row - 3, columnLabelCell.Column + j];
+                    var colZetLabel = wholeRange[ZET_ROW, columnLabelCell.Column + j];
                     colZetLabel.Text = zetMembers[j].MemberLabel;
                     colZetLabel.CellStyle = _pensionStyles.TopLabelsStyle;
                     colZetLabel.ColumnWidth = 30;
@@ -227,6 +234,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
             var lastDataColumn = dataRange.LastColumn + columnLabelsOriginal.Count * (zetMembersCount - 1);
             workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, lastDataColumn];
+            
+            var newDescRange= wholeRange[dataRange.Row-3, dataRange.Column+1, dataRange.Row-3, lastDataColumn];
+            newDescRange.Merge();
+            newDescRange.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+            newDescRange.Value = tDesc;
+
 
         };
 
