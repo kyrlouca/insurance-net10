@@ -156,6 +156,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     {
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
         //for multi facts, we need to create additional columns and write the currency/country above the column
+        var workSheet = Workbook!.Worksheets[dbSheet.SheetTabName.Trim()];
 
         var dataName = Workbook!.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
@@ -171,37 +172,44 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         exactColumnRow.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
         var columnCells = dataRange.Rows.First().Cells.Skip(1);
-
-
-        
+        var columnLabels=columnCells.Select(cc=>cc.Value).ToList();
+        var extendedColumnsRow = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, 10, HelperRoutines.HorizontalDirection.Right, HelperRoutines.VerticalDirection.None);
 
         ///CURRENCY/COUNTRY LABELS
         var multiTemplate = MultiDimensionTemplatesNew.Templates.FirstOrDefault(tmp => tmp.TemplateCode == dbSheet.TableCode);
         var isMultiTemplate = multiTemplate is not null;
     
-        var currenciesOrCountriesXbrlCodesNew = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
-
-
-        //var currenciesOrCountriesXbrlCodes = new List<string>();
-        //var memberXbrlPrefix = "";
+        var zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
+        var zetMembersCount = zetMembers.Count;
+        
         if (isMultiTemplate)
         {
-
-
-            //var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();
-
-            
-            
-            for (var i = 0; i < currenciesOrCountriesXbrlCodesNew.Count; i++)
+            //var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();                        
+            //datarange includes the column numbers
+            for (var i = 0; i < columnLabels.Count(); i++)
             {
-                var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column + 1 + i];
-                colLabel.Text = currenciesOrCountriesXbrlCodesNew[i].MemberLabel;
-                colLabel.CellStyle = _pensionStyles.TopLabelsStyle;
-                colLabel.ColumnWidth = 30;
+                var columnLabelStr = columnLabels[i];
+                //columns have been inserted but still columnLabelCell will point to the first label found 
+                var columnLabelCell = extendedColumnsRow.FirstOrDefault(cc => cc.Value == columnLabelStr);
+                for (var j = 0; j < zetMembersCount; j++)
+                {
+                    if (j > 0)
+                    {
+                        workSheet.InsertColumn(columnLabelCell.Column-1 );
+                    }
+                    var colZetLabel = wholeRange[dataRange.Row - 3, columnLabelCell.Column + j];
+                    colZetLabel.Text = zetMembers[j].MemberLabel;
+                    colZetLabel.CellStyle = _pensionStyles.TopLabelsStyle;
+                    colZetLabel.ColumnWidth = 30;
+
+                    var colLabel= wholeRange[dataRange.Row, colZetLabel.Column + j];
+                    colLabel.Text = columnLabelStr;
+                    colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                }
             }
         };
 
-        var currencyCount = currenciesOrCountriesXbrlCodesNew.Count == 0 ? 1 : currenciesOrCountriesXbrlCodesNew.Count;//to loop even for non-currencies
+        var currencyCount = zetMembers.Count == 0 ? 1 : zetMembers.Count;//to loop even for non-currencies
         foreach (var dataRow in dataRange.Rows)
         {
             //rowLabelCell the cell which has the row : R0110
@@ -231,7 +239,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                         cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
                         cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
                     }
-                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, xbrlCode, isMultiTemplate);
+                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, zetMembers[i].MemberXBRLCode, isMultiTemplate);
 
                     FormatCellValue(cell, factX);
 
