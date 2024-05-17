@@ -175,10 +175,17 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var columnLabels=columnCells.Select(cc=>cc.Value).ToList();
         var extendedColumnsRow = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, 10, HelperRoutines.HorizontalDirection.Right, HelperRoutines.VerticalDirection.None);
 
+        var descriptionCells = wholeRange[dataRange.Row - 1, dataRange.Column+1, dataRange.Row - 1, dataRange.LastColumn];
+        var desriptionLabels = descriptionCells.Select(cc => cc.Value).ToList();
+
+
         ///CURRENCY/COUNTRY LABELS
         var multiTemplate = MultiDimensionTemplatesNew.Templates.FirstOrDefault(tmp => tmp.TemplateCode == dbSheet.TableCode);
         var isMultiTemplate = multiTemplate is not null;
     
+        var rowForZetlabels= wholeRange[dataRange.Row - 3,dataRange.Column, dataRange.Row - 3,dataRange.LastColumn ];
+        rowForZetlabels.UnMerge();
+
         var zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
         var zetMembersCount = zetMembers.Count;
         
@@ -189,20 +196,28 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             for (var i = 0; i < columnLabels.Count(); i++)
             {
                 var columnLabelStr = columnLabels[i];
+                var descriptionLabel = desriptionLabels[i];
                 //columns have been inserted but still columnLabelCell will point to the first label found 
                 var columnLabelCell = extendedColumnsRow.FirstOrDefault(cc => cc.Value == columnLabelStr);
                 for (var j = 0; j < zetMembersCount; j++)
                 {
                     if (j > 0)
                     {
-                        workSheet.InsertColumn(columnLabelCell.Column-1 );
+                        workSheet.InsertColumn(columnLabelCell.Column +1);
                     }
+                    //zetLabels
                     var colZetLabel = wholeRange[dataRange.Row - 3, columnLabelCell.Column + j];
                     colZetLabel.Text = zetMembers[j].MemberLabel;
                     colZetLabel.CellStyle = _pensionStyles.TopLabelsStyle;
                     colZetLabel.ColumnWidth = 30;
 
-                    var colLabel= wholeRange[dataRange.Row, colZetLabel.Column + j];
+                    //description labels (above column labels) 
+                    var descLabel = wholeRange[dataRange.Row-1, colZetLabel.Column];
+                    descLabel.Text = descriptionLabel;
+                    descLabel.CellStyle = _pensionStyles.ZetLabelStyle;
+
+                    //colLabels
+                    var colLabel= wholeRange[dataRange.Row, colZetLabel.Column ];
                     colLabel.Text = columnLabelStr;
                     colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
                 }
