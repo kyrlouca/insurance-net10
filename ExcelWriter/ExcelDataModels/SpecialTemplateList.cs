@@ -82,10 +82,6 @@ public static class SpecialTemplateList
 
 
 }
-//S.04.04.01.02 s2c_dim:LA(*[377;1238;0])
-//S.04.02.01.02 s2c_dim:LG(s2c_GA:GR)
-//S.04.05.01.02 s2c_dim:LR(*[388;1238;0])
-//S.02.02.01.02 s2c_dim:RC(s2c_CU:x4)
 
 public record MultiDimensionType(string TemplateCode, string Dimension, string Domain);
 public static class MultiDimensionTemplatesNew
