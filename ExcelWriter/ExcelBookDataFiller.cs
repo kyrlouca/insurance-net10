@@ -23,6 +23,8 @@ using Shared.SpecialRoutines;
 using Microsoft.VisualBasic;
 using ExcelWriter.ExcelDataModels;
 using System.ComponentModel;
+using Syncfusion.XlsIO.Parser.Biff_Records.ObjRecords;
+using System.Data;
 
 public class ExcelBookDataFiller : IExcelBookDataFiller
 {
@@ -74,30 +76,18 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ///
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
-        
-        
         if (_parameterData.IsDevelop)
         {
-
             var debugClosedTableCode = "";
-            //var debugClosedTableCode = "xS.04.04.01.01";
-            if(!string.IsNullOrEmpty(debugClosedTableCode))
-            {
-                Console.Write($"In Develop and filtering Closed: {debugClosedTableCode}");
-            }
-            
+            //var debugClosedTableCode = "xS.01.03.01.01";            
             dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
-
         }
-
 
         foreach (var dbClosedSheet in dbClosedSheets)
         {
-
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
-            //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
             FillClosedTable280(dbClosedSheet);
         }
 
@@ -106,14 +96,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             .Where(sheet => sheet.IsOpenTable);
 
         if (_parameterData.IsDevelop)
-        {            
-            //var debugOpenTableCode = "S.14.01.01.01";
+        {
+            //var debugOpenTableCode = "S.04.03.01.01";
             var debugOpenTableCode = "";
             if (!string.IsNullOrEmpty(debugOpenTableCode))
             {
                 Console.Write($"In Develop and filtering Open: {debugOpenTableCode}");
             }
-            
+
             dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
                  ? dbOpenSheets
                  : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
@@ -155,6 +145,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     {
         //normally, facts with row,col are unique within a sheet. However, the design allows for multiple facts if they have different currency or country
         //for multi facts, we need to create additional columns and write the currency/country above the column
+        var workSheet = Workbook!.Worksheets[dbSheet.SheetTabName.Trim()];
 
         var dataName = Workbook!.Names[$"{dbSheet.SheetTabName.Trim()}_data"];
         var dataRange = dataName.RefersToRange;
@@ -169,88 +160,106 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var exactColumnRow = HelperRoutines.ExtendRangeRowColsDirectional(columnRow, 0, -1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.Up);
         exactColumnRow.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
-        var columnCells = dataRange.Rows.First().Cells.Skip(1);
+        var columnCellsOriginal = dataRange.Rows.First().Cells.Skip(1);
+        var columnLabelsOriginal = columnCellsOriginal.Select(cc => cc.Value).ToList();
+        var extendedColumnsRow = HelperRoutines.ExtendRangeRowColsDirectional(dataRange.Rows.First(), 0, 10, HelperRoutines.HorizontalDirection.Right, HelperRoutines.VerticalDirection.None);
+
+        var descriptionCells = wholeRange[dataRange.Row - 1, dataRange.Column + 1, dataRange.Row - 1, dataRange.LastColumn];
+        var desriptionLabels = descriptionCells.Select(cc => cc.Value).ToList();
+
+        var workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
 
 
-        ///CURRENCY LABELS
-        var isCurrencyTemplate = MultiDimensionTemplates.CurrencyTemplates.Contains(dbSheet.TableCode);
-        var isCountryTemplate = MultiDimensionTemplates.CountryTemplates.Contains(dbSheet.TableCode);
-        var dimensionType = isCurrencyTemplate ? DimensionType.Currency
-                           : isCountryTemplate ? DimensionType.Country
-                           : DimensionType.None;
+        ///CURRENCY/COUNTRY LABELS
+        var ZET_ROW = 0;
+        var multiTemplate = MultiDimensionTemplatesNew.Templates.FirstOrDefault(tmp => tmp.TemplateCode == dbSheet.TableCode);
+        var isMultiTemplate = multiTemplate is not null;
+        var zetMembers = new List<MMember>();
+        IRange zetLabelsRange = workSheet["A1"];
 
-        var currenciesOrCountriesXbrlCodes = new List<string>();
-        var memberXbrlPrefix = "";
-        if (dimensionType != DimensionType.None)
+        if (isMultiTemplate)
         {
+            ZET_ROW = dataRange.Row - 2;
+            zetLabelsRange = wholeRange[ZET_ROW, workingDataRange.Column, ZET_ROW, workingDataRange.LastColumn];
 
-            memberXbrlPrefix = dimensionType switch
+            zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
+            var zetMembersCount = zetMembers.Count;
+
+            var originalDescriptionRange= wholeRange[dataRange.Row - 2, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
+            originalDescriptionRange.UnMerge();
+            var tDesc = originalDescriptionRange.Cells.FirstOrDefault(cl => !string.IsNullOrWhiteSpace(cl.Value))?.Value ??"";
+
+            var rowForZetlabels = wholeRange[ZET_ROW, dataRange.Column, ZET_ROW, dataRange.LastColumn];
+            rowForZetlabels.UnMerge();
+            //var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();                        
+            //datarange includes the row for the column numbers and the column for the row numbers
+            for (var i = 0; i < columnLabelsOriginal.Count(); i++)
             {
-                DimensionType.Currency => "s2c_CU",
-                DimensionType.Country => "s2c_GA",
-                _ => ""
-            };
+                var columnLabelStr = columnLabelsOriginal[i];
+                var descriptionLabel = desriptionLabels[i];
+                //columns have been inserted but still columnLabelCell will point to the first label found 
+                var columnLabelCell = extendedColumnsRow.FirstOrDefault(cc => cc.Value == columnLabelStr);
+                for (var j = 0; j < zetMembersCount; j++)
+                {
+                    if (j > 0)
+                    {
+                        workSheet.InsertColumn(columnLabelCell.Column + 1);
+                    }
+                    //zetLabels
+                    var colZetLabel = wholeRange[ZET_ROW, columnLabelCell.Column + j];
+                    colZetLabel.Text = zetMembers[j].MemberLabel;
+                    colZetLabel.CellStyle = _pensionStyles.TopLabelsStyle;
+                    colZetLabel.ColumnWidth = 30;
 
-            currenciesOrCountriesXbrlCodes = (List<string>)GetSheetDistinctValues(dbSheet.TemplateSheetId, memberXbrlPrefix)
-                .OrderBy(x => x)
-                .ToList();
+                    //description labels (above column labels) 
+                    var descLabel = wholeRange[dataRange.Row - 1, colZetLabel.Column];
+                    descLabel.Text = descriptionLabel;
+                    descLabel.CellStyle = _pensionStyles.ZetLabelStyle;
 
-            if (1 == 1)
-            {
-
+                    //colLabels
+                    var colLabel = wholeRange[dataRange.Row, colZetLabel.Column];
+                    colLabel.Text = columnLabelStr;
+                    colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                }
             }
-            var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();
+            var lastDataColumn = dataRange.LastColumn + columnLabelsOriginal.Count * (zetMembersCount - 1);
+            workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, lastDataColumn];
+            
+            var newDescRange= wholeRange[dataRange.Row-3, dataRange.Column+1, dataRange.Row-3, lastDataColumn];
+            newDescRange.Merge();
+            newDescRange.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
+            newDescRange.Value = tDesc;
 
 
-            var CurrencyOrCountryLabels = currenciesOrCountriesXbrlCodes
-                .Select(xbrlCode => _SqlFunctions.SelectMMember(xbrlCode))
-                .Select(x => x?.MemberLabel ?? "")
-                .ToList();
-
-
-            for (var i = 0; i < CurrencyOrCountryLabels.Count; i++)
-            {
-                var colLabel = wholeRange[dataRange.Row - 2, dataRange.Column + 1 + i];
-                colLabel.Text = CurrencyOrCountryLabels[i];
-                colLabel.CellStyle = _pensionStyles.TopLabelsStyle;
-                colLabel.ColumnWidth = 30;
-            }
         };
 
-        var currencyCount = currenciesOrCountriesXbrlCodes.Count == 0 ? 1 : currenciesOrCountriesXbrlCodes.Count;//to loop even for non-currencies
-        foreach (var dataRow in dataRange.Rows)
+        var zetCount = zetMembers.Count == 0 ? 1 : zetMembers.Count;//to loop even for non-currencies        
+        
+        var colLabelsRange = workingDataRange.Rows.First();
+        var rowLabelsRange = workingDataRange.Columns.First();
+        //var zetLabelsRange = wholeRange[ZET_ROW, workingDataRange.Column, ZET_ROW, workingDataRange.LastColumn];
+
+        foreach (var dataRow in workingDataRange.Rows.Skip(1))
         {
-            //rowLabelCell the cell which has the row : R0110
-            //then will go through all the columns for this row
-
-            var rowLabelCell = dataRow.First();
-            if (string.IsNullOrEmpty(rowLabelCell.Value))
+            var rowCells = dataRow.Cells.Skip(1);
+            foreach (var cell in rowCells)
             {
-                continue;
-            }
 
+                var row = rowLabelsRange[cell.Row, colLabelsRange.Column].Value;
+                var col = colLabelsRange[colLabelsRange.Row,cell.Column].Value;
 
-            foreach (var colCell in columnCells)
-            {
-                for (var i = 0; i < currencyCount; i++)
+                var zetDescription = isMultiTemplate ? zetLabelsRange[zetLabelsRange.Row, cell.Column].Value : "";
+                var zetXbrl = isMultiTemplate ? zetMembers.FirstOrDefault(zm => zm.MemberLabel == zetDescription)?.MemberXBRLCode ?? "" : "";
+                                
+                var factX = FindFactFromRowColCurrency(dbSheet, row, col, zetXbrl, isMultiTemplate);
+                FormatCellValue(cell, factX);
+                if (isMultiTemplate)
                 {
-                    var rowLabelCellObj = HelperRoutines.CreateRowColObject(rowLabelCell.AddressR1C1Local);
+                    cell.CellStyle.Borders.LineStyle = ExcelLineStyle.Thin;
+                    cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
+                    cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
+                }                                
 
-                    //s2c_dim:LR(s2c_GA:CY)
-                    var xbrlCode = dimensionType == DimensionType.None ? "" : currenciesOrCountriesXbrlCodes[i];
-
-                    var cell = dataRange[rowLabelCell.Row, colCell.Column + i];
-                    if (isCountryTemplate || isCurrencyTemplate)
-                    {
-                        cell.CellStyle.Borders.LineStyle = ExcelLineStyle.Thin;
-                        cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
-                        cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
-                    }
-                    var factX = FindFactFromRowColCurrency(dbSheet, rowLabelCell.Value, colCell.Value, xbrlCode, dimensionType);
-
-                    FormatCellValue(cell, factX);
-
-                }
             }
         }
 
@@ -293,15 +302,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //expand the Data range
-        if (currencyCount > 1)
+        if (isMultiTemplate )
         {
-            var expandedDataRows = dataRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn + currencyCount -1];
+            //var expandedDataRows = dataRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn + zetCount - 1];
             var dataRangeName = dataName.Name;
             Workbook.Names.Remove(dataRangeName);
             var dataNamedObjectE = Workbook.Names.Add(dataRangeName);
-            dataNamedObjectE.RefersToRange = expandedDataRows;
+            dataNamedObjectE.RefersToRange = workingDataRange;
             dataRange = dataNamedObjectE.RefersToRange;
-
 
         };
 
@@ -394,7 +402,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         {
             foreach (var colCell in columnCells)
             {
-                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colCell.Value, "", DimensionType.None);
+                var factX = FindFactFromRowColCurrency(dbSheet, rowLabel, colCell.Value, "", false);
                 if (factX is null)
                 {
                     continue;
@@ -468,7 +476,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         ///////////////////////fill keys
 
-        
+
         var columnLabels = dataRangeWithKeys.Rows.First();
         columnLabels.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
@@ -676,8 +684,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
-    //private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string currencyVal, DimensionSelection dimensionSelection = DimensionSelection.None)
-    private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string domMemberValue, DimensionType dimensionType)
+
+    //private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string domMemberValue, DimensionType dimensionType)
+    private TemplateSheetFact? FindFactFromRowColCurrency(TemplateSheetInstance sheet, string row, string col, string domMemberValue, bool isUseSignature)
     {
 
         //more than one fact with the same row,col but with different currency        
@@ -708,12 +717,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
      ";
 
 
-        var sqlSelectFact = dimensionType switch
-        {
-            DimensionType.Currency => sqlFactBySignature,
-            DimensionType.Country => sqlFactBySignature,
-            _ => sqlFact
-        };
+        var sqlSelectFact = isUseSignature ? sqlFactBySignature : sqlFact;
+
 
 
         using var connectionLocalDb = new SqlConnection(_parameterData.SystemConnectionString);
@@ -742,7 +747,50 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     }
 
 
-    private List<string> GetSheetDistinctValues(int TemplateSheetId, string memberXbrlPrefix)
+
+    private List<MMember> GetSheetDistinctValuesNew(int TemplateSheetId, string TemplateCode, string dimension, string domain)
+    {
+        //var rgx = new Regex(@"s2c_CU:(.+?)\)");
+        //DimensionPrefix : "s2c_CU" Or "s2c_GA"
+
+        //S.04.04.01.02 s2c_dim: LA(* [377; 1238; 0])
+        //S.04.02.01.02  s2c_dim: LG(s2c_GA: GR)
+
+
+        if (string.IsNullOrEmpty(dimension))
+        {
+            return new List<MMember>();
+        }
+
+        var facts = _SqlFunctions.SelectFactsForSheetId(TemplateSheetId);
+        if (!facts.Any())
+        {
+            return new List<MMember>();
+        }
+        var rgx = string.IsNullOrEmpty(domain) ? new Regex(@$"s2c_dim:{dimension.Trim()}\((.+?:.+?)\)") : new Regex(@$"{dimension.Trim()}\((s2c_{domain.Trim()}:.+?)\)");
+
+        var domainValues = facts
+                .SelectMany(fact => rgx.Matches(fact.DataPointSignature)
+                .Cast<Match>()
+                .SelectMany(match => match.Groups
+                    .Cast<Group>()
+                    .Skip(1) // Skip group 0 (the entire match)
+                    .Select(group => group.Value))
+                 ).Distinct()
+                 .ToList();
+
+        var members = (domainValues ?? new List<string>())
+            .Select(dm => _SqlFunctions.SelectMMember(dm))
+            .Where(m => m is not null)
+            .ToList();
+
+        return members;
+    }
+
+
+
+
+    private List<string> GetSheetDistinctValues(int TemplateSheetId, string memberXbrlPrefix, string dimAndDom)
     {
         //var rgx = new Regex(@"s2c_CU:(.+?)\)");
         //DimensionPrefix : "s2c_CU" Or "s2c_GA"
@@ -759,6 +807,28 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                  ).Distinct()
                  .ToList();
 
+        var pref = dimAndDom.Split("|");
+        if (pref.Length == 2)
+        {
+            //MET(s2md_met:ri2483)|s2c_dim:LA(s2c_GA:x77)|s2c_dim:LG(s2c_GA:GR)|s2c_dim:LR(s2c_GA:x14)|s2c_dim:TZ(s2c_LB:x162)
+            //s2c_dim:LG(s2c_GA:GR)
+            //LG\((s2c_GA:.+?)\)
+            var rgxNewx = $@"{pref[0]}\(sc2_{pref[1]}";
+
+
+
+            var rgxNew = new Regex(@$"{pref[0]}\((s2c_{pref[1]}:.+?)\)");
+            var distinctCurrencies2 = facts
+                    .SelectMany(fact => rgxNew.Matches(fact.DataPointSignature)
+                    .Cast<Match>()
+                    .SelectMany(match => match.Groups
+                        .Cast<Group>()
+                        .Skip(1) // Skip group 0 (the entire match)
+                        .Select(group => group.Value))
+                     ).Distinct()
+                     .ToList();
+
+        }
 
         return distinctCurrencies;
     }

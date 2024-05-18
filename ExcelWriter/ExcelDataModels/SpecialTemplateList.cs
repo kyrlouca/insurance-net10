@@ -49,7 +49,7 @@ public static class SpecialTemplateList
                 {
                     new string[] { "S.22.06.01.01", "S.22.06.01.01" },
                     new string[] { "S.22.06.01.03", "S.22.06.01.04" }
-            }),         
+            }),
     };
 
     public static List<string> SingleTableGroupsNew = new List<string> {
@@ -59,7 +59,7 @@ public static class SpecialTemplateList
         "S.04.04.02",
             "S.05.01.02",
             "S.05.01.01",
-            "S.05.01.02",            
+            "S.05.01.02",
             "S.14.01.01",
             "S.29.04.01",
             "S.30.01.01",
@@ -73,24 +73,38 @@ public static class SpecialTemplateList
             "S.31.01.04",
         };
 
-    
+
     public static SpecialTemplateLayout? FindSpecialTemplateLayoutByCodeNew(string templateCode)
     {
         var rec = SpecialTemplateList.SpecialLayoutsNew.FirstOrDefault(line => line.TemplateCode == templateCode.Trim());
         return rec;
     }
 
-    
+
 }
+//S.04.04.01.02 s2c_dim:LA(*[377;1238;0])
+//S.04.02.01.02 s2c_dim:LG(s2c_GA:GR)
+//S.04.05.01.02 s2c_dim:LR(*[388;1238;0])
+//S.02.02.01.02 s2c_dim:RC(s2c_CU:x4)
 
-public static class MultiDimensionTemplates
+public record MultiDimensionType(string TemplateCode, string Dimension, string Domain);
+public static class MultiDimensionTemplatesNew
 {
-    public static List<string> CurrencyTemplates = new List<string> {
-            "S.02.02.01.02",
-    };
-    public static List<string> CountryTemplates = new List<string> {                        
-            "S.04.04.01.02",
-            "S.04.05.01.02",
-    };
+    public static List<MultiDimensionType> Templates = new List<MultiDimensionType> {
+        
+        //S.02.02.01.02 s2c_dim:RC(s2c_CU:x4)
+        
+        new MultiDimensionType("S.02.02.01.02", "RC","CU"),
+        
+        //S.04.02.01.02  s2c_dim:LG(s2c_GA:GR)
+        new MultiDimensionType("S.04.02.01.02", "LG","GA"),
+        
+        //S.04.04.01.02 s2c_dim:LA(*[377;1238;0])
+        new MultiDimensionType("S.04.04.01.02", "LA",""),
 
+        //S.04.05.01.02 s2c_dim:LR(*[388;1238;0])
+        new MultiDimensionType("S.04.05.01.02", "LR","")
+
+
+    };
 }

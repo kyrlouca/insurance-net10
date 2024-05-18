@@ -235,6 +235,7 @@ public class SqlFunctions : ISqlFunctions
         var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { xbrlCode });
         return val;
     }
+    
 
     public List<MMember> SelectMMembersFromHierarchy(int hierarchyId)
     {
