@@ -1048,7 +1048,7 @@ internal class ValidationFunctions
         else
         {
             var rgxTerm = new Regex(@"X\d\d");
-            var termLeft = rgxTerm.IsMatch(leftPart) ? terms[leftPart] : new ObjectTerm280("S",0,false,leftPart,0,0,null,false,"");
+            var termLeft = rgxTerm.IsMatch(leftPart) ? terms[leftPart] : new ObjectTerm280("S",0,false,leftPart,0,0,null,false,"",0,0);
 
 
             //var termLeft = terms[leftPart];                        

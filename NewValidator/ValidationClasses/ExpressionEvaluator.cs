@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using System.Transactions;
 using Z.Expressions;
 using System.Linq;
+using System.Diagnostics.Tracing;
 
 namespace NewValidator.ValidationClasses;
 
@@ -26,13 +27,13 @@ public enum KleeneValue
     False,
     Unknown
 }
-public record OptionalObject(bool IsNull, object? Value);
+public record OptionalObject(bool IsNull, object? Value, double toleranceMin=0,double toleranceMax=0);
 
 public record BooleanObject(bool IsNull, bool Value);
 public enum FunctionAggregateTypes { iMin, iMax, iSum, Count, Max, Plain, Exp, Abs };
 public record FunctionObject(string Letter, FunctionAggregateTypes FunctionType, string FullText, string FunctionArgument, double Value);
 
-public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact, string Filter);
+public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Object? Obj, double sumValue, int countValue, TemplateSheetFact? fact, bool IsNullFact, string Filter, double toleranceMinValue, double toleranceMaxValue);
 
 public partial class GeneralEvaluator
 {
@@ -240,8 +241,9 @@ public partial class GeneralEvaluator
                 return resStr;
             }
 
-                      
 
+            var resLeftMin = EvaluateArithmeticExpressionRecursively(left, terms, "", IntervalUsed.Min);
+            var resLeftMax = EvaluateArithmeticExpressionRecursively(left, terms, "", IntervalUsed.Max);
 
             var resLeftDbl = EvaluateArithmeticExpressionRecursively(left, terms, "");
             var resRightDbl = EvaluateArithmeticExpressionRecursively(right, terms, "");
@@ -322,7 +324,8 @@ public partial class GeneralEvaluator
         return resTerm;
     }
 
-    public static OptionalObject EvaluateArithmeticExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms, string thisTerm)
+    public enum IntervalUsed { None, Min, Max }
+    public static OptionalObject EvaluateArithmeticExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms, string thisTerm,IntervalUsed intervalUsed =IntervalUsed.None )
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus         
         //var regStartingFunction = RgxAggregateStartingFunction();

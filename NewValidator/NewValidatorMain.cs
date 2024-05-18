@@ -15,7 +15,7 @@ public class NewValidatorMain : INewValidatorMain
 
     private readonly IParameterHandler _parameterHandler;
     private ParameterData _parameterData = new();
-    private readonly ILogger _logger;
+    private readonly ILogger _logger; 
     private readonly ISqlFunctions _SqlFunctions;
     private IDocumentValidator _documentValidator;
 

@@ -76,7 +76,7 @@ public class IntervalFunctions
         return leftSide > rightSide;
     }
 
-    private static double Radius(int decimals)
+    public static double Radius(int decimals)
     {
         var val = 1 / Math.Pow(10, decimals) / 2;
         return val;

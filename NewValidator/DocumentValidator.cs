@@ -103,7 +103,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            //validationRules = validationRules.Where(vr => vr.ValidationID == 4078).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 3510).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -478,7 +478,7 @@ public class DocumentValidator : IDocumentValidator
 
     private static ObjectTerm280 CreateObjectTerm280Empty()
     {
-        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true, "");
+        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true, "",0,0);
     }
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance, string filter)
     {
@@ -505,7 +505,7 @@ public class DocumentValidator : IDocumentValidator
 
 
 
-            return new ObjectTerm280(defaultDataType, 0, IsTolerance, null, 0, 0, null, true, "");
+            return new ObjectTerm280(defaultDataType, 0, IsTolerance, null, 0, 0, null, true, "",0,0);
         }
 
 
@@ -521,7 +521,13 @@ public class DocumentValidator : IDocumentValidator
             "D" => (DateTime)fact.DateTimeValue,
             _ => throw new NotImplementedException()
         };
-        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false, filter);
+
+        var numericTypes = new[] {"I", "M","N","P" };        
+        var minVal = numericTypes.Contains(fact.DataTypeUse) ? Convert.ToDouble(fact.NumericValue - IntervalFunctions.Radius(fact.Decimals)) : 0.0;
+        var maxVal = numericTypes.Contains(fact.DataTypeUse) ? Convert.ToDouble(fact.NumericValue + IntervalFunctions.Radius(fact.Decimals)) : 0.0;
+
+
+        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false, filter,minVal,maxVal);
         return objTerm;
     }
 
