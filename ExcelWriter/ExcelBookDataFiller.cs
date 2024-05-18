@@ -81,8 +81,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         if (_parameterData.IsDevelop)
         {
 
-            //var debugClosedTableCode = "";
-            var debugClosedTableCode = "S.04.02.01.02";
+            var debugClosedTableCode = "";
+            //var debugClosedTableCode = "S.04.02.01.02";
             if (!string.IsNullOrEmpty(debugClosedTableCode))
             {
                 Console.Write($"In Develop and filtering Closed: {debugClosedTableCode}");
@@ -186,11 +186,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var ZET_ROW = 0;
         var multiTemplate = MultiDimensionTemplatesNew.Templates.FirstOrDefault(tmp => tmp.TemplateCode == dbSheet.TableCode);
         var isMultiTemplate = multiTemplate is not null;
-        var zetMembers = new List<MMember>();        
-        
+        var zetMembers = new List<MMember>();
+        IRange zetLabelsRange = workSheet["A1"];
+
         if (isMultiTemplate)
         {
             ZET_ROW = dataRange.Row - 2;
+            zetLabelsRange = wholeRange[ZET_ROW, workingDataRange.Column, ZET_ROW, workingDataRange.LastColumn];
 
             zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
             var zetMembersCount = zetMembers.Count;
@@ -247,7 +249,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         
         var colLabelsRange = workingDataRange.Rows.First();
         var rowLabelsRange = workingDataRange.Columns.First();
-        var zetLabelsRange = wholeRange[ZET_ROW, workingDataRange.Column, ZET_ROW, workingDataRange.LastColumn];
+        //var zetLabelsRange = wholeRange[ZET_ROW, workingDataRange.Column, ZET_ROW, workingDataRange.LastColumn];
 
         foreach (var dataRow in workingDataRange.Rows.Skip(1))
         {
@@ -258,7 +260,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 var row = rowLabelsRange[cell.Row, colLabelsRange.Column].Value;
                 var col = colLabelsRange[colLabelsRange.Row,cell.Column].Value;
 
-                var zetDescription = isMultiTemplate ? zetLabelsRange[zetLabelsRange.Row, cell.Column].Value : "xxx";
+                var zetDescription = isMultiTemplate ? zetLabelsRange[zetLabelsRange.Row, cell.Column].Value : "";
                 var zetXbrl = isMultiTemplate ? zetMembers.FirstOrDefault(zm => zm.MemberLabel == zetDescription)?.MemberXBRLCode ?? "" : "";
                                 
                 var factX = FindFactFromRowColCurrency(dbSheet, row, col, zetXbrl, isMultiTemplate);
