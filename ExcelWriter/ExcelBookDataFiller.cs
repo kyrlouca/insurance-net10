@@ -76,30 +76,18 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ///
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
-
-
         if (_parameterData.IsDevelop)
         {
-
-            var debugClosedTableCode = "";
-            //var debugClosedTableCode = "S.04.02.01.02";
-            if (!string.IsNullOrEmpty(debugClosedTableCode))
-            {
-                Console.Write($"In Develop and filtering Closed: {debugClosedTableCode}");
-            }
-
+            //var debugClosedTableCode = "";
+            var debugClosedTableCode = "S.04.03.01.01";            
             dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
-
         }
-
 
         foreach (var dbClosedSheet in dbClosedSheets)
         {
-
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
-            //Closed:S.04.01.01.02__s2c_GA_x14__s2c_LB_x146
             FillClosedTable280(dbClosedSheet);
         }
 
@@ -109,8 +97,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         if (_parameterData.IsDevelop)
         {
-            var debugOpenTableCode = "xS.14.01.01.01";
-            //var debugOpenTableCode = "";
+            //var debugOpenTableCode = "xS.14.01.01.01";
+            var debugOpenTableCode = "";
             if (!string.IsNullOrEmpty(debugOpenTableCode))
             {
                 Console.Write($"In Develop and filtering Open: {debugOpenTableCode}");
