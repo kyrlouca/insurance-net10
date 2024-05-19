@@ -14,10 +14,14 @@ internal class IntervalFunctionsNew
     public static bool IsIntervalExpressionValid(string operatorI, OptionalObject leftMin, OptionalObject leftMax , OptionalObject rightMin, OptionalObject rightMax)
     {
         //todo if any operand is null the result is NULL
-        var lmin = (double)(leftMin?.Value ?? 0.0);
-        var lmax = (double)(leftMax?.Value ?? 0.0);
-        var rmin = (double)(rightMin?.Value ?? 0.0);
-        var rmax = (double)(rightMax?.Value ?? 0.0);
+        var lmin = Math.Min((double)(leftMin?.Value ?? 0.0), (double)(leftMax?.Value ?? 0.0));
+        var lmax = Math.Max((double)(leftMin?.Value ?? 0.0), (double)(leftMax?.Value ?? 0.0));
+
+        var rmin = Math.Min((double)(rightMin?.Value ?? 0.0), (double)(rightMax?.Value ?? 0.0));
+        var rmax = Math.Max((double)(rightMin?.Value ?? 0.0), (double)(rightMax?.Value ?? 0.0));
+
+        //var rmin = (double)(rightMin?.Value ?? 0.0);
+        //var rmax = (double)(rightMax?.Value ?? 0.0);
         var resInterval = operatorI switch
         {
             "=" => IsIntervalEQ(lmin, lmax, rmin, rmax),
@@ -36,6 +40,8 @@ internal class IntervalFunctionsNew
     
     public static bool IsIntervalEQ( double leftMin, double leftMax, double rightMin, double rightMax)    
     {
+        var ll = (leftMin <= rightMax);
+        var l2= (rightMin <= leftMax);
 
         var isValid = (leftMin <= rightMax) && (rightMin <= leftMax);
         return isValid;
