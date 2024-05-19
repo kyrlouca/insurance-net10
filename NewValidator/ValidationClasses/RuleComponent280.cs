@@ -78,12 +78,17 @@ public class RuleComponent280
         var equalityExpression = "";
         var left = OptionalObjectToString(ExpressionInfo.leftBase);
         var right = OptionalObjectToString(ExpressionInfo.rightBase);
-        equalityExpression = $"{left} {ExpressionInfo.op} {right}";
+        
 
         if (ExpressionInfo.isAllDoubles)
         {
-            equalityExpression = $"{equalityExpression}**left:{ExpressionInfo.leftMin}↔{ExpressionInfo.leftMax}**right:{ExpressionInfo.rightMin}↔{ExpressionInfo.rightMax}";
-        }        
+            equalityExpression = $"{left } {ExpressionInfo.op} {right}";
+            equalityExpression = $"{equalityExpression}**left:{ExpressionInfo.leftMin.Value}↔{ExpressionInfo.leftMax.Value}**right:{ExpressionInfo.rightMin.Value}↔{ExpressionInfo.rightMax.Value}";
+        }
+        else
+        {
+            equalityExpression = $"{left} {ExpressionInfo.op} {right}";
+        }       
 
         return $"{SymbolExpression}**{vals}***{equalityExpression}";
         
