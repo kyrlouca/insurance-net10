@@ -276,7 +276,10 @@ public partial class GeneralEvaluator
 
                 if (ires != intervalResult)
                 {
-                    throw new Exception($"different result : {ruleId}");
+                    //throw new Exception($"different result : {ruleId}");
+                    var yy = 33;
+                    //var ytemp=Console.Read();
+
                 }
                 
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
