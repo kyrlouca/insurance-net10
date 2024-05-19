@@ -27,7 +27,7 @@ public class RuleComponent280
     public string SymbolExpression { get; set; } = "";
     public Dictionary<string, ObjectTerm280> ObjectTerms { get; set; } = new();
 
-    public ExpressionInfoType? ExpressionInfo { get; set; }
+    public ExpressionInfoWithIntervalsType? ExpressionInfo { get; set; }
     public static RuleComponent280 CreateComponent(string textExpression)
     {
         //captures terms inside brackets , takes care of inner brackets in match statements        
@@ -76,12 +76,16 @@ public class RuleComponent280
         }
 
         var equalityExpression = "";
-        var left = OptionalObjectToString(ExpressionInfo.leftExpression);
-        var right = OptionalObjectToString(ExpressionInfo.rightExpression);
+        var left = OptionalObjectToString(ExpressionInfo.leftBase);
+        var right = OptionalObjectToString(ExpressionInfo.rightBase);
         equalityExpression = $"{left} {ExpressionInfo.op} {right}";
 
-        return $"{SymbolExpression}**{vals}***{equalityExpression}";
+        if (ExpressionInfo.isAllDoubles)
+        {
+            equalityExpression = $"{equalityExpression}**left:{ExpressionInfo.leftMin}↔{ExpressionInfo.leftMax}**right:{ExpressionInfo.rightMin}↔{ExpressionInfo.rightMax}";
+        }        
 
+        return $"{SymbolExpression}**{vals}***{equalityExpression}";
         
     }
     public static string OptionalObjectToString(OptionalObject optionalObject)

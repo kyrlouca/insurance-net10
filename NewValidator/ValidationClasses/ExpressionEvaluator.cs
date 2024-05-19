@@ -39,20 +39,17 @@ public record ObjectTerm280(string DataType, int Decimals, bool IsTolerant, Obje
 
 public partial class GeneralEvaluator
 {
-    
-    //ExpressionInfoType is only used to display the final expression in the errorRul presented to the user
-    public static ExpressionInfoType? expressionInfo;
-    public static ExpressionInfoWithIntervalsType? expressionInfoWithIntervals;
 
+    //ExpressionInfoType is only used to display the final expression in the errorRul presented to the user    
+    public static ExpressionInfoWithIntervalsType? expressionInfo;
     public enum LogicalOperators { None, IsAnd, IsOR };
-
 
     public static bool ValidateRule(RuleStructure280 ruleStructure280)
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        GeneralEvaluator.expressionInfo = null;        
+        GeneralEvaluator.expressionInfo = null;
         var ifResult = GeneralEvaluator.EvaluateBooleanExpression(ruleStructure280.RuleId, ruleStructure280.IfComponent.SymbolExpression, ruleStructure280.IfComponent.ObjectTerms);
         ruleStructure280.IfComponent.ExpressionInfo = GeneralEvaluator.expressionInfo;
 
@@ -101,8 +98,6 @@ public partial class GeneralEvaluator
             {
                 return true; //todo need to check this
             }
-
-
         }
         bool ToBoolean(KleeneValue kleeneVal) => kleeneVal == KleeneValue.True || kleeneVal == KleeneValue.Unknown;
     }
@@ -111,8 +106,6 @@ public partial class GeneralEvaluator
 
     public static KleeneValue EvaluateBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms)
     {
-        
-
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
         //1. outer parenthesis
         //2. single function        
@@ -124,8 +117,6 @@ public partial class GeneralEvaluator
             throw new ArgumentNullException("Hey1: Formula is Null or Empty");
         }
 
-
-
         var rgxOuter = RgxOuterParenthesis();
         var matchOuter = rgxOuter.Match(formula);
         if (matchOuter.Success)
@@ -133,7 +124,6 @@ public partial class GeneralEvaluator
             var insideParen = matchOuter.Groups[1].Value.Trim();
             var resInside = EvaluateBooleanExpression(ruleId, insideParen, terms);
             return resInside;
-
         }
 
         //************************** Single Function********************************************************
@@ -225,7 +215,7 @@ public partial class GeneralEvaluator
         //3. ****************************************arithmetic
         if (res.logicalOperator == LogicalOperators.None)
         {
-            var regSplit = new Regex(@"(.+?)\s*(!=|>=|>|<=|<|==|=)\s*(.+)");            
+            var regSplit = new Regex(@"(.+?)\s*(!=|>=|>|<=|<|==|=)\s*(.+)");
             var matchSplit = regSplit.Match(formula);
             if (!matchSplit.Success)
             {
@@ -252,51 +242,41 @@ public partial class GeneralEvaluator
             var resRightMax = EvaluateArithmeticExpressionRecursively(right, terms, IntervalType.Max);
 
 
+            //var resLeftDbl = EvaluateArithmeticExpressionRecursively(left, terms, IntervalType.None);
+            //var resRightDbl = EvaluateArithmeticExpressionRecursively(right, terms, IntervalType.None);
 
-            var resLeftDbl = EvaluateArithmeticExpressionRecursively(left, terms, IntervalType.None);
-            var resRightDbl = EvaluateArithmeticExpressionRecursively(right, terms, IntervalType.None);
-
-            if (resLeftDbl.IsNull || resRightDbl.IsNull)
+            if (resLeftMin.IsNull || resRightMin.IsNull)
             {
-                
-                GeneralEvaluator.expressionInfo= new ExpressionInfoType(op,resLeftDbl,resRightDbl);
+                var resLeftBase = EvaluateArithmeticExpressionRecursively(left, terms, IntervalType.None);
+                var resRightBase = EvaluateArithmeticExpressionRecursively(right, terms, IntervalType.None);
+                GeneralEvaluator.expressionInfo = ExpressionInfo.Create(op, false, resLeftBase, resLeftMin, resLeftMax, resRightBase, resRightMin, resRightMax);
+
                 return KleeneValue.Unknown;
             }
 
-            if (resLeftDbl.Value is double || resRightDbl.Value is double)
+            if (resLeftMin.Value is double || resRightMin.Value is double)
             {
                 //var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
-                var ires = IntervalFunctionsNew.IsIntervalExpressionValid(op, resLeftMin, resLeftMax, resRightMin, resRightMax);
-
-                var leftDecimals = FindMaxDecimals(left, terms);
-                var rightDecimals = FindMaxDecimals(right, terms);                
-
-                GeneralEvaluator.expressionInfo = new ExpressionInfoType(op, resLeftDbl, resRightDbl);
-                var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
-
-                if (ires != intervalResult)
+                var intervalResult = IntervalFunctionsNew.IsIntervalExpressionValid(op, resLeftMin, resLeftMax, resRightMin, resRightMax);
+                                
+                if (!intervalResult)
                 {
-                    //throw new Exception($"different result : {ruleId}");
-                    var yy = 33;
-                    //var ytemp=Console.Read();
-
+                    var resLeftBase = EvaluateArithmeticExpressionRecursively(left, terms, IntervalType.None);
+                    var resRightBase = EvaluateArithmeticExpressionRecursively(right, terms, IntervalType.None);
+                    GeneralEvaluator.expressionInfo = ExpressionInfo.Create(op, true, resLeftBase, resLeftMin, resLeftMax, resRightBase, resRightMin, resRightMax);
                 }
-                
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
             }
 
-            if (resLeftDbl.Value is string || resRightDbl.Value is string)
+            //if (resLeftDbl.Value is string || resRightDbl.Value is string)
+            if (resLeftMin.Value is string || resRightMin.Value is string)
             {
-                var resString = resLeftDbl.Value == resRightDbl.Value;
+                var resString = resLeftMin.Value == resRightMin.Value;
                 return resString ? KleeneValue.True : KleeneValue.False;
             }
-
-
         }
 
-
         return KleeneValue.True;
-
 
         static List<string> FindTerms(string expression)
         {
@@ -312,12 +292,12 @@ public partial class GeneralEvaluator
             {
                 return 0;
             }
-            var maxDecimal= numbers.OrderByDescending(n => Math.Abs(n)).First();
+            var maxDecimal = numbers.OrderByDescending(n => Math.Abs(n)).First();
             return maxDecimal;
         }
 
 
-        static int FindMaxDecimals (string expression, Dictionary<string, ObjectTerm280> terms)
+        static int FindMaxDecimals(string expression, Dictionary<string, ObjectTerm280> terms)
         {
             var expressionTerms = FindTerms(expression);
             var leftTermsD = terms
@@ -330,7 +310,7 @@ public partial class GeneralEvaluator
 
     }
 
-    private static OptionalObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms,IntervalType intervalType)
+    private static OptionalObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms, IntervalType intervalType)
     {
         //Here is the only Place we need the interval type
         //for numeric terms it will add or subtract the radius from the value of the object term
@@ -340,12 +320,12 @@ public partial class GeneralEvaluator
             : term.Obj is null ? new OptionalObject(true, null)
             : term.DataType == "D" ? new OptionalObject(false, ((DateTime)term.Obj).ToOADate())
             //: new OptionalObject(false, Convert.ToDouble(term.Obj));
-            : new OptionalObject(false, ConvertToDoubleUsingInterval(term,intervalType));
+            : new OptionalObject(false, ConvertToDoubleUsingInterval(term, intervalType));
 
 
         return resTerm;
 
-        static double ConvertToDoubleUsingInterval(ObjectTerm280 term,IntervalType intervalType)
+        static double ConvertToDoubleUsingInterval(ObjectTerm280 term, IntervalType intervalType)
         {
             if (term == null || term.Obj is null)
             {
@@ -363,8 +343,8 @@ public partial class GeneralEvaluator
 
     }
 
-    
-    public static OptionalObject EvaluateArithmeticExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms,IntervalType intervalType  )
+
+    public static OptionalObject EvaluateArithmeticExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms, IntervalType intervalType)
     {
         //1. Outer parenthesis, 2. single term (x1), 3. number as a string,   4.Single function,  5. Plus or minus         
         //var regStartingFunction = RgxAggregateStartingFunction();
@@ -395,7 +375,7 @@ public partial class GeneralEvaluator
         var matchTerm = rgxTerm.Match(generalExpression);
         if (matchTerm.Success)
         {
-            var resTermD = ToOptionalObject(matchTerm.Value, terms,intervalType);
+            var resTermD = ToOptionalObject(matchTerm.Value, terms, intervalType);
             return resTermD;
         }
 
@@ -403,7 +383,7 @@ public partial class GeneralEvaluator
         var matchSingleFunction = rgxToFindSingleFunction.Match(generalExpression);
         if (matchSingleFunction.Success)
         {
-            var res = EvaluateFunction(generalExpression, terms, "",intervalType);
+            var res = EvaluateFunction(generalExpression, terms, "", intervalType);
             return res;
         }
 
@@ -454,15 +434,15 @@ public partial class GeneralEvaluator
                 //unary minus can only have  right expression 
                 var matchLeftFunction = rgxToFindSingleFunction.Match(resM.left);
                 leftRes = matchLeftFunction.Success
-                ? EvaluateFunction(resM.left, terms, "",intervalType)
-                : EvaluateArithmeticExpressionRecursively(resM.left, terms,intervalType);
+                ? EvaluateFunction(resM.left, terms, "", intervalType)
+                : EvaluateArithmeticExpressionRecursively(resM.left, terms, intervalType);
             }
 
 
             var matchRightFunction = rgxToFindSingleFunction.Match(resM.right);
             rightRes = matchRightFunction.Success
                 ? EvaluateFunction(resM.right, terms, "", intervalType)
-                : EvaluateArithmeticExpressionRecursively(resM.right, terms,intervalType);
+                : EvaluateArithmeticExpressionRecursively(resM.right, terms, intervalType);
 
             var theResult = resM.arithmeticOperator switch
             {
@@ -499,7 +479,7 @@ public partial class GeneralEvaluator
     }
 
 
-    public static OptionalObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm,IntervalType intervalType)
+    public static OptionalObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm, IntervalType intervalType)
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
@@ -553,10 +533,10 @@ public partial class GeneralEvaluator
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
                 argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
-            var res = EvaluateArithmeticExpressionRecursively(argSplit, terms,intervalType);
+            var res = EvaluateArithmeticExpressionRecursively(argSplit, terms, intervalType);
             return res;
         });
-        var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments,intervalType);//at the end =>functionType:Max and the terms are : 3, 4 
+        var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments, intervalType);//at the end =>functionType:Max and the terms are : 3, 4 
         return finalFunctionValue;
     }
 
@@ -565,7 +545,7 @@ public partial class GeneralEvaluator
 
         switch (functionType)
         {
-            
+
             case FunctionAggregateTypes.Count:
                 var countTerm = terms.FirstOrDefault();
                 var resCount = countTerm.Key is null
@@ -578,7 +558,7 @@ public partial class GeneralEvaluator
 
     }
 
-    static OptionalObject  EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<OptionalObject> terms,IntervalType intervalType)
+    static OptionalObject EvaluateFunctionWithComputedTerms(FunctionAggregateTypes functionType, IEnumerable<OptionalObject> terms, IntervalType intervalType)
     {
 
         var termsWithoutNull = terms.Select(term => term.IsNull ? term with { IsNull = false, Value = 0.0 } : term);
