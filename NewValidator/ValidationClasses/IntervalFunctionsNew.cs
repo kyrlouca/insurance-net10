@@ -48,8 +48,9 @@ internal class IntervalFunctionsNew
     }
     public static bool IsIntervalGTE(double leftMin, double leftMax, double rightMin, double rightMax)
     {
-        //return x1Min > x2Max;
-        var isValid = (leftMin >= rightMax);
+        //this will NOT work!!! x1Min > x2Max;
+        var isValid = IsIntervalGT(leftMin, leftMax, rightMin, rightMax) || IsIntervalEQ(leftMin, leftMax, rightMin, rightMax);
+        
         return isValid;
     }
     public static bool IsIntervalLT(double leftMin, double leftMax, double rightMin, double rightMax)
@@ -60,8 +61,8 @@ internal class IntervalFunctionsNew
     }
     public static bool IsIntervalLTE(double leftMin, double leftMax, double rightMin, double rightMax)
     {
-        //return x1Max < x2Min;
-        var isValid = (leftMax <= rightMin);
+        //this will NOT!! work x1Max <= x2Min;
+        var isValid = IsIntervalLT(leftMin, leftMax, rightMin, rightMax) || IsIntervalEQ(leftMin, leftMax, rightMin, rightMax);
         return isValid;
     }
     public static bool IsIntervalNE(double leftMin, double leftMax, double rightMin, double rightMax)

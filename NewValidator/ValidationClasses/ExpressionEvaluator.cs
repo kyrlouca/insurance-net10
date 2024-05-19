@@ -273,6 +273,12 @@ public partial class GeneralEvaluator
 
                 GeneralEvaluator.expressionInfo = new ExpressionInfoType(op, resLeftDbl, resRightDbl);
                 var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
+
+                if (ires != intervalResult)
+                {
+                    throw new Exception($"different result : {ruleId}");
+                }
+                
                 return intervalResult ? KleeneValue.True : KleeneValue.False;
             }
 
