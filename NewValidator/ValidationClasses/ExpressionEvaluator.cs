@@ -550,7 +550,7 @@ public partial class GeneralEvaluator
                 //replace each Letter "F"  with the actual text. For example, F01=> max(x1,3)
                 argSplit = argSplit.Replace(ft.Letter, ft.FullText);
             }
-            var res = EvaluateArithmeticExpressionRecursively(argSplit, terms,IntervalType.None);
+            var res = EvaluateArithmeticExpressionRecursively(argSplit, terms,intervalType);
             return res;
         });
         var finalFunctionValue = EvaluateFunctionWithComputedTerms(functionType, innerFunctionArguments,intervalType);//at the end =>functionType:Max and the terms are : 3, 4 
