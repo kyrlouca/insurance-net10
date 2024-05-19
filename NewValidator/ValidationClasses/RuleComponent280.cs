@@ -83,7 +83,7 @@ public class RuleComponent280
         if (ExpressionInfo.isAllDoubles)
         {
             equalityExpression = $"{left } {ExpressionInfo.op} {right}";
-            equalityExpression = $"{equalityExpression}**left:{ExpressionInfo.leftMin.Value}↔{ExpressionInfo.leftMax.Value}**right:{ExpressionInfo.rightMin.Value}↔{ExpressionInfo.rightMax.Value}";
+            equalityExpression = $"{equalityExpression}**Intervals left:{ExpressionInfo.leftMin.Value}↔{ExpressionInfo.leftMax.Value}**right:{ExpressionInfo.rightMin.Value}↔{ExpressionInfo.rightMax.Value}";
         }
         else
         {
