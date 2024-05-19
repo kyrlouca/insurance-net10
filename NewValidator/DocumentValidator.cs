@@ -478,7 +478,7 @@ public class DocumentValidator : IDocumentValidator
 
     private static ObjectTerm280 CreateObjectTerm280Empty()
     {
-        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true, "",0,0);
+        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true, "");
     }
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance, string filter)
     {
@@ -492,20 +492,9 @@ public class DocumentValidator : IDocumentValidator
                 "CreateDate(1900,01,01)" => "D",
                 _ => "S"
             };
+            
 
-
-            object? objValue = defaultValue.Trim() switch
-            {
-                "0" => 0,
-                "[Default]" => "[Default]",
-                "emptySequence()" => 0,
-                "CreateDate(1900,01,01)" => new DateOnly(1900, 1, 1),
-                _ => null
-            };
-
-
-
-            return new ObjectTerm280(defaultDataType, 0, IsTolerance, null, 0, 0, null, true, "",0,0);
+            return new ObjectTerm280(defaultDataType, 0, IsTolerance, null, 0, 0, null, true, "");
         }
 
 
@@ -522,12 +511,9 @@ public class DocumentValidator : IDocumentValidator
             _ => throw new NotImplementedException()
         };
 
-        var numericTypes = new[] {"I", "M","N","P" };        
-        var minVal = numericTypes.Contains(fact.DataTypeUse) ? Convert.ToDouble(fact.NumericValue - IntervalFunctions.Radius(fact.Decimals)) : 0.0;
-        var maxVal = numericTypes.Contains(fact.DataTypeUse) ? Convert.ToDouble(fact.NumericValue + IntervalFunctions.Radius(fact.Decimals)) : 0.0;
+        var numericTypes = new[] {"I", "M","N","P" };                
 
-
-        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false, filter,minVal,maxVal);
+        var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false, filter);
         return objTerm;
     }
 
