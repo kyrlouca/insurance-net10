@@ -18,11 +18,6 @@ public class NewValidatorMain : INewValidatorMain
     private readonly ILogger _logger; 
     private readonly ISqlFunctions _SqlFunctions;
     private IDocumentValidator _documentValidator;
-
-       
-
-
-
     
     public NewValidatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
     {
@@ -31,16 +26,11 @@ public class NewValidatorMain : INewValidatorMain
         _logger = logger;
         _SqlFunctions = sqlFunctions;
         _documentValidator = documentValidator;
-
     }
-
-
-
 
     public int Run()
     {
         //module-code="qrs"
-
 
         Console.WriteLine($"started Validating Document - DocumentId:{_parameterData.DocumentId}");
 
@@ -68,19 +58,10 @@ public class NewValidatorMain : INewValidatorMain
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
             return 1;
-        }
-        
+        }        
         _documentValidator.ValidateDocument();
-
-
-   
-
         return 0;
-
     }
-
-
-
 }
 
 

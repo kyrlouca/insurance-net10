@@ -408,10 +408,10 @@ public class DocumentValidator : IDocumentValidator
         void EvaluateSumTerms(int ruleId, List<MTable> ruleTables, RuleComponent280 ruleComponent, RuleComponent280 filterComponent, string zetValue)
         {
             var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
-            foreach (var thenSeqTerm in seqTerms)
+            foreach (var seqTerm in seqTerms)
             {
-                var res = CalculateSumofOpenTable(ruleId,ruleTables, thenSeqTerm, filterComponent, zetValue);
-                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, res.sum, res.sum, res.count,res.decimals);
+                var res = CalculateSumofOpenTable(ruleId,ruleTables, seqTerm, filterComponent, zetValue);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, seqTerm.Letter, res.sum, res.sum, res.count,res.decimals);
             }
         }
 
