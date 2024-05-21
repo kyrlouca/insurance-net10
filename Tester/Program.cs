@@ -70,7 +70,7 @@ static void GenerateCombinationsHelper(string[] array, string current, int index
 
 static List<string> FindTerms(string expression)
 {
-    var regx = new Regex(@"(X\d{2})");
+    var regx = new Regex(@"(X\d{2})", RegexOptions.Compiled);
     var matches= regx.Matches(expression);
     var captures = matches.Select(m => m.Captures[0].Value).ToList();    
     return captures;

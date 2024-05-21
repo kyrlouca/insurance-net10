@@ -1026,7 +1026,7 @@ internal class ValidationFunctions
 
         var qt = "\"";
         var pattern = @$"matches\((.*?)\s*,\s*\{qt}(.*)\{qt}\)";
-        var regex = new Regex(pattern);
+        var regex = new Regex(pattern,RegexOptions.Compiled);
         var match = regex.Match(text);
         if (!match.Success)
         {
@@ -1047,7 +1047,7 @@ internal class ValidationFunctions
         }
         else
         {
-            var rgxTerm = new Regex(@"X\d\d");
+            var rgxTerm = new Regex(@"X\d\d",RegexOptions.Compiled);
             var termLeft = rgxTerm.IsMatch(leftPart) ? terms[leftPart] : new ObjectTerm280("S",0,false,leftPart,0,0,null,false,"");
 
 
@@ -1082,7 +1082,7 @@ internal class ValidationFunctions
         }
         if (rgxFromValue.Contains("ISO 3166"))
         {
-            var rgxRegions = new Regex(@"[‘'](\w\w)['’]");
+            var rgxRegions = new Regex(@"[‘'](\w\w)['’]", RegexOptions.Compiled);
             
             var regions= rgxRegions.Matches(rgxFromValue).Select(rg => rg.Groups[1].Value);
             if (regions.Count()==0) 
@@ -1149,7 +1149,7 @@ internal class ValidationFunctions
         //MET(s2md_met:si1554)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/1888-1891 LX64W1_IPROP)  //this i do NOT process
         //2. inside filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*")  //this one is only found inside a filter
 
-        var rgxFilterDim = new Regex(@"dim\((.*),\s*\[(.*)\]\)"); //=> X00 or this(X00) , s2c_dim:UI
+        var rgxFilterDim = new Regex(@"dim\((.*),\s*\[(.*)\]\)", RegexOptions.Compiled); //=> X00 or this(X00) , s2c_dim:UI
         var matchDim = rgxFilterDim.Match(dimText);
         if (!matchDim.Success)
         {
@@ -1158,7 +1158,7 @@ internal class ValidationFunctions
 
         //the term 
         var theTerm = matchDim.Groups[1].Value;//=> X00 or this(X00)
-        var rgxThis = new Regex(@"this\((.*?)\)");
+        var rgxThis = new Regex(@"this\((.*?)\)", RegexOptions.Compiled);
         var matchThisInside = rgxThis.Match(theTerm);
         var term = matchThisInside.Success
             ? matchThisInside.Groups[1].Value

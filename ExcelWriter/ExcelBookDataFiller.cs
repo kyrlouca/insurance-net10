@@ -648,7 +648,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 cell.Text = fact.TextValue.Trim();
                 break;
             case "E": // Enumeration/Code"					  
-                var rgx = new Regex(@"s2c_dim:\w\w\((.+)\)");
+                var rgx = new Regex(@"s2c_dim:\w\w\((.+)\)", RegexOptions.Compiled);
                 var match = rgx.Match(fact.TextValue);
                 //some operators place enum values in keys like this s2c_dim:BL(s2c_LB:x136)
                 var cleanVal = match.Success ? match.Groups[1].Value : fact.TextValue;

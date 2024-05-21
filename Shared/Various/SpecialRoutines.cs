@@ -89,7 +89,7 @@ public record CellDim
         //Signature= s2c_dim:VC(*?[481;1655;1])
 
 
-        var res = new Regex(@"s2c_dim\:(\w\w)\((\*?)(\??)\[(\d+)\;(\d+)\;(\d+)\]\)");
+        var res = new Regex(@"s2c_dim\:(\w\w)\((\*?)(\??)\[(\d+)\;(\d+)\;(\d+)\]\)",RegexOptions.Compiled);
         var match= res.Match(cellSignature);
         if (!match.Success)
         {
@@ -119,7 +119,7 @@ public class DimUtils
     public static RowColRecord CreateRowCol(string RowCol)
     {
         //R0120C0080=> row=R0120 col=C0080        
-        var rg = new Regex(@"^(R\d{4})?(C\d{4})$");
+        var rg = new Regex(@"^(R\d{4})?(C\d{4})$", RegexOptions.Compiled);
         var match = rg.Match(RowCol.Trim());
         if (!match.Success)
         {
@@ -139,7 +139,7 @@ public class DimUtils
     public static string ExtractXbrl(string metXblr)
     {
 
-        var rg = new Regex(@"MET\((.*?)\)");
+        var rg = new Regex(@"MET\((.*?)\)", RegexOptions.Compiled);
         var match = rg.Match(metXblr);
         if (!match.Success)
         {
@@ -157,7 +157,7 @@ public class DimUtils
 
         Match match;        
         //{S.05.01.02.01,R1210,C0200,Z0001}
-        var rgAll = new Regex(@"\{(S[REP]?[V]?(?:\.\d\d){4})(,[AE]?[E]?R\d{4})?(,[A]?[NE]?C\d{4})?(,Z\d{4})?}");
+        var rgAll = new Regex(@"\{(S[REP]?[V]?(?:\.\d\d){4})(,[AE]?[E]?R\d{4})?(,[A]?[NE]?C\d{4})?(,Z\d{4})?}", RegexOptions.Compiled);
         match = rgAll.Match(businessCode.Trim());
         if (!match.Success)
         {

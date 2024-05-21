@@ -451,8 +451,8 @@ public class ExcelBookMerger : IExcelBookMerger
         static void FormatTableColumnsWidth(bool isOpenTable, IWorksheet worksheet, IRange destRange)
         {
             IRange rowLabelCell = destRange["A1"];
-            var rowRgxN = new Regex(@"^R\d{4}");
-            var colRgxN = new Regex(@"^C\d{4}");
+            var rowRgxN = new Regex(@"^R\d{4}",RegexOptions.Compiled);
+            var colRgxN = new Regex(@"^C\d{4}", RegexOptions.Compiled);
             if (isOpenTable)
             {
                 destRange.ColumnWidth = 20;

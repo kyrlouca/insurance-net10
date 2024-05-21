@@ -73,7 +73,7 @@ public record RuleTerm280
         //split each pair (ex. r: R0540) to create term attribute :  key and value
         //{t: S.01.01.07.01, r: R0540, c: C0010}=> { {"T":"S.01.01.07.01"},{"R","R0540"}..        
         //will also fill the isTolerance at the end
-        var rgxPair = new Regex(@"(\w{1,3}):\s*?(.*)");
+        var rgxPair = new Regex(@"(\w{1,3}):\s*?(.*)", RegexOptions.Compiled);
         var rgxTerm = new Regex(@"^\{(.*)\}", RegexOptions.Compiled);
         var match = rgxTerm.Match(text);
         if (!match.Success) return new();
@@ -89,7 +89,7 @@ public record RuleTerm280
         .ToList();
 
         //{t: S.02.01.02.01, r: R0100, c: C0010,  dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i => check the i after the term for Tolerance
-        var rgxTermi = new Regex(@"\{.*?\}( i)");
+        var rgxTermi = new Regex(@"\{.*?\}( i)", RegexOptions.Compiled);
         var matchi = rgxTermi.Match(text);
         var ToleranceChar = matchi.Success ? "Y" : "N";        
         terms.Add(new TermAttribute("ToleranceChar", ToleranceChar));
@@ -106,7 +106,7 @@ public record RuleTerm280
 
         var (text,xyzTerms) = FormulaSimplification.Simplify(termText);
 
-        var rgxPair = new Regex(@"(\w{1,20}):\s*?(.*)");
+        var rgxPair = new Regex(@"(\w{1,20}):\s*?(.*)", RegexOptions.Compiled);
         var rgxTerm = new Regex(@"^\{(.*)\}", RegexOptions.Compiled);
         var match = rgxTerm.Match(text);
         if (!match.Success) return new();
@@ -127,7 +127,7 @@ public record RuleTerm280
         
 
         //{t: S.02.01.02.01, r: R0100, c: C0010,  dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i => check the i after the term for Tolerance
-        var rgxTermi = new Regex(@"\{.*?\}( i)");
+        var rgxTermi = new Regex(@"\{.*?\}( i)", RegexOptions.Compiled);
         var matchi = rgxTermi.Match(text);
         var ToleranceChar = matchi.Success ? "Y" : "N";
         pairs.Add(new TermAttribute("ToleranceChar", ToleranceChar));

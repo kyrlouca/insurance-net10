@@ -129,7 +129,7 @@ public partial class GeneralEvaluator
         //************************** Single Function********************************************************
         //
         //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)               
-        var rgxFnOld = new Regex(@"^(isNull|isnull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        //var rgxFnOld = new Regex(@"^(isNull|isnull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$", RegexOptions.Compiled);
         var rgxFn = RgxBooleanFunction();
 
         var match = rgxFn.Match(formula);
@@ -149,7 +149,7 @@ public partial class GeneralEvaluator
                 case "isNull":
                 case "isnull":
                     //if value is a function, then call evaluatefunction to find the value of the function and then call IsNull
-                    var rgxDim = new Regex(@"dim\((.*?)\)");
+                    var rgxDim = new Regex(@"dim\((.*?)\)",RegexOptions.Compiled);
                     var matchDim = rgxDim.Match(fnArgument);
                     if (matchDim.Success)
                     {
@@ -373,7 +373,7 @@ public partial class GeneralEvaluator
 
 
         //*** Just a Term X01 (could be double,date, string, or null. Dates are converted to double)
-        var rgxTerm = new Regex(@"^X\d{2}$");
+        var rgxTerm = new Regex(@"^X\d{2}$", RegexOptions.Compiled);
         var matchTerm = rgxTerm.Match(generalExpression);
         if (matchTerm.Success)
         {
@@ -400,7 +400,7 @@ public partial class GeneralEvaluator
                 return new OptionalObject(true, null);
             }
 
-            var rgxBrackets = new Regex(@"\[(.*)\]");
+            var rgxBrackets = new Regex(@"\[(.*)\]",RegexOptions.Compiled);
             var matchBrackets = rgxBrackets.Match(generalExpression);
             if (matchBrackets.Success)
             {
@@ -617,7 +617,7 @@ public partial class GeneralEvaluator
 
     public static KleeneValue EvaluateSimpleStringExpression(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
-        var rgxTerm = new Regex(@"([XA]\d\d)");
+        var rgxTerm = new Regex(@"([XA]\d\d)", RegexOptions.Compiled);
         var matchTersm = rgxTerm.Match(symbolFormula);
         var isAnyTermNull = terms.Any(ft => ft.Value.Obj is null);
 
@@ -626,7 +626,7 @@ public partial class GeneralEvaluator
             return KleeneValue.Unknown;
         }
 
-        var rgxEnum = new Regex(@"\[(.*?)\]");
+        var rgxEnum = new Regex(@"\[(.*?)\]",RegexOptions.Compiled);
         string cleanFormula = rgxEnum.Replace(symbolFormula, match => $"\"{match.Groups[1].Value}\"");
         Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value?.Obj ?? "");
 

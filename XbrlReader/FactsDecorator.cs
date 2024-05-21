@@ -592,15 +592,10 @@ public partial class FactsDecorator : IFactsDecorator
         List<string> fullDims = cellSignature
             .Split("|").ToList();
         var dims = fullDims.Skip(1);
-
-
-
-        //var rgx = new Regex(@"s2c_dim:\w\w\((.*?)\)", RegexOptions.Compiled);
-        //var evaluator = new MatchEvaluator(MatchReplacer);
-
+        
         List<TemplateSheetFact> factss = new();
 
-        var rgxMet = new Regex(@"^MET\((.*?)\)");
+        var rgxMet = new Regex(@"^MET\((.*?)\)",RegexOptions.Compiled);
         var xbrlCodeFull = fullDims.FirstOrDefault() ?? "";
         var xbrlCodeMatch = rgxMet.Match(xbrlCodeFull);
         var xbrlCode = xbrlCodeMatch.Success ? xbrlCodeMatch.Groups[1].Value : "";
@@ -719,7 +714,7 @@ public partial class FactsDecorator : IFactsDecorator
         string ToJustDim(string dimSignature)
         {
             //s2c_dim:BL(s2c_LB:x145)=> BL
-            var rgxJustDim = new Regex(@"^s2c_dim:(\w\w)\(.*?\)");
+            var rgxJustDim = new Regex(@"^s2c_dim:(\w\w)\(.*?\)",RegexOptions.Compiled);
             var matchJustDim = rgxJustDim.Match(dimSignature);
             return matchJustDim.Success ? matchJustDim.Groups[1].Value : "";
         }

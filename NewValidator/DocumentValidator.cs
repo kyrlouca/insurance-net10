@@ -762,7 +762,7 @@ public class DocumentValidator : IDocumentValidator
                 string line;
                 // Read line by line until null (end of file)
                 //$$$SHORT_LABEL(en) - BV1296: T.99.01 c0070 must not be reported.$$$BV1296
-                var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*-(.*)\${3}(.*)");
+                var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*-(.*)\${3}(.*)",RegexOptions.Compiled);
 
                 while ((line = reader.ReadLine()) != null)
                 {
