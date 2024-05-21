@@ -27,7 +27,7 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try
 {
-    host.Services.GetService<INewValidatorMain>()?.Run();
+    host.Services.GetService<IValidatorMain>()?.Run();
 }
 catch (Exception ex)
 {

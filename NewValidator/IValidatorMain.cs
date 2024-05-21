@@ -1,6 +1,6 @@
 ﻿namespace NewValidator
 {
-    public interface INewValidatorMain
+    public interface IValidatorMain
     {
         int Run();
     }

@@ -10,7 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection;
 using Shared.DataModels;
 
-public class NewValidatorMain : INewValidatorMain
+public class ValidatorMain : IValidatorMain
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -19,7 +19,7 @@ public class NewValidatorMain : INewValidatorMain
     private readonly ISqlFunctions _SqlFunctions;
     private IDocumentValidator _documentValidator;
     
-    public NewValidatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
+    public ValidatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
