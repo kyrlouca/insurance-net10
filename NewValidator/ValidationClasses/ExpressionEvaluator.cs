@@ -128,8 +128,10 @@ public partial class GeneralEvaluator
 
         //************************** Single Function********************************************************
         //
-        //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)       
-        var rgxFn = new Regex(@"^(isNull|isnull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        //2. function (evaluate function or remove parenthesis and recurse if outer parenthesis without function)               
+        var rgxFnOld = new Regex(@"^(isNull|isnull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$");
+        var rgxFn = RgxBooleanFunction();
+
         var match = rgxFn.Match(formula);
         if (match.Success)
         {
@@ -856,7 +858,7 @@ public partial class GeneralEvaluator
 
 
 
-
+    
 
     [GeneratedRegex(@"^(imin|imax|max|isum|count|exp|iabs)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxStartingFunction();
@@ -872,5 +874,7 @@ public partial class GeneralEvaluator
     public static partial Regex RgxOuterParenthesis();
 
 
+    [GeneratedRegex(@"^(isNull|isnull|matches|not|true|false|\s|^)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)\s*$")]
+    public static partial Regex RgxBooleanFunction();
 }
 
