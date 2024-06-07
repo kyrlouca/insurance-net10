@@ -202,7 +202,7 @@ public class DocumentValidator : IDocumentValidator
 
 
                     // add kyrTable record with main table in order to update the main table row                     
-                    kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });                    
+                    kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
 
@@ -338,7 +338,7 @@ public class DocumentValidator : IDocumentValidator
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
                                 .Where(kt => tablesInValidation.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
                                 .ToList();
-                    
+
                     kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
@@ -562,28 +562,42 @@ public class DocumentValidator : IDocumentValidator
 
     private RuleStructure280 FillRuleStructureWithFactValues(RuleStructure280 ruleStructure)
     {
+        //This procedure creates the object terms(which have fact values) for each component 
+        //rule structure has components for if, then else, filter
+        //A compoent has ruleTerms which have the specification of each cell, and the objectTerms which have the corresponding values
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
-        //if we have only closed tables or mixed tables isUsingZet comes as zero
+        //if we have only closed tables or mixed table make sure the zetValue is blank 
 
         var zetValue = ruleStructure.ZetValue;
 
-        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.IfComponent.RuleTerms, zetValue);
-        ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
+        CreateComponentObjectTerms(ruleStructure.IfComponent, ruleStructure.RuleTables, zetValue);
+        CreateComponentObjectTerms(ruleStructure.ThenComponent, ruleStructure.RuleTables, zetValue);
+        CreateComponentObjectTerms(ruleStructure.ElseComponent, ruleStructure.RuleTables, zetValue);
+        CreateComponentObjectTerms(ruleStructure.FilterComponent, ruleStructure.RuleTables, zetValue);
 
 
-        Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ThenComponent.RuleTerms, zetValue);
-        ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
+        //Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.IfComponent.RuleTerms, zetValue);
+        //ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
 
-        Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ElseComponent.RuleTerms, zetValue);
-        ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
+        //Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ThenComponent.RuleTerms, zetValue);
+        //ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
 
-        Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.FilterComponent.RuleTerms, zetValue);
-        ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
+        //Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ElseComponent.RuleTerms, zetValue);
+        //ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
+
+        //Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.FilterComponent.RuleTerms, zetValue);
+        //ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
 
         return ruleStructure;
 
+    }
+
+    private void CreateComponentObjectTerms(RuleComponent280 ruleComponent, List<MTable> ruleTables, string zetValue)
+    {
+        Dictionary<string, ObjectTerm280> objectTerms = ToOjectTerm280UsingFactValues(ruleTables, ruleComponent.RuleTerms, zetValue);
+        ruleComponent.ObjectTerms = objectTerms;
     }
 
 
@@ -657,7 +671,7 @@ public class DocumentValidator : IDocumentValidator
         var relatedTable = kyrTable?.FK_TableCode ?? "";
         var relatedTableCode = kyrTable?.FK_TableCode ?? "";
         var relatedTableCol = kyrTable?.FK_TableCol ?? "";
-        
+
 
         var mainTable = ruleTables.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
         if (mainTable is null)
@@ -669,16 +683,16 @@ public class DocumentValidator : IDocumentValidator
         var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
             .Where(kt => ruleTables.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
             .ToList();
-        
-        kyrTables.Add(new MTableKyrKeys() {TableCode = mainTableCode});
+
+        kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
 
         var seqSheet = _SqlFunctions.SelectTemplateSheets(_documentInstance.InstanceId).Where(sheet => sheet.TableCode == seqTableCode).FirstOrDefault();
         if (seqSheet is null)
         {
             return (0, 0, 0);
         }
-        
-        var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqSheet.TemplateSheetId, seqTableTerm.C); 
+
+        var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqSheet.TemplateSheetId, seqTableTerm.C);
         double sum = 0;
         var count = 0;
         var decimals = 0;
@@ -686,20 +700,21 @@ public class DocumentValidator : IDocumentValidator
         {
             Console.Write("?");
             var row = fact.Row;
-            var keyFactFromMain = _SqlFunctions.SelectFactByRowCol(DocumentId, seqSheet.TemplateSheetId, row,mainTableCol );
+            var keyFactFromMain = _SqlFunctions.SelectFactByRowCol(DocumentId, seqSheet.TemplateSheetId, row, mainTableCol);
 
             foreach (var kyrTbl in kyrTables)
-            {                                                
-                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, keyFactFromMain?.TextValue??"").FirstOrDefault();
-                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";                
-                UpdateRuleTermsWithRowCol(filterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+            {
+                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, keyFactFromMain?.TextValue ?? "").FirstOrDefault();
+                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
+                UpdateRuleTermsWithRowCol(filterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);             
             }
 
+            CreateComponentObjectTerms(filterComponent, ruleTables, "");
             var isFilterValid = filterComponent.IsEmpty
                                 ? KleeneValue.True
                                 : GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterComponent.ObjectTerms);
             //var isFilterValid = EvaluateFilterRow(ruleId, ruleTables, filterComponent, relatedTable, fact.Row, fact.RowForeign, zetValue);
-            if (GeneralEvaluator.ToBoolean( isFilterValid))
+            if (GeneralEvaluator.ToBoolean(isFilterValid))
             {
                 sum += fact.NumericValue;
                 count++;
@@ -735,7 +750,7 @@ public class DocumentValidator : IDocumentValidator
         catch (Exception ex)
         {
             throw new Exception($"EvaluateFilterRow : relatedTable:{relatedTable} row:{row} foreignRow:{foreignRow} ---- {ex}");
-        } 
+        }
 
     }
 
