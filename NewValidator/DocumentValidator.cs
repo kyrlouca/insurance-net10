@@ -540,7 +540,7 @@ public class DocumentValidator : IDocumentValidator
         var openTables = ruleTables.Where(tbl => tbl.IsOpenTable).Select(tbl => tbl.TableCode);
         var ruleTermsWithUpdatedZetValue = ruleTerms.Select(rt => rt with { Z = (openTables.Contains(rt.T.Trim()) || !rt.Z.Contains("Z00")) ? "" : zetValue });
         Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithUpdatedZetValue
-            .Select(rtm => new
+            .Select(rtm =>  new
             {
                 rtm.Letter,
                 Zet = rtm.Z,
@@ -706,14 +706,14 @@ public class DocumentValidator : IDocumentValidator
             {
                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, keyFactFromMain?.TextValue ?? "").FirstOrDefault();
                 var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
+                filterComponent.RuleTerms.ForEach(rt => rt.R = "");
                 UpdateRuleTermsWithRowCol(filterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);             
             }
 
             CreateComponentObjectTerms(filterComponent, ruleTables, "");
             var isFilterValid = filterComponent.IsEmpty
                                 ? KleeneValue.True
-                                : GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterComponent.ObjectTerms);
-            //var isFilterValid = EvaluateFilterRow(ruleId, ruleTables, filterComponent, relatedTable, fact.Row, fact.RowForeign, zetValue);
+                                : GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterComponent.ObjectTerms);            
             if (GeneralEvaluator.ToBoolean(isFilterValid))
             {
                 sum += fact.NumericValue;
