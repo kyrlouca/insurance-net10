@@ -44,6 +44,8 @@ public partial class GeneralEvaluator
     public static ExpressionInfoWithIntervalsType? expressionInfo;
     public enum LogicalOperators { None, IsAnd, IsOR };
 
+    public static bool ToBoolean(KleeneValue kleeneVal) => kleeneVal == KleeneValue.True || kleeneVal == KleeneValue.Unknown;
+
     public static bool ValidateRule(RuleStructure280 ruleStructure280)
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
@@ -99,9 +101,9 @@ public partial class GeneralEvaluator
                 return true; //todo need to check this
             }
         }
-        bool ToBoolean(KleeneValue kleeneVal) => kleeneVal == KleeneValue.True || kleeneVal == KleeneValue.Unknown;
+        
     }
-
+    
 
 
     public static KleeneValue EvaluateBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms)

@@ -622,6 +622,8 @@ public class SqlFunctions : ISqlFunctions
         return facts;
     }
 
+   
+
 
     public (int count, double sum, int decimals) GetSumofTableCode(int documentId, string tableCode, string zet, string row, string col)
     {
@@ -799,6 +801,27 @@ public class SqlFunctions : ISqlFunctions
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, col }).ToList();
         return facts;
     }
+
+    public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, int sheetId, string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+                SELECT  fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TemplateSheetId= @TemplateSheetId                 
+                  AND fact.Col= @col
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, TemplateSheetId=sheetId,  col }).ToList();
+        return facts;
+    }
+
 
     public List<string> SelectDistinctRowsInSheet(int documentId, int sheetId)
     {

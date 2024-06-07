@@ -103,7 +103,7 @@ public class DocumentValidator : IDocumentValidator
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         if (_parameterData.IsDevelop)
         {
-            validationRules = validationRules.Where(vr => vr.ValidationID ==468).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 468).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -122,7 +122,7 @@ public class DocumentValidator : IDocumentValidator
             //**todo check if all the sheets exist for this rule??
 
             //*********** SCOPE 
-            var rulex1 = RuleStructure280.CreateRuleStructure(validationRule.ValidationID,tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+            var rulex1 = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
             var scopeRowcols = rulex1.ScopeRowCols;
             var scopeType = rulex1.ScopeType;
             //** if no scope, add one entry to go through
@@ -133,7 +133,7 @@ public class DocumentValidator : IDocumentValidator
             var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
             foreach (var scopeRowCol in scopeRowcols)
             {
-                
+
                 //check if no seq and all tables are open                 
                 //--if there is a filter => it is an open table 
                 //sum with seq 
@@ -155,11 +155,11 @@ public class DocumentValidator : IDocumentValidator
                         {
                             continue;
                         }
-                        var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID,tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                        var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                         if (scopeType != ScopeType.None)
                         {
-                            UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType,true);
-                            UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType,true);
+                            UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
+                            UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
                             UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
                             UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
                         }
@@ -173,7 +173,7 @@ public class DocumentValidator : IDocumentValidator
                         if (sumTerm != null)
                         {
                             var (count, sum, sumDecimals) = CalculateSumOfClosedTable(sumTerm, sheet.ZDimVal);
-                            ReplaceObjTerm(ruleClosed.IfComponent.ObjectTerms, sumTerm.Letter, sum, sum, count,sumDecimals);
+                            ReplaceObjTerm(ruleClosed.IfComponent.ObjectTerms, sumTerm.Letter, sum, sum, count, sumDecimals);
                         }
 
                         var isValidClosedRule = GeneralEvaluator.ValidateRule(ruleClosed);
@@ -186,7 +186,8 @@ public class DocumentValidator : IDocumentValidator
 
                 if (!hasAggregateFn && (hasMixedTables || hasOnlyOpenTables))
                 {
-                    //create one rule for each row and apply filter                     
+                    //create one rule for each row and apply filter
+                    //there is no aggregate. Therefore do not check for zets for open or closed terms 
 
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
                     if (mainTable is null)
@@ -195,24 +196,39 @@ public class DocumentValidator : IDocumentValidator
                     }
                     var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
 
-                    var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "");
-                    if (!kyrTables.Any())
-                    {
-                        var emptyKyr = new MTableKyrKeys();
-                        emptyKyr.TableCode = mainTable?.TableCode ?? "";
-                        kyrTables.Add(emptyKyr);
-                    }
+                    var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "xxx")
+                        .Where(kt => tablesInValidation.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
+                        .ToList();
+
+
+                    // add kyrTable record with main table in order to update the main table row                     
+                    kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });                    
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
-                    foreach (var sheet in sheets)
-                    {                     
-                        var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
 
+
+                    foreach (var sheet in sheets)
+                    {
+                        //mixed or open tables => do not check zet
+                        //if any sheet (regardless of zet) is null do NOT check the rule                        
+                        var sheetsInDocument = tablesInValidation
+                            .DistinctBy(tbl => tbl.TableID)
+                            .SelectMany(tbl => _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, tbl.TableID))//this should not happen but I have used selectMany anyway
+                            .DistinctBy(sheet => sheet.TableID);
+
+                        if (sheetsInDocument.Count() != tablesInValidation.Count())
+                        {
+                            continue;
+                        }
+
+
+                        var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
+                        //rows = rows.Take(1).ToList();
                         var prevRowValid = true;
                         foreach (var row in rows)
                         {
                             //create one rule for each rule
-                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID,tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
                             foreach (var kyrTbl in kyrTables)
                             {
@@ -284,7 +300,7 @@ public class DocumentValidator : IDocumentValidator
 
                     foreach (var sheet in sheets)
                     {
-                        var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID,tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                        var rule = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
 
                         //sumTersm will be evaluated again below
@@ -292,9 +308,9 @@ public class DocumentValidator : IDocumentValidator
                         rule.ZetValue = "";
                         rule = FillRuleStructureWithFactValues(rule);
 
-                        EvaluateSumTerms(rule.RuleId,tablesInValidation, rule.IfComponent, rule.FilterComponent, string.Empty);
-                        EvaluateSumTerms(rule.RuleId,tablesInValidation, rule.ThenComponent, rule.FilterComponent, string.Empty);
-                        EvaluateSumTerms(rule.RuleId,tablesInValidation, rule.ElseComponent, rule.FilterComponent, string.Empty);
+                        EvaluateSumTerms(rule.RuleId, tablesInValidation, rule.IfComponent, rule.FilterComponent, string.Empty);
+                        EvaluateSumTerms(rule.RuleId, tablesInValidation, rule.ThenComponent, rule.FilterComponent, string.Empty);
+                        EvaluateSumTerms(rule.RuleId, tablesInValidation, rule.ElseComponent, rule.FilterComponent, string.Empty);
 
                         var isValidRule = GeneralEvaluator.ValidateRule(rule);
                         if (!isValidRule)
@@ -319,21 +335,18 @@ public class DocumentValidator : IDocumentValidator
                     }
 
                     var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
-                    var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "");
-
-                    if (!kyrTables.Any())
-                    {
-                        var emptyKyr = new MTableKyrKeys();
-                        emptyKyr.TableCode = mainTable?.TableCode ?? "";
-                        kyrTables.Add(emptyKyr);
-                    }
+                    var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
+                                .Where(kt => tablesInValidation.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
+                                .ToList();
+                    
+                    kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
                         var prevRowValid = true;
-                        var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID,tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                        var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
                         foreach (var row in rows)
                         {
 
@@ -410,8 +423,8 @@ public class DocumentValidator : IDocumentValidator
             var seqTerms = ruleComponent.RuleTerms.Where(rt => rt.IsSequence);
             foreach (var seqTerm in seqTerms)
             {
-                var res = CalculateSumofOpenTable(ruleId,ruleTables, seqTerm, filterComponent, zetValue);
-                ReplaceObjTerm(ruleComponent.ObjectTerms, seqTerm.Letter, res.sum, res.sum, res.count,res.decimals);
+                var res = CalculateSumofOpenTable(ruleId, ruleTables, seqTerm, filterComponent, zetValue);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, seqTerm.Letter, res.sum, res.sum, res.count, res.decimals);
             }
         }
 
@@ -421,21 +434,21 @@ public class DocumentValidator : IDocumentValidator
             foreach (var thenSeqTerm in seqTerms)
             {
                 var res = CalculateSumOfClosedTable(thenSeqTerm, zetValue);
-                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, res.sum, res.sum, res.count,res.decimals);
+                ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, res.sum, res.sum, res.count, res.decimals);
             }
         }
     }
-    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count ,int decimals)
+    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count, int decimals)
     {
         //maybe I need to set obj to zero instead of sum
         var objTerm = objTerms[objKey];
-        var newObjTerm = objTerm with { Obj = sum, sumValue =sum, countValue = count, DataType = "N" ,Decimals=decimals };
+        var newObjTerm = objTerm with { Obj = sum, sumValue = sum, countValue = count, DataType = "N", Decimals = decimals };
         objTerms.Remove(objKey);
         objTerms.Add(objKey, newObjTerm);
         return newObjTerm;
     }
 
-    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType ,bool IsClosedTables=false)
+    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType, bool IsClosedTables = false)
     {
         //We do not have the concept of master-slave table for closed tables.
         //Therefore, the rowcol of the main table as difened in the scope, should be applied to the other closed tables
@@ -448,7 +461,7 @@ public class DocumentValidator : IDocumentValidator
                 {
                     term.R = rowCol;
                 }
-                else  if (term.T.Trim() == slaveTableCode.Trim())
+                else if (term.T.Trim() == slaveTableCode.Trim())
                 {
                     term.R = relatedRowCol;
                 }
@@ -492,7 +505,7 @@ public class DocumentValidator : IDocumentValidator
                 "CreateDate(1900,01,01)" => "D",
                 _ => "S"
             };
-            
+
 
             return new ObjectTerm280(defaultDataType, 0, IsTolerance, null, 0, 0, null, true, "");
         }
@@ -511,21 +524,21 @@ public class DocumentValidator : IDocumentValidator
             _ => throw new NotImplementedException()
         };
 
-        var numericTypes = new[] {"I", "M","N","P" };                
+        var numericTypes = new[] { "I", "M", "N", "P" };
 
         var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false, filter);
         return objTerm;
     }
 
-    private Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<MTable>ruleTables, List<RuleTerm280> ruleTerms, string zetValue)
+    private Dictionary<string, ObjectTerm280> ToOjectTerm280UsingFactValues(List<MTable> ruleTables, List<RuleTerm280> ruleTerms, string zetValue)
     {
 
         //check whether the term does not have a zet value (Z0001)
         //I changed the program, and in some cases I pass deliberately zetValue="" to avoid using the Zet 
         //this was necessary for rule 348. because open tables S.06.02.01.01 and S.07.01.01.01 have  zets with different values
         //var ruleTermsWithZet = ruleTerms.Select(rt => rt with { Z =   rt.Z.Contains("Z00") ? zetValue : "" });
-        var openTables = ruleTables.Where(tbl => tbl.IsOpenTable).Select(tbl=>tbl.TableCode);
-        var ruleTermsWithUpdatedZetValue = ruleTerms.Select(rt => rt with { Z = (openTables.Contains(rt.T.Trim())|| !rt.Z.Contains("Z00") ) ?  "": zetValue  });
+        var openTables = ruleTables.Where(tbl => tbl.IsOpenTable).Select(tbl => tbl.TableCode);
+        var ruleTermsWithUpdatedZetValue = ruleTerms.Select(rt => rt with { Z = (openTables.Contains(rt.T.Trim()) || !rt.Z.Contains("Z00")) ? "" : zetValue });
         Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithUpdatedZetValue
             .Select(rtm => new
             {
@@ -553,10 +566,10 @@ public class DocumentValidator : IDocumentValidator
         //objectTerm: an object which gets information from the fact and the the RuleTerm ({t:2000} such as sequence 
 
         //if we have only closed tables or mixed tables isUsingZet comes as zero
-        
-        var zetValue = ruleStructure.ZetValue ;
 
-        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.IfComponent.RuleTerms,zetValue);
+        var zetValue = ruleStructure.ZetValue;
+
+        Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.IfComponent.RuleTerms, zetValue);
         ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
 
 
@@ -635,16 +648,37 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
-    private ( int count, double sum, int decimals) CalculateSumofOpenTable(int ruleId,List<MTable> ruleTables, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent, string zetValue)
+    private (int count, double sum, int decimals) CalculateSumofOpenTable(int ruleId, List<MTable> ruleTables, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent, string zetValue)
     {
-
-        var seqTable = seqTableTerm.T;
-        var kyrTable = _SqlFunctions.SelectTableKyrKey(seqTableTerm.T);
+        //the seqTableTerm is the term with the sum and it is considered the main table. 
+        var seqTableCode = seqTableTerm.T;
+        var kyrTable = _SqlFunctions.SelectTableKyrKey(seqTableCode);
+        var mainTableCol = kyrTable?.TableCol ?? "";
         var relatedTable = kyrTable?.FK_TableCode ?? "";
-        //from the sqTableTErms
-        //find the related table.
+        var relatedTableCode = kyrTable?.FK_TableCode ?? "";
+        var relatedTableCol = kyrTable?.FK_TableCol ?? "";
+        
 
-        var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqTableTerm.T, seqTableTerm.Z, seqTableTerm.C); ;
+        var mainTable = ruleTables.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
+        if (mainTable is null)
+        {
+            mainTable = ruleTables.FirstOrDefault(tb => tb.IsOpenTable);
+        }
+
+        var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
+        var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
+            .Where(kt => ruleTables.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
+            .ToList();
+        
+        kyrTables.Add(new MTableKyrKeys() {TableCode = mainTableCode});
+
+        var seqSheet = _SqlFunctions.SelectTemplateSheets(_documentInstance.InstanceId).Where(sheet => sheet.TableCode == seqTableCode).FirstOrDefault();
+        if (seqSheet is null)
+        {
+            return (0, 0, 0);
+        }
+        
+        var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqSheet.TemplateSheetId, seqTableTerm.C); 
         double sum = 0;
         var count = 0;
         var decimals = 0;
@@ -652,19 +686,30 @@ public class DocumentValidator : IDocumentValidator
         {
             Console.Write("?");
             var row = fact.Row;
-            var foreignKeyRow = fact.RowForeign;
-            var isFilterValid = EvaluateFilterRow(ruleId,ruleTables, filterComponent, relatedTable, fact.Row, fact.RowForeign, zetValue);
-            if (isFilterValid)
+            var keyFactFromMain = _SqlFunctions.SelectFactByRowCol(DocumentId, seqSheet.TemplateSheetId, row,mainTableCol );
+
+            foreach (var kyrTbl in kyrTables)
+            {                                                
+                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, keyFactFromMain?.TextValue??"").FirstOrDefault();
+                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";                
+                UpdateRuleTermsWithRowCol(filterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
+            }
+
+            var isFilterValid = filterComponent.IsEmpty
+                                ? KleeneValue.True
+                                : GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterComponent.ObjectTerms);
+            //var isFilterValid = EvaluateFilterRow(ruleId, ruleTables, filterComponent, relatedTable, fact.Row, fact.RowForeign, zetValue);
+            if (GeneralEvaluator.ToBoolean( isFilterValid))
             {
                 sum += fact.NumericValue;
                 count++;
                 decimals = Math.Abs(decimals) > Math.Abs(fact.Decimals) ? decimals : fact.Decimals;
             }
         }
-        return ( count, sum, decimals);
+        return (count, sum, decimals);
     }
 
-    private bool EvaluateFilterRow(int ruleId,List<MTable> ruleTables, RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow, string zetValue)
+    private bool EvaluateFilterRow(int ruleId, List<MTable> ruleTables, RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow, string zetValue)
     {
         foreach (var filterTerm in filterComponent.RuleTerms)
         {
@@ -690,7 +735,7 @@ public class DocumentValidator : IDocumentValidator
         catch (Exception ex)
         {
             throw new Exception($"EvaluateFilterRow : relatedTable:{relatedTable} row:{row} foreignRow:{foreignRow} ---- {ex}");
-        }
+        } 
 
     }
 
@@ -762,7 +807,7 @@ public class DocumentValidator : IDocumentValidator
                 string line;
                 // Read line by line until null (end of file)
                 //$$$SHORT_LABEL(en) - BV1296: T.99.01 c0070 must not be reported.$$$BV1296
-                var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*-(.*)\${3}(.*)",RegexOptions.Compiled);
+                var rgxLine = new Regex(@"\${3}SHORT_LABEL\(en\).*-(.*)\${3}(.*)", RegexOptions.Compiled);
 
                 while ((line = reader.ReadLine()) != null)
                 {
