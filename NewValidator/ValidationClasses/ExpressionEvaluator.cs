@@ -417,7 +417,7 @@ public partial class GeneralEvaluator
         // 1. Split the terms inside the function 
         // --the proper solution would be to split each expression, call the arithmeticExpressionEvaluator for each BUT due to commas inside functions, I cannot do the split
         // *** So I do this  trick. Replace the functions inside the function with terms ("F") to do the split and then back to their value        
-        // 2.Evalueate each function term
+        // 2.Evaluate each function term
         // 3.Finally, call  EvaluateFunctionWithComputedTerms since all the function terms were computed
 
 
@@ -426,8 +426,7 @@ public partial class GeneralEvaluator
 
         var functionContent = matchFn.Groups[2].Value;
         var functionType = ToFunctionType(matchFn.Groups[1].Value);
-
-        //if (functionType == FunctionAggregateTypes.iSum || functionType == FunctionAggregateTypes.Count)
+        
         if (functionType == FunctionAggregateTypes.Count)
         {
             var fterms = terms.Where(trm => functionText.Contains(trm.Key)).ToDictionary(tm => tm.Key, tm => tm.Value);
