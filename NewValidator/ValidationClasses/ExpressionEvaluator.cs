@@ -317,7 +317,7 @@ public partial class GeneralEvaluator
         var matchSingleFunction = rgxToFindSingleFunction.Match(generalExpression);
         if (matchSingleFunction.Success)
         {
-            var res = EvaluateFunction(generalExpression, terms, "", intervalType);
+            var res = EvaluateFunction(generalExpression, terms, intervalType);
             return res;
         }
 
@@ -370,14 +370,14 @@ public partial class GeneralEvaluator
                 //unary minus can only have  right expression 
                 var matchLeftFunction = rgxToFindSingleFunction.Match(resM.left);
                 leftRes = matchLeftFunction.Success
-                ? EvaluateFunction(resM.left, terms, "", intervalType)
+                ? EvaluateFunction(resM.left, terms, intervalType)
                 : EvaluateArithmeticExpressionRecursively(resM.left, terms, intervalType);
             }
 
 
             var matchRightFunction = rgxToFindSingleFunction.Match(resM.right);
             rightRes = matchRightFunction.Success
-                ? EvaluateFunction(resM.right, terms, "", intervalType)
+                ? EvaluateFunction(resM.right, terms, intervalType)
                 : EvaluateArithmeticExpressionRecursively(resM.right, terms, intervalType);
 
             var theResult = resM.arithmeticOperator switch
@@ -397,7 +397,7 @@ public partial class GeneralEvaluator
         //return new DoubleObject(true, 0);              
     }
     
-    public static OptionalObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm, IntervalType intervalType)
+    public static OptionalObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, IntervalType intervalType)
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
         //EXAMPLE To Test   : imax(imin(3, 7) , 4) 
