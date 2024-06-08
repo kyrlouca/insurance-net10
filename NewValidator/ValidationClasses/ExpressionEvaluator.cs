@@ -301,6 +301,7 @@ public partial class GeneralEvaluator
             return numberResult;
         }
 
+        //***we could also test for just date, for [xx] enum , but I did it otherwise and in the future I might  revisit this code
 
         //*** Just a Term X01 (could be double,date, string, or null. Dates are converted to double)
         var rgxTerm = new Regex(@"^X\d{2}$", RegexOptions.Compiled);
@@ -310,6 +311,7 @@ public partial class GeneralEvaluator
             var resTermD = ToOptionalObject(matchTerm.Value, terms, intervalType);
             return resTermD;
         }
+        
 
         //*** A single function imin(imax(3,X01),X02
         var matchSingleFunction = rgxToFindSingleFunction.Match(generalExpression);
@@ -319,9 +321,11 @@ public partial class GeneralEvaluator
             return res;
         }
 
-        //Try to split the expression         
+        //nothing from the above, it is an expression which must be evaluated recursively
+        //Split the expression         
+        
         var resM = SplitArithmeticExpression(generalExpression);
-        //*** it is an expression and above we checked that there is no operator, it is not function , it is not a term . What is it??
+        
         if (resM.arithmeticOperator == ArithmeticOperators.None)
         {
 
