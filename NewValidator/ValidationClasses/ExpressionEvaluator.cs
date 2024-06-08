@@ -43,9 +43,7 @@ public partial class GeneralEvaluator
     //ExpressionInfoType is only used to display the final expression in the errorRul presented to the user    
     public static ExpressionInfoWithIntervalsType? expressionInfo;
     public enum LogicalOperators { None, IsAnd, IsOR };
-
-    public static bool ToBoolean(KleeneValue kleeneVal) => kleeneVal == KleeneValue.True || kleeneVal == KleeneValue.Unknown;
-
+        
     public static bool ValidateRule(RuleStructure280 ruleStructure280)
     {
         //{t: S.23.01.02.02, r: R0700, c: C0060, z: Z0001, dv: 0, seq: False, id: v0, f: solvency, fv: solvency2} i= isum({t: S.23.01.02.02, r: R0710; R0720; R0730; R0740; R0760, c: C0060, z: Z0001, dv: emptySequence(), seq: True, id: v1, f: solvency, fv: solvency2})
@@ -104,13 +102,11 @@ public partial class GeneralEvaluator
         
     }
     
-
-
     public static KleeneValue EvaluateBooleanExpression(int ruleId, string formula, Dictionary<string, ObjectTerm280> terms)
     {
         //Recursion to remove outer parenthesis, real evaluation of terms with only a function, evaluation and recurse for  "and", "or", and finally real evaluation of the term
         //1. outer parenthesis
-        //2. single function        
+        //2. single function (boolean)
         //---- if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
         //3. arithmetic
 
@@ -182,6 +178,7 @@ public partial class GeneralEvaluator
         }
 
         var res = SplitAndOrExpression(formula);
+        
         if (res.logicalOperator == LogicalOperators.IsAnd)
         {
             var aAndRes = EvaluateBooleanExpression(ruleId, res.left, terms);
@@ -193,7 +190,6 @@ public partial class GeneralEvaluator
             else
                 return KleeneValue.Unknown;
         }
-
 
         if (res.logicalOperator == LogicalOperators.IsOR)
         {
@@ -244,10 +240,7 @@ public partial class GeneralEvaluator
             var resLeftMax = EvaluateArithmeticExpressionRecursively(left, terms, IntervalType.Max);
             var resRightMin = EvaluateArithmeticExpressionRecursively(right, terms, IntervalType.Min);
             var resRightMax = EvaluateArithmeticExpressionRecursively(right, terms, IntervalType.Max);
-
-
-            //var resLeftDbl = EvaluateArithmeticExpressionRecursively(left, terms, IntervalType.None);
-            //var resRightDbl = EvaluateArithmeticExpressionRecursively(right, terms, IntervalType.None);
+            
 
             if (resLeftMin.IsNull || resRightMin.IsNull)
             {
@@ -259,8 +252,7 @@ public partial class GeneralEvaluator
             }
 
             if (resLeftMin.Value is double || resRightMin.Value is double)
-            {
-                //var intervalResult = IntervalFunctions.IsIntervalExpressionValid(op, (double)(resLeftDbl?.Value ?? 0.0), leftDecimals, (double)(resRightDbl?.Value ?? 0.0), rightDecimals);
+            {             
                 var intervalResult = IntervalFunctionsNew.IsIntervalExpressionValid(op, resLeftMin, resLeftMax, resRightMin, resRightMax);
                                 
                 if (!intervalResult)
@@ -281,72 +273,8 @@ public partial class GeneralEvaluator
         }
 
         return KleeneValue.True;
-
-        static List<string> FindTerms(string expression)
-        {
-            var regx = new Regex(@"(X\d{2})");
-            var matches = regx.Matches(expression);
-            var captures = matches.Select(m => m.Captures[0].Value).ToList();
-            return captures;
-        }
-
-        static int GetMaxAbsDecimals(IEnumerable<int> numbers)
-        {
-            if (numbers == null || !numbers.Any())
-            {
-                return 0;
-            }
-            var maxDecimal = numbers.OrderByDescending(n => Math.Abs(n)).First();
-            return maxDecimal;
-        }
-
-
-        static int FindMaxDecimals(string expression, Dictionary<string, ObjectTerm280> terms)
-        {
-            var expressionTerms = FindTerms(expression);
-            var leftTermsD = terms
-                .Where(dt => expressionTerms.Contains(dt.Key))
-                .Select(dt => dt.Value.Decimals)
-                .ToList();
-            var maxDecimals = GetMaxAbsDecimals(leftTermsD);
-            return maxDecimals;
-        }
-
+        
     }
-
-    private static OptionalObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms, IntervalType intervalType)
-    {
-        //Here is the only Place we need the interval type
-        //for numeric terms it will add or subtract the radius from the value of the object term
-        var term = terms.FirstOrDefault(trm => trm.Key == letter).Value;
-
-        var resTerm = term is null ? new OptionalObject(true, null)
-            : term.Obj is null ? new OptionalObject(true, null)
-            : term.DataType == "D" ? new OptionalObject(false, ((DateTime)term.Obj).ToOADate())
-            //: new OptionalObject(false, Convert.ToDouble(term.Obj));
-            : new OptionalObject(false, ConvertToDoubleUsingInterval(term, intervalType));
-
-
-        return resTerm;
-
-        static double ConvertToDoubleUsingInterval(ObjectTerm280 term, IntervalType intervalType)
-        {
-            if (term == null || term.Obj is null)
-            {
-                return 0;
-            }
-            var baseValue = Convert.ToDouble(term!.Obj);
-            var val = intervalType switch
-            {
-                IntervalType.Min => baseValue - IntervalFunctions.Radius(term.Decimals),
-                IntervalType.Max => baseValue + IntervalFunctions.Radius(term.Decimals),
-                _ => baseValue,
-            };
-            return val;
-        }
-
-    }
-
 
     public static OptionalObject EvaluateArithmeticExpressionRecursively(string generalExpression, Dictionary<string, ObjectTerm280> terms, IntervalType intervalType)
     {
@@ -464,25 +392,7 @@ public partial class GeneralEvaluator
         throw new Exception($"Expression:{generalExpression}. Can not decifer Arithmetic Expression");
         //return new DoubleObject(true, 0);              
     }
-
-    static OptionalObject ConvertToNumberUsingUSCulture(string stringNumber)
-    {
-        // Specify US culture
-        CultureInfo usCulture = CultureInfo.CreateSpecificCulture("en-US");
-        var res = 0.0;
-        try
-        {
-            res = Convert.ToDouble(stringNumber, usCulture);
-            return new OptionalObject(false, res);
-        }
-        catch
-        {
-            return new OptionalObject(true, 0);
-        }
-
-    }
-
-
+    
     public static OptionalObject EvaluateFunction(string functionText, Dictionary<string, ObjectTerm280> terms, string filterTerm, IntervalType intervalType)
     {
         //it is not recursive by itself but it uses EvaluateArithmeticRecursively which is recursive
@@ -603,20 +513,6 @@ public partial class GeneralEvaluator
 
     }
 
-    static FunctionAggregateTypes ToFunctionType(string functionType) =>
-        functionType switch
-        {
-            "imin" => FunctionAggregateTypes.iMin,
-            "imax" => FunctionAggregateTypes.iMax,
-            "max" => FunctionAggregateTypes.Max,
-            "isum" => FunctionAggregateTypes.iSum,
-            "count" => FunctionAggregateTypes.Count,
-            "plain" => FunctionAggregateTypes.Plain,
-            "exp" => FunctionAggregateTypes.Exp,
-            "iabs" => FunctionAggregateTypes.Abs,
-            _ => throw new ArgumentException("Invalid function type"),
-        };
-
     public static KleeneValue EvaluateSimpleStringExpression(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
         var rgxTerm = new Regex(@"([XA]\d\d)", RegexOptions.Compiled);
@@ -639,28 +535,7 @@ public partial class GeneralEvaluator
 
 
     }
-
-    public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
-    {
-        //max(min(X01,3,X03), X2,0),X2 => F01,X2
-        //X01+X02=> X01+X02
-        var matchFunctions = regex.Matches(text);
-        if (matchFunctions.Count == 0)
-        {
-            return (text, new List<FunctionObject>());
-        }
-        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
-        var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
-        {
-            int index = currentText.IndexOf(val.FullText);
-            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.FullText.Length)..];
-            return replacedString;
-        });
-
-        return (contentFormulaWithSymbols, nestedFunctions);
-    }
-
-
+    
     public static (LogicalOperators logicalOperator, string left, string Right) SplitAndOrExpression(string text)
     {
         //We have "and", "or" inside parenthesis or other functions. We need to find the first valid "And" or the first valid "or"
@@ -738,7 +613,9 @@ public partial class GeneralEvaluator
         }
     }
 
-
+    
+    ////////////////////////////////////////***********    
+    
     public static (ArithmeticOperators arithmeticOperator, string left, string right) SplitArithmeticExpression(string text)
     {
         //We have "*", "+", "-" inside parenthesis or other functions. We need to find the first valid "*","+","-"
@@ -837,8 +714,79 @@ public partial class GeneralEvaluator
         }
     }
 
+    public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
+    {
+        //max(min(X01,3,X03), X2,0),X2 => F01,X2
+        //X01+X02=> X01+X02
+        var matchFunctions = regex.Matches(text);
+        if (matchFunctions.Count == 0)
+        {
+            return (text, new List<FunctionObject>());
+        }
+        var nestedFunctions = matchFunctions.Select((match, i) => new FunctionObject($"{letter}{i:D2}", ToFunctionType(match.Groups[1].Value), match.Value, match.Groups[2].Value, 0)).ToList();
+        var contentFormulaWithSymbols = nestedFunctions.Aggregate(text, (currentText, val) =>
+        {
+            int index = currentText.IndexOf(val.FullText);
+            string replacedString = currentText[..index] + " " + val.Letter + " " + currentText[(index + val.FullText.Length)..];
+            return replacedString;
+        });
 
-    static OperatorManager.OperatorRecord selectOperatorToProcessNew(string contentFormulaWithSymbols)
+        return (contentFormulaWithSymbols, nestedFunctions);
+    }
+
+
+    static FunctionAggregateTypes ToFunctionType(string functionType) =>
+        functionType switch
+        {
+            "imin" => FunctionAggregateTypes.iMin,
+            "imax" => FunctionAggregateTypes.iMax,
+            "max" => FunctionAggregateTypes.Max,
+            "isum" => FunctionAggregateTypes.iSum,
+            "count" => FunctionAggregateTypes.Count,
+            "plain" => FunctionAggregateTypes.Plain,
+            "exp" => FunctionAggregateTypes.Exp,
+            "iabs" => FunctionAggregateTypes.Abs,
+            _ => throw new ArgumentException("Invalid function type"),
+        };
+
+    private static OptionalObject ToOptionalObject(string letter, Dictionary<string, ObjectTerm280> terms, IntervalType intervalType)
+    {
+        //Here is the only Place we need the interval type
+        //for numeric terms it will add or subtract the radius from the value of the object term
+        var term = terms.FirstOrDefault(trm => trm.Key == letter).Value;
+
+        var resTerm = term is null ? new OptionalObject(true, null)
+            : term.Obj is null ? new OptionalObject(true, null)
+            : term.DataType == "D" ? new OptionalObject(false, ((DateTime)term.Obj).ToOADate())
+            //: new OptionalObject(false, Convert.ToDouble(term.Obj));
+            : new OptionalObject(false, ConvertToDoubleUsingInterval(term, intervalType));
+
+
+        return resTerm;
+
+        static double ConvertToDoubleUsingInterval(ObjectTerm280 term, IntervalType intervalType)
+        {
+            if (term == null || term.Obj is null)
+            {
+                return 0;
+            }
+            var baseValue = Convert.ToDouble(term!.Obj);
+            var val = intervalType switch
+            {
+                IntervalType.Min => baseValue - IntervalFunctions.Radius(term.Decimals),
+                IntervalType.Max => baseValue + IntervalFunctions.Radius(term.Decimals),
+                _ => baseValue,
+            };
+            return val;
+        }
+
+    }
+
+
+    public static bool ToBoolean(KleeneValue kleeneVal) => kleeneVal == KleeneValue.True || kleeneVal == KleeneValue.Unknown;
+
+
+    static OperatorManager.OperatorRecord selectOperatorToProcessNotUsed(string contentFormulaWithSymbols)
     {
         char[] minusPlusOps = { '+', '-' };
         char[] multiplyOps = { '*' };
@@ -858,9 +806,25 @@ public partial class GeneralEvaluator
     }
 
 
+    static OptionalObject ConvertToNumberUsingUSCulture(string stringNumber)
+    {
+        // Specify US culture
+        CultureInfo usCulture = CultureInfo.CreateSpecificCulture("en-US");
+        var res = 0.0;
+        try
+        {
+            res = Convert.ToDouble(stringNumber, usCulture);
+            return new OptionalObject(false, res);
+        }
+        catch
+        {
+            return new OptionalObject(true, 0);
+        }
+
+    }
 
 
-    
+
 
     [GeneratedRegex(@"^(imin|imax|max|isum|count|exp|iabs)\(((?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))\)")]
     public static partial Regex RgxStartingFunction();

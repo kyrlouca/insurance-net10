@@ -438,16 +438,7 @@ public class DocumentValidator : IDocumentValidator
             }
         }
     }
-    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count, int decimals)
-    {
-        //maybe I need to set obj to zero instead of sum
-        var objTerm = objTerms[objKey];
-        var newObjTerm = objTerm with { Obj = sum, sumValue = sum, countValue = count, DataType = "N", Decimals = decimals };
-        objTerms.Remove(objKey);
-        objTerms.Add(objKey, newObjTerm);
-        return newObjTerm;
-    }
-
+    
     private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType, bool IsClosedTables = false)
     {
         //We do not have the concept of master-slave table for closed tables.
@@ -488,11 +479,7 @@ public class DocumentValidator : IDocumentValidator
         }
 
     }
-
-    private static ObjectTerm280 CreateObjectTerm280Empty()
-    {
-        return new ObjectTerm280("J", 0, false, null, 0, 0, null, true, "");
-    }
+    
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance, string filter)
     {
         if (fact == null)
@@ -551,6 +538,15 @@ public class DocumentValidator : IDocumentValidator
         return plainTerms;
     }
 
+    ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count, int decimals)
+    {
+        //maybe I need to set obj to zero instead of sum
+        var objTerm = objTerms[objKey];
+        var newObjTerm = objTerm with { Obj = sum, sumValue = sum, countValue = count, DataType = "N", Decimals = decimals };
+        objTerms.Remove(objKey);
+        objTerms.Add(objKey, newObjTerm);
+        return newObjTerm;
+    }
 
     private string UpdateRuleTermFilter(string letter, string filter)
     {
@@ -665,6 +661,8 @@ public class DocumentValidator : IDocumentValidator
     private (int count, double sum, int decimals) CalculateSumofOpenTable(int ruleId, List<MTable> ruleTables, RuleTerm280 seqTableTerm, RuleComponent280 filterComponent, string zetValue)
     {
         //the seqTableTerm is the term with the sum and it is considered the main table. 
+        //We need to apply the filter for each row of the seqTableTerm
+        //to evaluate the the filter for each row, need to find the related rows of all the terms
         var seqTableCode = seqTableTerm.T;
         var kyrTable = _SqlFunctions.SelectTableKyrKey(seqTableCode);
         var mainTableCol = kyrTable?.TableCol ?? "";
@@ -724,38 +722,6 @@ public class DocumentValidator : IDocumentValidator
         return (count, sum, decimals);
     }
 
-    private bool EvaluateFilterRow(int ruleId, List<MTable> ruleTables, RuleComponent280 filterComponent, string relatedTable, string row, string foreignRow, string zetValue)
-    {
-        foreach (var filterTerm in filterComponent.RuleTerms)
-        {
-            filterTerm.R = filterTerm.T.Trim() == relatedTable.Trim()
-                ? foreignRow
-                : row;
-            var term = 1;
-        }
-
-        try
-        {
-
-            Dictionary<string, ObjectTerm280> filterTerms = ToOjectTerm280UsingFactValues(ruleTables, filterComponent.RuleTerms, zetValue);
-            if (filterTerms.Any())
-            {
-                var res = GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterTerms);
-                return res == KleeneValue.True;
-            }
-
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"EvaluateFilterRow : relatedTable:{relatedTable} row:{row} foreignRow:{foreignRow} ---- {ex}");
-        }
-
-    }
-
-
-
     private int CreateErrorDocument()
     {
         var errorDoc = new ErrorDocumentModel
@@ -809,8 +775,7 @@ public class DocumentValidator : IDocumentValidator
     }
 
 
-
-    public static void UpdateExpressionWithShortLabel(string inputFilePath, string outputFilePath)
+    public static void UpdateRuleMessagesWithShortLabel(string inputFilePath, string outputFilePath)
     {
         var connectionString = "Data Source = KYR-RYZEN\\MSSQLSERVER01; Initial Catalog =EIOPA_280_Hotfix; Integrated Security = true;TrustServerCertificate=True;";
         using var connectionLocal = new SqlConnection(connectionString);
@@ -844,24 +809,7 @@ public class DocumentValidator : IDocumentValidator
         }
     }
 
-    class ValidationRuleComparer : IEqualityComparer<VValidationRuleExpressions>
-    {
-        //not used but usefull to know
-        public bool Equals(VValidationRuleExpressions? b1, VValidationRuleExpressions? b2)
-        {
-            if (ReferenceEquals(b1, b2))
-                return true;
-
-            if (b2 is null || b1 is null)
-                return false;
-
-            return b1.ValidationID == b2.ValidationID;
-
-        }
-
-        public int GetHashCode(VValidationRuleExpressions vr) => vr.ValidationID;
-    }
-
+    
 
 
 
