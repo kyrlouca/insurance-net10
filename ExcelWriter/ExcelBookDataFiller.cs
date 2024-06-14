@@ -76,13 +76,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ///
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
-        if (_parameterData.IsDevelop && 1==1)
-        {
+
+
+        if (_parameterData.IsDevelop && 1==2)
+        {            
             //var debugClosedTableCode = "";
-            var debugClosedTableCode = "S.02.02.01.02";            
-            dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
-             ? dbClosedSheets
-             : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
+            var debugClosedTableCode = "S.04.04.01.02";            
+            dbClosedSheets = dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
         }
 
         foreach (var dbClosedSheet in dbClosedSheets)
@@ -95,7 +95,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        if (_parameterData.IsDevelop && 1==2)
+        if (_parameterData.IsDevelop && 1==1)
         {
             var debugOpenTableCode = "xS.04.03.01.01";            
             if (!string.IsNullOrEmpty(debugOpenTableCode))
@@ -103,9 +103,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 Console.Write($"In Develop and filtering Open: {debugOpenTableCode}");
             }
 
-            dbOpenSheets = string.IsNullOrWhiteSpace(debugOpenTableCode)
-                 ? dbOpenSheets
-                 : dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
+            dbOpenSheets = dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);                 
         }
 
         foreach (var dbOpenSheet in dbOpenSheets)

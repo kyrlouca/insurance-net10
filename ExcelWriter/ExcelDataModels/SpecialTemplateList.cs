@@ -89,13 +89,13 @@ public static class MultiDimensionTemplatesNew
         
         //S.02.02.01.02 s2c_dim:RC(s2c_CU:x4)
         
-        new MultiDimensionType("S.02.02.01.02", "RC","CU"),
+        new MultiDimensionType("S.02.02.01.02", "OC","CU"),
         
         //S.04.02.01.02  s2c_dim:LG(s2c_GA:GR)
         new MultiDimensionType("S.04.02.01.02", "LG","GA"),
         
         //S.04.04.01.02 s2c_dim:LA(*[377;1238;0])
-        new MultiDimensionType("S.04.04.01.02", "LA",""),
+        new MultiDimensionType("S.04.04.01.02", "LA","GA"),
 
         //S.04.05.01.02 s2c_dim:LR(*[388;1238;0])
         new MultiDimensionType("S.04.05.01.02", "LR","")
