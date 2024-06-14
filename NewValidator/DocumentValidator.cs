@@ -101,9 +101,9 @@ public class DocumentValidator : IDocumentValidator
         //************************************************************* Exempt
         var exempted = new[] { 0 };
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
-        if (_parameterData.IsDevelop)
+        if (_parameterData.IsDevelop && 1==1)
         {
-            //validationRules = validationRules.Where(vr => vr.ValidationID == 468).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 468).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -294,6 +294,19 @@ public class DocumentValidator : IDocumentValidator
                     //--- the resulting object will have both the sum and the count because the function is not known  at the time 
                     // Rule 783: {t: S.02.01.02.01, r: R0060, c: C0010, dv: 0, seq: False, id: v1, f: solvency, fv: solvency2} i= isum({t: S.06.02.01.01, c: C0170, z: Z0001, dv: emptySequence(), seq: True, id: v2, f: solvency, fv: solvency2})
                     // Filter matches({t: S.06.02.01.02, c: C0290, z: Z0001, dv: emptySequence(), seq: True, id: v3, f: solvency, fv: solvency2}, "^..((93)|(95)|(96))$") and ({t: S.06.02.01.01, c: C0090, z: Z0001, dv: emptySequence(), seq: True, id: v4, f: solvency, fv: solvency2} = [s2c_LB:x91])
+
+                    //mixed or open tables => do not check zet
+                    //if any sheet (regardless of zet) is null do NOT check the rule                        
+                    var sheetsInDocument = tablesInValidation
+                        .DistinctBy(tbl => tbl.TableID)
+                        .SelectMany(tbl => _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, tbl.TableID))//this should not happen but I have used selectMany anyway
+                        .DistinctBy(sheet => sheet.TableID);
+
+                    if (sheetsInDocument.Count() != tablesInValidation.Count())
+                    {
+                        continue;
+                    }
+
 
                     var mainTable = tablesInValidation.Where(tbl => !tbl.IsOpenTable).FirstOrDefault();
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
