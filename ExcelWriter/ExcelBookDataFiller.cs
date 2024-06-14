@@ -76,10 +76,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ///
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable);
-        if (_parameterData.IsDevelop)
+        if (_parameterData.IsDevelop && 1==1)
         {
             //var debugClosedTableCode = "";
-            var debugClosedTableCode = "S.04.04.01.02";            
+            var debugClosedTableCode = "S.02.02.01.02";            
             dbClosedSheets = string.IsNullOrWhiteSpace(debugClosedTableCode)
              ? dbClosedSheets
              : dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
@@ -95,10 +95,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        if (_parameterData.IsDevelop)
+        if (_parameterData.IsDevelop && 1==2)
         {
-            var debugOpenTableCode = "xS.04.03.01.01";
-            //var debugOpenTableCode = "";
+            var debugOpenTableCode = "xS.04.03.01.01";            
             if (!string.IsNullOrEmpty(debugOpenTableCode))
             {
                 Console.Write($"In Develop and filtering Open: {debugOpenTableCode}");
@@ -191,6 +190,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
             var rowForZetlabels = wholeRange[ZET_ROW, dataRange.Column, ZET_ROW, dataRange.LastColumn];
             rowForZetlabels.UnMerge();
+
+            wholeRange= HelperRoutines.ExtendRangeRowColsDirectional(wholeRange, 0, zetMembersCount - 1, HelperRoutines.HorizontalDirection.Right, HelperRoutines.VerticalDirection.None);
             //var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();                        
             //datarange includes the row for the column numbers and the column for the row numbers
             for (var i = 0; i < columnLabelsOriginal.Count(); i++)
@@ -203,14 +204,16 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 {
                     if (j > 0)
                     {
-                        workSheet.InsertColumn(columnLabelCell.Column + 1);
+                        //workSheet.InsertColumn(columnLabelCell.Column + 1);
+                        //workSheet.InsertColumn(columnLabelCell.Column);
                     }
                     //zetLabels
+                    
                     var colZetLabel = wholeRange[ZET_ROW, columnLabelCell.Column + j];
                     colZetLabel.Text = zetMembers[j].MemberLabel;
                     colZetLabel.CellStyle = _pensionStyles.TopLabelsStyle;
                     colZetLabel.ColumnWidth = 30;
-
+                    
                     //description labels (above column labels) 
                     var descLabel = wholeRange[dataRange.Row - 1, colZetLabel.Column];
                     descLabel.Text = descriptionLabel;
@@ -219,7 +222,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     //colLabels
                     var colLabel = wholeRange[dataRange.Row, colZetLabel.Column];
                     colLabel.Text = columnLabelStr;
-                    colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+                    colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;                     
                 }
             }
             var lastDataColumn = dataRange.LastColumn + columnLabelsOriginal.Count * (zetMembersCount - 1);
@@ -229,10 +232,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             newDescRange.Merge();
             newDescRange.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
             newDescRange.Value = tDesc;
-
-
+            
         };
-
+        
+        
         var zetCount = zetMembers.Count == 0 ? 1 : zetMembers.Count;//to loop even for non-currencies        
         
         var colLabelsRange = workingDataRange.Rows.First();
