@@ -78,10 +78,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             .Where(sheet => !sheet.IsOpenTable);
 
 
-        if (_parameterData.IsDevelop && 1==1)
-        {            
+        if (_parameterData.IsDevelop && 1 == 2)
+        {
             //var debugClosedTableCode = "";
-            var debugClosedTableCode = "S.04.04.01.02";            
+            var debugClosedTableCode = "S.04.04.01.02";
             dbClosedSheets = dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
         }
 
@@ -95,15 +95,15 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable);
 
-        if (_parameterData.IsDevelop && 1==1)
+        if (_parameterData.IsDevelop && 1 == 2)
         {
-            var debugOpenTableCode = "xS.04.03.01.01";            
+            var debugOpenTableCode = "xS.04.03.01.01";
             if (!string.IsNullOrEmpty(debugOpenTableCode))
             {
                 Console.Write($"In Develop and filtering Open: {debugOpenTableCode}");
             }
 
-            dbOpenSheets = dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);                 
+            dbOpenSheets = dbOpenSheets.Where(tb => tb.TableCode.Trim() == debugOpenTableCode);
         }
 
         foreach (var dbOpenSheet in dbOpenSheets)
@@ -182,14 +182,15 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             zetMembers = GetSheetDistinctValuesNew(dbSheet.TemplateSheetId, multiTemplate!.TemplateCode, multiTemplate.Dimension, multiTemplate.Domain);
             var zetMembersCount = zetMembers.Count;
 
-            var originalDescriptionRange= wholeRange[dataRange.Row - 2, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
+            var originalDescriptionRange = wholeRange[dataRange.Row - 2, dataRange.Column, dataRange.LastRow, dataRange.LastColumn];
             originalDescriptionRange.UnMerge();
-            var tDesc = originalDescriptionRange.Cells.FirstOrDefault(cl => !string.IsNullOrWhiteSpace(cl.Value))?.Value ??"";
+            var tDesc = originalDescriptionRange.Cells.FirstOrDefault(cl => !string.IsNullOrWhiteSpace(cl.Value))?.Value ?? "";
 
             var rowForZetlabels = wholeRange[ZET_ROW, dataRange.Column, ZET_ROW, dataRange.LastColumn];
             rowForZetlabels.UnMerge();
 
-            wholeRange= HelperRoutines.ExtendRangeRowColsDirectional(wholeRange, 0, zetMembersCount - 1, HelperRoutines.HorizontalDirection.Right, HelperRoutines.VerticalDirection.None);
+            //todo ** this is wrong need to take into accoutn columnLabelsOriginal.Count()
+            wholeRange = HelperRoutines.ExtendRangeRowColsDirectional(wholeRange, 0, zetMembersCount - 1, HelperRoutines.HorizontalDirection.Right, HelperRoutines.VerticalDirection.None);
             //var sortedCurencyCountryList = SpecialOrderBy(currenciesOrCountriesXbrlCodes, "x0").ToList();                        
             //datarange includes the row for the column numbers and the column for the row numbers
             for (var i = 0; i < columnLabelsOriginal.Count(); i++)
@@ -197,21 +198,19 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 var columnLabelStr = columnLabelsOriginal[i];
                 var descriptionLabel = desriptionLabels[i];
                 //columns have been inserted but still columnLabelCell will point to the first label found 
-                var columnLabelCell = extendedColumnsRow.FirstOrDefault(cc => cc.Value == columnLabelStr);
-                for (var j = 0; j < zetMembersCount; j++)
+                var columnLabelCell = extendedColumnsRow.FirstOrDefault(cc => cc.Value == columnLabelStr)!;
+
+
+                //fill column numbers and zetLabels 
+                //-1 because there is alread one
+                for (var j = 0; j < zetMembersCount ; j++)
                 {
-                    if (j > 0)
-                    {
-                        //workSheet.InsertColumn(columnLabelCell.Column + 1);
-                        //workSheet.InsertColumn(columnLabelCell.Column);
-                    }
-                    //zetLabels
-                    
+
                     var colZetLabel = wholeRange[ZET_ROW, columnLabelCell.Column + j];
                     colZetLabel.Text = zetMembers[j].MemberLabel;
                     colZetLabel.CellStyle = _pensionStyles.TopLabelsStyle;
                     colZetLabel.ColumnWidth = 30;
-                    
+
                     //description labels (above column labels) 
                     var descLabel = wholeRange[dataRange.Row - 1, colZetLabel.Column];
                     descLabel.Text = descriptionLabel;
@@ -220,22 +219,29 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     //colLabels
                     var colLabel = wholeRange[dataRange.Row, colZetLabel.Column];
                     colLabel.Text = columnLabelStr;
-                    colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;                     
+                    colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
+
+                    if (j != zetMembersCount-1)
+                    {
+                        workSheet.InsertColumn(columnLabelCell.Column + j + 1);
+                    }
+                    
                 }
             }
+            
             var lastDataColumn = dataRange.LastColumn + columnLabelsOriginal.Count * (zetMembersCount - 1);
             workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, lastDataColumn];
-            
-            var newDescRange= wholeRange[dataRange.Row-3, dataRange.Column+1, dataRange.Row-3, lastDataColumn];
+
+            var newDescRange = wholeRange[dataRange.Row - 3, dataRange.Column + 1, dataRange.Row - 3, lastDataColumn];
             newDescRange.Merge();
             newDescRange.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
             newDescRange.Value = tDesc;
-            
+
         };
-        
-        
+
+
         var zetCount = zetMembers.Count == 0 ? 1 : zetMembers.Count;//to loop even for non-currencies        
-        
+
         var colLabelsRange = workingDataRange.Rows.First();
         var rowLabelsRange = workingDataRange.Columns.First();
         //var zetLabelsRange = wholeRange[ZET_ROW, workingDataRange.Column, ZET_ROW, workingDataRange.LastColumn];
@@ -247,11 +253,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             {
 
                 var row = rowLabelsRange[cell.Row, colLabelsRange.Column].Value;
-                var col = colLabelsRange[colLabelsRange.Row,cell.Column].Value;
+                var col = colLabelsRange[colLabelsRange.Row, cell.Column].Value;
 
                 var zetDescription = isMultiTemplate ? zetLabelsRange[zetLabelsRange.Row, cell.Column].Value : "";
                 var zetXbrl = isMultiTemplate ? zetMembers.FirstOrDefault(zm => zm.MemberLabel == zetDescription)?.MemberXBRLCode ?? "" : "";
-                                
+
                 var factX = FindFactFromRowColCurrency(dbSheet, row, col, zetXbrl, isMultiTemplate);
                 FormatCellValue(cell, factX);
                 if (isMultiTemplate)
@@ -259,7 +265,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     cell.CellStyle.Borders.LineStyle = ExcelLineStyle.Thin;
                     cell.CellStyle.Borders[ExcelBordersIndex.DiagonalUp].LineStyle = ExcelLineStyle.None;
                     cell.CellStyle.Borders[ExcelBordersIndex.DiagonalDown].LineStyle = ExcelLineStyle.None;
-                }                                
+                }
 
             }
         }
@@ -303,7 +309,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         //expand the Data range
-        if (isMultiTemplate )
+        if (isMultiTemplate)
         {
             //var expandedDataRows = dataRange[dataRange.Row, dataRange.Column, dataRange.LastRow, dataRange.LastColumn + zetCount - 1];
             var dataRangeName = dataName.Name;
