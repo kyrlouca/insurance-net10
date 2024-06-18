@@ -38,9 +38,7 @@ public static class SpecialTemplateList
 
     public static List<SpecialTemplateLayout> SpecialLayoutsNew = new()
         {
-        //new SpecialTemplateLayout("S.04.04.01", "S.04.04.01","Activity by country",true, new[] { new string[] { "S.04.04.01.01", "S.04.04.01.02" } }),
-        //new SpecialTemplateLayout("S.04.05.01", "S.04.05.01","Activity by country",true, new[] { new string[] { "S.04.05.01.01", "S.04.05.01.02" } }),
-           new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",false, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
+            new SpecialTemplateLayout("S.02.02.01", "S.02.02.01","Liabilities by currency",false, new[] { new string[] { "S.02.02.01.01", "S.02.02.01.02" } }),
             new SpecialTemplateLayout("S.06.02.01", "S.06.02.01_Combined","List of assets",false, new[] { new string[] { "S.06.02.01.01", "S.06.02.01.02" } }),
             new SpecialTemplateLayout("ZS.06.02.01.01_single", "S.06.02.01.01","List of assets-Information on positions held",false, new[] { new string[] { "S.06.02.01.01" } }),
             new SpecialTemplateLayout("ZS.06.02.01.02_single", "S.06.02.01.02","List of assets-Information on assets",false, new[] { new string[] { "S.06.02.01.02" } }),
@@ -54,22 +52,22 @@ public static class SpecialTemplateList
 
     public static List<string> SingleTableGroupsNew = new List<string> {
 
-        "S.04.02.01",
-        "S.04.04.01",
-        "S.04.04.02",            
-            "S.05.01.01",
-            "S.05.01.02",
-            "S.14.01.01",
-            "S.29.04.01",
-            "S.30.01.01",
-            "S.30.01.02",
-            "S.30.01.03",
-            "S.30.01.04",
-            "S.30.01.04",
-            "S.31.01.01",
-            "S.31.01.02",
-            "S.31.01.03",
-            "S.31.01.04",
+         "S.04.02.01",
+         "S.04.04.01",
+         "S.04.04.02",
+         "S.05.01.01",
+         "S.05.01.02",
+         "S.14.01.01",
+         "S.29.04.01",
+         "S.30.01.01",
+         "S.30.01.02",
+         "S.30.01.03",
+         "S.30.01.04",
+         "S.30.01.04",
+         "S.31.01.01",
+         "S.31.01.02",
+         "S.31.01.03",
+         "S.31.01.04",
         };
 
 
@@ -86,20 +84,9 @@ public record MultiDimensionType(string TemplateCode, string Dimension, string D
 public static class MultiDimensionTemplatesNew
 {
     public static List<MultiDimensionType> Templates = new List<MultiDimensionType> {
-        
-        //S.02.02.01.02 s2c_dim:RC(s2c_CU:x4)
-        
         new MultiDimensionType("S.02.02.01.02", "OC","CU"),
-        
-        //S.04.02.01.02  s2c_dim:LG(s2c_GA:GR)
         new MultiDimensionType("S.04.02.01.02", "LG","GA"),
-        
-        //S.04.04.01.02 s2c_dim:LA(*[377;1238;0])
         new MultiDimensionType("S.04.04.01.02", "LA","GA"),
-
-        //S.04.05.01.02 s2c_dim:LR(*[388;1238;0])
         new MultiDimensionType("S.04.05.01.02", "LR","")
-
-
     };
 }
