@@ -226,6 +226,21 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public MMetric? SelectMMetric(string xbrlCode)
+    {
+        //memberXbrlCode= s2c_AM:x2 => find metric
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlMem = @"
+            select  mt.* from mMetric mt 
+            join mMember mem on mem.MemberID= mt.CorrespondingMemberID
+            where mem.MemberXBRLCode= @xbrlCode
+        ";
+        xbrlCode = xbrlCode.Trim();
+        var val = connectionEiopa.QuerySingleOrDefault<MMetric>(sqlMem, new { xbrlCode });
+        return val;
+    }
+
+
     public MMember? SelectMMember(string xbrlCode)
     {
         //memberXbrlCode= s2c_AM:x2 => find mMember
@@ -244,6 +259,24 @@ public class SqlFunctions : ISqlFunctions
         var res = connectionEiopa.Query<MMember>(sqlMem, new { hierarchyId })?.ToList() ?? new List<MMember>();
         return res;
     }
+
+    public MMember? SelectDefaultMemberFromHierarchy(int hierarchyId)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlMem = @"
+        select mem.MemberXBRLCode
+		  from mHierarchyNode hn
+		  join mHierarchy h on h.HierarchyID=hn.HierarchyID
+		  join mMember mem on mem.MemberID=hn.MemberID
+		  where 1=1
+		  and mem.IsDefaultMember=1
+		  and h.HierarchyID = @hierarchyId		  
+";
+
+        var res = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { hierarchyId });
+        return res;
+    }
+
 
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mappingOrigin)
     {

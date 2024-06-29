@@ -22,6 +22,8 @@ using System.Threading.Tasks;
 using System.Xml.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Validator.ValidationClasses;
+using Microsoft.Identity.Client;
+using Shared.CommonRoutines;
 namespace NewValidator;
 
 internal enum ValidStatus { Valid, Error, Waring };
@@ -539,7 +541,7 @@ public class DocumentValidator : IDocumentValidator
         //var ruleTermsWithZet = ruleTerms.Select(rt => rt with { Z =   rt.Z.Contains("Z00") ? zetValue : "" });
         var openTables = ruleTables.Where(tbl => tbl.IsOpenTable).Select(tbl => tbl.TableCode);
         var ruleTermsWithUpdatedZetValue = ruleTerms.Select(rt => rt with { Z = (openTables.Contains(rt.T.Trim()) || !rt.Z.Contains("Z00")) ? "" : zetValue });
-        Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithUpdatedZetValue
+        Dictionary<string, ObjectTerm280> plainTermsOld = ruleTermsWithUpdatedZetValue
             .Select(rtm => new
             {
                 rtm.Letter,
@@ -549,28 +551,48 @@ public class DocumentValidator : IDocumentValidator
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
 
-        Dictionary<string, ObjectTerm280> plainTerms2 = ruleTermsWithUpdatedZetValue
+        Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithUpdatedZetValue
             .Select(rtm =>
             {
                 var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C);
-                if (fact is null)
-                {
-                    var yy = 3;
-                }
-                var xx = new
+                fact ??= CreateFactWithDefaultValue(ruleTables, rtm);                                
+                var objectTerm = CreateObjectTerm280(fact, rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter));
+
+                var objUpd = new
                 {
                     rtm.Letter,
                     Zet = rtm.Z,
-                    Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C),
-                    ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C), rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter))
-
+                    Fact = fact,
+                    ObjectTerm = objectTerm
                 };
-                return xx;
+                return objUpd;
+
             })
-            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
+            .ToDictionary(objT => objT.Letter, objT => objT.ObjectTerm);
 
 
         return plainTerms;
+        TemplateSheetFact? CreateFactWithDefaultValue(List<MTable> ruleTables, RuleTerm280 rtm)
+        {
+            var fact = new TemplateSheetFact();
+            var tbl = ruleTables.FirstOrDefault(tbl => tbl.TableCode == rtm.T)!;
+            var cell = _SqlFunctions.SelectTableCells(tbl.TableID)
+                .FirstOrDefault(cell => cell.BusinessCode.Contains(rtm.C) && (tbl.IsOpenTable || cell.BusinessCode.Contains(rtm.R)));
+            var rgxXbrl = new Regex(@"^MET\((.*?)\)");
+            var match = rgxXbrl.Match(cell?.DatapointSignature ?? "xxx");
+            var xbrlCode = match.Success ? match.Groups[1].Value : "";
+
+            var metric = _SqlFunctions.SelectMMetric(xbrlCode);
+            var hierarchyId = metric?.ReferencedHierarchyID ?? -1;
+
+            var defaultValue = _SqlFunctions.SelectDefaultMemberFromHierarchy(hierarchyId)?.MemberXBRLCode;
+            if (metric is not null && defaultValue is not null)
+            {
+                var dataTypeUse = metric is not null ? ConstantsAndUtils.SimpleDataTypes[metric.DataType] : "";
+                fact = new TemplateSheetFact() { TextValue = defaultValue, DataTypeUse = dataTypeUse };
+            }
+            return fact;
+        }
     }
 
     ObjectTerm280 ReplaceObjTerm(Dictionary<string, ObjectTerm280> objTerms, string objKey, object value, double sum, int count, int decimals)
@@ -608,7 +630,7 @@ public class DocumentValidator : IDocumentValidator
         CreateComponentObjectTerms(ruleStructure.ElseComponent, ruleStructure.RuleTables, zetValue);
         CreateComponentObjectTerms(ruleStructure.FilterComponent, ruleStructure.RuleTables, zetValue);
 
-        
+
 
         return ruleStructure;
 
