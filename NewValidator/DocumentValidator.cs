@@ -101,9 +101,9 @@ public class DocumentValidator : IDocumentValidator
         //************************************************************* Exempt
         var exempted = new[] { 0 };
         validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
-        if (_parameterData.IsDevelop && 1==2)
+        if (_parameterData.IsDevelop && 1 == 1)
         {
-            validationRules = validationRules.Where(vr => vr.ValidationID == 3542).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID == 706).ToList();
         }
 
         foreach (var validationRule in validationRules)
@@ -451,7 +451,7 @@ public class DocumentValidator : IDocumentValidator
             }
         }
     }
-    
+
     private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType, bool IsClosedTables = false)
     {
         //We do not have the concept of master-slave table for closed tables.
@@ -492,7 +492,7 @@ public class DocumentValidator : IDocumentValidator
         }
 
     }
-    
+
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance, string filter)
     {
         if (fact == null)
@@ -540,7 +540,7 @@ public class DocumentValidator : IDocumentValidator
         var openTables = ruleTables.Where(tbl => tbl.IsOpenTable).Select(tbl => tbl.TableCode);
         var ruleTermsWithUpdatedZetValue = ruleTerms.Select(rt => rt with { Z = (openTables.Contains(rt.T.Trim()) || !rt.Z.Contains("Z00")) ? "" : zetValue });
         Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithUpdatedZetValue
-            .Select(rtm =>  new
+            .Select(rtm => new
             {
                 rtm.Letter,
                 Zet = rtm.Z,
@@ -548,6 +548,28 @@ public class DocumentValidator : IDocumentValidator
                 ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C), rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter))
             })
             .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
+
+        Dictionary<string, ObjectTerm280> plainTerms2 = ruleTermsWithUpdatedZetValue
+            .Select(rtm =>
+            {
+                var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C);
+                if (fact is null)
+                {
+                    var yy = 3;
+                }
+                var xx = new
+                {
+                    rtm.Letter,
+                    Zet = rtm.Z,
+                    Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C),
+                    ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C), rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter))
+
+                };
+                return xx;
+            })
+            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
+
+
         return plainTerms;
     }
 
@@ -586,18 +608,7 @@ public class DocumentValidator : IDocumentValidator
         CreateComponentObjectTerms(ruleStructure.ElseComponent, ruleStructure.RuleTables, zetValue);
         CreateComponentObjectTerms(ruleStructure.FilterComponent, ruleStructure.RuleTables, zetValue);
 
-
-        //Dictionary<string, ObjectTerm280> ifObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.IfComponent.RuleTerms, zetValue);
-        //ruleStructure.IfComponent.ObjectTerms = ifObjectTerms;
-
-        //Dictionary<string, ObjectTerm280> thenObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ThenComponent.RuleTerms, zetValue);
-        //ruleStructure.ThenComponent.ObjectTerms = thenObjectTerms;
-
-        //Dictionary<string, ObjectTerm280> elseObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.ElseComponent.RuleTerms, zetValue);
-        //ruleStructure.ElseComponent.ObjectTerms = elseObjectTerms;
-
-        //Dictionary<string, ObjectTerm280> filterObjectTerms = ToOjectTerm280UsingFactValues(ruleStructure.RuleTables, ruleStructure.FilterComponent.RuleTerms, zetValue);
-        //ruleStructure.FilterComponent.ObjectTerms = filterObjectTerms;
+        
 
         return ruleStructure;
 
@@ -718,13 +729,13 @@ public class DocumentValidator : IDocumentValidator
                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, keyFactFromMain?.TextValue ?? "").FirstOrDefault();
                 var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
                 filterComponent.RuleTerms.ForEach(rt => rt.R = "");
-                UpdateRuleTermsWithRowCol(filterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);             
+                UpdateRuleTermsWithRowCol(filterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
             }
 
             CreateComponentObjectTerms(filterComponent, ruleTables, "");
             var isFilterValid = filterComponent.IsEmpty
                                 ? KleeneValue.True
-                                : GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterComponent.ObjectTerms);            
+                                : GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterComponent.ObjectTerms);
             if (GeneralEvaluator.ToBoolean(isFilterValid))
             {
                 sum += fact.NumericValue;
@@ -822,7 +833,7 @@ public class DocumentValidator : IDocumentValidator
         }
     }
 
-    
+
 
 
 
