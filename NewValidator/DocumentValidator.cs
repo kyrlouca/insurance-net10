@@ -497,8 +497,12 @@ public class DocumentValidator : IDocumentValidator
 
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance, string filter)
     {
-        if (fact == null)
+        if (fact == null || (fact.FactId ==0) )
         {
+            if( (fact?.FactId??0)  == 0)
+            {
+                var xxh = 3;
+            }
             var defaultDataType = defaultValue.Trim() switch
             {
                 "0" => "N",
