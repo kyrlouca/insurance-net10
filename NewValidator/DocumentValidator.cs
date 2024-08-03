@@ -72,7 +72,7 @@ public class DocumentValidator : IDocumentValidator
         //A validationExpression may be related multiple times with the same table (because the same table is used by more than one module)
         //my solution is to check if for all the tables of the rules exist a sheet
 
-        //729 simple >
+        //729 simple >2
         //743 simple isnull
         //4880 matches
         //787 equality of enumaratin
