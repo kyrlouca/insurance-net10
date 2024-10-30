@@ -28,7 +28,7 @@ public class CurrencyLoader : ICurrencyLoader
     PensionStyles _pensionStyles;
     private string _fileName;
 
-    private record CurencyPairType(string Currency, double Rate);
+    private record CurencyPairType(string Currency, double ExchangeRate);
 
     public int id = 12;
     public CurrencyLoader(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, ICustomPensionStyler customPensionStyles)
@@ -116,16 +116,17 @@ public class CurrencyLoader : ICurrencyLoader
             
             clist.Add(new CurencyPairType(curr, val));
         }
-        clist = clist.Where(r => !string.IsNullOrWhiteSpace(r.Currency)  ).ToList();
+        clist = clist.Where(r => !string.IsNullOrWhiteSpace(r.Currency) && !double.IsNaN(r.ExchangeRate) ).ToList();
         return clist;
     }
 
 
-    private int SaveExchangeRatesInDb(int currencyBatch, List<CurencyPairType> currencies)
+    private int SaveExchangeRatesInDb(int currencyBatchId, List<CurencyPairType> currencies)
     {
 
         foreach (var c in currencies) { 
             var exchangeRate= c.Adapt<CurrencyExchangeRate>();
+            exchangeRate.CurrencyBatchId = currencyBatchId;
             _SqlFunctions.CreateExchangeRate(exchangeRate);
         }
         return 0;        
