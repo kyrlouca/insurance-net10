@@ -19,6 +19,7 @@ public class ParameterData
     public int UserId { get; set; }
     public int FundId { get; set; }
     public int CurrencyBatchId { get; set; }
+    public int Wave { get; set; }
     public int ApplicableYear { get; set; }
     public int ApplicableQuarter { get; set; }
     public string ModuleCode { get; set; }

@@ -1079,8 +1079,8 @@ public class SqlFunctions : ISqlFunctions
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
 
         var sqlSelect = @"select * from CurrencyBatch where year= @year and Quarter= @Quarter and Wave=@Wave";
-        var count = connectionLocal.QueryFirstOrDefault<CurrencyBatch>(sqlSelect, new { year,quarter,wave });
-        return count;
+        var cb = connectionLocal.QueryFirstOrDefault<CurrencyBatch>(sqlSelect, new { year,quarter,wave });
+        return cb;
 
     }
 

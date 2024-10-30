@@ -1,6 +1,7 @@
 ﻿using Azure;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Shared.DataModels;
 using Shared.ExcelHelperRoutines;
 using Shared.HostParameters;
 using Shared.SharedHost;
@@ -11,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Mapster;
 namespace CurrencyLoad;
 
 public class CurrencyLoader : ICurrencyLoader
@@ -63,11 +64,25 @@ public class CurrencyLoader : ICurrencyLoader
 
 
         var worksheet = workBook.Worksheets[0];
-        var values = ReadCurrencyValues(worksheet);
+        var values = ReadExcelCurrencyValues(worksheet);
+       
+        
+        var currencyBatch = _SqlFunctions.SelectCurrencyBatch(_parameterData.ApplicableYear, _parameterData.ApplicableQuarter, _parameterData.Wave);
+        _SqlFunctions.DeleteCurrencyBatch(currencyBatch?.CurrencyBatchId??-1);
+        var cb = new CurrencyBatch()
+        {
+            Year = _parameterData.ApplicableYear,
+            Quarter = _parameterData.ApplicableQuarter,
+            Wave = _parameterData.Wave,
+            Status="S",
+            DateCreated=DateTime.Now
+        };
+        var cbId =_SqlFunctions.CreateCurrencyBatch(cb);
+        var cnt = SaveExchangeRatesInDb(cbId, values);
         return 1;
     }
 
-    private static List<CurencyPairType> ReadCurrencyValues(IWorksheet worksheet)
+    private static List<CurencyPairType> ReadExcelCurrencyValues(IWorksheet worksheet)
     {
         var clist = new List<CurencyPairType>();
         IRange? currencyLabelCell = null;
@@ -106,9 +121,12 @@ public class CurrencyLoader : ICurrencyLoader
     }
 
 
-    private int StoreInDb(List<CurencyPairType> currencies)
+    private int SaveExchangeRatesInDb(int currencyBatch, List<CurencyPairType> currencies)
     {
+
         foreach (var c in currencies) { 
+            var exchangeRate= c.Adapt<CurrencyExchangeRate>();
+            _SqlFunctions.CreateExchangeRate(exchangeRate);
         }
         return 0;        
     }
