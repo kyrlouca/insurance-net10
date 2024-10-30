@@ -2,7 +2,7 @@
   "profiles": {
     "CurrencyLoad": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=1111\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-eforos-280\\hd2024q1.xlsx\""
+      "commandLineArgs": "eiopa-version=\"IU280\"\r\nexternal-id=1111\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-eforos-280\\hd2024q1.xlsx\""
     }
   }
 }

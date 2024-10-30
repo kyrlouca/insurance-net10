@@ -12,7 +12,7 @@ var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
-    Console.WriteLine(@".\ErrorFileCreator.exe external-id=2122  file-name=""C:\eurofileErorr.xlsx""");
+    Console.WriteLine(@".\ErrorFileCreator.exe eiopa-version=IU280 external-id=2122  file-name=""C:\eurofileErorr.xlsx""");
     throw new ArgumentException($"parameter missing:{missingParam}");
 }
 
@@ -38,7 +38,7 @@ return 0;
 
 string? CheckParams(string[] args)
 {
-    var paramNames = new[] { "external-id", "file-name" };
+    var paramNames = new[] { "eiopa-version", "external-id", "file-name" };
     var missingParam = paramNames.FirstOrDefault(par => !args.Any(arg => arg.Contains(par)));
     return missingParam;
 }
