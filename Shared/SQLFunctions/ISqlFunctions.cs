@@ -86,4 +86,10 @@ public interface ISqlFunctions
     public List<ERROR_Rule> SelectErrorRules(int documentId, ErrorRuleTypes errorType);
     public int CreateErrorDocument( ErrorDocumentModel errorDocument);
     public MTemplateOrTable? GetTableOrTemplate(string tableCode);
+
+
+    public int CreateCurrencyBatch(CurrencyBatch currencyBatch);
+    public int CreateExchangeRate(CurrencyExchangeRate currencyExchangeRate);
+    public int DeleteCurrencyBatch(int currencyBatchId);
+    public CurrencyBatch? SelectCurrencyBatch(int year, int quarter, int wave);
 }

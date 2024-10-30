@@ -1023,5 +1023,66 @@ public class SqlFunctions : ISqlFunctions
         return template;
 
     }
+
+
+    public int CreateCurrencyBatch(CurrencyBatch currencyBatch)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+
+        //var dataRecord = record.Adapt<RecordDataModel>();
+        //dataRecord.IsActive = true;
+        try
+        {
+            int res = (int)connectionLocal.Insert<CurrencyBatch>(currencyBatch);
+            return res;
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e.Message);
+            return 0;
+        }
+    }
+    public int CreateExchangeRate(CurrencyExchangeRate currencyExchangeRate)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+
+        //var dataRecord = record.Adapt<RecordDataModel>();
+        //dataRecord.IsActive = true;
+        try
+        {
+            int res = (int)connectionLocal.Insert<CurrencyExchangeRate>(currencyExchangeRate);
+            return res;
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e.Message);
+            return 0;
+        }
+    }
+
+    public int DeleteCurrencyBatch(int currencyBatchId)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlDelete = @"delete from CurrencyBatch where CurrencyBatchId= @CurrencyBatchId";
+        var count=connectionLocal.Execute(sqlDelete, new { currencyBatchId});
+        return count;
+
+    }
+
+    public CurrencyBatch? SelectCurrencyBatch(int year,int quarter,int wave)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelect = @"select * from CurrencyBatch where year= @year and Quarter= @Quarter and Wave=@Wave";
+        var count = connectionLocal.QueryFirstOrDefault<CurrencyBatch>(sqlSelect, new { year,quarter,wave });
+        return count;
+
+    }
+
 }
 
