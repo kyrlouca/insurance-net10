@@ -48,8 +48,8 @@ public class ExcelBookCreator : IExcelBookWriter
         //Creates one sheet for every sheetDb of the documnentInstance and saves the file
         _documentId = documentId;
         _parameterData = _parameterHandler.GetParameterData();
-        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
-
+        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NDaF5cWWtCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdnWXZcdnRXRmFcVUB2WUs=");
+        
         //TestDebug();
         //return true;
 
