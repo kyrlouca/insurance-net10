@@ -91,6 +91,12 @@ public class DocumentValidator : IDocumentValidator
         //715 iso countries
         //790 count for closed table
         //648 wrong rule
+
+        var errorCount = 0;
+        var warningCount = 0;
+
+        _SqlFunctions.UpdateDocumentStatus(_documentInstance.InstanceId, "P");
+
         var xx = CreateErrorDocument();
 
 
@@ -182,6 +188,7 @@ public class DocumentValidator : IDocumentValidator
                         if (!isValidClosedRule)
                         {
                             CreateRuleError(ruleClosed, validationRule);
+                            IncrementErrorOrWarning(validationRule.Severity);
                         }
                     }
                 }
@@ -271,6 +278,7 @@ public class DocumentValidator : IDocumentValidator
                                 if (prevRowValid) Console.WriteLine("");
                                 Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
                                 CreateRuleError(ruleOpen, validationRule);
+                                IncrementErrorOrWarning(validationRule.Severity);
                                 prevRowValid = false;
                             }
                             else
@@ -332,6 +340,7 @@ public class DocumentValidator : IDocumentValidator
                         {
                             Console.WriteLine($"{validationRule.Severity} ruleId:{rule.RuleId} ");
                             CreateRuleError(rule, validationRule);
+                            IncrementErrorOrWarning(validationRule.Severity);
                         }
 
                     }
@@ -412,6 +421,7 @@ public class DocumentValidator : IDocumentValidator
                                 if (prevRowValid) Console.WriteLine("");
                                 Console.WriteLine($"{validationRule.Severity} ruleId:{validationRule.ValidationID} row:{row}");
                                 CreateRuleError(ruleOpen, validationRule);
+                                IncrementErrorOrWarning(validationRule.Severity);
                                 prevRowValid = false;
                             }
                             else
@@ -431,6 +441,8 @@ public class DocumentValidator : IDocumentValidator
 
 
         }
+        var status = errorCount == 0 ? "V" : "E";
+        _SqlFunctions.UpdateDocumentStatus(_documentInstance.InstanceId, status);
         return 1;
 
         void EvaluateSumTerms(int ruleId, List<MTable> ruleTables, RuleComponent280 ruleComponent, RuleComponent280 filterComponent, string zetValue)
@@ -450,6 +462,17 @@ public class DocumentValidator : IDocumentValidator
             {
                 var res = CalculateSumOfClosedTable(thenSeqTerm, zetValue);
                 ReplaceObjTerm(ruleComponent.ObjectTerms, thenSeqTerm.Letter, res.sum, res.sum, res.count, res.decimals);
+            }
+        }
+        void IncrementErrorOrWarning(string severity)
+        {
+            if (severity.Trim() == "Error")
+            {
+                errorCount++;
+            }
+            else
+            {
+                warningCount++;
             }
         }
     }
@@ -497,9 +520,9 @@ public class DocumentValidator : IDocumentValidator
 
     private static ObjectTerm280 CreateObjectTerm280(TemplateSheetFact? fact, string defaultValue, double sumValue, int countValue, bool IsTolerance, string filter)
     {
-        if (fact == null || (fact.FactId ==0) )
+        if (fact == null || (fact.FactId == 0))
         {
-            if( (fact?.FactId??0)  == 0)
+            if ((fact?.FactId ?? 0) == 0)
             {
                 var xxh = 32;
             }
@@ -559,7 +582,7 @@ public class DocumentValidator : IDocumentValidator
             .Select(rtm =>
             {
                 var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C);
-                fact ??= CreateFactWithDefaultValue(ruleTables, rtm);                                
+                fact ??= CreateFactWithDefaultValue(ruleTables, rtm);
                 var objectTerm = CreateObjectTerm280(fact, rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter));
 
                 var objUpd = new
