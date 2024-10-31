@@ -26,8 +26,7 @@ public class CurrencyLoader : ICurrencyLoader
     private IWorkbook? _warningWorkbook;
     private readonly ICustomPensionStyler _customStyler;
     PensionStyles _pensionStyles;
-    private string _fileName;
-
+    
     private record CurencyPairType(string Currency, double ExchangeRate);
 
     public int id = 12;
@@ -37,36 +36,28 @@ public class CurrencyLoader : ICurrencyLoader
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
-        _customStyler = customPensionStyles;
-        _fileName = _parameterData.FileName;
-
+        _customStyler = customPensionStyles;        
     }
 
     public int LoadExcelFile(string fileName)
     {
-
-
         Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
-        using var excelEngine = new ExcelEngine();
-
-
-        _fileName = _parameterData.FileName;
+        using var excelEngine = new ExcelEngine();                
 
         //(var workBook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);
-        (var workBook, var xMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, _fileName);
+        (var workBook, var xMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, _parameterData.FileName);
         if (workBook is null)
         {
-            var errorMessage = $"Cannot Read excel Workbook syncfusion file";
+            var errorMessage = $"Cannot Read exce file snc";
             _logger.Error(xMessage);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorMessage + "--" + xMessage);
             return 1;
         }
 
-
         var worksheet = workBook.Worksheets[0];
-        var values = ReadExcelCurrencyValues(worksheet);
-       
+        var values = ReadExchangeRatesFromExcelFile(worksheet);       
         
+        //delete currency batch (all exchange rates will be cascade deleted) and create a new one
         var currencyBatch = _SqlFunctions.SelectCurrencyBatch(_parameterData.ApplicableYear, _parameterData.ApplicableQuarter, _parameterData.Wave);
         _SqlFunctions.DeleteCurrencyBatch(currencyBatch?.CurrencyBatchId??-1);
         var cb = new CurrencyBatch()
@@ -77,12 +68,12 @@ public class CurrencyLoader : ICurrencyLoader
             Status="S",
             DateCreated=DateTime.Now
         };
-        var cbId =_SqlFunctions.CreateCurrencyBatch(cb);
-        var cnt = SaveExchangeRatesInDb(cbId, values);
-        return 1;
+        var currencyBatchNew =_SqlFunctions.CreateCurrencyBatch(cb);
+        var cbn = SaveExchangeRatesInDb(currencyBatchNew, values);
+        return 0;
     }
 
-    private static List<CurencyPairType> ReadExcelCurrencyValues(IWorksheet worksheet)
+    private static List<CurencyPairType> ReadExchangeRatesFromExcelFile(IWorksheet worksheet)
     {
         var clist = new List<CurencyPairType>();
         IRange? currencyLabelCell = null;
@@ -120,7 +111,6 @@ public class CurrencyLoader : ICurrencyLoader
         return clist;
     }
 
-
     private int SaveExchangeRatesInDb(int currencyBatchId, List<CurencyPairType> currencies)
     {
 
@@ -131,6 +121,5 @@ public class CurrencyLoader : ICurrencyLoader
         }
         return 0;        
     }
-
 
 }
