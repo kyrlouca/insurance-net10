@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Shared.Various;
 public class StringRoutines
 {
-    public static string JoinStringCreate(IReadOnlyList<string> strings, string separator = null)
+    public static string JoinStringCreate(IReadOnlyList<string> strings, string? separator = null)
     {
         //use this routine in place of the build in join because it is too slow        
         int totalSize = 0;
