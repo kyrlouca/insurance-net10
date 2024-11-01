@@ -2,7 +2,7 @@
   "profiles": {
     "CurrencyLoad": {
       "commandName": "Project",
-      "commandLineArgs": "eiopa-version=\"IU280\"\r\nexternal-id=1111\r\nyear=2020\r\nquarter=2\r\nwave=4\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-eforos-280\\Copy of Currency.xlsx\""
+      "commandLineArgs": "eiopa-version=\"IU280\"\r\nexternal-id=1111\r\nyear=2040\r\nquarter=4\r\nwave=4\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-eforos-280\\2089-Q1_2024_Cat1_Currency.xlsx\""
     }
   }
 }

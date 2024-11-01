@@ -78,9 +78,12 @@ public class CurrencyLoader : ICurrencyLoader
     {
         var clist = new List<CurencyPairType>();
         IRange? currencyLabelCell = null;
-        for (var i = 0; i <= worksheet.UsedRange.LastRow; i++)
+
+        
+        for (var i = 1; i <= worksheet.UsedRange.LastRow; i++)
         {
-            var row = worksheet.Rows[i];
+            var row = worksheet[i,1,i,50];
+            //var row = worksheet.Rows[i];
             if (row.IsBlank)
             {
                 continue;
@@ -97,15 +100,13 @@ public class CurrencyLoader : ICurrencyLoader
         }
 
         //.Row , .Column and LastRow are one Based
-        var startRow = currencyLabelCell.Row;//ignore the label so no need for -1
-        var startCol = currencyLabelCell.Column - 1;
+        var startRow = currencyLabelCell.Row+1;//ignore the label so no need for -1
+        var startCol = currencyLabelCell.Column;
         
-        for (var j = startRow; j < worksheet.UsedRange.LastRow; j++)
-        {
-            var row = worksheet.Rows[j];            
-            var curr = row.Cells[startCol].Text;
-            var val = row.Cells[startCol+ 1].Number;      //it will assign zero if not valid
-            
+        for (var j = startRow; j <= worksheet.UsedRange.LastRow; j++)
+        {            
+            var curr = worksheet[j,startCol].Text;
+            var val = worksheet[j,startCol+ 1].Number;      //it will assign zero if not valid            
             clist.Add(new CurencyPairType(curr, val));
         }
         clist = clist.Where(r => !string.IsNullOrWhiteSpace(r.Currency) && !double.IsNaN(r.ExchangeRate) ).ToList();
