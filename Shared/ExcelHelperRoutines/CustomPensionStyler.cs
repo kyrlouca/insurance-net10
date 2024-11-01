@@ -204,11 +204,11 @@ public class CustomPensionStyler : ICustomPensionStyler
         IStyle style;
         try
         {
-            style = Workbook.Styles[styleName];
+            style = Workbook!.Styles[styleName];
         }
         catch (Exception ex)
         {
-            style = Workbook.Styles.Add(styleName);
+            style = Workbook!.Styles.Add(styleName);
             return style;
         }
         return style;

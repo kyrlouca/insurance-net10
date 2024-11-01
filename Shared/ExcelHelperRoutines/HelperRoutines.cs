@@ -95,8 +95,8 @@ public class HelperRoutines
     public static string JoinRowCells(IRange? row)
     {
         if (row is null) { return ""; };
-        var cellList = row?.Cells.ToList().Select(a => a.Value2.ToString()) ?? new List<string>();
-        var result = StringRoutines.JoinStringCreate(cellList?.ToList(), "#");
+        var cellList = row?.Cells?.ToList()?.Select(a => a.Value2?.ToString()??"")?.ToList() ?? new List<string>();
+        var result = StringRoutines.JoinStringCreate(cellList.ToList(), "#");
         
 
         return result;
