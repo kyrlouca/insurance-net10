@@ -41,11 +41,9 @@ public class CurrencyLoader : ICurrencyLoader
 
     public int LoadExcelFile(string fileName)
     {
-        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NDaF5cWWtCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdnWXZcdnRXRmFcVUB2WUs=");
-        //Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
+        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NDaF5cWWtCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdnWXZcdnRXRmFcVUB2WUs=");        
         using var excelEngine = new ExcelEngine();                
-
-        //(var workBook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);
+        
         (var workBook, var xMessage) = HelperRoutines.OpenExistingExcelWorkbook(excelEngine, _parameterData.FileName);
         if (workBook is null)
         {
@@ -79,38 +77,45 @@ public class CurrencyLoader : ICurrencyLoader
         var clist = new List<CurencyPairType>();
         IRange? currencyLabelCell = null;
 
-        
-        for (var i = 1; i <= worksheet.UsedRange.LastRow; i++)
-        {
-            var row = worksheet[i,1,i,50];
-            //var row = worksheet.Rows[i];
-            if (row.IsBlank)
-            {
-                continue;
-            }
-            currencyLabelCell = row.Cells.FirstOrDefault(static cell => cell.Text is not null && cell.Text.ToUpper() == "CURRENCY");
-            if (currencyLabelCell is not null)
-            {
-                break;
-            }
-        }
+        currencyLabelCell = FindCurrencyCell(worksheet);
         if (currencyLabelCell is null)
         {
             return clist;
         }
 
         //.Row , .Column and LastRow are one Based
-        var startRow = currencyLabelCell.Row+1;//ignore the label so no need for -1
+        var startRow = currencyLabelCell.Row + 1;
         var startCol = currencyLabelCell.Column;
-        
+
         for (var j = startRow; j <= worksheet.UsedRange.LastRow; j++)
-        {            
-            var curr = worksheet[j,startCol].Text;
-            var val = worksheet[j,startCol+ 1].Number;      //it will assign zero if not valid            
+        {
+            var curr = worksheet[j, startCol].Text;
+            var val = worksheet[j, startCol + 1].Number;      //it will assign NaN if cell has not a valid number
             clist.Add(new CurencyPairType(curr, val));
         }
-        clist = clist.Where(r => !string.IsNullOrWhiteSpace(r.Currency) && !double.IsNaN(r.ExchangeRate) ).ToList();
+        clist = clist.Where(r => !string.IsNullOrWhiteSpace(r.Currency) && !double.IsNaN(r.ExchangeRate)).ToList();
         return clist;
+
+        static IRange? FindCurrencyCell(IWorksheet worksheet)
+        {            
+            IRange? currencyLabelCell = null;
+            for (var i = 1; i <= worksheet.UsedRange.LastRow; i++)
+            {
+                var row = worksheet[i, 1, i, 50];
+                //var row = worksheet.Rows[i];
+                if (row.IsBlank)
+                {
+                    continue;
+                }
+                currencyLabelCell = row.Cells.FirstOrDefault(static cell => cell.Text is not null && cell.Text.ToUpper() == "CURRENCY");
+                if (currencyLabelCell is not null)
+                {
+                    break;
+                }
+            }
+
+            return currencyLabelCell;
+        }
     }
 
     private int SaveExchangeRatesInDb(int currencyBatchId, List<CurencyPairType> currencies)
