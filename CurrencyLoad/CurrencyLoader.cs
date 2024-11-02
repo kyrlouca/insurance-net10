@@ -77,7 +77,7 @@ public class CurrencyLoader : ICurrencyLoader
         var clist = new List<CurencyPairType>();
         IRange? currencyLabelCell = null;
 
-        currencyLabelCell = FindCurrencyCell(worksheet);
+        currencyLabelCell = FindCurrencyLabelCell(worksheet);
         if (currencyLabelCell is null)
         {
             return clist;
@@ -96,7 +96,7 @@ public class CurrencyLoader : ICurrencyLoader
         clist = clist.Where(r => !string.IsNullOrWhiteSpace(r.Currency) && !double.IsNaN(r.ExchangeRate)).ToList();
         return clist;
 
-        static IRange? FindCurrencyCell(IWorksheet worksheet)
+        static IRange? FindCurrencyLabelCell(IWorksheet worksheet)
         {            
             IRange? currencyLabelCell = null;
             for (var i = 1; i <= worksheet.UsedRange.LastRow; i++)
