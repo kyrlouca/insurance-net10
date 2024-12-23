@@ -30,7 +30,13 @@ public class ValidatorMain : IValidatorMain
 
     public int Run()
     {
+
+        var x= _documentValidator.K_UpdateForeignKeysAllDocuments(_parameterData.ApplicableYear);
+        return 0;
+
         //module-code="qrs"
+
+        //_documentValidator.UpdateForeignKeysAllDocuments()
 
         Console.WriteLine($"started Validating Document - DocumentId:{_parameterData.DocumentId}");
 

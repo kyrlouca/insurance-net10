@@ -9,6 +9,11 @@ public enum MessageType { ERROR, INFO, COMPLETE }
 public enum MappingOrigin { Field, ColumnGeneral, Page, All };
 public interface ISqlFunctions
 {
+        public List<int> K_documentsForYear(int applicableYear);
+    public List<MTableKyrKeys> K_SelectKyrTables();
+    public List<TemplateSheetFact> K_SelectFactsByCol(int documentId, string tableCode, string col);
+    public int K_UpdateForeignKeys(int templateSheetId, string row, string rowForeign);
+
     public void CreateTransactionLog(MessageType messageType, string message);
     DocInstance? SelectDocInstance(int documentId);
     public void UpdateDocumentStatus(int documentId, string status);

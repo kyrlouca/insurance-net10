@@ -28,6 +28,63 @@ public class SqlFunctions : ISqlFunctions
 
 
 
+    public List<int> K_documentsForYear(int applicableYear)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelect = @"select doc.InstanceId from DocInstance doc where doc.ApplicableYear = @ApplicableYear ";
+                
+
+
+        var docs = connectionLocal.Query<int>(sqlSelect, new { applicableYear }).ToList();
+        return docs;
+    }
+
+    public List<MTableKyrKeys> K_SelectKyrTables()
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTable = @"select * from mTableKyrKeys tk where tk.FK_TableCode is not null and tk.FK_TableCol is not null";
+
+        var result = connectionEiopa.Query<MTableKyrKeys>(sqlTable, new { }).ToList();
+        return result;
+    }
+
+    public List<TemplateSheetFact> K_SelectFactsByCol(int documentId, string tableCode,  string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelect = @"
+                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode                  
+                  AND fact.Col= @Col                  
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+
+        
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode,  col }).ToList();
+        return facts;
+    }
+
+    public int K_UpdateForeignKeys(int templateSheetId, string row, string rowForeign)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelect = @"update  TemplateSheetFact set RowForeign= @rowForeign where TemplateSheetId = @templateSheetId and row= @row";
+
+        var facts = connectionLocal.Execute(sqlSelect, new { templateSheetId, row, rowForeign });
+        return facts;
+    }
+
+
+
+
     public void CreateTransactionLog(MessageType messageType, string message)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -1083,6 +1140,11 @@ public class SqlFunctions : ISqlFunctions
         return cb;
 
     }
+
+    
+
+
+
 
 }
 
