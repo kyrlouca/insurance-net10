@@ -2,7 +2,7 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=177\r\ncurrency-batch-id=1\r\neiopa-version=\"IU280\"\r\nmodule-code=\"qrs\"\r\nyear=2024\r\nquarter=1\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-eforos-280\\HD QRTs Q1 2024.xbrl\"",
+      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=76\r\ncurrency-batch-id=1\r\neiopa-version=\"IU280\"\r\nmodule-code=\"qrs\"\r\nyear=2024\r\nquarter=3\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-eforos-280\\ATLANTIC-76- QRTs Q3 2024.xbrl\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
         "DOTNET_ENVIRONMENT": "Develop"
