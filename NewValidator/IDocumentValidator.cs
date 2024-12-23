@@ -4,8 +4,7 @@
     {
         int ValidateDocument();
 
-        public int K_UpdateForeignKeysAllDocuments(int year);
-        
+               
         
     }
 }
