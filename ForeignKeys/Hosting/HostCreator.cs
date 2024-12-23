@@ -7,6 +7,9 @@ using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
 using Shared.ExcelHelperRoutines;
+using ForeignKeys;
+using CurrencyLoad;
+
 //using CurrencyLoad;
 
 public class HostCreator
@@ -43,8 +46,8 @@ public class HostCreator
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
              services.AddScoped<ICustomPensionStyler, CustomPensionStyler>();
-             //services.AddScoped<ICurrencyLoader, CurrencyLoader>();
-             //services.AddScoped<ICurrencyLoadMain, CurrencyLoadMain>();    
+             services.AddScoped<IUpdateForeignKeys, UpdateForeignKeys>();
+             services.AddScoped<IForeignKeyMain, ForeignKeyMain>();    
 
          })
 		.UseSerilog((hostingContext, loggerConfiguration) =>

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ForeignKeys": {
+      "commandName": "Project",
+      "commandLineArgs": "year=2023"
+    }
+  }
+}

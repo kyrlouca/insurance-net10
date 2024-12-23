@@ -15,24 +15,26 @@ using Shared.SQLFunctions;
 using System.Reflection.Metadata;
 using System.Reflection;
 using Shared.DataModels;
+using Syncfusion.XlsIO.Interfaces;
+using ForeignKeys;
 
-public class ForeignKeyMain 
+public class ForeignKeyMain : IForeignKeyMain
 {
 
     private readonly IParameterHandler _parameterHandler;
     private ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
-    //private ICurrencyLoader _currencyLoader;
+    private IUpdateForeignKeys _updateForeignKeys;
 
     public int id = 12;
-    public ForeignKeyMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
+    public ForeignKeyMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions,IUpdateForeignKeys updateForeignKeys)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
-        //_currencyLoader = currencyLoader;
+        _updateForeignKeys = updateForeignKeys;        
 
     }
 
@@ -44,9 +46,9 @@ public class ForeignKeyMain
         //module-code="qrs"
 
 
-        Console.WriteLine($"started Loading Currencies from file:{_parameterData.FileName}");
+        Console.WriteLine($"started Uupdating Keys for Year:{_parameterData.ApplicableYear}");
 
-        
+        _updateForeignKeys.UpdateForeignKeysForYear(_parameterData.ApplicableYear);
         //_currencyLoader.LoadExcelFile("a");
 
         return 0;

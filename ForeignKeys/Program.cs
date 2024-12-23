@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using CurrencyLoad;
 using ErrorFileCreator.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
@@ -28,8 +29,8 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try
 {
-    //var loadMain = host.Services.GetService<ICurrencyLoadMain>();
-    //loadMain?.Run();
+    var loadMain = host.Services.GetService<IForeignKeyMain>();
+    loadMain?.Run();
 }
 catch (Exception ex)
 {
@@ -40,7 +41,7 @@ return 0;
 
 string? CheckParams(string[] args)
 {
-    var paramNames = new[] { "eiopa-version", "external-id", "year", "quarter", "wave", "file-name" };
+    var paramNames = new[] { "year" };
     var missingParam = paramNames.FirstOrDefault(par => !args.Any(arg => arg.Contains(par)));
     return missingParam;
 }
