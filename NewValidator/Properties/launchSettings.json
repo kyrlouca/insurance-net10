@@ -2,7 +2,7 @@
   "profiles": {
     "NewValidator": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=272",
+      "commandLineArgs": "external-id=1111\r\neiopa-version=\"IU280\"\r\ndocument-id=272\r\nyear=2023",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }

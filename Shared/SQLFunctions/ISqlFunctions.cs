@@ -9,7 +9,7 @@ public enum MessageType { ERROR, INFO, COMPLETE }
 public enum MappingOrigin { Field, ColumnGeneral, Page, All };
 public interface ISqlFunctions
 {
-        public List<int> K_documentsForYear(int applicableYear);
+    public List<int> K_documentsForYear(int applicableYear);
     public List<MTableKyrKeys> K_SelectKyrTables();
     public List<TemplateSheetFact> K_SelectFactsByCol(int documentId, string tableCode, string col);
     public int K_UpdateForeignKeys(int templateSheetId, string row, string rowForeign);
@@ -21,7 +21,7 @@ public interface ISqlFunctions
     public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
     //**********sheets
     public TemplateSheetInstance? SelectTemplateSheetByZetValue(int documentId, string tableCode, string ZDimVal);
-    public TemplateSheetInstance? SelectTemplateSheetBySheetCodeZet(int documentId,string tableCode, string sheetCodeZet);
+    public TemplateSheetInstance? SelectTemplateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet);
     public List<TemplateSheetInstance> SelectTemplateSheetByTableCodeAllZets(int documentId, string tableCode);
 
     List<TemplateSheetInstance> SelectTemplateSheets(int documentId);
@@ -33,7 +33,7 @@ public interface ISqlFunctions
     public List<TemplateSheetFact> SelectFactsByColAndTextValue(int documentId, string tableCode, string col, string textValue);
     public List<TemplateSheetFact> SelectFactsBySignature(int documentId, string signature);
     public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet, string col);
-    public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col);    
+    public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col);
     public TemplateSheetFact? SelectFactByRowCol(int documentId, int sheetId, string row, string col);
     public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col);
 
@@ -47,7 +47,7 @@ public interface ISqlFunctions
     MModule? SelectModuleByCode(string moduleCode);
 
     public MMetric? SelectMMetric(string xbrlCode);
-    public MMember? SelectMMember(string domainString);    
+    public MMember? SelectMMember(string domainString);
 
     public List<MMember> SelectMMembersFromHierarchy(int hierarchyId);
     public MMember? SelectDefaultMemberFromHierarchy(int hierarchyId);
@@ -57,7 +57,7 @@ public interface ISqlFunctions
     public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, string zDimVal, MTable table);
 
     public int CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact);
-    
+
     public ContextModel? CreateContext(ContextModel context);
 
     public ContextLine? CreateContextLine(ContextLine contextLine);
@@ -78,7 +78,7 @@ public interface ISqlFunctions
 
     public List<MTableKyrKeys> SelectTableKyrKeys(string tableCode);
     public MTableKyrKeys? SelectTableKyrKey(string tableCode);
-    
+
 
     public List<TableAxisOrdinateInfoModel> SelectTableAxisOrdinateInfo(int tableId);
     public MDimensionModel? SelectDimensionByCode(string DomainCode, string DimensionCode);
@@ -89,7 +89,7 @@ public interface ISqlFunctions
 
     public enum ErrorRuleTypes { Errors, Warnings, Both };
     public List<ERROR_Rule> SelectErrorRules(int documentId, ErrorRuleTypes errorType);
-    public int CreateErrorDocument( ErrorDocumentModel errorDocument);
+    public int CreateErrorDocument(ErrorDocumentModel errorDocument);
     public MTemplateOrTable? GetTableOrTemplate(string tableCode);
 
 

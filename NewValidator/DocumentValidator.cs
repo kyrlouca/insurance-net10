@@ -896,7 +896,7 @@ public class DocumentValidator : IDocumentValidator
     }
     private int K_UpdateDocumentForeignKeys(int documentId)
     {
-
+        Console.WriteLine($"documentID:{documentId}");
         var kyrTables = _SqlFunctions.K_SelectKyrTables()
             //.Where(k => k.TableCode.Trim() == "S.06.02.01.01")
             .ToList();
@@ -907,6 +907,7 @@ public class DocumentValidator : IDocumentValidator
             var relatedSheet = sheets.FirstOrDefault(sheet => sheet.TableCode.Trim() == kyrTable.FK_TableCode.Trim());
             if (mainSheet is not null)
             {
+                Console.WriteLine($"sheet:{mainSheet.SheetCode}");
                 //find the fact in each row, with Column = mainCol
                 var mainKeyRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, mainSheet.TableCode, kyrTable.TableCol.Trim());
                 //find the fact in each row, with column =fk_Col
@@ -920,7 +921,8 @@ public class DocumentValidator : IDocumentValidator
                         var relatedRow = relatedFact.Row;
                         if (relatedRow is not null)
                         {
-                            var xx = _SqlFunctions.K_UpdateForeignKeys(mainRowFact.TemplateSheetId, mainRowFact.Row, relatedRow);
+                            var count = _SqlFunctions.K_UpdateForeignKeys(mainRowFact.TemplateSheetId, mainRowFact.Row, relatedRow);
+                            Console.WriteLine($"Updated Facts:{count}");
                         }
                     }
 
