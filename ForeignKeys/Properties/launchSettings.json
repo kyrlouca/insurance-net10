@@ -2,7 +2,7 @@
   "profiles": {
     "ForeignKeys": {
       "commandName": "Project",
-      "commandLineArgs": "year=2023"
+      "commandLineArgs": "year=2023\r\neiopa-version=\"IU280\""
     }
   }
 }
