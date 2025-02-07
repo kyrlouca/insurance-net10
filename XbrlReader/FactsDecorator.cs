@@ -402,7 +402,7 @@ public partial class FactsDecorator : IFactsDecorator
         {
              var cellSignature = tableCell.DatapointSignature;
 
-            var cellRowCol = DimUtils.ParseCellRowCol(tableCell.BusinessCode);
+            var cellRowCol = DimUtils.ParseCellRowColNew(tableCell.BusinessCode);
             if (!cellRowCol.IsValid)
             {
                 var cellMessage = $"Invalid MTableCell :cellId:{tableCell.CellID} , businessCode:{tableCell.BusinessCode}";

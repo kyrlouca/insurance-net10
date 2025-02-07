@@ -148,7 +148,7 @@ public class DimUtils
         return match.Groups[1].Value;
     }
 
-    public static CellRowColRecord ParseCellRowCol(string businessCode)
+    public static CellRowColRecord ParseCellRowColOld(string businessCode)
     {
         //For 282 they can have many columns. The first art the fucking keys. The last c is the Column
         //businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
