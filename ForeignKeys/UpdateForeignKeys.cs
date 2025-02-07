@@ -39,6 +39,11 @@ public class UpdateForeignKeys : IUpdateForeignKeys
     public int UpdateForeignKeysForYear(int year)
     {
         var documents = _SqlFunctions.K_documentsForYear(year);
+        if (_parameterData.IsDevelop)
+        {
+            documents = documents.Where(id => id == 273).ToList();
+
+        }
         foreach (var document in documents)
         {
             K_UpdateDocumentForeignKeys(document);
@@ -50,7 +55,7 @@ public class UpdateForeignKeys : IUpdateForeignKeys
     {
         Console.WriteLine($"---------- DocumentID:{documentId}");
         var kyrTables = _SqlFunctions.K_SelectKyrTables()
-            //.Where(k => k.TableCode.Trim() == "S.06.02.01.01")
+            .Where(k => k.TableCode.Trim() == "S.06.02.01.01")
             .ToList();
         var sheets = _SqlFunctions.SelectTemplateSheets(documentId);
         foreach (var kyrTable in kyrTables)
@@ -64,7 +69,7 @@ public class UpdateForeignKeys : IUpdateForeignKeys
                 var mainKeyRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, mainSheet.TableCode, kyrTable.TableCol.Trim());
                 //find the fact in each row, with column =fk_Col
                 var total = 0;
-                var relatedRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, mainSheet.TableCode, kyrTable.FK_TableCol.Trim());                
+                var relatedRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, relatedSheet?.TableCode??"", kyrTable.FK_TableCol.Trim());                
                 foreach (var mainRowFact in mainKeyRowFacts)
                 {
                     
