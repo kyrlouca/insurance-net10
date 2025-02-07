@@ -121,6 +121,14 @@ public class DocumentValidator : IDocumentValidator
                 .DistinctBy(tbl => tbl.TableID)
                 .ToList();
 
+
+            //Todo
+            //282 has introduced validations without tables (validation 135)
+            //at the moment skip those
+            if(tablesInValidation.Count == 0)
+            {
+                continue;
+            }
             var hasOnlyOpenTables = tablesInValidation.All(tbl => tbl.IsOpenTable);
             var hasOnlyClosedTables = tablesInValidation.All(tbl => !tbl.IsOpenTable);
             var hasMixedTables = tablesInValidation.Any(tbl => tbl.IsOpenTable) && tablesInValidation.Any(tbl => !tbl.IsOpenTable);

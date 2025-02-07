@@ -49,7 +49,7 @@ public class ValidatorMain : IValidatorMain
             return 1;
         }
 
-        if (doc.Status.Trim() == "P")
+        if (doc.Status.Trim() == "P" && !_parameterData.IsDevelop)
         {
             var message = $"Document currently being Processed by another User. Document Id:{doc.InstanceId}";
             _logger.Error(message);
