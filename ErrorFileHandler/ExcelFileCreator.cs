@@ -60,9 +60,8 @@ public class ExcelFileCreator : IExcelFileCreator
 
     
     private void  RenderBook(string workbookName,List<ERROR_Rule> errors, ISqlFunctions.ErrorRuleTypes errorRuleType)
-    {        
-        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NDaF5cWWtCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdnWXZcdnRXRmFcVUB2WUs=");
-
+    {
+        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWX1ed3RWR2BZVUR0WEM=");
         using var excelEngine = new ExcelEngine();
 
         (var workBook, var xMessage) = HelperRoutines.CreateExcelWorkbook(excelEngine);
