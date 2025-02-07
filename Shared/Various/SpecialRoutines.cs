@@ -150,6 +150,7 @@ public class DimUtils
 
     public static CellRowColRecord ParseCellRowCol(string businessCode)
     {
+        //For 282 they can have many columns. The first art the fucking keys. The last c is the Column
         //businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
         //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
         //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
@@ -172,6 +173,35 @@ public class DimUtils
         var isValid = !string.IsNullOrEmpty(col);
 
         return new CellRowColRecord(businessCode,tableCode, zet,row,col, isOpen, true);
+    }
+
+
+    public static CellRowColRecord ParseCellRowColNew(string businessCode)
+    {
+        //For 282 they can have many columns. The first art the fucking keys. The last c is the Column
+        //businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
+        //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
+        //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
+        //businessCode = "{S.01.02.01.02,C0070}";
+
+        var cleanRgx = new Regex(@"\{(.*)\}");
+        var match2 = cleanRgx.Match(businessCode);
+        if (!match2.Success)
+        {
+            throw (new Exception($"invalid businessCode-{businessCode}"));
+        }
+        var clean = match2.Groups[1].Value.Trim();
+        var parts= clean.Split(",");
+        var tableCode = parts[0].Trim();
+
+        var zet = parts.FirstOrDefault(pt => CommonRoutines.RegexConstants.ZetRegExP.IsMatch(pt))??"";
+        var row = parts.FirstOrDefault(pt => CommonRoutines.RegexConstants.RowRegExP.IsMatch(pt)) ?? "";
+        var cols = parts.Where(pt => CommonRoutines.RegexConstants.ColRegExP.IsMatch(pt));
+        var col = cols.LastOrDefault() ?? "";
+
+        var isOpen = string.IsNullOrEmpty(row);
+
+        return new CellRowColRecord(businessCode, tableCode, zet, row, col, isOpen, true); ;
     }
 
 

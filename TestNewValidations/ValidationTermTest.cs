@@ -48,6 +48,44 @@ public class ValidationTermTest
 
 
     [Fact]
+    public void TestParseCellRowColNew2()
+    {
+        //businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
+        //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
+        //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
+        //businessCode = "{S.01.02.01.02,C0070}";
+
+        var text4 = "{SR.06.02.01.01,NC0010}";
+        var rcr4 = DimUtils.ParseCellRowColNew(text4);//tablecode, zet,row,col, isOpen, isValid
+        var expected4 = new CellRowColRecord(text4, "SR.06.02.01.01", "", "", "NC0010", true, true);
+        Assert.Equal(expected4, rcr4);
+
+
+        var text3 = "{S.06.02.01.01,NC0010}";
+        var rcr3 = DimUtils.ParseCellRowColNew(text3);//tablecode, zet,row,col, isOpen, isValid
+        var expected3 = new CellRowColRecord(text3, "S.06.02.01.01", "", "", "NC0010", true, true);
+        Assert.Equal(expected3, rcr3);
+
+
+        var text2 = "{S.06.02.01.01,C0010}";
+        var rcr2 = DimUtils.ParseCellRowColNew(text2);//tablecode, zet,row,col, isOpen, isValid
+        var expected2 = new CellRowColRecord(text2, "S.06.02.01.01", "", "", "C0010", true, true);
+        Assert.Equal(expected2, rcr2);
+
+
+        var text1 = "{S.06.02.01.01,C0010,Z0001}";
+        var rcr1 = DimUtils.ParseCellRowColNew(text1);
+        var expected1 = new CellRowColRecord(text1, "S.06.02.01.01", "Z0001", "", "C0010", true, true);
+        Assert.Equal(expected1, rcr1);
+
+        var text = "{S.06.02.01.01,R0200,C0010,Z0001}";
+        var rcr = DimUtils.ParseCellRowColNew(text);
+        var expected0 = new CellRowColRecord(text, "S.06.02.01.01", "Z0001", "R0200", "C0010", false, true);
+        Assert.Equal(expected0, rcr);
+
+    }
+
+    [Fact]
     public void TestIfThenElse()
     {
         var text = @"if a then b else c";

@@ -5,7 +5,8 @@ using System.Linq;
 using NewValidator.ValidationClasses;
 using System.Xml.Schema;
 using ExcelWriter.ExcelDataModels;
-
+var businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
+var xx =DimUtils.ParseCellRowColNew(businessCode);
 //var expression = "X00 + X01";
 var expression = ")";
 
