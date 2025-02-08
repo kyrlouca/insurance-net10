@@ -956,14 +956,14 @@ public class SqlFunctions : ISqlFunctions
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlSelect = @"
-            select 
+    select 
 	            dim.*
             from 
 	            mDimension dim	
 	            join mDomain dom  on dim.DomainID=dom.DomainID
             where 
                 dom.DomainCode= @DomainCode
-	            and dim.DimensionCode= @DimensionCode
+	            and dim.DimensionCode= @DimensionCode        
         ";
         var res = connectionEiopa.QuerySingleOrDefault<MDimensionModel>(sqlSelect, new { DomainCode, DimensionCode });
         return res;
