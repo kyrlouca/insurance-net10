@@ -107,12 +107,20 @@ public class DocumentValidator : IDocumentValidator
 
 
         //************************************************************* Exempt
-        var exempted = new[] { 0 };
-        validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         if (_parameterData.IsDevelop && 1 == 2)
         {
-            validationRules = validationRules.Where(vr => vr.ValidationID == 706).ToList();
+            var exempted = new[] { 0 };
+            validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         }
+        var testingId = 0;
+        testingId = 1678;
+        if (_parameterData.IsDevelop && testingId>0)
+        {
+            validationRules = validationRules.Where(vr => vr.ValidationID == testingId).ToList();
+        }
+
+        //************************************************************* testing
+        
 
         foreach (var validationRule in validationRules)
         {
@@ -833,8 +841,8 @@ public class DocumentValidator : IDocumentValidator
             SheetCode = "",
             RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
             ShortLabel = RegexUtils.TruncateString(validationRule.ShortLabel, 900),
-            IsWarning = validationRule.Severity.Trim() == "Warning",
-            IsError = validationRule.Severity.Trim() == "Error",
+            IsWarning = validationRule.Severity.Trim().ToUpper() == "WARNING",
+            IsError = validationRule.Severity.Trim().ToUpper ()== "ERROR",
             IsDataError = false,
 
             FormulaForIf = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.IfComponent), 800),
