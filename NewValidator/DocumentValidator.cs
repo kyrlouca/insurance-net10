@@ -113,7 +113,7 @@ public class DocumentValidator : IDocumentValidator
             validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         }
         var testingId = 0;
-        testingId = 1678;
+        //testingId = 1678;
         if (_parameterData.IsDevelop && testingId>0)
         {
             validationRules = validationRules.Where(vr => vr.ValidationID == testingId).ToList();
