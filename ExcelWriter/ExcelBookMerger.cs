@@ -48,7 +48,7 @@ public class ExcelBookMerger : IExcelBookMerger
         _SqlFunctions = sqlFunctions;
         _customPensionStyles = customPensionStyles;
     }
-    public bool MergeTables(int documentId, string sourceFile, string destFile) 
+    public bool MergeTables(int documentId, string sourceFile, string destFile)
     {
         _documentId = documentId;
         _documentInstance = _SqlFunctions.SelectDocInstance(_documentId)!;
@@ -95,7 +95,7 @@ public class ExcelBookMerger : IExcelBookMerger
         //
 
         var indexList = new IndexSheetList("List", new List<IndexSheetListItem>());
-               
+
 
         var newTableGroupsFromEiopa = CreateTableGroupsForModule(_documentInstance.ModuleCode, _documentInstance.ModuleId);
         var newSingePageBreakdownListNew = newTableGroupsFromEiopa
@@ -115,15 +115,15 @@ public class ExcelBookMerger : IExcelBookMerger
         {
             var debugFilterList = Array.Empty<string>();
             //var filterList = new[] { "S.04.04.01.01" };
-            if(!debugFilterList.IsNullOrEmpty())
+            if (!debugFilterList.IsNullOrEmpty())
             {
                 tableGroupList = tableGroupList.Where(tg => debugFilterList.Contains(tg.TemplateCode)).ToList();
                 Console.WriteLine("Develop and filtering Merge");
             }
-            
-            
+
+
         }
-        
+
 
         ///////////////////////
         var s6Zet = "";
@@ -142,7 +142,7 @@ public class ExcelBookMerger : IExcelBookMerger
             {
                 distinctBlZets.Add("");
             }
-            
+
             var specialTemplateLayout = SpecialTemplateList.FindSpecialTemplateLayoutByCodeNew(tableGroup.TemplateCode);
 
 
@@ -156,9 +156,9 @@ public class ExcelBookMerger : IExcelBookMerger
             {
                 line++;
                 //use the specialTemplateLayout if is  found in the static list, otherwise create one using the tables in the table group
-                if(specialTemplateLayout is not null)
+                if (specialTemplateLayout is not null)
                 {
-                    var xx=3;
+                    var xx = 3;
                 }
                 var zetTemplateLayout = specialTemplateLayout is null
                     ? ToZetTemplateLayout(tableGroup, blZet)
@@ -174,7 +174,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 zetTemplateLayout.SheetName = specialSheetName;
 
 
-                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(zetTemplateLayout.TemplateDescription,blZet);
+                zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(zetTemplateLayout.TemplateDescription, blZet);
                 (var isRendered, var sheet) = RenderOneZetSheet(zetTemplateLayout);
                 if (isRendered)
                 {
@@ -219,10 +219,10 @@ public class ExcelBookMerger : IExcelBookMerger
         return true;
 
 
-        string BuildMergedTableDescription(string templateDescription,string zetBlCode)
+        string BuildMergedTableDescription(string templateDescription, string zetBlCode)
         {
 
-            var dimDomZet = DimDom.GetParts(zetBlCode)?.DomAndValRaw??"" ;            
+            var dimDomZet = DimDom.GetParts(zetBlCode)?.DomAndValRaw ?? "";
             var label = _SqlFunctions.SelectMMember(dimDomZet)?.MemberLabel ?? "";
 
             var templateDesciption = string.IsNullOrEmpty(label)
@@ -230,7 +230,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 : $"{templateDescription.Trim()} -- {label}";
             return templateDesciption;
         }
-        
+
         string ExtractZetForBusinessLine(string zetVal)
         {
             var xx = zetVal.Split("|", StringSplitOptions.RemoveEmptyEntries)
@@ -247,10 +247,10 @@ public class ExcelBookMerger : IExcelBookMerger
         //A template bundle defines a layout ( a list of horizontal lines where each line contains many sheets)
         //populate the special template layout with the sheets of the specified sheetCodeZet
 
-        
+
 
         var tableMatrix = tableGroup.TableCodes
-            .Select(tableCode => new HorizontalLine( CreateExtensiveInfoForSheetsWithThisBLdimension(tableCode, sheetCodeZet, true) ))
+            .Select(tableCode => new HorizontalLine(CreateExtensiveInfoForSheetsWithThisBLdimension(tableCode, sheetCodeZet, true)))
             .ToList();
 
 
@@ -321,8 +321,8 @@ public class ExcelBookMerger : IExcelBookMerger
         else
         {
             var dbSheets = _SqlFunctions.SelectTemplateSheetByTableCodeAllZets(_documentId, tableCode);
-                                           
-                 dbSheet= dbSheets.FirstOrDefault(sh => sh.ZDimVal.Contains(bLdimension));
+
+            dbSheet = dbSheets.FirstOrDefault(sh => sh.ZDimVal.Contains(bLdimension));
 
         }
 
@@ -349,8 +349,8 @@ public class ExcelBookMerger : IExcelBookMerger
             dbSheets = dbSheets.Where(sh => sh.ZDimVal.Contains(blDimension)).ToList();
 
         }
-      
-        var worksheets  = dbSheets.Select(dbSheet=>  SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""]);
+
+        var worksheets = dbSheets.Select(dbSheet => SourceWorkbook?.Worksheets[dbSheet?.SheetTabName?.Trim() ?? ""]);
         var tableDesc = _SqlFunctions.SelectTable(tableCode)?.TableLabel ?? "";
         var infos = dbSheets.Select(dbSheet =>
         {
@@ -416,21 +416,21 @@ public class ExcelBookMerger : IExcelBookMerger
                 }
 
                 var sheetLastRow = srcWorksheet.Rows.Last().LastRow;
-               var sheetLastColOld = srcWorksheet.Columns.Last().LastColumn;
-                
+                var sheetLastColOld = srcWorksheet.Columns.Last().LastColumn;
+
                 var dataRangeName = $"{srcWorksheet.Name.Trim()}_data";
-                var dataRangeNameObject = srcWorksheet.Workbook!.Names[dataRangeName];                
+                var dataRangeNameObject = srcWorksheet.Workbook!.Names[dataRangeName];
                 var dataRange = dataRangeNameObject.RefersToRange;
                 var sheetLastCol = dataRange.LastColumn;
 
-                
+
 
                 var copyRange = srcWorksheet.Range[1, 1, sheetLastRow, sheetLastCol];
                 var dCol = OffesetHORIZONTAL + sheetLastCol + 1;
                 var dRow = offsetVERTICAL + sheetLastRow;
                 var destRange = destSheet.Range[offsetVERTICAL, OffesetHORIZONTAL, offsetVERTICAL + sheetLastRow - 1, OffesetHORIZONTAL + sheetLastCol - 1];
 
-                copyRange.CopyTo(destRange,ExcelCopyRangeOptions.All);
+                copyRange.CopyTo(destRange, ExcelCopyRangeOptions.All);
 
                 //save the ranges of the dest
                 SaveDestDataName(destSheet, offsetVERTICAL, OffesetHORIZONTAL, srcWorksheet);
@@ -449,7 +449,7 @@ public class ExcelBookMerger : IExcelBookMerger
         static void FormatTableColumnsWidth(bool isOpenTable, IWorksheet worksheet, IRange destRange)
         {
             IRange rowLabelCell = destRange["A1"];
-            var rowRgxN = new Regex(@"^R\d{4}",RegexOptions.Compiled);
+            var rowRgxN = new Regex(@"^R\d{4}", RegexOptions.Compiled);
             var colRgxN = new Regex(@"^C\d{4}", RegexOptions.Compiled);
             if (isOpenTable)
             {
@@ -631,9 +631,16 @@ public class ExcelBookMerger : IExcelBookMerger
         var s62InCombined = sCombinedWorksheet.Range[last.Row, last.Column + 1, last.Row, last.Column + 20];
         var cellx = s62InCombined.Cells.FirstOrDefault(cell => Regex.IsMatch(cell.Value, @"C\d{4}"));
 
+
+        //fuck 99. They changed the position of column C0040 which has the ISIN
+        var rowOfColumns = S61DataRange!.Rows.First();
+        var keyColumn = rowOfColumns.Cells.FirstOrDefault(cc => cc.Text == "C0040")?.Column ?? throw new Exception("Cannot Find the C0040 column which contains the key");
+        var rangeKeyColumn  = keyColumn - rowOfColumns.Cells.FirstOrDefault()!.Column;
+
         foreach (var s61row in S61DataRange!.Rows.Skip(1))
         {
             var key = s61row.Columns[1].Value ?? "";
+            key = s61row.Columns[rangeKeyColumn].Value ?? "";
             var s62xRow = Find62Row(S62DataRange, key);
             if (s62xRow is null)
             {

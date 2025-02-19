@@ -41,7 +41,7 @@ public class UpdateForeignKeys : IUpdateForeignKeys
         var documents = _SqlFunctions.K_documentsForYear(year);
         if (_parameterData.IsDevelop)
         {
-            documents = documents.Where(id => id == 273).ToList();
+            documents = documents.Where(id => id == 278).ToList();
 
         }
         foreach (var document in documents)

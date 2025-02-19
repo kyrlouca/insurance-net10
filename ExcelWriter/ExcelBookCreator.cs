@@ -38,7 +38,6 @@ public class ExcelBookCreator : IExcelBookWriter
         _logger = logger;
         _SqlFunctions = sqlFunctions;
         _customPensionStyler = customPensionStyles;
-
     }
 
 
