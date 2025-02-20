@@ -1187,7 +1187,104 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public int CreateCombinedFacts(int documentId)
+    {
+        var sqlInsert = @"
+WITH S61c40 AS
+(
+   SELECT
+      Factt1.Instanceid,
+      Factt1.Templatesheetid,
+      Factt1.Row,
+      Factt1.Rowforeign
+   FROM
+      Dbo.Templatesheetfact AS Factt1
+   INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+      ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+      AND Sheett1.Instanceid = Factt1.Instanceid
+   WHERE
+      Sheett1.Tablecode = 'S.06.02.01.01'
+      AND Factt1.Col = 'C0002'
+      AND Factt1.Row = 'R0001'
+      AND Sheett1.InstanceId = @DocumentId
+),
+S62 AS
+(
+   SELECT
+      Factt1.Instanceid,
+      Factt1.Templatesheetid,
+      Factt1.Row,
+      Factt1.Col,
+      Factt1.Textvalue,
+      Factt1.Numericvalue,
+      Factt1.Datetimevalue
+   FROM
+      Dbo.Templatesheetfact AS Factt1
+   INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+      ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+      AND Sheett1.Instanceid = Factt1.Instanceid
+   INNER JOIN S61c40 
+      ON S61c40.Instanceid = Sheett1.Instanceid
+      AND S61c40.Rowforeign = Factt1.Row      
+   WHERE
+      Sheett1.Tablecode = 'S.06.02.01.02'
+      AND Factt1.Instanceid = S61c40.Instanceid
+      AND Sheett1.InstanceId = @DocumentId
+)
 
+INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
+SELECT 
+   S61c40.Instanceid, 
+   S61c40.Templatesheetid, 
+   S61c40.Row, 
+   S62.Col, 
+   S62.Textvalue, 
+   S62.Numericvalue, 
+   S62.Datetimevalue, 
+   '' -- Setting CurrencyDim to an empty string
+FROM S61c40
+LEFT JOIN S62 
+   ON S62.Instanceid = S61c40.Instanceid
+   AND S62.Row = S61c40.Rowforeign
+
+UNION
+
+SELECT 
+   Factt1.Instanceid, 
+   Factt1.Templatesheetid, 
+   Factt1.Row, 
+   Factt1.Col, 
+   Factt1.Textvalue, 
+   Factt1.Numericvalue, 
+   Factt1.Datetimevalue, 
+   '' -- Setting CurrencyDim to an empty string
+FROM Dbo.Templatesheetfact AS Factt1
+INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+   ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+WHERE 
+   Sheett1.Tablecode = 'S.06.02.01.01'
+   AND Sheett1.InstanceId = @DocumentId
+  
+   AND Factt1.Row = 'R0001';
+GO
+
+";
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        try
+        {
+            var facts = connectionLocal.Execute(sqlInsert, new { documentId });
+            return facts;
+        }
+        catch (Exception e) { 
+            _logger.Error(e.Message);
+            Console.Write(e.Message);
+        }
+        
+
+
+        return 0;
+    }
 
 
 

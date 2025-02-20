@@ -73,8 +73,8 @@ public class CreateSheetAndFacts
             TextValue = "abc",
             Row="RRRR"
         };
-        var xx= _SqlFunctions.CreateTemplateSheetFact(fact);
-
+        //var xx= _SqlFunctions.CreateTemplateSheetFact(fact);
+        var xx=_SqlFunctions.cre
         return id;
     }
     
