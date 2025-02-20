@@ -5,6 +5,9 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Shared.HostParameters;
 using Shared.SharedHost;
+using Shared.CommonRoutines;
+using ExcelWriter.ExcelDataModels;
+using Shared.ExcelHelperRoutines;
 using Shared.SQLFunctions;
 
 public class HostCreator
@@ -43,7 +46,7 @@ public class HostCreator
 			 services.AddScoped<IExcelBookWriter,ExcelBookCreator>();
 			 services.AddScoped<IExcelBookDataFiller, ExcelBookDataFiller>();
 			 services.AddScoped<IExcelBookMerger, ExcelBookMerger>();
-			 services.AddScoped<IWriterMainApp, WriterMainApp>();
+			 services.AddScoped<IExcelWriterMainApp, WriterMainApp>();
              services.AddScoped<ICustomPensionStyler, CustomPensionStyler>();
          })
 		.UseSerilog((hostingContext, loggerConfiguration) =>

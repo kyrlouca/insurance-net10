@@ -15,7 +15,7 @@ public class ReaderMainApp : IReaderMainApp
     private readonly IFactsDecorator _factsDecorator;
 
 
-    public int id = 12;
+    public int id = 279;
     public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator, IFactsDecorator factsDecorator)
     {
         _parameterHandler = getParameters;
@@ -29,44 +29,52 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 9;
-        var filingsSubmitted = new List<string>()
+        var _documentId = 279;
+        var filingsSubmitted = new List<string>();
+        var filingsSubmittedxx = new List<string>()
         {
-            "S.01.01",
-            "S.01.02",
-            "S.02.01",
-            "S.05.01",
-            "S.06.01",
-            "S.06.02",
-            "S.06.03",
-            "S.08.01",
-            "S.12.01",
-            "S.17.01",
-            "S.23.01",
-            "S.28.01",
-            "S.28.02",
+    "S.01.01",
+    "S.01.02",
+    "S.02.01",
+    "S.05.01",
+    "S.06.02",
+    "S.06.04",
+    "S.09.01",
+    "S.14.02",
+    "S.17.01",
+    "S.17.03",
+    "S.18.01",
+    "S.19.01",
+    "S.20.01",
+    "S.21.01",
+    "S.21.02",
+    "S.21.03",
+    "S.23.01",
+    "S.23.02",
+    "S.23.03",
+    "S.23.04",
+    "S.25.01",
+    "S.26.01",
+    "S.26.02",
+    "S.26.04",
+    "S.26.05",
+    "S.26.06",
+    "S.27.01",
+    "S.28.01",
+    "S.29.01",
+    "S.29.02",
+    "S.29.03",
+    "S.29.04",
+    "S.30.01",
+    "S.30.02",
+    "S.30.03",
+    "S.30.04",
+    "S.31.01",
 
         };
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
-
-
-        var filingsSubmitted3 = new List<string>()
-        {
-
-            "S.01.01",
-            "S.01.02",
-            "S.02.01",
-            "S.04.01",
-            "S.05.01",
-            "S.06.02",
-            "S.06.03",
-            "S.17.01",
-            "S.23.01",
-            "S.28.01",
-        };
-
-        if (1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -77,19 +85,19 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
-            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
+            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
             if (_documentId == 0)
             {
                 return 1;
             }
         }
 
-        
-        if (1 == 1)
+
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
-            var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
+            var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId,filingsSubmitted);
             if (res != 0)
             {
                 return res;

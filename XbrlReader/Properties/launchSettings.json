@@ -2,11 +2,9 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=98\r\ncurrency-batch-id=1\r\neiopa-version=\"IU280\"\r\nmodule-code=\"qrs\"\r\nyear=2023\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\soft\\dotnet\\insurance-project\\TestingXbrl280\\Eurolife Ltd-98-Q4 23.xbrl\"",
+      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=76\r\ncurrency-batch-id=1\r\neiopa-version=\"IU282\"\r\nmodule-code=\"qrs\"\r\nyear=2024\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-282\\Atlantic QRTs Q4 2024.xbrl\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
-        "Default": "MyDef",
-        "ConnectionStrings:PrimaryDatabaseConnection": "pdc",
         "DOTNET_ENVIRONMENT": "Develop"
       }
     },

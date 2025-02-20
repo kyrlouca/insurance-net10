@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿  // See https://aka.ms/new-console-template for more information
 using NewValidator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
@@ -11,7 +11,7 @@ var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
     //todo may need to change this
-    var sample = @".\NewValidator.exe external-id=12  eiopa-version=IU270  ";
+    var sample = @".\Validator.exe external-id=12 document-id=12 eiopa-version=IU280";
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
     Console.WriteLine(sample);
     throw new ArgumentException($"parameter missing:{missingParam}");
@@ -27,7 +27,7 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try
 {
-    host.Services.GetService<INewValidatorMain>()?.Run();
+    host.Services.GetService<IValidatorMain>()?.Run();
 }
 catch (Exception ex)
 {

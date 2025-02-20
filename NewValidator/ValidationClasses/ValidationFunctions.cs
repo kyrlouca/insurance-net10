@@ -1,20 +1,1001 @@
-﻿using Microsoft.Extensions.FileSystemGlobbing.Internal;
-using Shared.CommonRoutines;
-using Shared.GeneralUtils;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Z.Expressions;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace NewValidator.ValidationClasses;
 internal class ValidationFunctions
 {
-    public static bool ValidateMatch(string text)
+    private static List<string> euCountries377 = new List<string>() {
+        "s2c_GA:AT",
+        "s2c_GA:BE",
+        "s2c_GA:BG",
+        "s2c_GA:CY",
+        "s2c_GA:CZ",
+        "s2c_GA:DE",
+        "s2c_GA:DK",
+        "s2c_GA:EE",
+        "s2c_GA:ES",
+        "s2c_GA:FI",
+        "s2c_GA:FR",
+        "s2c_GA:GB",
+        "s2c_GA:GI",
+        "s2c_GA:GR",
+        "s2c_GA:HR",
+        "s2c_GA:HU",
+        "s2c_GA:IE",
+        "s2c_GA:IS",
+        "s2c_GA:IT",
+        "s2c_GA:LI",
+        "s2c_GA:LT",
+        "s2c_GA:LU",
+        "s2c_GA:LV",
+        "s2c_GA:MT",
+        "s2c_GA:NL",
+        "s2c_GA:NO",
+        "s2c_GA:PL",
+        "s2c_GA:PT",
+        "s2c_GA:RO",
+        "s2c_GA:SE",
+        "s2c_GA:SI",
+        "s2c_GA:SK",
+        "s2c_GA:x0",        
+    };
+
+    private static List<string> xaSupranationalCountries392 = new List<string>()
+    {
+                "s2c_GA:BE",
+                "s2c_GA:BG",
+                "s2c_GA:BR",
+                "s2c_GA:CA",
+                "s2c_GA:CH",
+                "s2c_GA:CN",
+                "s2c_GA:CY",
+                "s2c_GA:CZ",
+                "s2c_GA:AT",
+                "s2c_GA:DE",
+                "s2c_GA:DK",
+                "s2c_GA:EE",
+                "s2c_GA:ES",
+                "s2c_GA:EU",
+                "s2c_GA:FI",
+                "s2c_GA:FR",
+                "s2c_GA:GB",
+                "s2c_GA:GR",
+                "s2c_GA:HK",
+                "s2c_GA:HR",
+                "s2c_GA:HU",
+                "s2c_GA:IE",
+                "s2c_GA:IN",
+                "s2c_GA:IT",
+                "s2c_GA:JP",
+                "s2c_GA:LT",
+                "s2c_GA:LU",
+                "s2c_GA:LV",
+                "s2c_GA:MT",
+                "s2c_GA:NL",
+                "s2c_GA:PL",
+                "s2c_GA:PT",
+                "s2c_GA:RO",
+                "s2c_GA:RU",
+                "s2c_GA:SE",
+                "s2c_GA:SI",
+                "s2c_GA:SK",
+                "s2c_GA:US",
+                "s2c_GA:x0",
+                "s2c_GA:x24",
+                "s2c_GA:x6000",
+                "s2c_GA:x6001",
+                "s2c_GA:x6002",
+                "s2c_GA:x79",
+                "s2c_GA:x80",
+                "s2c_GA:XA"
+    };
+    private static List<string> aaCountries380 = new List<string>()
+    {
+        "s2c_GA:AA",
+            "s2c_GA:AD",
+            "s2c_GA:AE",
+            "s2c_GA:AF",
+            "s2c_GA:AG",
+            "s2c_GA:AI",
+            "s2c_GA:AL",
+            "s2c_GA:AM",
+            "s2c_GA:AO",
+            "s2c_GA:AQ",
+            "s2c_GA:AR",
+            "s2c_GA:AS",
+            "s2c_GA:AT",
+            "s2c_GA:AU",
+            "s2c_GA:AW",
+            "s2c_GA:AX",
+            "s2c_GA:AZ",
+            "s2c_GA:BA",
+            "s2c_GA:BB",
+            "s2c_GA:BD",
+            "s2c_GA:BE",
+            "s2c_GA:BF",
+            "s2c_GA:BG",
+            "s2c_GA:BH",
+            "s2c_GA:BI",
+            "s2c_GA:BJ",
+            "s2c_GA:BL",
+            "s2c_GA:BM",
+            "s2c_GA:BN",
+            "s2c_GA:BO",
+            "s2c_GA:BQ",
+            "s2c_GA:BR",
+            "s2c_GA:BS",
+            "s2c_GA:BT",
+            "s2c_GA:BV",
+            "s2c_GA:BW",
+            "s2c_GA:BY",
+            "s2c_GA:BZ",
+            "s2c_GA:CA",
+            "s2c_GA:CC",
+            "s2c_GA:CD",
+            "s2c_GA:CF",
+            "s2c_GA:CG",
+            "s2c_GA:CH",
+            "s2c_GA:CI",
+            "s2c_GA:CK",
+            "s2c_GA:CL",
+            "s2c_GA:CM",
+            "s2c_GA:CN",
+            "s2c_GA:CO",
+            "s2c_GA:CR",
+            "s2c_GA:CU",
+            "s2c_GA:CV",
+            "s2c_GA:CW",
+            "s2c_GA:CX",
+            "s2c_GA:CY",
+            "s2c_GA:CZ",
+            "s2c_GA:DE",
+            "s2c_GA:DJ",
+            "s2c_GA:DK",
+            "s2c_GA:DM",
+            "s2c_GA:DO",
+            "s2c_GA:DZ",
+            "s2c_GA:EC",
+            "s2c_GA:EE",
+            "s2c_GA:EG",
+            "s2c_GA:EH",
+            "s2c_GA:ER",
+            "s2c_GA:ES",
+            "s2c_GA:ET",
+            "s2c_GA:EU",
+            "s2c_GA:FI",
+            "s2c_GA:FJ",
+            "s2c_GA:FK",
+            "s2c_GA:FM",
+            "s2c_GA:FO",
+            "s2c_GA:FR",
+            "s2c_GA:GA",
+            "s2c_GA:GB",
+            "s2c_GA:GD",
+            "s2c_GA:GE",
+            "s2c_GA:GF",
+            "s2c_GA:GG",
+            "s2c_GA:GH",
+            "s2c_GA:GI",
+            "s2c_GA:GL",
+            "s2c_GA:GM",
+            "s2c_GA:GN",
+            "s2c_GA:GP",
+            "s2c_GA:GQ",
+            "s2c_GA:GR",
+            "s2c_GA:GS",
+            "s2c_GA:GT",
+            "s2c_GA:GU",
+            "s2c_GA:GW",
+            "s2c_GA:GY",
+            "s2c_GA:HK",
+            "s2c_GA:HM",
+            "s2c_GA:HN",
+            "s2c_GA:HR",
+            "s2c_GA:HT",
+            "s2c_GA:HU",
+            "s2c_GA:ID",
+            "s2c_GA:IE",
+            "s2c_GA:IL",
+            "s2c_GA:IM",
+            "s2c_GA:IN",
+            "s2c_GA:IO",
+            "s2c_GA:IQ",
+            "s2c_GA:IR",
+            "s2c_GA:IS",
+            "s2c_GA:IT",
+            "s2c_GA:JE",
+            "s2c_GA:JM",
+            "s2c_GA:JO",
+            "s2c_GA:JP",
+            "s2c_GA:KE",
+            "s2c_GA:KG",
+            "s2c_GA:KH",
+            "s2c_GA:KI",
+            "s2c_GA:KM",
+            "s2c_GA:KN",
+            "s2c_GA:KP",
+            "s2c_GA:KR",
+            "s2c_GA:KW",
+            "s2c_GA:KY",
+            "s2c_GA:KZ",
+            "s2c_GA:LA",
+            "s2c_GA:LB",
+            "s2c_GA:LC",
+            "s2c_GA:LI",
+            "s2c_GA:LK",
+            "s2c_GA:LR",
+            "s2c_GA:LS",
+            "s2c_GA:LT",
+            "s2c_GA:LU",
+            "s2c_GA:LV",
+            "s2c_GA:LY",
+            "s2c_GA:MA",
+            "s2c_GA:MC",
+            "s2c_GA:MD",
+            "s2c_GA:ME",
+            "s2c_GA:MF",
+            "s2c_GA:MG",
+            "s2c_GA:MH",
+            "s2c_GA:MK",
+            "s2c_GA:ML",
+            "s2c_GA:MM",
+            "s2c_GA:MN",
+            "s2c_GA:MO",
+            "s2c_GA:MP",
+            "s2c_GA:MQ",
+            "s2c_GA:MR",
+            "s2c_GA:MS",
+            "s2c_GA:MT",
+            "s2c_GA:MU",
+            "s2c_GA:MV",
+            "s2c_GA:MW",
+            "s2c_GA:MX",
+            "s2c_GA:MY",
+            "s2c_GA:MZ",
+            "s2c_GA:NA",
+            "s2c_GA:NC",
+            "s2c_GA:NE",
+            "s2c_GA:NF",
+            "s2c_GA:NG",
+            "s2c_GA:NI",
+            "s2c_GA:NL",
+            "s2c_GA:NO",
+            "s2c_GA:NP",
+            "s2c_GA:NR",
+            "s2c_GA:NU",
+            "s2c_GA:NZ",
+            "s2c_GA:OM",
+            "s2c_GA:PA",
+            "s2c_GA:PE",
+            "s2c_GA:PF",
+            "s2c_GA:PG",
+            "s2c_GA:PH",
+            "s2c_GA:PK",
+            "s2c_GA:PL",
+            "s2c_GA:PM",
+            "s2c_GA:PN",
+            "s2c_GA:PR",
+            "s2c_GA:PS",
+            "s2c_GA:PT",
+            "s2c_GA:PW",
+            "s2c_GA:PY",
+            "s2c_GA:QA",
+            "s2c_GA:RE",
+            "s2c_GA:RO",
+            "s2c_GA:RS",
+            "s2c_GA:RU",
+            "s2c_GA:RW",
+            "s2c_GA:SA",
+            "s2c_GA:SB",
+            "s2c_GA:SC",
+            "s2c_GA:SD",
+            "s2c_GA:SE",
+            "s2c_GA:SG",
+            "s2c_GA:SH",
+            "s2c_GA:SI",
+            "s2c_GA:SJ",
+            "s2c_GA:SK",
+            "s2c_GA:SL",
+            "s2c_GA:SM",
+            "s2c_GA:SN",
+            "s2c_GA:SO",
+            "s2c_GA:SR",
+            "s2c_GA:SS",
+            "s2c_GA:ST",
+            "s2c_GA:SV",
+            "s2c_GA:SX",
+            "s2c_GA:SY",
+            "s2c_GA:SZ",
+            "s2c_GA:TC",
+            "s2c_GA:TD",
+            "s2c_GA:TF",
+            "s2c_GA:TG",
+            "s2c_GA:TH",
+            "s2c_GA:TJ",
+            "s2c_GA:TK",
+            "s2c_GA:TL",
+            "s2c_GA:TM",
+            "s2c_GA:TN",
+            "s2c_GA:TO",
+            "s2c_GA:TR",
+            "s2c_GA:TT",
+            "s2c_GA:TV",
+            "s2c_GA:TW",
+            "s2c_GA:TZ",
+            "s2c_GA:UA",
+            "s2c_GA:UG",
+            "s2c_GA:UM",
+            "s2c_GA:US",
+            "s2c_GA:UY",
+            "s2c_GA:UZ",
+            "s2c_GA:VA",
+            "s2c_GA:VC",
+            "s2c_GA:VE",
+            "s2c_GA:VG",
+            "s2c_GA:VI",
+            "s2c_GA:VN",
+            "s2c_GA:VU",
+            "s2c_GA:WF",
+            "s2c_GA:WS",
+            "s2c_GA:x0",
+            "s2c_GA:x112",
+            "s2c_GA:x113",
+            "s2c_GA:x114",
+            "s2c_GA:XA",
+            "s2c_GA:XK",
+            "s2c_GA:YE",
+            "s2c_GA:YT",
+            "s2c_GA:ZA",
+            "s2c_GA:ZM",
+            "s2c_GA:ZW",
+    };
+    private static List<string> allCountries363 = new List<string>()
+    {
+"s2c_GA:AE",
+"s2c_GA:AD",
+"s2c_GA:AF",
+"s2c_GA:AG",
+"s2c_GA:AI",
+"s2c_GA:AL",
+"s2c_GA:AM",
+"s2c_GA:AO",
+"s2c_GA:AQ",
+"s2c_GA:AR",
+"s2c_GA:AS",
+"s2c_GA:AT",
+"s2c_GA:AU",
+"s2c_GA:AW",
+"s2c_GA:AX",
+"s2c_GA:AZ",
+"s2c_GA:BA",
+"s2c_GA:BB",
+"s2c_GA:BD",
+"s2c_GA:BE",
+"s2c_GA:BF",
+"s2c_GA:BG",
+"s2c_GA:BH",
+"s2c_GA:BI",
+"s2c_GA:BJ",
+"s2c_GA:BL",
+"s2c_GA:BM",
+"s2c_GA:BN",
+"s2c_GA:BO",
+"s2c_GA:BQ",
+"s2c_GA:BR",
+"s2c_GA:BS",
+"s2c_GA:BT",
+"s2c_GA:BV",
+"s2c_GA:BW",
+"s2c_GA:BY",
+"s2c_GA:BZ",
+"s2c_GA:CA",
+"s2c_GA:CC",
+"s2c_GA:CD",
+"s2c_GA:CF",
+"s2c_GA:CG",
+"s2c_GA:CH",
+"s2c_GA:CI",
+"s2c_GA:CK",
+"s2c_GA:CL",
+"s2c_GA:CM",
+"s2c_GA:CN",
+"s2c_GA:CO",
+"s2c_GA:CR",
+"s2c_GA:CU",
+"s2c_GA:CV",
+"s2c_GA:CW",
+"s2c_GA:CX",
+"s2c_GA:CY",
+"s2c_GA:CZ",
+"s2c_GA:DE",
+"s2c_GA:DJ",
+"s2c_GA:DK",
+"s2c_GA:DM",
+"s2c_GA:DO",
+"s2c_GA:DZ",
+"s2c_GA:EC",
+"s2c_GA:EE",
+"s2c_GA:EG",
+"s2c_GA:EH",
+"s2c_GA:ER",
+"s2c_GA:ES",
+"s2c_GA:ET",
+"s2c_GA:FI",
+"s2c_GA:FJ",
+"s2c_GA:FK",
+"s2c_GA:FM",
+"s2c_GA:FO",
+"s2c_GA:FR",
+"s2c_GA:GA",
+"s2c_GA:GB",
+"s2c_GA:GD",
+"s2c_GA:GE",
+"s2c_GA:GF",
+"s2c_GA:GG",
+"s2c_GA:GH",
+"s2c_GA:GI",
+"s2c_GA:GL",
+"s2c_GA:GM",
+"s2c_GA:GN",
+"s2c_GA:GP",
+"s2c_GA:GQ",
+"s2c_GA:GR",
+"s2c_GA:GS",
+"s2c_GA:GT",
+"s2c_GA:GU",
+"s2c_GA:GW",
+"s2c_GA:GY",
+"s2c_GA:HK",
+"s2c_GA:HM",
+"s2c_GA:HN",
+"s2c_GA:HR",
+"s2c_GA:HT",
+"s2c_GA:HU",
+"s2c_GA:ID",
+"s2c_GA:IE",
+"s2c_GA:IL",
+"s2c_GA:IM",
+"s2c_GA:IN",
+"s2c_GA:IO",
+"s2c_GA:IQ",
+"s2c_GA:IR",
+"s2c_GA:IS",
+"s2c_GA:IT",
+"s2c_GA:JE",
+"s2c_GA:JM",
+"s2c_GA:JO",
+"s2c_GA:JP",
+"s2c_GA:KE",
+"s2c_GA:KG",
+"s2c_GA:KH",
+"s2c_GA:KI",
+"s2c_GA:KM",
+"s2c_GA:KN",
+"s2c_GA:KP",
+"s2c_GA:KR",
+"s2c_GA:KW",
+"s2c_GA:KY",
+"s2c_GA:KZ",
+"s2c_GA:LA",
+"s2c_GA:LB",
+"s2c_GA:LC",
+"s2c_GA:LI",
+"s2c_GA:LK",
+"s2c_GA:LR",
+"s2c_GA:LS",
+"s2c_GA:LT",
+"s2c_GA:LU",
+"s2c_GA:LV",
+"s2c_GA:LY",
+"s2c_GA:MA",
+"s2c_GA:MC",
+"s2c_GA:MD",
+"s2c_GA:ME",
+"s2c_GA:MF",
+"s2c_GA:MG",
+"s2c_GA:MH",
+"s2c_GA:MK",
+"s2c_GA:ML",
+"s2c_GA:MM",
+"s2c_GA:MN",
+"s2c_GA:MO",
+"s2c_GA:MP",
+"s2c_GA:MQ",
+"s2c_GA:MR",
+"s2c_GA:MS",
+"s2c_GA:MT",
+"s2c_GA:MU",
+"s2c_GA:MV",
+"s2c_GA:MW",
+"s2c_GA:MX",
+"s2c_GA:MY",
+"s2c_GA:MZ",
+"s2c_GA:NA",
+"s2c_GA:NC",
+"s2c_GA:NE",
+"s2c_GA:NF",
+"s2c_GA:NG",
+"s2c_GA:NI",
+"s2c_GA:NL",
+"s2c_GA:NO",
+"s2c_GA:NP",
+"s2c_GA:NR",
+"s2c_GA:NU",
+"s2c_GA:NZ",
+"s2c_GA:OM",
+"s2c_GA:PA",
+"s2c_GA:PE",
+"s2c_GA:PF",
+"s2c_GA:PG",
+"s2c_GA:PH",
+"s2c_GA:PK",
+"s2c_GA:PL",
+"s2c_GA:PM",
+"s2c_GA:PN",
+"s2c_GA:PR",
+"s2c_GA:PS",
+"s2c_GA:PT",
+"s2c_GA:PW",
+"s2c_GA:PY",
+"s2c_GA:QA",
+"s2c_GA:RE",
+"s2c_GA:RO",
+"s2c_GA:RS",
+"s2c_GA:RU",
+"s2c_GA:RW",
+"s2c_GA:SA",
+"s2c_GA:SB",
+"s2c_GA:SC",
+"s2c_GA:SD",
+"s2c_GA:SE",
+"s2c_GA:SG",
+"s2c_GA:SH",
+"s2c_GA:SI",
+"s2c_GA:SJ",
+"s2c_GA:SK",
+"s2c_GA:SL",
+"s2c_GA:SM",
+"s2c_GA:SN",
+"s2c_GA:SO",
+"s2c_GA:SR",
+"s2c_GA:SS",
+"s2c_GA:ST",
+"s2c_GA:SV",
+"s2c_GA:SX",
+"s2c_GA:SY",
+"s2c_GA:SZ",
+"s2c_GA:TC",
+"s2c_GA:TD",
+"s2c_GA:TF",
+"s2c_GA:TG",
+"s2c_GA:TH",
+"s2c_GA:TJ",
+"s2c_GA:TK",
+"s2c_GA:TL",
+"s2c_GA:TM",
+"s2c_GA:TN",
+"s2c_GA:TO",
+"s2c_GA:TR",
+"s2c_GA:TT",
+"s2c_GA:TV",
+"s2c_GA:TW",
+"s2c_GA:TZ",
+"s2c_GA:UA",
+"s2c_GA:UG",
+"s2c_GA:UM",
+"s2c_GA:US",
+"s2c_GA:UY",
+"s2c_GA:UZ",
+"s2c_GA:VA",
+"s2c_GA:VC",
+"s2c_GA:VE",
+"s2c_GA:VG",
+"s2c_GA:VI",
+"s2c_GA:VN",
+"s2c_GA:VU",
+"s2c_GA:WF",
+"s2c_GA:WS",
+"s2c_GA:x0",
+"s2c_GA:x112",
+"s2c_GA:x113",
+"s2c_GA:x114",
+"s2c_GA:x115",
+"s2c_GA:x116",
+"s2c_GA:XK",
+"s2c_GA:YE",
+"s2c_GA:YT",
+"s2c_GA:ZA",
+"s2c_GA:ZM",
+"s2c_GA:ZW",
+    };
+
+    private static List<string> currencies317 = new List<string>()
+    {
+            "s2c_CU:AED",
+            "s2c_CU:AFN",
+            "s2c_CU:ALL",
+            "s2c_CU:AMD",
+            "s2c_CU:ANG",
+            "s2c_CU:AOA",
+            "s2c_CU:ARS",
+            "s2c_CU:AUD",
+            "s2c_CU:AWG",
+            "s2c_CU:AZN",
+            "s2c_CU:BAM",
+            "s2c_CU:BBD",
+            "s2c_CU:BDT",
+            "s2c_CU:BGN",
+            "s2c_CU:BHD",
+            "s2c_CU:BIF",
+            "s2c_CU:BMD",
+            "s2c_CU:BND",
+            "s2c_CU:BOB",
+            "s2c_CU:BOV",
+            "s2c_CU:BRL",
+            "s2c_CU:BSD",
+            "s2c_CU:BTN",
+            "s2c_CU:BWP",
+            "s2c_CU:BYN",
+            "s2c_CU:BYR",
+            "s2c_CU:BZD",
+            "s2c_CU:CAD",
+            "s2c_CU:CDF",
+            "s2c_CU:CHE",
+            "s2c_CU:CHF",
+            "s2c_CU:CHW",
+            "s2c_CU:CLF",
+            "s2c_CU:CLP",
+            "s2c_CU:CNY",
+            "s2c_CU:COP",
+            "s2c_CU:COU",
+            "s2c_CU:CRC",
+            "s2c_CU:CUC",
+            "s2c_CU:CUP",
+            "s2c_CU:CVE",
+            "s2c_CU:CZK",
+            "s2c_CU:DJF",
+            "s2c_CU:DKK",
+            "s2c_CU:DOP",
+            "s2c_CU:DZD",
+            "s2c_CU:EEK",
+            "s2c_CU:EGP",
+            "s2c_CU:ERN",
+            "s2c_CU:ETB",
+            "s2c_CU:EUR",
+            "s2c_CU:FJD",
+            "s2c_CU:FKP",
+            "s2c_CU:GBP",
+            "s2c_CU:GEL",
+            "s2c_CU:GHS",
+            "s2c_CU:GIP",
+            "s2c_CU:GMD",
+            "s2c_CU:GNF",
+            "s2c_CU:GTQ",
+            "s2c_CU:GYD",
+            "s2c_CU:HKD",
+            "s2c_CU:HNL",
+            "s2c_CU:HRK",
+            "s2c_CU:HTG",
+            "s2c_CU:HUF",
+            "s2c_CU:IDR",
+            "s2c_CU:ILS",
+            "s2c_CU:INR",
+            "s2c_CU:IQD",
+            "s2c_CU:IRR",
+            "s2c_CU:ISK",
+            "s2c_CU:JMD",
+            "s2c_CU:JOD",
+            "s2c_CU:JPY",
+            "s2c_CU:KES",
+            "s2c_CU:KGS",
+            "s2c_CU:KHR",
+            "s2c_CU:KMF",
+            "s2c_CU:KPW",
+            "s2c_CU:KRW",
+            "s2c_CU:KWD",
+            "s2c_CU:KYD",
+            "s2c_CU:KZT",
+            "s2c_CU:LAK",
+            "s2c_CU:LBP",
+            "s2c_CU:LKR",
+            "s2c_CU:LRD",
+            "s2c_CU:LSL",
+            "s2c_CU:LTL",
+            "s2c_CU:LVL",
+            "s2c_CU:LYD",
+            "s2c_CU:MAD",
+            "s2c_CU:MDL",
+            "s2c_CU:MGA",
+            "s2c_CU:MKD",
+            "s2c_CU:MMK",
+            "s2c_CU:MNT",
+            "s2c_CU:MOP",
+            "s2c_CU:MRO",
+            "s2c_CU:MRU",
+            "s2c_CU:MUR",
+            "s2c_CU:MVR",
+            "s2c_CU:MWK",
+            "s2c_CU:MXN",
+            "s2c_CU:MXV",
+            "s2c_CU:MYR",
+            "s2c_CU:MZN",
+            "s2c_CU:NAD",
+            "s2c_CU:NGN",
+            "s2c_CU:NIO",
+            "s2c_CU:NOK",
+            "s2c_CU:NPR",
+            "s2c_CU:NZD",
+            "s2c_CU:OMR",
+            "s2c_CU:PAB",
+            "s2c_CU:PEN",
+            "s2c_CU:PGK",
+            "s2c_CU:PHP",
+            "s2c_CU:PKR",
+            "s2c_CU:PLN",
+            "s2c_CU:PYG",
+            "s2c_CU:QAR",
+            "s2c_CU:RON",
+            "s2c_CU:RSD",
+            "s2c_CU:RUB",
+            "s2c_CU:RWF",
+            "s2c_CU:SAR",
+            "s2c_CU:SBD",
+            "s2c_CU:SCR",
+            "s2c_CU:SDG",
+            "s2c_CU:SEK",
+            "s2c_CU:SGD",
+            "s2c_CU:SHP",
+            "s2c_CU:SLE",
+            "s2c_CU:SLL",
+            "s2c_CU:SOS",
+            "s2c_CU:SRD",
+            "s2c_CU:SSP",
+            "s2c_CU:STD",
+            "s2c_CU:STN",
+            "s2c_CU:SVC",
+            "s2c_CU:SYP",
+            "s2c_CU:SZL",
+            "s2c_CU:THB",
+            "s2c_CU:TJS",
+            "s2c_CU:TMT",
+            "s2c_CU:TND",
+            "s2c_CU:TOP",
+            "s2c_CU:TRY",
+            "s2c_CU:TTD",
+            "s2c_CU:TWD",
+            "s2c_CU:TZS",
+            "s2c_CU:UAH",
+            "s2c_CU:UGX",
+            "s2c_CU:USD",
+            "s2c_CU:USN",
+            "s2c_CU:USS",
+            "s2c_CU:UYI",
+            "s2c_CU:UYU",
+            "s2c_CU:UYW",
+            "s2c_CU:UZS",
+            "s2c_CU:VEF",
+            "s2c_CU:VES",
+            "s2c_CU:VND",
+            "s2c_CU:VUV",
+            "s2c_CU:WST",
+            "s2c_CU:x0",
+            "s2c_CU:x5",
+            "s2c_CU:x6",
+            "s2c_CU:x7",
+            "s2c_CU:x9",
+            "s2c_CU:XAF",
+            "s2c_CU:XAG",
+            "s2c_CU:XAU",
+            "s2c_CU:XBA",
+            "s2c_CU:XBB",
+            "s2c_CU:XBC",
+            "s2c_CU:XBD",
+            "s2c_CU:XCD",
+            "s2c_CU:XDR",
+            "s2c_CU:XFU",
+            "s2c_CU:XOF",
+            "s2c_CU:XPD",
+            "s2c_CU:XPF",
+            "s2c_CU:XPT",
+            "s2c_CU:XSU",
+            "s2c_CU:XTS",
+            "s2c_CU:XUA",
+            "s2c_CU:YER",
+            "s2c_CU:ZAR",
+            "s2c_CU:ZMK",
+            "s2c_CU:ZMW",
+            "s2c_CU:ZWL",
+    };
+
+    private static List<string> languages648 = new List<string>()
+    {
+"s2c_LA:aa",
+"s2c_LA:ab",
+"s2c_LA:ae",
+"s2c_LA:af",
+"s2c_LA:ak",
+"s2c_LA:am",
+"s2c_LA:an",
+"s2c_LA:ar",
+"s2c_LA:as",
+"s2c_LA:av",
+"s2c_LA:ay",
+"s2c_LA:az",
+"s2c_LA:ba",
+"s2c_LA:be",
+"s2c_LA:bg",
+"s2c_LA:bh",
+"s2c_LA:bi",
+"s2c_LA:bm",
+"s2c_LA:bn",
+"s2c_LA:bo",
+"s2c_LA:br",
+"s2c_LA:bs",
+"s2c_LA:ca",
+"s2c_LA:ce",
+"s2c_LA:ch",
+"s2c_LA:co",
+"s2c_LA:cr",
+"s2c_LA:cs",
+"s2c_LA:cu",
+"s2c_LA:cv",
+"s2c_LA:cy",
+"s2c_LA:da",
+"s2c_LA:de",
+"s2c_LA:dv",
+"s2c_LA:dz",
+"s2c_LA:ee",
+"s2c_LA:el",
+"s2c_LA:en",
+"s2c_LA:eo",
+"s2c_LA:es",
+"s2c_LA:et",
+"s2c_LA:eu",
+"s2c_LA:fa",
+"s2c_LA:ff",
+"s2c_LA:fi",
+"s2c_LA:fj",
+"s2c_LA:fo",
+"s2c_LA:fr",
+"s2c_LA:fy",
+"s2c_LA:ga",
+"s2c_LA:gd",
+"s2c_LA:gl",
+"s2c_LA:gn",
+"s2c_LA:gu",
+"s2c_LA:gv",
+"s2c_LA:ha",
+"s2c_LA:he",
+"s2c_LA:hi",
+"s2c_LA:ho",
+"s2c_LA:hr",
+"s2c_LA:ht",
+"s2c_LA:hu",
+"s2c_LA:hy",
+"s2c_LA:hz",
+"s2c_LA:ia",
+"s2c_LA:id",
+"s2c_LA:ie",
+"s2c_LA:ig",
+"s2c_LA:ii",
+"s2c_LA:ik",
+"s2c_LA:io",
+"s2c_LA:is",
+"s2c_LA:it",
+"s2c_LA:iu",
+"s2c_LA:ja",
+"s2c_LA:jv",
+"s2c_LA:ka",
+"s2c_LA:kg",
+"s2c_LA:ki",
+"s2c_LA:kj",
+"s2c_LA:kk",
+"s2c_LA:kl",
+"s2c_LA:km",
+"s2c_LA:kn",
+"s2c_LA:ko",
+"s2c_LA:kr",
+"s2c_LA:ks",
+"s2c_LA:ku",
+"s2c_LA:kv",
+"s2c_LA:kw",
+"s2c_LA:ky",
+"s2c_LA:lb",
+"s2c_LA:lg",
+"s2c_LA:li",
+"s2c_LA:ln",
+"s2c_LA:lo",
+"s2c_LA:lt",
+"s2c_LA:lu",
+"s2c_LA:lv",
+"s2c_LA:mg",
+"s2c_LA:mh",
+"s2c_LA:mi",
+"s2c_LA:mk",
+"s2c_LA:ml",
+"s2c_LA:mn",
+"s2c_LA:mr",
+"s2c_LA:ms",
+"s2c_LA:mt",
+"s2c_LA:my",
+"s2c_LA:na",
+"s2c_LA:nb",
+"s2c_LA:nd",
+"s2c_LA:ne",
+"s2c_LA:ng",
+"s2c_LA:nl",
+"s2c_LA:nn",
+"s2c_LA:no",
+"s2c_LA:nr",
+"s2c_LA:nv",
+"s2c_LA:ny",
+"s2c_LA:oc",
+"s2c_LA:oj",
+"s2c_LA:om",
+"s2c_LA:or",
+"s2c_LA:os",
+"s2c_LA:pa",
+"s2c_LA:pi",
+"s2c_LA:pl",
+"s2c_LA:ps",
+"s2c_LA:pt",
+"s2c_LA:qu",
+"s2c_LA:rm",
+"s2c_LA:rn",
+"s2c_LA:ro",
+"s2c_LA:ru",
+"s2c_LA:rw",
+"s2c_LA:sc",
+"s2c_LA:sd",
+"s2c_LA:se",
+"s2c_LA:sg",
+"s2c_LA:sh",
+"s2c_LA:si",
+"s2c_LA:sk",
+"s2c_LA:sl",
+"s2c_LA:sm",
+"s2c_LA:sn",
+"s2c_LA:so",
+"s2c_LA:sq",
+"s2c_LA:sr",
+"s2c_LA:ss",
+"s2c_LA:st",
+"s2c_LA:su",
+"s2c_LA:sv",
+"s2c_LA:sw",
+"s2c_LA:ta",
+"s2c_LA:te",
+"s2c_LA:tg",
+"s2c_LA:th",
+"s2c_LA:ti",
+"s2c_LA:tk",
+"s2c_LA:tl",
+"s2c_LA:tn",
+"s2c_LA:to",
+"s2c_LA:tr",
+"s2c_LA:ts",
+"s2c_LA:tt",
+"s2c_LA:tw",
+"s2c_LA:ty",
+"s2c_LA:ug",
+"s2c_LA:uk",
+"s2c_LA:ur",
+"s2c_LA:uz",
+"s2c_LA:ve",
+"s2c_LA:vi",
+"s2c_LA:vo",
+"s2c_LA:wa",
+"s2c_LA:wo",
+"s2c_LA:x0",
+"s2c_LA:xh",
+"s2c_LA:yi",
+"s2c_LA:yo",
+"s2c_LA:za",
+"s2c_LA:zg",
+"s2c_LA:zh",
+"s2c_LA:zu",
+    };
+     public static bool ValidateMatch(string text)
     {
         //matches("LEI/12A01", "^LEI\/[A-Z0-9]{3}(01|00)$")
         //matches\(\"(.*?)\"\s*,\s*\"(.*?)\"\)
@@ -27,91 +1008,202 @@ internal class ValidationFunctions
 
         var value = match.Groups[1].Value;
         var rgxExpression = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
-        var rgx= new Regex(rgxExpression, RegexOptions.IgnoreCase);
-        var matchValidation= rgx.Match(value);
+        var rgx = new Regex(rgxExpression, RegexOptions.IgnoreCase);
+        var matchValidation = rgx.Match(value);
         return matchValidation.Success;
 
     }
 
 
-    public static bool ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
+    public static KleeneValue ValidateMatch(string text, Dictionary<string, ObjectTerm280> terms)
     {
-        //matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")        
+        //matches may be inside a formula or in a filter, a metric m: with filter , a dim , a term with filter
+        //1. inside the term matches : matches(X00, "^LEI\/[A-Z0-9]{3}(01|00)$") => X00, "^LEI\/[A-Z0-9]{3}(01|00)$")                        
+        //2. inside and outside the filter :matches({t: S.06.02.07.02, c: C0290, z: Z0001, filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*") and not(matches(dim(this(), [s2c_dim:UI]), "^CAU/(ISIN/.*)|(INDEX/.*)")), seq: False, id: v1, f: solvency, fv: solvency2}, "^((XL)|(XT))..$")
+        //3. NOT used no XXX. matches({ m: [s2md_met:si1558], filter:not(isNull(dim(this(), [s2c_dim:NF]))), seq: False, id: v0}, "^LEI/[A-Z0-9]{20}$")
+        //So the term may need the value of the fact, the metric of the fact, a dim of the fact. 
+        //The term may have a filter which may have a match inside. this() is ONLY found in filters where there is DIM(
 
-        var qt= "\"";
+        var qt = "\"";
         var pattern = @$"matches\((.*?)\s*,\s*\{qt}(.*)\{qt}\)";
-        var regex = new Regex(pattern);
+        var regex = new Regex(pattern,RegexOptions.Compiled);
         var match = regex.Match(text);
         if (!match.Success)
         {
             throw new InvalidOperationException($"invalid match:{text} ");
         }
 
-        //in real life the first term in the text would be X/d/d but take the actual value for testing 
-        
-        var letter = match.Groups[1].Value;        
-        var rgxForTestQ = new Regex($@"\{qt}(.*)\{qt}");
+        object? termValue;
 
-        var value = rgxForTestQ.IsMatch(letter) ? rgxForTestQ.Match(letter).Groups[1].Value : terms[letter].Obj.ToString() ?? "";
+        //match function may check for dim 
+        var leftPart = match.Groups[1].Value; //dim(this(X00), [s2c_dim:UI]) OR X00
+        var hasDimOnTheLeft = leftPart.Contains("dim");
+        if (hasDimOnTheLeft)
+        {
+            //*** you are in a filter. Do NOT check for filter since you are using the same term
+            //find the  dim //dim(this(X00), [s2c_dim:UI])
+            termValue = ExtractDimValueFormFact(leftPart, terms);
+            //check the match
+        }
+        else
+        {
+            var rgxTerm = new Regex(@"X\d\d",RegexOptions.Compiled);
+            var termLeft = rgxTerm.IsMatch(leftPart) ? terms[leftPart] : new ObjectTerm280("S",0,false,leftPart,0,0,null,false,"");
+
+
+            //var termLeft = terms[leftPart];                        
+            //**check first the filter            
+            var filter = termLeft.Filter;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                var isFilterValid = GeneralEvaluator.EvaluateBooleanExpression(0, filter, terms);
+                //if the filter is false, no need to check the rule and return a match
+                if (isFilterValid != KleeneValue.True)
+                {
+                    return KleeneValue.True;
+                };
+            }
+            termValue = termLeft.Obj;
+        }
+
+        if (termValue is null)
+        {
+            //match could return a kleene value?
+            return KleeneValue.Unknown;
+        }
+
 
         var rgxFromValue = match.Groups[2].Value.Replace(@"/", @"\/"); // ^CAU/(ISIN/.*)=>"^CAU\/(ISIN\/.*)         
-        var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
-        var matchValidation = rgx.Match(value);
-        return matchValidation.Success;
-    }
-
-
-    public static bool ValidateArithmetic(string text)
-    {
-        var result = Eval.Execute<bool>(text);
-        return result;
-
-    }
-
-    public static bool ValidateArithmetic(string symbolFormula, Dictionary<string,ObjectTerm280> terms)
-    {
-
-        symbolFormula = symbolFormula.Replace("or", "||");
-        symbolFormula = symbolFormula.Replace("and", "&&");
-
-
-        //Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.ObjectType == "E" ? (object)$"[{item.Value.Obj}]" : item.Value.Obj);
-        var rgxTerm = new Regex(@"(X\d\d)");
-        var matchTersm= rgxTerm.Match(symbolFormula);
-        if (matchTersm.Success)
+        if (rgxFromValue.Contains("ISO 8601")   && termValue is DateTime)
         {
-            var term = terms[matchTersm.Value];
-            if (term.ObjectType == "E")
+            //matches(X00, "ISO 8601 'yyyy-mm-dd' pattern ")
+            //since termValue is of type DateTime, it means it was processed successfully and we do not care about formatting
+            return KleeneValue.True; 
+        }
+        if (rgxFromValue.Contains("ISO 3166"))
+        {
+            var rgxRegions = new Regex(@"[‘'](\w\w)['’]", RegexOptions.Compiled);
+            
+            var regions= rgxRegions.Matches(rgxFromValue).Select(rg => rg.Groups[1].Value);
+            if (regions.Count()==0) 
             {
-                //todo is this right??
-                //symbolFormula = symbolFormula.Replace("[", "\"");
-                //symbolFormula= symbolFormula.Replace("]", "\"");
+                var res= allCountries363.Contains(termValue);
+                return res?KleeneValue.True:KleeneValue.False;
+                //return allCountries363.Contains(termValue);
+                
             }
             
+            foreach ( var region in regions )
+            {                
+
+                if (region == "AA" && aaCountries380.Contains(termValue))
+                {
+                    return KleeneValue.True;
+                }
+                if (region == "EU" && euCountries377.Contains(termValue))
+                {
+                    return KleeneValue.True;
+                }
+                if (region == "XA" && aaCountries380.Contains(termValue) &&  !euCountries377.Contains(termValue))
+                {
+                    return KleeneValue.True;
+                }
+
+            }
+            return KleeneValue.False;
+            
+            
+            //matches(X00, "one of options as per ISO 3166-1")
         }
-        //todo first i need to split using ">,<,=" and then evaluate each part
-        //maybe i need to call EvaluateArithmetic here
-        Dictionary<string, object> plainObjects = terms.ToDictionary(item => item.Key, item => item.Value.Obj);
-        var result = Eval.Execute<bool>(symbolFormula,plainObjects);
-        return result;
+        if (rgxFromValue.Contains("ISO 4217"))
+        {
+            //matches(X00, "one of options as per ISO 4217")***X00=S.06.02.01.02:R0001:C0280##s2c_CU:EUR,
+             var res= (currencies317.Contains(termValue));
+            return res ? KleeneValue.True : KleeneValue.False;
+            //return (currencies317.Contains(termValue));            
+        }
+
+        if (rgxFromValue.Contains("ISO 639-1"))
+        {
+            //matches(X00, "one of options as per ISO 639-1")***#X00-S.01.02.01.01:R0070:C0010==s2c_LA:en,
+            var res= (languages648.Contains(termValue));
+            return res ? KleeneValue.True : KleeneValue.False;
+            //return (languages648.Contains(termValue));
+        }
+
+
+
+        var rgx = new Regex(rgxFromValue, RegexOptions.IgnoreCase);
+        var matchValidation = rgx.Match((string)termValue!);
+        var resM =matchValidation.Success;
+        return resM ? KleeneValue.True : KleeneValue.False;
+        //return matchValidation.Success;
     }
+
+
+    public static string ExtractDimValueFormFact(string dimText, Dictionary<string, ObjectTerm280> terms)
+    {
+        //if you find this()=> the term must be dimTerm
+        //dim(this(X00), [s2c_dim:UI])
+        //dim(X00, [s2c_dim:UI])
+        //MET(s2md_met:si1554)|s2c_dim:SU(s2c_MC:x168)|s2c_dim:UI(ID:CAU/INST/1888-1891 LX64W1_IPROP)  //this i do NOT process
+        //2. inside filter: matches(dim(this(), [s2c_dim:UI]), "^CAU/.*")  //this one is only found inside a filter
+
+        var rgxFilterDim = new Regex(@"dim\((.*),\s*\[(.*)\]\)", RegexOptions.Compiled); //=> X00 or this(X00) , s2c_dim:UI
+        var matchDim = rgxFilterDim.Match(dimText);
+        if (!matchDim.Success)
+        {
+            return "";
+        }
+
+        //the term 
+        var theTerm = matchDim.Groups[1].Value;//=> X00 or this(X00)
+        var rgxThis = new Regex(@"this\((.*?)\)", RegexOptions.Compiled);
+        var matchThisInside = rgxThis.Match(theTerm);
+        var term = matchThisInside.Success
+            ? matchThisInside.Groups[1].Value
+            : theTerm;
+
+        if (!terms.ContainsKey(term))
+        {
+            throw (new Exception($"Invalid dimfunction: {dimText}. Cannot find term :{term}"));
+        }
+
+        var dataSignature = terms[term].fact?.DataPointSignature ?? "";
+        var rgxPattern = @$"{matchDim.Groups[2].Value.Trim()}\(\w\w:(.*?)\)";
+        var rgxFactDim = new Regex(rgxPattern); //rgxFactDim = //s2c_dim:UI\(\w\w:(.*?)\)
+        var matchDimValue = rgxFactDim.Match(dataSignature); //s2c_dim:UI(ID:CAU/INST/1888-1891 LX64W1_IPROP) => CAU/INST/1888-1891 LX64W1_IPROP
+
+        if (!matchDimValue.Success)
+        {
+            return "";
+        }
+        return matchDimValue.Groups[1].Value;
+
+    }
+
+
 
 
     public static bool ValidateIsNull(string symbolFormula, Dictionary<string, ObjectTerm280> terms)
     {
-        var letter = terms[symbolFormula];
-        var xx = letter?.Obj?.ToString();
-        var isEmpty = (letter?.Obj?.ToString() ?? "") == "emptySequence()";
-        if (letter == null ||  letter?.Obj is null || isEmpty)
+        var rgxNull = new Regex(@"is[Nn]ull\((.*)\)");
+        var match = (rgxNull.Match(symbolFormula));
+        if (!match.Success)
         {
-            return true;
+            throw new Exception($"ValidateIsNull function cannot parse the formule :{symbolFormula} ");
         }
-        return false;
-        
+        var zetRc = terms[match.Groups[1].Value];
+        //var objTostr = zetObj?.Obj.ToString() ?? "";
+        var objTostr = zetRc?.Obj?.ToString() ?? "";
+        var isNull = (zetRc is null || (zetRc?.IsNullFact ?? true) || (objTostr == "emptySequence()"));
+
+        return isNull;
+
     }
 
 
-    
+
 
 
 }

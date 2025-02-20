@@ -59,6 +59,8 @@ public class ParameterHandler : IParameterHandler
             CurrencyBatchId = int.TryParse(_configuration["currency-batch-id"], out int currencyBatchId) ? currencyBatchId : 0,
             EiopaVersion = _configuration["eiopa-version"] ?? "NF",
             ModuleCode = _configuration["module-code"] ?? "NF",
+
+            Wave = int.TryParse(_configuration["wave"], out int wave) ? wave : 0,
             ApplicableYear = int.TryParse(_configuration["year"], out int year) ? year : 0,
             ApplicableQuarter = int.TryParse(_configuration["quarter"], out int quarter) ? quarter : 0,
             //_optionsVersionData contains values for correspoinding EIOPA version. It was implemented in configureServices
@@ -67,6 +69,8 @@ public class ParameterHandler : IParameterHandler
             ExcelTemplateFile = _optionsVersionData.Value.ExcelTemplateFile,
             //LoggerFile = _optionsLoggerFiles.Value.LoggerExcelReaderFile,
             FileName = _configuration["file-name"] ?? "NF",
+            FileNameError = _configuration["file-name-error"] ?? "NF",
+            FileNameWarning = _configuration["file-name-warning"] ?? "NF",
             IsDevelop = _configuration["DOTNET_ENVIRONMENT"]?.Contains("Develop") ?? false
 
     };

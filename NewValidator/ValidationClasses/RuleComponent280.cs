@@ -5,11 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Linq.Expressions;
+using Shared.SpecialRoutines;
+using Validator.ValidationClasses;
 
 namespace NewValidator.ValidationClasses;
 
 
-public record RuleTextTerm(string Letter, string TermText);
+
 public class RuleComponent280
 {
     //Either the component of the if, else, then
@@ -20,12 +22,12 @@ public class RuleComponent280
 
     public bool IsEmpty { get; init; }
     public bool IsValid { get; set; } = true;
-    public string Expression { get; init; } 
+    public string Expression { get; init; }
     public List<RuleTerm280> RuleTerms { get; set; } = new();
     public string SymbolExpression { get; set; } = "";
     public Dictionary<string, ObjectTerm280> ObjectTerms { get; set; } = new();
 
-
+    public ExpressionInfoWithIntervalsType? ExpressionInfo { get; set; }
     public static RuleComponent280 CreateComponent(string textExpression)
     {
         //captures terms inside brackets , takes care of inner brackets in match statements        
@@ -33,41 +35,75 @@ public class RuleComponent280
         //=> X01 + X02 >= X03 - X04 + X05  
         //=> creates the RuleTerms280
         //also checks for the i interval and marks the term as interval          
-        
+
 
         if (string.IsNullOrEmpty(textExpression))
         {
-            return new RuleComponent280() {IsEmpty=true, Expression=textExpression};
+            return new RuleComponent280() { IsEmpty = true, Expression = textExpression };
         }
 
-        var rgxTermi = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
 
-        /////////////////////////////////////////
-        //var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}");
-        var rgxTerm = new Regex(@"\{\s?[a-z]:([^{}]).*?\}( i)?");
-        var matches = rgxTerm.Matches(textExpression);
-        if (matches is null)
+        var (formula, ruleTextTerms) = TermsExtraction.ExtractTerms(textExpression);
+
+        if (ruleTextTerms.Count == 0)
         {
-            return new RuleComponent280() {IsEmpty=false,IsValid=false, Expression = textExpression, SymbolExpression = "", RuleTerms = new List<RuleTerm280>() };
+            return new RuleComponent280() { IsEmpty = false, IsValid = false, Expression = textExpression, SymbolExpression = formula, RuleTerms = new List<RuleTerm280>() };
         }
 
-        var ruleTextTerms = matches.Select((match, i) => new RuleTextTerm($"X{i:D2}", match.Value)) ?? new List<RuleTextTerm>();
-        var formula = ruleTextTerms.Aggregate(textExpression, (currentText, val) =>
-        {
-            int index = currentText.IndexOf(val.TermText);
-            string replacedString = currentText.Substring(0, index) + val.Letter + currentText.Substring(index + val.TermText.Length);
-            return replacedString;
-        });
 
         var ruleTerms = ruleTextTerms.Select(rt => RuleTerm280.CreateRuleTerm280(rt.Letter, rt.TermText))
             .Where(rt => rt is not null)
             .ToList();
 
         formula = formula.Replace(" = ", " == ");
-        
-        var rc = new RuleComponent280() {IsEmpty=false, Expression = textExpression, SymbolExpression = formula, RuleTerms = ruleTerms };
+
+        var rc = new RuleComponent280() { IsEmpty = false, Expression = textExpression, SymbolExpression = formula, RuleTerms = ruleTerms };
         return rc;
     }
 
 
+    public string DislayRuleComponentTerms()
+    {
+        var vals = RuleTerms.Aggregate("", (current, value) =>
+        {
+            var obj = ObjectTerms[value.Letter];
+            return $"{current}#{value.Letter}-{value.T}:{value.R}:{value.C}={obj.Obj ?? "null"}";
+        });
+
+        if (ExpressionInfo is null)
+        {
+            return $"{SymbolExpression}**{vals}";
+        }
+
+        var equalityExpression = "";
+        var left = OptionalObjectToString(ExpressionInfo.leftBase);
+        var right = OptionalObjectToString(ExpressionInfo.rightBase);
+        
+
+        if (ExpressionInfo.isAllDoubles)
+        {
+            equalityExpression = $"{left } {ExpressionInfo.op} {right}";
+            equalityExpression = $"{equalityExpression}**Intervals left:{ExpressionInfo.leftMin.Value}↔{ExpressionInfo.leftMax.Value}**right:{ExpressionInfo.rightMin.Value}↔{ExpressionInfo.rightMax.Value}";
+        }
+        else
+        {
+            equalityExpression = $"{left} {ExpressionInfo.op} {right}";
+        }       
+
+        return $"{SymbolExpression}**{vals}***{equalityExpression}";
+        
+    }
+    public static string OptionalObjectToString(OptionalObject optionalObject)
+    {
+        if (optionalObject.IsNull) return "null";
+        var obj = optionalObject?.Value ?? "";
+        var xx = 3.2323;
+        var y = $"{xx:N2}";
+        var res = (obj is double || obj is int || obj is float || obj is decimal || obj is long)
+           ? $"{Convert.ToDouble(obj):N2}"
+           : obj?.ToString()??"";
+        //Console.WriteLine($"xx:{xx:N2}, res:{res}");
+        //Console.WriteLine(res);
+        return res;
+    }
 }

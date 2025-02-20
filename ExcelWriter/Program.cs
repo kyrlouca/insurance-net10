@@ -27,7 +27,7 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try 
 {	
-	host.Services.GetService<IWriterMainApp>()?.Run();
+	host.Services.GetService<IExcelWriterMainApp>()?.Run();
 }
 catch (Exception ex)
 {

@@ -1,4 +1,6 @@
 ﻿namespace Shared.DataModels;
+
+using Shared.Various;
 using System.Collections.Generic;
 
 
@@ -25,7 +27,7 @@ public class Context
 	public string BuildSignature()
 	{
 		var ctLines = ContextLinesF1.Order();
-		Signature = string.Join("|", ctLines);
+		Signature = StringRoutines.JoinStringCreate(ctLines.ToList(), "|");
 		return Signature;
 	}
     

@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace NewValidator.Common.FunctionalRoutines;
 
-public enum FunctionTypes { VAL, SUM, MATCHES, ABS, MAX, MIN, COUNT,NILLED, EMPTY, ISFALLBACK, FTDV, EXDIMVAL, EXP, ERR, LIKE};
+public enum FunctionTypes { VAL, SUM, MATCHES,DIM, ABS, MAX, MIN, COUNT,NILLED, EMPTY, ISFALLBACK, FTDV, EXDIMVAL, EXP, ERR, LIKE};
 public static class RegexValidationFunctions
 {
     //functionsString = @"exp|count|empty|isfallback|min|max|sum|matches|ftdv|ExDimVal"

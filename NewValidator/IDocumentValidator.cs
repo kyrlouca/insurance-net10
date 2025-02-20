@@ -3,5 +3,8 @@
     public interface IDocumentValidator
     {
         int ValidateDocument();
+
+               
+        
     }
 }

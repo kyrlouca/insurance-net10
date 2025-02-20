@@ -19,10 +19,13 @@ public class ParameterData
     public int UserId { get; set; }
     public int FundId { get; set; }
     public int CurrencyBatchId { get; set; }
+    public int Wave { get; set; }
     public int ApplicableYear { get; set; }
     public int ApplicableQuarter { get; set; }
     public string ModuleCode { get; set; }
     public string FileName { get; set; }
+    public string FileNameError { get; set; }
+    public string FileNameWarning { get; set; }
     public int DocumentId { get; set; }
 
     public bool IsDevelop { get; set; }

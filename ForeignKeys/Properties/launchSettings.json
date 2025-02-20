@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "ForeignKeys": {
+      "commandName": "Project",
+      "commandLineArgs": "year=2024\r\neiopa-version=\"IU280\"",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Develop"
+      }
+    }
+  }
+}

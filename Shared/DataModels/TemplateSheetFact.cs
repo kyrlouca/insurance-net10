@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Shared.GeneralUtils;
-
-
+using Shared.Various;
 
 public class TemplateSheetFact
 {
@@ -23,7 +22,7 @@ public class TemplateSheetFact
     public string OpenRowSignature { get; set; }
     public string Unit { get; set; }
     public int Decimals { get; set; }
-    public decimal NumericValue { get; set; }
+    public double NumericValue { get; set; }
     public DateTime DateTimeValue { get; set; }
     public bool BooleanValue { get; set; }
     public string TextValue { get; set; }
@@ -85,7 +84,7 @@ public class TemplateSheetFact
 
         ctxLines.Sort();
         ctxLines.Insert(0, metXbrlCode);
-        var newSignature = string.Join("|", ctxLines);
+        var newSignature = StringRoutines.JoinStringCreate(ctxLines.ToList(), "|");
         
 
         return newSignature;
@@ -128,7 +127,7 @@ public class TemplateSheetFact
                 try
                 {
                     var nfi = new CultureInfo("en-US", false).NumberFormat;
-                    NumericValue = Convert.ToDecimal(TextValue, nfi);
+                    NumericValue = Convert.ToDouble(TextValue, nfi);
                 }
                 catch (System.Exception)
                 {

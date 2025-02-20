@@ -1,10 +1,11 @@
 ﻿
 namespace Shared.DataModels;
+using Dapper.Contrib.Extensions;
 
-
-
+[Table("ERROR_Rule")]
 public class ERROR_Rule
 {
+    [Key]
     public int ErrorId { get; set; }
     public int RuleId { get; set; }
     public int ErrorDocumentId { get; set; }
@@ -22,4 +23,12 @@ public class ERROR_Rule
     public string TableBaseFormula { get; set; }
     public string Filter { get; set; }
     public string Scope { get; set; }
+    public string FormulaForIf { get; set; }
+    public string FormulaForThen { get; set; }
+    public string FormulaForElse { get; set; }
+    public string FormulaForFilter { get; set; }
+    public string RuleTerms { get; set; }
+    public string ShortLabel { get; set; }
+    
+
 }

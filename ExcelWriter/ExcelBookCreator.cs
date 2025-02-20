@@ -4,14 +4,16 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.SharedHost;
+using Shared.ExcelHelperRoutines;
 using Shared.DataModels;
+using Shared.Various;
+
 using System.Reflection.Metadata;
 using Syncfusion.XlsIO.Implementation;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System;
 using System.Drawing;
-using ExcelWriter.Common;
 using Shared.SQLFunctions;
 using System.Text.RegularExpressions;
 using Microsoft.IdentityModel.Tokens;
@@ -36,7 +38,6 @@ public class ExcelBookCreator : IExcelBookWriter
         _logger = logger;
         _SqlFunctions = sqlFunctions;
         _customPensionStyler = customPensionStyles;
-
     }
 
 
@@ -46,15 +47,15 @@ public class ExcelBookCreator : IExcelBookWriter
         //Creates one sheet for every sheetDb of the documnentInstance and saves the file
         _documentId = documentId;
         _parameterData = _parameterHandler.GetParameterData();
-        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdgWH5fc3RdRWFfU0B0W0o=");
-
+        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWX1ed3RWR2BZVUR0WEM=");
         //TestDebug();
         //return true;
 
         using var excelEngine = new ExcelEngine();
         var errorMessage = "";
 
-        var sheets = SelectTempateSheetInstances().OrderBy(sh => sh.TableCode);
+        //var sheetsOldxxx = SelectTempateSheetInstances().OrderBy(sh => sh.TableCode);
+        var sheets = SelectTempateSheetInstances().DistinctBy(sh=>sh.TableID).OrderBy(sh => sh.TableCode);
         if (!sheets.Any())
         {
             errorMessage = "Document contains ZERO sheets";
@@ -94,27 +95,34 @@ public class ExcelBookCreator : IExcelBookWriter
         int START_COL = 1;
         int DATA_ROW_POSITION = 14;
 
-        var shnames = sheets.Select(sh => sh.SheetTabName).ToList();
+       
+        
         foreach (var sheet in sheets)
         {
+            if (sheet.SheetTabName.Contains("S.22.06.01.01"))
+            {
+                Console.WriteLine("S");
+            }
+
             Console.WriteLine("process " + sheet?.SheetTabName?.Trim() + "-" + sheet?.TableCode.Trim() + sheet?.SheetTabName.Trim());
 
             var table = _SqlFunctions.SelectTable(sheet?.TableCode ?? "");
             
             if (table is null)
                 continue;
-            var sheetsIndb = _SqlFunctions.SelectTempateSheetsByTableId(_documentId, table.TableID);
+            var sheetsIndb = _SqlFunctions.SelectTemplateSheetsByTableId(_documentId, table.TableID);
+            var shhnames = sheetsIndb.Select(dbs => dbs.SheetTabName).OrderBy(st=>st).ToList();
             foreach (var sheetDb in sheetsIndb)
             {
-                var originSheet = _originWorkbook.Worksheets[table.TableCode.Trim()];
+                 var originSheet = _originWorkbook.Worksheets[table.TableCode.Trim()];
                  if (originSheet is null) continue;
                 
                 var usedRange = originSheet[originSheet.UsedRange.Row, originSheet.UsedRange.Column, originSheet.UsedRange.LastRow, originSheet.UsedRange.LastColumn];
                 var orgDataRange280 = FindDataRange(originSheet);
                 var orgWholeRange280 = originSheet[1, 1, orgDataRange280.LastRow, orgDataRange280.LastColumn];
 
-
-                var sheetName = sheet.SheetTabName.Trim();
+                
+                var sheetName = sheetDb.SheetTabName.Trim();
                 var destSheet = _destinationWorkbook.Worksheets.Create(sheetName);
                 destSheet.Zoom = 90;
 
@@ -140,11 +148,11 @@ public class ExcelBookCreator : IExcelBookWriter
         }
 
         ////////////////////////////////////////////////////////
-        sheets = sheets.Where(sh => sh.InstanceId == -1).OrderBy(sh => sh.TableID);
+        //sheets = sheets.Where(sh => sh.InstanceId == -1).OrderBy(sh => sh.TableID);
         foreach (var sheet in sheets)
         {
 
-            var template = GetTableOrTemplate(sheet.TableCode);
+            var template = _SqlFunctions.GetTableOrTemplate(sheet.TableCode);
             if (template is null)
                 continue;
 
@@ -164,7 +172,7 @@ public class ExcelBookCreator : IExcelBookWriter
             tableCode.CellStyle = _pensionStyles.TableCodeStyle;
 
             //template code
-            var parentTemplate = GetTableOrTemplate(filingSheetCode);
+            var parentTemplate = _SqlFunctions.GetTableOrTemplate(filingSheetCode);
             var tblLabel = destSheet.Range["A2"];
             tblLabel.Text = parentTemplate?.TemplateOrTableLabel;
             tblLabel.CellStyle = _pensionStyles.HeaderStyle;
@@ -377,21 +385,7 @@ public class ExcelBookCreator : IExcelBookWriter
 
     }
 
-    private MTemplateOrTable? GetTableOrTemplate(string tableCode)
-    {
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var sqlTemplate = @"
-				SELECT * 
-				FROM mTemplateOrTable tt
-				WHERE 
-				  1=1				  
-				  AND tt.TemplateOrTableCode = @tableCode
-                    AND TemplateOrTableType = 'BusinessTable' 
-				";
-        var template = connectionEiopa.QueryFirstOrDefault<MTemplateOrTable>(sqlTemplate, new { tableCode });
-        return template;
-
-    }
+    
     private void TestDebug()
     {
         using (ExcelEngine excelEngine = new ExcelEngine())
@@ -430,8 +424,10 @@ public class ExcelBookCreator : IExcelBookWriter
         var xyrange = xoriginSheet[xoriginSheet.UsedRange.Row, xoriginSheet.UsedRange.Column, xoriginSheet.UsedRange.LastRow, xoriginSheet.UsedRange.LastColumn];
         //var s61Data = sCombined.Range[s61DataLine.Row, s61DataLine.Column, s61Worksheet.UsedRange.LastRow, s61DataLine.LastColumn];
 
-        var rowRgx = new Regex(@"^R\d\d\d\d");
-        var colRgx = new Regex(@"^C\d\d\d\d");
+        //var rowRgxOld = new Regex(@"^R\d\d\d\d");
+        //var colRgxOld = new Regex(@"^C\d\d\d\d");
+        var rowRgx =  RegexConstants.RgxRow();
+        var colRgx = RegexConstants.RgxCol();
 
         IRange xx;
         IRange startRow, endRow = xoriginSheet["A1"], startCol = xoriginSheet["A1"], endCol = xoriginSheet["A1"];

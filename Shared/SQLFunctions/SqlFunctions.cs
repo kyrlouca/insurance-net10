@@ -1,5 +1,6 @@
 ﻿namespace Shared.SQLFunctions;
 using Dapper;
+using Dapper.Contrib.Extensions;
 using Microsoft.Data.SqlClient;
 using Serilog;
 using Shared.DataModels;
@@ -8,7 +9,10 @@ using Shared.HostParameters;
 using Shared.SharedHost;
 using Syncfusion.XlsIO.Implementation.Collections;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.SqlTypes;
+using System.Reflection.Metadata;
+using static Shared.SQLFunctions.ISqlFunctions;
 
 public class SqlFunctions : ISqlFunctions
 {
@@ -21,6 +25,63 @@ public class SqlFunctions : ISqlFunctions
         _parameterData = _parameterHandler?.GetParameterData() ?? new();
         _logger = logger;
     }
+
+
+
+    public List<int> K_documentsForYear(int applicableYear)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelect = @"select doc.InstanceId from DocInstance doc where doc.ApplicableYear = @ApplicableYear ";
+                
+
+
+        var docs = connectionLocal.Query<int>(sqlSelect, new { applicableYear }).ToList();
+        return docs;
+    }
+
+    public List<MTableKyrKeys> K_SelectKyrTables()
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTable = @"select * from mTableKyrKeys tk where tk.FK_TableCode is not null and tk.FK_TableCol is not null";
+
+        var result = connectionEiopa.Query<MTableKyrKeys>(sqlTable, new { }).ToList();
+        return result;
+    }
+
+    public List<TemplateSheetFact> K_SelectFactsByCol(int documentId, string tableCode,  string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelect = @"
+                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode                  
+                  AND fact.Col= @Col                  
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+
+        
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode,  col }).ToList();
+        return facts;
+    }
+
+    public int K_UpdateForeignKeys(int templateSheetId, string row, string rowForeign)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelect = @"update  TemplateSheetFact set RowForeign= @rowForeign where TemplateSheetId = @templateSheetId and row= @row";
+
+        var facts = connectionLocal.Execute(sqlSelect, new { templateSheetId, row, rowForeign });
+        return facts;
+    }
+
 
 
 
@@ -101,8 +162,28 @@ public class SqlFunctions : ISqlFunctions
         var doc = connectionInsurance.Execute(sqlUpdate, new { documentId, status });
     }
 
-    public TemplateSheetInstance? SelectTempateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet)
+
+
+    public TemplateSheetInstance? SelectTemplateSheetByZetValue(int documentId, string tableCode, string ZDimVal)
     {
+        //*** do NOT use this . the sheetCodeZet is the same with ZdimVal
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSheets = @"
+            SELECT 
+              sheet.*
+            FROM TemplateSheetInstance sheet    
+            WHERE 
+                sheet.InstanceId = @documentId        
+                and sheet.TableCode = @tableCode        
+                and ZDimVal = @ZDimVal
+             ";
+        var sheet = connectionLocal.QuerySingleOrDefault<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode, ZDimVal });
+        return sheet;
+    }
+
+    public TemplateSheetInstance? SelectTemplateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet)
+    {
+        //*** do NOT use this . the sheetCodeZet is the same with ZdimVal
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"
             SELECT 
@@ -117,9 +198,9 @@ public class SqlFunctions : ISqlFunctions
         return sheet;
     }
 
-    public List<TemplateSheetInstance> SelectTempateSheetByTableCodeAllZets(int documentId, string tableCode)    
+    public List<TemplateSheetInstance> SelectTemplateSheetByTableCodeAllZets(int documentId, string tableCode)    
     {
-        //assume that for this tableCode there is only one sheet with or withoutzet  
+        //
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"
             SELECT 
@@ -132,7 +213,7 @@ public class SqlFunctions : ISqlFunctions
         var sheet = connectionLocal.Query<TemplateSheetInstance>(sqlSheets, new { documentId, tableCode }).ToList();
         return sheet;
     }
-    public List<TemplateSheetInstance> SelectTempateSheets(int documentId)
+    public List<TemplateSheetInstance> SelectTemplateSheets(int documentId)
     {
 
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -149,7 +230,7 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
-    public List<TemplateSheetInstance> SelectTempateSheetsByTableId(int documentId, int tableId)
+    public List<TemplateSheetInstance> SelectTemplateSheetsByTableId(int documentId, int tableId)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSheets = @"Select * from TemplateSheetInstance sheet where sheet.InstanceId= @documentId and sheet.TableID= @tableId";
@@ -164,7 +245,22 @@ public class SqlFunctions : ISqlFunctions
         var res = connectionInsurance.Execute(sqlUpdate, new { templateSheetId, sheetTabName });
     }
 
+    public TemplateSheetFact? SelectFact(int factId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = "select * from TemplateSheetFact fact where fact.FactId= @FactId";
+        var res = connectionInsurance?.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { factId });
+        return res;
+    }
 
+    public List<TemplateSheetFact> SelectFactsForSheetId(int sheetId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = "select * from  TemplateSheetFact where TemplateSheetId= @sheetId;";
+        var res = connectionInsurance.Query<TemplateSheetFact>(sqlSelect, new { sheetId}).ToList();
+        return res;
+    }
+    
     public List<TemplateSheetFactDim> SelectFactDims(int factId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -187,6 +283,21 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public MMetric? SelectMMetric(string xbrlCode)
+    {
+        //memberXbrlCode= s2c_AM:x2 => find metric
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlMem = @"
+            select  mt.* from mMetric mt 
+            join mMember mem on mem.MemberID= mt.CorrespondingMemberID
+            where mem.MemberXBRLCode= @xbrlCode
+        ";
+        xbrlCode = xbrlCode.Trim();
+        var val = connectionEiopa.QuerySingleOrDefault<MMetric>(sqlMem, new { xbrlCode });
+        return val;
+    }
+
+
     public MMember? SelectMMember(string xbrlCode)
     {
         //memberXbrlCode= s2c_AM:x2 => find mMember
@@ -195,6 +306,32 @@ public class SqlFunctions : ISqlFunctions
         xbrlCode = xbrlCode.Trim();
         var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { xbrlCode });
         return val;
+    }
+    
+
+    public List<MMember> SelectMMembersFromHierarchy(int hierarchyId)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlMem = @"select mem.* from mHierarchyNode hn	join mMember mem on mem.MemberID=hn.MemberID where HierarchyID = @HierarchyID";
+        var res = connectionEiopa.Query<MMember>(sqlMem, new { hierarchyId })?.ToList() ?? new List<MMember>();
+        return res;
+    }
+
+    public MMember? SelectDefaultMemberFromHierarchy(int hierarchyId)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlMem = @"
+        select mem.MemberXBRLCode
+		  from mHierarchyNode hn
+		  join mHierarchy h on h.HierarchyID=hn.HierarchyID
+		  join mMember mem on mem.MemberID=hn.MemberID
+		  where 1=1
+		  and mem.IsDefaultMember=1
+		  and h.HierarchyID = @hierarchyId		  
+";
+
+        var res = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { hierarchyId });
+        return res;
     }
 
 
@@ -340,12 +477,12 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
-    public TemplateSheetFact? CreateTemplateSheetFact(TemplateSheetFact fact)
+    public int CreateTemplateSheetFact(TemplateSheetFact fact,bool isLooseFact)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
         if (fact is null)
         {
-            return null;
+            return 0;
         }
         var sqlInsertLooseFact = @"
              INSERT INTO TemplateSheetFact 
@@ -363,7 +500,7 @@ public class SqlFunctions : ISqlFunctions
              SELECT CAST(SCOPE_IDENTITY() as int);            
             ";
         int factId = 0;
-        var sqlInsert = fact.TemplateSheetId > 0 ? sqlInsertSheetFact : sqlInsertLooseFact;
+        var sqlInsert = isLooseFact ? sqlInsertLooseFact:sqlInsertSheetFact ;
         try
         {
             factId = connectionInsurance.QuerySingle<int>(sqlInsert, fact);
@@ -371,10 +508,9 @@ public class SqlFunctions : ISqlFunctions
         catch (Exception ex)
         {
             Log.Error($"error creating Fact :{fact.Row} col:{fact.Col} - {ex.Message}");
-            return null;
-        }
-        fact.FactId = factId;
-        return fact;
+            return 0;
+        }        
+        return factId;
     }
 
 
@@ -516,8 +652,12 @@ public class SqlFunctions : ISqlFunctions
 			where vrt.ValidationID= @validationRuleId;
         ";
 
-        var res = connectionEiopa.Query<MTable>(sqlSelect, new { validationRuleId }).ToList();
-        return res;
+        var tables = connectionEiopa.Query<MTable>(sqlSelect, new { validationRuleId }).ToList();
+        foreach(MTable table in tables)
+        {
+            table.IsOpenTable = IsOpenTable(table.TableID);
+        }
+        return tables;
     }
 
     public List<MTableCell> SelectTableCells(int tableId)
@@ -529,6 +669,15 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
+
+    public List<MTableKyrKeys> SelectTableKyrKeys(string tableCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTable = @"select * from mTableKyrKeys tk where tk.TableCode= @tableCode";
+
+        var result = connectionEiopa.Query<MTableKyrKeys>(sqlTable, new { tableCode }).ToList();
+        return result;
+    }
 
     public MTableKyrKeys? SelectTableKyrKey(string tableCode)
     {
@@ -547,11 +696,85 @@ public class SqlFunctions : ISqlFunctions
         return ctx;
     }
 
-    public TemplateSheetFact? SelectFactByRowCol(int documentId, string tableCode, string zet, string row, string col)
+    public List<TemplateSheetFact> SelectFactsByColAndTextValue(int documentId,string tableCode,string col,string textValue)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelect = @"
-                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+            select * from TemplateSheetFact fact 
+            join TemplateSheetInstance sheet on sheet.TemplateSheetId=fact.TemplateSheetId
+            where 1=1
+                and fact.InstanceId= @documentId
+                and sheet.TableCode= @tableCode
+                and fact.Col=@col
+                and fact.TextValue= @textValue
+";
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, col,textValue }).ToList();
+        return facts;
+    }
+
+   
+
+
+    public (int count, double sum, int decimals) GetSumofTableCode(int documentId, string tableCode, string zet, string row, string col)
+    {
+        
+        //**** For Some reason rule 4078 in the calculation of sum, it does'nt take into account "other than home countries" which is a fact of type "D"
+        //Sums for other tables do take into account facts with fieldOrigin="D"
+        //Therefore a special exception here
+
+        //and fact.FieldOrigin is null
+        var tableS4212Exception = " and fact.FieldOrigin is null";
+
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelectZet = @"
+                 SELECT count(*), sum(fact.NumericValue),max(fact.decimals)
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode
+                  AND fact.ZetValues= @Zet
+                  AND fact.Row= @Row
+                  AND fact.Col= @Col                
+               "
+        ;               
+        row = (row ?? "").Trim();
+        col = (col ?? "").Trim();
+        tableCode = (tableCode ?? "").Trim();
+        //var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectZet;
+        var sqlSelect = tableCode.Trim()== "S.04.04.01.02" ?  (sqlSelectZet + tableS4212Exception) : sqlSelectZet ;
+
+
+
+        var res = connectionLocal.QuerySingleOrDefault<(int count, double sum, int decimals)>(sqlSelect, new { documentId, tableCode, zet, row, col });        
+        return res;
+    }
+
+    public TemplateSheetFact? SelectFactByRowColTableCode(int documentId, string tableCode, string zet, string row, string col)
+    {
+        //ZET: sometimes is not used :  when  the closed table has an empty zet and the open tables have an actual zet
+        //for example rule 647 : 
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelectZet = @"
+                SELECT  fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode
+                  AND fact.ZetValues= @Zet
+                  AND fact.Row= @Row
+                  AND fact.Col= @Col
+                  
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+        var sqlSelectWithoutZet = @"
+                SELECT  fact.* 
                 FROM
                   TemplateSheetFact fact
                   JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
@@ -561,16 +784,32 @@ public class SqlFunctions : ISqlFunctions
                   and sheet.TableCode= @TableCode
                   --AND fact.ZetValues= @Zet
                   AND fact.Row= @Row
-                  AND fact.Col= @Col
+                  AND fact.Col= @Col                  
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
+        row = (row ?? "").Trim();
+        col=(col??"").Trim();
+        tableCode = (tableCode ?? "").Trim();   
+        var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectZet;
+              
+        
 
-        var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
-        return fact;
-    }
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, row, col });
+        
+        if (facts.Count() > 1 && tableCode.Trim()!= "S.04.04.01.02")
+        {
+            //multiple facts for each row/col because of either currency or multiple country f            
+            var sum = facts.Sum(fact=>fact.NumericValue);
+            var firstFact = facts.First();
+            firstFact.NumericValue = sum;
+            _logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}, Zet:{zet}");
+            return firstFact;            
+        }
 
-    public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet,  string col)
+        return facts.FirstOrDefault();
+    }   
+    public TemplateSheetFact? SelectFactByRowCol(int documentId, int sheetId,  string row, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
         var sqlSelect = @"
@@ -581,17 +820,57 @@ public class SqlFunctions : ISqlFunctions
                 WHERE
                   1=1
                   AND sheet.InstanceId= @documentId
-                  and sheet.TableCode= @TableCode
-                  --AND fact.ZetValues= @Zet                  
+                  and sheet.TemplateSheetId=@sheetId
+                  AND fact.Row= @Row
                   AND fact.Col= @Col
+                "
+        ;
+
+        var fact = connectionLocal.QuerySingleOrDefault<TemplateSheetFact>(sqlSelect, new { documentId, sheetId, row, col });
+        return fact;
+    }
+
+    public List<TemplateSheetFact> SelectFactsByCol(int documentId, string tableCode, string zet,  string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelectWithZet = @"
+                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode
+                  AND fact.ZetValues= @Zet                  
+                  AND fact.Col= @Col
+                  AND (fact.FieldOrigin is null or fact.FieldOrigin='')
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+        
+
+        var sqlSelectWithoutZet = @"
+                SELECT sheet.SheetCode, fact.TextValue, fact.DataType, fact.NumericValue, fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TableCode= @TableCode                  
+                  AND fact.Col= @Col
+                  AND (fact.FieldOrigin is null or fact.FieldOrigin='')
                 ORDER BY fact.Row, fact.Col;
                 "
         ;
 
+        var sqlSelect = string.IsNullOrEmpty(zet) ? sqlSelectWithoutZet : sqlSelectWithZet;
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, col }).ToList();
         return facts;
     }
-
+   
     public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, string tableCode, string zet, string col)
     {
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
@@ -610,6 +889,45 @@ public class SqlFunctions : ISqlFunctions
                 "
         ;
         var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, tableCode, zet, col }).ToList();
+        return facts;
+    }
+
+    public List<TemplateSheetFact> SelectFactsInEveryRowForColumn(int documentId, int sheetId, string col)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+                SELECT  fact.* 
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TemplateSheetId= @TemplateSheetId                 
+                  AND fact.Col= @col
+                ORDER BY fact.Row, fact.Col;
+                "
+        ;
+        var facts = connectionLocal.Query<TemplateSheetFact>(sqlSelect, new { documentId, TemplateSheetId=sheetId,  col }).ToList();
+        return facts;
+    }
+
+
+    public List<string> SelectDistinctRowsInSheet(int documentId, int sheetId)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"
+                SELECT  distinct fact.Row
+                FROM
+                  TemplateSheetFact fact
+                  JOIN TemplateSheetInstance sheet ON sheet.TemplateSheetId=fact.TemplateSheetId
+                WHERE
+                  1=1
+                  AND sheet.InstanceId= @documentId
+                  and sheet.TemplateSheetId=@sheetId    
+                ORDER BY fact.Row
+                ";
+        var facts = connectionLocal.Query<string>(sqlSelect, new { documentId, sheetId }).ToList();
         return facts;
     }
 
@@ -638,37 +956,192 @@ public class SqlFunctions : ISqlFunctions
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlSelect = @"
-            select 
+    select 
 	            dim.*
             from 
 	            mDimension dim	
 	            join mDomain dom  on dim.DomainID=dom.DomainID
             where 
                 dom.DomainCode= @DomainCode
-	            and dim.DimensionCode= @DimensionCode
+	            and dim.DimensionCode= @DimensionCode        
         ";
         var res = connectionEiopa.QuerySingleOrDefault<MDimensionModel>(sqlSelect, new { DomainCode, DimensionCode });
         return res;
     }
 
-
-    public List<VValidationRuleExpressions> SelectValidationRulesForModule(int ModuleId)
+    public MDimensionModel? SelectDimensionByCode(string dimensionCode)
     {
-        //a rule may apply to more than one table (or to no table), therefore rule may appear twice
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelect = @"
+            select 
+	            dim.*
+            from 
+	            mDimension dim	
+	        where 
+                dim.DimensionCode= @DimensionCode
+        ";
+        var res = connectionEiopa.QuerySingleOrDefault<MDimensionModel>(sqlSelect, new { dimensionCode });
+        return res;
+    }
+
+
+
+    public List<VValidationRuleExpressions> SelectValidationExpressionsWithTablesForModule(int ModuleId)
+    {
+        //in  vValidationRuleTables you may find validationId (correspond to expression) without tables        
+
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
 
+        
+
         var sqlSelect = @"
-           SELECT vre.*
-             FROM
-               vValidationRuleTables vrt               
-               JOIN vValidationRuleExpressions vre ON vre.ValidationID=vrt.ValidationID   
-             WHERE
-               vrt.ModuleID= @ModuleID
+            with validationDis as (
+	            select distinct ValidationID,vrt.Severity from  vValidationRuleTables vrt where ModuleID=@ModuleID and vrt.TableID is not null
+            ) 
+            select 
+	            severity,vre.*
+            from  vValidationRuleExpressions vre 
+            join validationDis vds on vds.ValidationID= vre.ValidationID
+            where vre.IsEnabled=1
+
 ";
 
         var ctx = connectionEiopa.Query<VValidationRuleExpressions>(sqlSelect, new { ModuleId }).ToList();
         return ctx;
     }
+
+
+    public  int CreateErrorRule(ERROR_Rule errorRule)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+                
+
+        //var dataRecord = record.Adapt<RecordDataModel>();
+        //dataRecord.IsActive = true;
+        try
+        {
+            int res = (int)connectionLocal.Insert<ERROR_Rule>(errorRule);
+            return res ;
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e.Message);
+            return 0;
+        }
+    }
+
+    
+    public List<ERROR_Rule> SelectErrorRules(int errorDocumentId, ErrorRuleTypes errorType )
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"select * from ERROR_Rule er where er.ErrorDocumentId = @ErrorDocumentId and er.IsError = @IsError and er.isWarning=@isWarning";
+        var isError= errorType == ErrorRuleTypes.Errors;
+        var isWarning = errorType == ErrorRuleTypes.Warnings;
+        var errors = connectionLocal.Query<ERROR_Rule>(sqlSelect, new { errorDocumentId, isError,isWarning }).ToList();
+        return errors;
+
+    }
+
+
+    public int CreateErrorDocument(ErrorDocumentModel errorDocument)
+    {        
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlDelete = @"delete from ERROR_Document where ErrorDocumentId = @ErrorDocumentId";
+        connectionLocal.Execute(sqlDelete, new {  errorDocument.ErrorDocumentId });
+        try
+        {
+            int res = (int)connectionLocal.Insert<ErrorDocumentModel>(errorDocument);
+            return res;
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e.Message);
+            return 0;
+        }
+        
+    }
+
+
+    public MTemplateOrTable? GetTableOrTemplate(string tableCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlTemplate = @"
+				SELECT * 
+				FROM mTemplateOrTable tt
+				WHERE 
+				  1=1				  
+				  AND tt.TemplateOrTableCode = @tableCode
+                    AND TemplateOrTableType = 'BusinessTable' 
+				";
+        var template = connectionEiopa.QueryFirstOrDefault<MTemplateOrTable>(sqlTemplate, new { tableCode });
+        return template;
+
+    }
+
+
+    public int CreateCurrencyBatch(CurrencyBatch currencyBatch)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+
+        //var dataRecord = record.Adapt<RecordDataModel>();
+        //dataRecord.IsActive = true;
+        try
+        {
+            int res = (int)connectionLocal.Insert<CurrencyBatch>(currencyBatch);
+            return res;
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e.Message);
+            return 0;
+        }
+    }
+    public int CreateExchangeRate(CurrencyExchangeRate currencyExchangeRate)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+
+        //var dataRecord = record.Adapt<RecordDataModel>();
+        //dataRecord.IsActive = true;
+        try
+        {
+            int res = (int)connectionLocal.Insert<CurrencyExchangeRate>(currencyExchangeRate);
+            return res;
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e.Message);
+            return 0;
+        }
+    }
+
+    public int DeleteCurrencyBatch(int currencyBatchId)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlDelete = @"delete from CurrencyBatch where CurrencyBatchId= @CurrencyBatchId";
+        var count=connectionLocal.Execute(sqlDelete, new { currencyBatchId});
+        return count;
+
+    }
+
+    public CurrencyBatch? SelectCurrencyBatch(int year,int quarter,int wave)
+    {
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlSelect = @"select * from CurrencyBatch where year= @year and Quarter= @Quarter and Wave=@Wave";
+        var cb = connectionLocal.QueryFirstOrDefault<CurrencyBatch>(sqlSelect, new { year,quarter,wave });
+        return cb;
+
+    }
+
+    
 
 
 

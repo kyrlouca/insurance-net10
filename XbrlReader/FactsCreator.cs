@@ -18,6 +18,7 @@ using XbrlReader;
 using System.Text;
 using Syncfusion.XlsIO;
 using Shared.SQLFunctions;
+using Shared.Various;
 
 public class FactsCreator : IFactsCreator
 {
@@ -29,10 +30,10 @@ public class FactsCreator : IFactsCreator
 
 
 	MModule _mModule = new();
-	XDocument _xmlDoc;
+	XDocument? _xmlDoc;
 	private readonly DocInstance? _docInstance;
 	private int _documentId = 0;
-	private FundModel _fund;
+	private FundModel? _fund;
 
 	public XElement? RootNode { get; private set; }
 	readonly XNamespace xbrli = "http://www.xbrl.org/2003/instance";
@@ -81,8 +82,8 @@ public class FactsCreator : IFactsCreator
         return (true, "");
     }
 
-    
-    public (int, List<string>) CreateLooseFacts()
+
+    public (int, List<string>) CreateLooseFacts()    
 	{
 
 
@@ -92,7 +93,7 @@ public class FactsCreator : IFactsCreator
             var messagex = $"fund {_parameterData.FundId} NOT found";
             _logger.Error(messagex);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, messagex);
-            return (0, FilingsSubmitted);
+            return (0,new List<string>());
         }
 		_fund = fund;
 
@@ -105,8 +106,8 @@ public class FactsCreator : IFactsCreator
 		{
 			_logger.Error(parseMessage);
 			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, parseMessage);
-			return (0, FilingsSubmitted);
-		}
+            return (0, new List<string>());
+        }
         _xmlDoc = parsexmlDoc!;
 
         var RootNode = _xmlDoc.Root;		
@@ -120,7 +121,7 @@ public class FactsCreator : IFactsCreator
 			var moduleMessage = @$"The Module Code in the Xbrl file is ""{moduleCodeXbrl}"" instead of ""{_mModule.ModuleCode}""";
             _logger.Error(moduleMessage);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, moduleMessage);            
-			return (0, FilingsSubmitted);
+			return (0, new List<string>());
 		}
 
 		var (isValidReferenceDate, referenceMessage) = IsValidReferenceDate();
@@ -128,8 +129,8 @@ public class FactsCreator : IFactsCreator
 		{
 			_logger.Error(referenceMessage);
 			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, referenceMessage);
-			return (0, FilingsSubmitted);
-		}
+            return (0, new List<string>());
+        }
 
 		var fundLei = GetXmlElementFromXbrl(_xmlDoc, "si1899");
 		var fundFromDb = GetDbFundByLei(fundLei);
@@ -138,7 +139,7 @@ public class FactsCreator : IFactsCreator
 			message = $"The license number is incorrect:{fundLei}";
 			_logger.Error(message);
 			_SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
-			return (0, FilingsSubmitted);
+			return (0, new List<string>());
 		}
 
 		///////////////////////////
@@ -153,7 +154,7 @@ public class FactsCreator : IFactsCreator
 			Console.WriteLine(message);
             _logger.Error(message);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, message);
-            return (0, FilingsSubmitted);
+            return (0, new List<string>());
 		}
 
 
@@ -170,15 +171,15 @@ public class FactsCreator : IFactsCreator
 		Console.WriteLine("\nCreate Facts");
 		AddFacts();
 
-		//DeleteContexts();
-		return (_documentId, FilingsSubmitted);
+        //DeleteContexts();
+        return (_documentId, FilingsSubmitted);
 
 
-		void AddValidFilingIndicators()
+        void AddValidFilingIndicators()
 		{
 			//filing indicators
 			var filingsHeader = RootNode.Element(findNs + "fIndicators");
-			var filingIndicators = filingsHeader?.Elements(findNs + "filingIndicator").ToList();
+			var filingIndicators = filingsHeader?.Elements(findNs + "filingIndicator").Where(element=>element is not null).ToList();
 			foreach (var fi in filingIndicators)
 			{
 				var isNotFiled = fi.Attribute(findNs + "filed")?.Value == "false";
@@ -219,6 +220,7 @@ public class FactsCreator : IFactsCreator
 				i += 1;
 				var contextLines=new List<ContextLine>();
 				var contextXbrlId = contextElement.Attribute("id").Value;
+				//Console.WriteLine($"context:{contextXbrlId}");
 				var scenario = contextElement.Element(xbrli + "scenario");
 
 				//Explicit dims //<xbrldi:explicitMember dimension="s2c_dim:AG">s2c_VM:x17</xbrldi:explicitMember>                    
@@ -261,7 +263,7 @@ public class FactsCreator : IFactsCreator
                 }
 
 				var ctLines = contextLines.Select(cl => cl.Signature).Order();
-                var contexSignature = string.Join("|", ctLines);
+                var contexSignature = string.Join( "|",ctLines.ToList());
                 
                 
                 var context = _SqlFunctions.CreateContext(new ContextModel() {InstanceId= _documentId, ContextId= 0,ContextXbrlId= contextXbrlId,Signature= contexSignature??"", TableId=0 });
@@ -394,9 +396,10 @@ public class FactsCreator : IFactsCreator
 					throw new InvalidOperationException($"signature:{factSignature}");
 				}
 				
-				var cFact = _SqlFunctions.CreateTemplateSheetFact(newFact);
-				if(cFact is null)
+				var cFact = _SqlFunctions.CreateTemplateSheetFact(newFact,true);
+				if(cFact ==0)
 				{
+					_logger.Error($"signature:{newFact.Signature} Fact cannot be created");
 					continue;
 				}
 
@@ -439,7 +442,9 @@ public class FactsCreator : IFactsCreator
 
                     ctxLines.Sort();
                     ctxLines.Insert(0, metXbrlCode);
-                    var newSignature = string.Join("|", ctxLines);
+
+                    //var newSignature = StringRoutines.JoinStringCreate(ctxLines.ToList(), "|");
+                    var newSignature = string.Join( "|",ctxLines.ToList());
 
 
                     return newSignature;
@@ -506,7 +511,7 @@ public class FactsCreator : IFactsCreator
                 try
                 {
                     var nfi = new CultureInfo("en-US", false).NumberFormat;
-                    fact.NumericValue = Convert.ToDecimal(fact.TextValue, nfi);
+                    fact.NumericValue = Convert.ToDouble(fact.TextValue, nfi);
                 }
                 catch (System.Exception)
                 {
@@ -644,10 +649,15 @@ public class FactsCreator : IFactsCreator
 		var sqlDeleteDoc = @"delete from DocInstance where InstanceId= @documentId";
 		var rows = connectionInsurance.Execute(sqlDeleteDoc, new { documentId });
 
-		var sqlErrorDocDelete = @"delete from DocInstance where InstanceId= @documentId";
+		var sqlErrorDocDelete = @"delete from ERROR_Document where ErrorDocumentId= @documentId";
 		connectionInsurance.Execute(sqlErrorDocDelete, new { documentId });
 
-		return rows;
+        var sqlHangingFacts = "delete from TemplateSheetFact where InstanceId=@documentId";
+        connectionInsurance.Execute(sqlHangingFacts, new { documentId });
+        
+
+
+        return rows;
 	}
 
     private int CreateDocInstanceInDb()
