@@ -1,4 +1,4 @@
-﻿namespace ForeignKeys;
+﻿namespace CreateCombinedS61S62;
 using Mapster;
 using Serilog;
 using Shared.DataModels;
@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-public class UpdateForeignKeys : IUpdateForeignKeys
+public class CreateSheetAndFacts 
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -26,7 +26,7 @@ public class UpdateForeignKeys : IUpdateForeignKeys
 
 
 
-    public UpdateForeignKeys(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
+    public CreateSheetAndFacts(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
@@ -36,11 +36,9 @@ public class UpdateForeignKeys : IUpdateForeignKeys
 
     
 
-    public int UpdateForeignKeysForYear(int year)
+    public int CreateX(int year)
     {
-
-        var docs = _SqlFunctions.SelectDocInstances(_parameterData.FundId,_parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
-
+        var docs = _SqlFunctions.SelectDocInstances(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
         var documents = _SqlFunctions.K_documentsForYear(year);
         if (_parameterData.IsDevelop)
         {
