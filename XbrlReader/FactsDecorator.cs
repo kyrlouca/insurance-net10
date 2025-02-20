@@ -97,7 +97,7 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => filings.Contains(table.XbrlFilingIndicatorCode)).ToList();
         }
 
-        _testingTableId = 0;        
+        //_testingTableId = 416;
         if (_parameterData.IsDevelop && _testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
@@ -267,8 +267,12 @@ public partial class FactsDecorator : IFactsDecorator
         foreach (var sheetInfo in sheetsInfo)
         {
 
+            //fuck99
+            //var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(sheetInfo.TableId)
+                //.Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
+
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(sheetInfo.TableId)
-                .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
+                .Where(ord => ord.AxisOrientation == "Y" && ord.IsOpenAxis);
 
             if (!yOrdinatesForKeys.Any())
             {
