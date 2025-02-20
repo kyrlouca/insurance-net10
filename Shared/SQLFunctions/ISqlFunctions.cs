@@ -20,6 +20,9 @@ public interface ISqlFunctions
     public IEnumerable<DocInstance> SelectDocInstances(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
     public DocInstance? SelectDocInstance(int fundId, string moduleCode, int ApplicableYear, int ApplicableQuarter);
     //**********sheets
+    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, string zDimVal, MTable table);
+    public int CreateTemplateSheet(TemplateSheetInstanceDataModel templateSheetInstance);
+    public int DeleteTemplateSheet(int templateSheetInstanceId);
     public TemplateSheetInstance? SelectTemplateSheetByZetValue(int documentId, string tableCode, string ZDimVal);
     public TemplateSheetInstance? SelectTemplateSheetBySheetCodeZet(int documentId, string tableCode, string sheetCodeZet);
     public List<TemplateSheetInstance> SelectTemplateSheetByTableCodeAllZets(int documentId, string tableCode);
@@ -54,8 +57,7 @@ public interface ISqlFunctions
     public List<MAPPING> SelectMappings(int tableId, MappingOrigin mapping);
     public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
-    public TemplateSheetInstance CreateTemplateSheet(int documentId, string sheetCode, string sheetCodeZet, string sheetTabName, string zDimVal, MTable table);
-
+    
     public int CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact);
 
     public ContextModel? CreateContext(ContextModel context);
