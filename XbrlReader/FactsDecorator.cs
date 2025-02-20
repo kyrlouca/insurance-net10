@@ -267,7 +267,7 @@ public partial class FactsDecorator : IFactsDecorator
         foreach (var sheetInfo in sheetsInfo)
         {
 
-            //fuck99
+            //fuck99 Ι changed this to include C0016 from ordinates for form S.6.0.2.1
             //var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(sheetInfo.TableId)
                 //.Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
 
