@@ -542,7 +542,23 @@ public class SqlFunctions : ISqlFunctions
         return factId;
     }
 
+    public int CreateTemplateSheetFact(TemplateSheetFactDataModel templateSheetFact)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
+        try
+        {
+            var res = connectionInsurance.Insert(templateSheetFact);
+            return (int)res;
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e.Message);
+            Console.WriteLine(e.Message);
+            return 0;
+        }
+
+    }
     public ContextLine? CreateContextLine(ContextLine contextLine)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);

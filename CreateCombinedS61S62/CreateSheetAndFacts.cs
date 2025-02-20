@@ -65,6 +65,16 @@ public class CreateSheetAndFacts
         };
         var id=_SqlFunctions.CreateTemplateSheet(newSheet);
 
+        var fact = new TemplateSheetFactDataModel()
+        {
+            InstanceId = doc.InstanceId,
+            TemplateSheetId = id,
+            DateTimeValue=DateTime.Now,
+            TextValue = "abc",
+            Row="RRRR"
+        };
+        var xx= _SqlFunctions.CreateTemplateSheetFact(fact);
+
         return id;
     }
     

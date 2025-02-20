@@ -31,6 +31,10 @@ public interface ISqlFunctions
     public List<TemplateSheetInstance> SelectTemplateSheetsByTableId(int documentId, int tableId);
     public void UpdateTemplateSheetName(int templateSheetId, string sheetTabName);
     //*********facts
+
+    public int CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact);
+
+    public int CreateTemplateSheetFact(TemplateSheetFactDataModel templateSheetFact);
     public TemplateSheetFact? SelectFact(int factId);
     public List<TemplateSheetFact> SelectFactsForSheetId(int sheetId);
     public List<TemplateSheetFact> SelectFactsByColAndTextValue(int documentId, string tableCode, string col, string textValue);
@@ -58,8 +62,6 @@ public interface ISqlFunctions
     public List<MAPPING> SelectRowColMappings(int tableId, string rowCol);
 
     
-    public int CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact);
-
     public ContextModel? CreateContext(ContextModel context);
 
     public ContextLine? CreateContextLine(ContextLine contextLine);
