@@ -74,7 +74,7 @@ public class ReaderMainApp : IReaderMainApp
         };
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
-        if (!_parameterData.IsDevelop || 1 == 2)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -85,7 +85,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (!_parameterData.IsDevelop || 1 == 2)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
             if (_documentId == 0)
