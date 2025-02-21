@@ -385,7 +385,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
             .Where(ord => ord.AxisOrientation == "Y" &&  ord.IsOpenAxis)
-            .OrderBy(ykey => ykey.Col);
+            .OrderBy(ykey => ykey.OrdinateID);
 
         var yOrdinatesForKeysOld = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
               .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
@@ -496,8 +496,13 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         int AssignYKeysToColumns(TemplateSheetInstance dbSheet, IRange dataRange)
         {
-            var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
+            //fuck99
+            var yOrdinatesForKeysOld = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
                   .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
+                  .OrderBy(ykey => ykey.OrdinateID);
+
+            var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
+                  .Where(ord => ord.AxisOrientation == "Y"  && ord.IsOpenAxis)
                   .OrderBy(ykey => ykey.OrdinateID);
 
             var offsetCol = 0;
