@@ -384,6 +384,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
+            .Where(ord => ord.AxisOrientation == "Y" &&  ord.IsOpenAxis)
+            .OrderBy(ykey => ykey.Col);
+
+        var yOrdinatesForKeysOld = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
               .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
               .OrderByDescending(ykey => ykey.OrdinateID);
 
