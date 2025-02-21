@@ -312,7 +312,8 @@ public partial class FactsDecorator : IFactsDecorator
             //fuck99 if the dim is not found in the context and is optional still create a y fact
             if (ctxLine is null && !ordinateKey.OptionalKey)
             {
-                continue;
+                throw new Exception($"Ordinate is NULL and it is NOT optional: ordinateId:{ordinateKey.OrdinateID} ");
+                //continue;
             }
 
             var newFact = rowFact.Adapt<TemplateSheetFact>();
@@ -320,13 +321,17 @@ public partial class FactsDecorator : IFactsDecorator
 
             //fuck99 for optional dims use the default value 
             var defaultMemberValue = "";
-            if (ordinateKey.OptionalKey)
+            var isOptionalAndNotRowKey = false;
+            if (ordinateKey.OptionalKey && !ordinateKey.IsRowKey)
             {
+                isOptionalAndNotRowKey = true;
                 var defaultMemberId = CellDim.ParseHierarchy(ordinateKey.Signature).HierarchyDefaultMember;
                 var member = _SqlFunctions.SelectMMember(defaultMemberId);
-                defaultMemberValue = member is null?"" : member.MemberLabel;
+                defaultMemberValue = member is null ? "" : member.MemberLabel;
             }
-            var textValue = ordinateKey.OptionalKey ? defaultMemberValue
+            ctxLine = ctxLine ?? new ContextLine() { IsNil = true };
+
+            var textValue = isOptionalAndNotRowKey ? defaultMemberValue
                 : ctxLine!.IsNil ? ""
                 : ctxLine.IsExplicit ? ctxLine.Signature
                 : ctxLine.DomainValue;
