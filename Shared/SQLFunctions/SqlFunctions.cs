@@ -1187,7 +1187,7 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public int CreateCombinedFacts(int documentId)
+    public int CreateCombinedFacts(int documentId,int sheetId)
     {
         var sqlInsert = @"
 WITH S61c40 AS
@@ -1204,8 +1204,8 @@ WITH S61c40 AS
       AND Sheett1.Instanceid = Factt1.Instanceid
    WHERE
       Sheett1.Tablecode = 'S.06.02.01.01'
-      AND Factt1.Col = 'C0002'
-      AND Factt1.Row = 'R0001'
+      AND Factt1.Col = 'C0001'
+      --AND Factt1.Row = 'R0001'
       AND Sheett1.InstanceId = @DocumentId
 ),
 S62 AS
@@ -1237,7 +1237,7 @@ SELECT
    S61c40.Instanceid, 
    S61c40.Templatesheetid, 
    S61c40.Row, 
-   S62.Col, 
+   Coalesce(S62.Col,'CXXXX'),
    S62.Textvalue, 
    S62.Numericvalue, 
    S62.Datetimevalue, 
@@ -1251,9 +1251,9 @@ UNION
 
 SELECT 
    Factt1.Instanceid, 
-   Factt1.Templatesheetid, 
+   @sheetId,
    Factt1.Row, 
-   Factt1.Col, 
+   Factt1.Col,
    Factt1.Textvalue, 
    Factt1.Numericvalue, 
    Factt1.Datetimevalue, 
@@ -1263,17 +1263,15 @@ INNER JOIN Dbo.Templatesheetinstance AS Sheett1
    ON Sheett1.Templatesheetid = Factt1.Templatesheetid
 WHERE 
    Sheett1.Tablecode = 'S.06.02.01.01'
-   AND Sheett1.InstanceId = @DocumentId
-  
-   AND Factt1.Row = 'R0001';
-GO
+   AND Sheett1.InstanceId = @DocumentId  
+  -- AND Factt1.Row = 'R0001'
 
 ";
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
 
         try
         {
-            var facts = connectionLocal.Execute(sqlInsert, new { documentId });
+            var facts = connectionLocal.Execute(sqlInsert, new { documentId,sheetId });
             return facts;
         }
         catch (Exception e) { 

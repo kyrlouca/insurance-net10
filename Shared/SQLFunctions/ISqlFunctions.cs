@@ -101,4 +101,6 @@ public interface ISqlFunctions
     public int CreateExchangeRate(CurrencyExchangeRate currencyExchangeRate);
     public int DeleteCurrencyBatch(int currencyBatchId);
     public CurrencyBatch? SelectCurrencyBatch(int year, int quarter, int wave);
+
+    public int CreateCombinedFacts(int documentId,int sheetId);
 }

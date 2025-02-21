@@ -44,7 +44,7 @@ public class CreateCombinedS61S62 : ICreateCombinedS61S62
         //module-code="qrs"
 
 
-        Console.WriteLine($"started Uupdating Keys for Year:{_parameterData.ApplicableYear}");
+        Console.WriteLine($"Started Creating Combined :fund:{_parameterData.FundId},Year:{_parameterData.ApplicableYear},quarter:{_parameterData.ApplicableQuarter}");
         _createSheetAndFacts.CreateX(_parameterData.ApplicableYear);        
 
 

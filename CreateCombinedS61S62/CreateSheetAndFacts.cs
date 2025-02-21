@@ -63,19 +63,10 @@ public class CreateSheetAndFacts
             SheetCodeZet = tableCode,
             DateCreated = DateTime.Now,
         };
-        var id=_SqlFunctions.CreateTemplateSheet(newSheet);
-
-        var fact = new TemplateSheetFactDataModel()
-        {
-            InstanceId = doc.InstanceId,
-            TemplateSheetId = id,
-            DateTimeValue=DateTime.Now,
-            TextValue = "abc",
-            Row="RRRR"
-        };
-        //var xx= _SqlFunctions.CreateTemplateSheetFact(fact);
-        var xx=_SqlFunctions.cre
-        return id;
+        var sheetId=_SqlFunctions.CreateTemplateSheet(newSheet);
+        
+        var xx = _SqlFunctions.CreateCombinedFacts(doc.InstanceId,sheetId);
+        return xx;
     }
     
 
