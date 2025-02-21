@@ -97,7 +97,7 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => filings.Contains(table.XbrlFilingIndicatorCode)).ToList();
         }
 
-        //_testingTableId = 416;
+        _testingTableId = 416;
         if (_parameterData.IsDevelop && _testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
@@ -269,7 +269,7 @@ public partial class FactsDecorator : IFactsDecorator
 
             //fuck99 Ι changed this to include C0016 from ordinates for form S.6.0.2.1
             //var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(sheetInfo.TableId)
-                //.Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
+            //.Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
 
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(sheetInfo.TableId)
                 .Where(ord => ord.AxisOrientation == "Y" && ord.IsOpenAxis);
@@ -309,14 +309,25 @@ public partial class FactsDecorator : IFactsDecorator
         {
             var mp = DimDom.GetParts(ordinateKey.Signature);
             var ctxLine = contextLines.FirstOrDefault(cl => cl.Dimension == mp.Dim);
-            if (ctxLine is null)
+            //fuck99 if the dim is not found in the context and is optional still create a y fact
+            if (ctxLine is null && !ordinateKey.OptionalKey)
             {
                 continue;
             }
+
             var newFact = rowFact.Adapt<TemplateSheetFact>();
             newFact.Col = ordinateKey.Col;
 
-            var textValue = ctxLine.IsNil ? ""
+            //fuck99 for optional dims use the default value 
+            var defaultMemberValue = "";
+            if (ordinateKey.OptionalKey)
+            {
+                var defaultMemberId = CellDim.ParseHierarchy(ordinateKey.Signature).HierarchyDefaultMember;
+                var member = _SqlFunctions.SelectMMember(defaultMemberId);
+                defaultMemberValue = member is null?"" : member.MemberLabel;
+            }
+            var textValue = ordinateKey.OptionalKey ? defaultMemberValue
+                : ctxLine!.IsNil ? ""
                 : ctxLine.IsExplicit ? ctxLine.Signature
                 : ctxLine.DomainValue;
 
@@ -327,7 +338,7 @@ public partial class FactsDecorator : IFactsDecorator
             newFact.XBRLCode = "";
 
             //Integer s2c_dim:BL(s2c_LB: x142)
-            newFact.DataTypeUse = newFact.TextValue.Contains("s2c_dim:")?  "E":"S";
+            newFact.DataTypeUse = newFact.TextValue.Contains("s2c_dim:") ? "E" : "S";
             newFact.FieldOrigin = "K";
             newFact.CellID = 0;
             var x = _SqlFunctions.CreateTemplateSheetFact(newFact, false);
@@ -404,7 +415,7 @@ public partial class FactsDecorator : IFactsDecorator
         tableCells = tableCells.Where(cell => !string.IsNullOrEmpty(cell.DatapointSignature)).ToList();
         foreach (var tableCell in tableCells)
         {
-             var cellSignature = tableCell.DatapointSignature;
+            var cellSignature = tableCell.DatapointSignature;
 
             var cellRowCol = DimUtils.ParseCellRowColNew(tableCell.BusinessCode);
             if (!cellRowCol.IsValid)
@@ -596,10 +607,10 @@ public partial class FactsDecorator : IFactsDecorator
         List<string> fullDims = cellSignature
             .Split("|").ToList();
         var dims = fullDims.Skip(1);
-        
+
         List<TemplateSheetFact> factss = new();
 
-        var rgxMet = new Regex(@"^MET\((.*?)\)",RegexOptions.Compiled);
+        var rgxMet = new Regex(@"^MET\((.*?)\)", RegexOptions.Compiled);
         var xbrlCodeFull = fullDims.FirstOrDefault() ?? "";
         var xbrlCodeMatch = rgxMet.Match(xbrlCodeFull);
         var xbrlCode = xbrlCodeMatch.Success ? xbrlCodeMatch.Groups[1].Value : "";
@@ -713,12 +724,12 @@ public partial class FactsDecorator : IFactsDecorator
         return fullFacts;
 
 
-       
+
 
         string ToJustDim(string dimSignature)
         {
             //s2c_dim:BL(s2c_LB:x145)=> BL
-            var rgxJustDim = new Regex(@"^s2c_dim:(\w\w)\(.*?\)",RegexOptions.Compiled);
+            var rgxJustDim = new Regex(@"^s2c_dim:(\w\w)\(.*?\)", RegexOptions.Compiled);
             var matchJustDim = rgxJustDim.Match(dimSignature);
             return matchJustDim.Success ? matchJustDim.Groups[1].Value : "";
         }
@@ -826,7 +837,7 @@ public partial class FactsDecorator : IFactsDecorator
             //******* Assign the facts to the sheet
             //if the fact is already assigned to antoher shhet, create a clone fact
 
-            
+
 
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.CellID, tableFact.Zet, tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
 

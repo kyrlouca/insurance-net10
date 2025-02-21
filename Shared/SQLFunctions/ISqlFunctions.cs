@@ -54,6 +54,7 @@ public interface ISqlFunctions
     MModule? SelectModuleByCode(string moduleCode);
 
     public MMetric? SelectMMetric(string xbrlCode);
+    public MMember? SelectMMember(int memberId);
     public MMember? SelectMMember(string domainString);
 
     public List<MMember> SelectMMembersFromHierarchy(int hierarchyId);

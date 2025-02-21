@@ -15,7 +15,7 @@ public class ReaderMainApp : IReaderMainApp
     private readonly IFactsDecorator _factsDecorator;
 
 
-    public int id = 279;
+    public int id = 282;
     public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator, IFactsDecorator factsDecorator)
     {
         _parameterHandler = getParameters;
@@ -29,7 +29,7 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 279;
+        var _documentId = 282;
         var filingsSubmitted = new List<string>();
         var filingsSubmittedxx = new List<string>()
         {
@@ -74,7 +74,7 @@ public class ReaderMainApp : IReaderMainApp
         };
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -85,7 +85,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
             if (_documentId == 0)

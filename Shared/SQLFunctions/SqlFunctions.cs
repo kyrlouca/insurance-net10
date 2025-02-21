@@ -298,6 +298,16 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public MMember? SelectMMember(int memberId)
+    {
+        //memberXbrlCode= s2c_AM:x2 => find mMember
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlMem = @"select * from mMember mem where mem.MemberID= @MemberID";        
+        var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { memberId });
+        return val;
+    }
+
+
     public MMember? SelectMMember(string xbrlCode)
     {
         //memberXbrlCode= s2c_AM:x2 => find mMember
