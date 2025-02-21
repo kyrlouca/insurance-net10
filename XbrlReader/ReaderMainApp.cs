@@ -25,6 +25,9 @@ public class ReaderMainApp : IReaderMainApp
         _factsDecorator = factsDecorator;
 
     }
+
+
+
     public int Run()
     {
         _parameterData = _parameterHandler.GetParameterData();
@@ -74,6 +77,16 @@ public class ReaderMainApp : IReaderMainApp
         };
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
+
+        var isEiopaVersionValid = IsValidEiopaVersion();
+        if (!isEiopaVersionValid)
+        {
+            var errorEiopaMessage = $"Invalid Eiopa Version:{_parameterData.EiopaVersion} for year:{_parameterData.ApplicableYear}, quarter:{_parameterData.ApplicableQuarter}";
+            _logger.Error(errorEiopaMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorEiopaMessage);
+            return 1;
+        }
+
         if (!_parameterData.IsDevelop || 1 == 1)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
@@ -87,7 +100,7 @@ public class ReaderMainApp : IReaderMainApp
 
         if (!_parameterData.IsDevelop || 1 == 1)
         {
-            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();            
+            (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)
             {
                 return 1;
@@ -97,7 +110,7 @@ public class ReaderMainApp : IReaderMainApp
 
         if (!_parameterData.IsDevelop || 1 == 1)
         {
-            var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId,filingsSubmitted);
+            var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
             if (res != 0)
             {
                 return res;
@@ -109,6 +122,38 @@ public class ReaderMainApp : IReaderMainApp
         _logger.Information(message);
         _SqlFunctions.CreateTransactionLog(MessageType.COMPLETE, message);
         return 0;
+    }
+
+    public record ValidEiopaVersion(string EiopaVersion, int ValidYear, List<int> ValidQuarters);
+    private bool IsValidEiopaVersion()
+    {
+        List<ValidEiopaVersion> versions =
+                [
+                    new("IU260", 2021, [4]),
+                new("IU260", 2022, [1, 2, 3]),
+
+                new("IU270", 2022, [4]),
+                new("IU270", 2023, [1, 2, 3]),
+
+                new("IU280", 2023, [4]),
+                new("IU280", 2024, [1, 2, 3]),
+
+                new("IU282", 2024, [4]),
+                new("IU282", 2025, [1, 2, 3]),
+
+            ];
+
+        var versionData = versions.Where(x => x.EiopaVersion == _parameterData.EiopaVersion);
+
+        foreach (var version in versionData)
+        {
+            if (version.ValidYear == _parameterData.ApplicableYear && version.ValidQuarters.Contains(_parameterData.ApplicableQuarter))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }
