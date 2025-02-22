@@ -47,7 +47,7 @@ public class HostCreator
 			 services.Configure<VersionData>(context.Configuration.GetSection(vr));			 
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
-             services.AddScoped<ICustomPensionStyler, CustomPensionStyler>();
+             //services.AddScoped<ICustomPensionStyler, CustomPensionStyler>();
              services.AddScoped<ICreateCombinedRun, CreateCombinedRun>();
              services.AddScoped<CreateSheetAndFacts>();
 
