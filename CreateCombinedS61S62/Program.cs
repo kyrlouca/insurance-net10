@@ -31,7 +31,7 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try
 {
-    var loadMain = host.Services.GetService<ICreateCombinedS61S62>();
+    var loadMain = host.Services.GetService<ICreateCombinedRun>();
     loadMain?.Run();
 }
 catch (Exception ex)

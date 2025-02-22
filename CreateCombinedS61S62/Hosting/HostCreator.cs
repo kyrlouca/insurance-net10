@@ -48,7 +48,7 @@ public class HostCreator
 			 services.AddScoped<ISqlFunctions, SqlFunctions>();
 			 services.AddScoped<IParameterHandler, ParameterHandler>();
              services.AddScoped<ICustomPensionStyler, CustomPensionStyler>();
-             services.AddScoped<ICreateCombinedS61S62, CreateCombinedS61S62>();
+             services.AddScoped<ICreateCombinedRun, CreateCombinedRun>();
              services.AddScoped<CreateSheetAndFacts>();
 
          })

@@ -20,7 +20,7 @@ using Shared.DataModels;
 using Syncfusion.XlsIO.Interfaces;
 
 
-public class CreateCombinedS61S62 : ICreateCombinedS61S62
+public class CreateCombinedRun : ICreateCombinedRun
 {
 
     private readonly IParameterHandler _parameterHandler;
@@ -30,7 +30,7 @@ public class CreateCombinedS61S62 : ICreateCombinedS61S62
     private CreateSheetAndFacts _createSheetAndFacts;
 
     public int id = 12;
-    public CreateCombinedS61S62(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, CreateSheetAndFacts creatSheetAndFacts)
+    public CreateCombinedRun(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, CreateSheetAndFacts creatSheetAndFacts)
     {
         _parameterHandler = getParameters;
         _parameterData = getParameters.GetParameterData();
@@ -54,7 +54,7 @@ public class CreateCombinedS61S62 : ICreateCombinedS61S62
         }
         _createSheetAndFacts.K_UpdateDocumentForeignKeys(documentId);
         Console.WriteLine("Create Sheet");
-        _createSheetAndFacts.CreateCombinedSheet(documentId);        
+        _createSheetAndFacts.CreateCombinedSheet(documentId);
 
         return 0;
 

@@ -22,10 +22,6 @@ public class UpdateForeignKeys : IUpdateForeignKeys
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
 
-
-
-
-
     public UpdateForeignKeys(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
     {
         _parameterHandler = getParameters;
@@ -33,8 +29,6 @@ public class UpdateForeignKeys : IUpdateForeignKeys
         _logger = logger;
         _SqlFunctions = sqlFunctions;
     }
-
-
 
     public int UpdateForeignKeysForYear(int year)
     {
@@ -66,38 +60,38 @@ public class UpdateForeignKeys : IUpdateForeignKeys
             var mainSheet = sheets.FirstOrDefault(sheet => sheet.TableCode.Trim() == kyrTable.TableCode.Trim());
             var relatedSheet = sheets.FirstOrDefault(sheet => sheet.TableCode.Trim() == kyrTable.FK_TableCode.Trim());
 
-            if (mainSheet is not null && relatedSheet is not null)
+            if (mainSheet is null || relatedSheet is null)
             {
-                Console.WriteLine($"sheet:{mainSheet.SheetCode}");
-                //find the fact in each row, with Column = mainCol
-                var mainKeyRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, mainSheet.TableCode, kyrTable.TableCol.Trim());
-                //find the fact in each row, with column =fk_Col
-                var total = 0;
-                var relatedRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, relatedSheet?.TableCode ?? "", kyrTable.FK_TableCol.Trim());
-                foreach (var mainRowFact in mainKeyRowFacts)
-                {
-
-                    var relatedFact = relatedRowFacts.FirstOrDefault(fact => fact.TextValue.Trim() == mainRowFact.TextValue.Trim());
-
-                    if (relatedFact is not null)
-                    {
-                        //update all main facts in this row with FK_ROW
-                        var relatedRow = relatedFact.Row;
-                        if (relatedRow is not null)
-                        {
-                            var count = _SqlFunctions.K_UpdateForeignKeys(mainRowFact.TemplateSheetId, mainRowFact.Row, relatedRow);
-                            total += count;
-                        }
-                    }
-
-                }
-                Console.WriteLine($"Updated Facts:{total}");
+                continue;
             }
 
+            Console.WriteLine($"sheet:{mainSheet.SheetCode}");
+            //find the fact in each row, with Column = mainCol
+            var mainKeyRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, mainSheet.TableCode, kyrTable.TableCol.Trim());
+            //find the fact in each row, with column =fk_Col
+            var total = 0;
+            var relatedRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, relatedSheet?.TableCode ?? "", kyrTable.FK_TableCol.Trim());
+            foreach (var mainRowFact in mainKeyRowFacts)
+            {
+
+                var relatedFact = relatedRowFacts.FirstOrDefault(fact => fact.TextValue.Trim() == mainRowFact.TextValue.Trim());
+
+                if (relatedFact is not null)
+                {
+                    //update all main facts in this row with FK_ROW
+                    var relatedRow = relatedFact.Row;
+                    if (relatedRow is not null)
+                    {
+                        var count = _SqlFunctions.K_UpdateForeignKeys(mainRowFact.TemplateSheetId, mainRowFact.Row, relatedRow);
+                        total += count;
+                    }
+                }
+
+            }
+            Console.WriteLine($"Updated Facts:{total}");
+
+
         }
-
-
-        //272
 
         return 0;
     }
