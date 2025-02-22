@@ -45,8 +45,16 @@ public class CreateCombinedS61S62 : ICreateCombinedS61S62
 
 
         Console.WriteLine($"Started Creating Combined :fund:{_parameterData.FundId},Year:{_parameterData.ApplicableYear},quarter:{_parameterData.ApplicableQuarter}");
-        _createSheetAndFacts.CreateX(_parameterData.ApplicableYear);        
 
+        var documentId = _createSheetAndFacts.FindDocument();
+        if (documentId == 0)
+        {
+            _logger.Equals("No Document Found");
+            return 0;
+        }
+        _createSheetAndFacts.K_UpdateDocumentForeignKeys(documentId);
+        Console.WriteLine("Create Sheet");
+        _createSheetAndFacts.CreateCombinedSheet(documentId);        
 
         return 0;
 

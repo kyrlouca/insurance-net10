@@ -23,7 +23,8 @@ public class CreateSheetAndFacts
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
 
-
+    const int combinedTabelId = 100001;
+    const string combinedTableCode = "S.06.02.01.99";
 
 
 
@@ -36,8 +37,7 @@ public class CreateSheetAndFacts
     }
 
 
-
-    public int CreateX(int year)
+    public int FindDocument()
     {
         var docs = _SqlFunctions.SelectDocInstances(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
         if (!docs.Any())
@@ -47,28 +47,87 @@ public class CreateSheetAndFacts
             return 0;
         }
         var doc = docs.FirstOrDefault();
-        var sheet = _SqlFunctions.SelectTemplateSheetsByTableId(doc!.InstanceId, 100001).FirstOrDefault();
+        return doc is null ? 0 : doc.InstanceId;
+    }
+
+
+    public int CreateCombinedSheet(int documentId)
+    {
+        //a new sheet will be created -- tableId=100001,tableCode="S.06.02.01.99"
+
+        var sheet = _SqlFunctions.SelectTemplateSheetsByTableId(documentId, combinedTabelId).FirstOrDefault();
         if (sheet != null)
         {
             _SqlFunctions.DeleteTemplateSheet(sheet.TemplateSheetId);
         }
-        var tableCode = "S.06.02.01.99";
+
         var newSheet = new TemplateSheetInstanceDataModel()
         {
-            
-            InstanceId = doc.InstanceId,
-            TableID = 100001,
-            TableCode = tableCode,
-            SheetCode=tableCode,
-            SheetCodeZet = tableCode,
+            InstanceId = documentId,
+            TableID = combinedTabelId,
+            TableCode = combinedTableCode,
+            SheetCode = combinedTableCode,
+            SheetCodeZet = combinedTableCode,
             DateCreated = DateTime.Now,
         };
-        var sheetId=_SqlFunctions.CreateTemplateSheet(newSheet);
-        
-        var xx = _SqlFunctions.CreateCombinedFacts(doc.InstanceId,sheetId);
-        return xx;
+        var sheetId = _SqlFunctions.CreateTemplateSheet(newSheet);
+        Console.WriteLine($"Sheet Created:{sheetId} sheetcode:{combinedTableCode}");
+
+        var count = _SqlFunctions.CreateCombinedFacts(documentId, sheetId);
+        return count;
     }
-    
+
+
+    public int K_UpdateDocumentForeignKeys(int documentId)
+    {
+        Console.WriteLine($"---------- DocumentID:{documentId}");
+        var kyrTables = _SqlFunctions.K_SelectKyrTables()
+            .Where(k => k.TableCode.Trim() == "S.06.02.01.01")
+            .ToList();
+        var sheets = _SqlFunctions.SelectTemplateSheets(documentId);
+        foreach (var kyrTable in kyrTables)
+        {
+            var mainSheet = sheets.FirstOrDefault(sheet => sheet.TableCode.Trim() == kyrTable.TableCode.Trim());
+            var relatedSheet = sheets.FirstOrDefault(sheet => sheet.TableCode.Trim() == kyrTable.FK_TableCode.Trim());
+            if (mainSheet is null || relatedSheet is null)
+            {
+                continue;
+            }
+
+            Console.WriteLine($"sheet:{mainSheet.SheetCode}");
+            //find the fact in each row, with Column = mainCol
+            var mainKeyRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, mainSheet.TableCode, kyrTable.TableCol.Trim());
+            //find the fact in each row, with column =fk_Col
+            var total = 0;
+            var relatedRowFacts = _SqlFunctions.K_SelectFactsByCol(documentId, relatedSheet?.TableCode ?? "", kyrTable.FK_TableCol.Trim());
+            foreach (var mainRowFact in mainKeyRowFacts)
+            {
+
+                var relatedFact = relatedRowFacts.FirstOrDefault(fact => fact.TextValue.Trim() == mainRowFact.TextValue.Trim());
+
+                if (relatedFact is not null)
+                {
+                    //update all main facts in this row with FK_ROW
+                    var relatedRow = relatedFact.Row;
+                    if (relatedRow is not null)
+                    {
+                        Console.Write(".");
+                        var count = _SqlFunctions.K_UpdateForeignKeys(mainRowFact.TemplateSheetId, mainRowFact.Row, relatedRow);
+                        total += count;
+                    }
+                }
+
+            }
+            Console.WriteLine($"Updated Facts:{total}");
+
+
+        }
+
+
+        //272
+
+        return 0;
+    }
 
 
 }
