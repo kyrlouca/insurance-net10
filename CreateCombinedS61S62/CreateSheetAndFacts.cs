@@ -69,6 +69,7 @@ public class CreateSheetAndFacts
             SheetCode = combinedTableCode,
             SheetCodeZet = combinedTableCode,
             DateCreated = DateTime.Now,
+            IsOpenTable=true,
         };
         var sheetId = _SqlFunctions.CreateTemplateSheet(newSheet);
         Console.WriteLine($"Sheet Created:{sheetId} sheetcode:{combinedTableCode}");

@@ -37,6 +37,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     //private IWorkbook? _originWorkbook; //template workbook
     int _documentId = 0;
 
+    const string combinedTableCode = "S.06.02.01.99";
+
     private readonly ICustomPensionStyler _customPensionStyler;
     PensionStyles _pensionStyles;
 
@@ -72,7 +74,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ///////////////////////////////////////////////////////////////////
         ///
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
-            .Where(sheet => !sheet.IsOpenTable);
+            .Where(sheet => !sheet.IsOpenTable)
+            .Where(sheet => sheet.TableCode.Trim()!=combinedTableCode);
 
 
         if (_parameterData.IsDevelop && 1 == 2)
@@ -82,6 +85,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             dbClosedSheets = dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
         }
 
+        
         foreach (var dbClosedSheet in dbClosedSheets)
         {
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
@@ -90,7 +94,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
-            .Where(sheet => sheet.IsOpenTable);
+            .Where(sheet => sheet.IsOpenTable)
+            .Where(sheet => sheet.TableCode.Trim() != combinedTableCode); 
 
         if (_parameterData.IsDevelop && 1 == 2)
         {
