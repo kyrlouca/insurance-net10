@@ -42,7 +42,7 @@ public class CreateSheetAndFacts
         var docs = _SqlFunctions.SelectDocInstances(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
         if (!docs.Any())
         {
-            var message = $"No documents found for Fund:{_parameterData.FundId} Year:{_parameterData.ApplicableYear} Quarter:{_parameterData.ApplicableQuarter}";
+            var message = $"No documents found for module:{_parameterData.ModuleCode}, Fund:{_parameterData.FundId} Year:{_parameterData.ApplicableYear} Quarter:{_parameterData.ApplicableQuarter}";
             _logger.Error(message);
             return 0;
         }

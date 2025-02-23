@@ -1245,7 +1245,7 @@ S62 AS
 INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
 SELECT 
    S61c40.Instanceid, 
-   S61c40.Templatesheetid, 
+   @sheetId,
    S61c40.Row, 
    Coalesce(S62.Col,'CXXXX'),
    S62.Textvalue, 

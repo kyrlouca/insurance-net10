@@ -28,7 +28,7 @@ public class HostCreator
 			var prod = context.HostingEnvironment.IsProduction();
 			if (context.HostingEnvironment.IsProduction())
 			{
-				//depends on the value of DOTNET_ENVIRONMENT
+				Console.WriteLine("IsProduction");
 			}
 			//the configurations below would be automatically set but I prefer to have the appsettings as optional
 			config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
