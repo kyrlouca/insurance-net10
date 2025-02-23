@@ -17,8 +17,10 @@ var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
-    Console.WriteLine(@".\CreateCombinedS61S62.exe external-id=1,fund-id=89 eiopa-version=IU282 module-code=qrs, year=2024, quarter=4 ");
-    throw new ArgumentException($"parameter missing:{missingParam}");
+    Console.WriteLine(@".\CreateCombinedS61S62.exe external-id=1 fund-id=89 eiopa-version=IU282 module-code=qrs year=2024 quarter=4 ");
+
+    //throw new ArgumentException($"parameter missing:{missingParam}");
+    return 0;
 }
 
 using var host = HostCreator.CreateHostExplicit(args);
