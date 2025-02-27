@@ -302,7 +302,7 @@ public class SqlFunctions : ISqlFunctions
     {
         //memberXbrlCode= s2c_AM:x2 => find mMember
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-        var sqlMem = @"select * from mMember mem where mem.MemberID= @MemberID";        
+        var sqlMem = @"select * from mMember mem where mem.MemberID= @MemberID";
         var val = connectionEiopa.QuerySingleOrDefault<MMember>(sqlMem, new { memberId });
         return val;
     }
@@ -512,7 +512,7 @@ public class SqlFunctions : ISqlFunctions
         var sqlDelete = @"delete from TemplateSheetInstance where TemplateSheetId= @TemplateSheetId";
         var count = connectionInsurance.Execute(sqlDelete, new { templateSheetId });
         return count;
-        
+
 
     }
 
@@ -1197,7 +1197,7 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public int CreateCombinedFacts(int documentId,int sheetId)
+    public int CreateCombinedFacts(int documentId, int sheetId)
     {
         var sqlInsert = @"
 WITH S61c40 AS
@@ -1278,17 +1278,140 @@ WHERE
 
 ";
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-         
+
         try
         {
-            var facts = connectionLocal.Execute(sqlInsert, new { documentId,sheetId });
+            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId });
             return facts;
         }
-        catch (Exception e) { 
+        catch (Exception e)
+        {
             _logger.Error(e.Message);
             Console.Write(e.Message);
         }
-        
+
+
+
+        return 0;
+    }
+
+
+    public int CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow)
+    {
+        var sqlInsert = @"
+WITH S61c40 AS
+(
+   SELECT
+      Factt1.Instanceid,
+      Factt1.Templatesheetid,
+      Factt1.Row,
+      Factt1.Rowforeign
+   FROM
+      Dbo.Templatesheetfact AS Factt1
+   INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+      ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+      AND Sheett1.Instanceid = Factt1.Instanceid
+   WHERE
+      Sheett1.Tablecode = 'S.06.02.01.01'
+      AND Factt1.Col = 'C0001'
+      AND (Factt1.Row between @startRow and @endRow)
+      AND Sheett1.InstanceId = @DocumentId
+),
+S62 AS
+(
+   SELECT
+      Factt1.Instanceid,
+      Factt1.Templatesheetid,
+      Factt1.Row,
+      Factt1.Col,
+      Factt1.Textvalue,
+      Factt1.Numericvalue,
+      Factt1.Datetimevalue
+   FROM
+      Dbo.Templatesheetfact AS Factt1
+   INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+      ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+      AND Sheett1.Instanceid = Factt1.Instanceid
+   INNER JOIN S61c40 
+      ON S61c40.Instanceid = Sheett1.Instanceid
+      AND S61c40.Rowforeign = Factt1.Row      
+   WHERE
+      Sheett1.Tablecode = 'S.06.02.01.02'
+      AND Factt1.Instanceid = S61c40.Instanceid
+      AND Sheett1.InstanceId = @DocumentId
+)
+
+INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
+SELECT 
+   S61c40.Instanceid, 
+   @sheetId,
+   S61c40.Row, 
+   Coalesce(S62.Col,'CXXXX'),
+   S62.Textvalue, 
+   S62.Numericvalue, 
+   S62.Datetimevalue, 
+   '' -- Setting CurrencyDim to an empty string
+FROM S61c40
+LEFT JOIN S62 
+   ON S62.Instanceid = S61c40.Instanceid
+   AND S62.Row = S61c40.Rowforeign
+
+
+";
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        try
+        {
+            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId,startRow,endRow });
+            return facts;
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e.Message);
+            Console.Write(e.Message);
+        }
+
+
+
+        return 0;
+    }
+
+
+    public int CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow)
+    {
+        var sqlInsert = @"
+INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
+SELECT 
+   Factt1.Instanceid, 
+   @sheetId,
+   Factt1.Row, 
+   Factt1.Col,
+   Factt1.Textvalue, 
+   Factt1.Numericvalue, 
+   Factt1.Datetimevalue, 
+   '' -- Setting CurrencyDim to an empty string
+FROM Dbo.Templatesheetfact AS Factt1
+INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+   ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+WHERE 
+   Sheett1.InstanceId = @DocumentId  
+   AND Sheett1.Tablecode = 'S.06.02.01.01'
+   AND (Factt1.Row between @startRow and @endRow)
+   
+";
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+
+        try
+        {
+            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId,startRow,endRow });
+            return facts;
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e.Message);
+            Console.Write(e.Message);
+        }
+
 
 
         return 0;

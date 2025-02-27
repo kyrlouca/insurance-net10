@@ -104,4 +104,6 @@ public interface ISqlFunctions
     public CurrencyBatch? SelectCurrencyBatch(int year, int quarter, int wave);
 
     public int CreateCombinedFacts(int documentId,int sheetId);
+    public int CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow);
+    public int CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow);
 }

@@ -71,10 +71,29 @@ public class CreateSheetAndFacts
             DateCreated = DateTime.Now,
             IsOpenTable=true,
         };
-        var sheetId = _SqlFunctions.CreateTemplateSheet(newSheet);
+       var sheetId = _SqlFunctions.CreateTemplateSheet(newSheet);
         Console.WriteLine($"Sheet Created:{sheetId} sheetcode:{combinedTableCode}");
 
-        var count = _SqlFunctions.CreateCombinedFacts(documentId, sheetId);
+        
+        var moreRows = true;
+        var totalFacts = 0;
+        var count = 0;
+        var increment = 200;
+        while (moreRows)
+        {
+            var startRow = count==0?"R0000" : $"R{count+1:D4}"; 
+            var endRow = $"R{count+increment:D4}";
+            
+            var facts61 = _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
+            Console.Write("1");
+            var facts62 = _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
+            Console.Write("2");
+            count +=increment;
+            totalFacts=totalFacts+ facts61 + facts62;
+            moreRows = facts61 > 0 ;
+        }
+                
+
         return count;
     }
 
