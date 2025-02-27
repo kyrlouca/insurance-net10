@@ -94,7 +94,7 @@ public class CreateSheetAndFacts
         }
                 
 
-        return count;
+        return totalFacts;
     }
 
 

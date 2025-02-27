@@ -54,8 +54,8 @@ public class CreateCombinedRun : ICreateCombinedRun
         }
         _createSheetAndFacts.K_UpdateDocumentForeignKeys(documentId);
         Console.WriteLine("Create Sheet");
-        _createSheetAndFacts.CreateCombinedSheet(documentId);
-        Console.WriteLine("Completed.");
+        var facts=_createSheetAndFacts.CreateCombinedSheet(documentId);
+        Console.WriteLine($"Completed. Facts created:{facts} ");
 
 
         return 0;
