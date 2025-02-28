@@ -80,18 +80,18 @@ public class CreateSheetAndFacts
         
         var moreRows = true;
         var totalFacts = 0;
-        var count = 1800;
-        var increment = 100;
+        var count = 0;
+        var increment = 200;
         var testingCount = 0;
-        while (moreRows && testingCount <3)
+        while (moreRows)
         {
             var startRow = $"R{count+1:D4}"; 
             var endRow = $"R{count+increment:D4}";
             
-            var facts61 = _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
+            var facts61 = await _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
             Console.Write("1");
             //var facts62 = Performance.MeasureExecutionTime(() => _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow));
-            var facts62 = _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
+            var facts62 = await _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
             Console.Write("2");
             count +=increment;
             testingCount += 1;

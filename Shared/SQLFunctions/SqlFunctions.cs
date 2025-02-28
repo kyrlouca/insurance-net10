@@ -1296,7 +1296,7 @@ WHERE
     }
 
 
-    public int CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow)
+    public async Task<int> CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow)
     {
         var sqlInsert = @"
 WITH S61c40 AS
@@ -1364,7 +1364,7 @@ LEFT JOIN S62
         try
         {
          
-            var facts = connectionLocal.Execute(sqlInsert,new { documentId, sheetId,startRow,endRow },commandTimeout:120);
+            var facts = await connectionLocal.ExecuteAsync(sqlInsert,new { documentId, sheetId,startRow,endRow },commandTimeout:120);
             return facts;
         }
         catch (Exception e)
@@ -1373,13 +1373,11 @@ LEFT JOIN S62
             Console.Write(e.Message);
         }
 
-
-
         return 0;
     }
 
 
-    public int CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow)
+    public async Task<int> CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow)
     {
         var sqlInsert = @"
 INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, rowForeign, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
@@ -1406,7 +1404,7 @@ WHERE
         connectionLocal.Open();
         try
         {
-            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId,startRow,endRow },commandTimeout:120);
+            var facts = await connectionLocal.ExecuteAsync(sqlInsert, new { documentId, sheetId,startRow,endRow },commandTimeout:120);
             return facts;
         }
         catch (Exception e)
@@ -1414,7 +1412,6 @@ WHERE
             _logger.Error(e.Message);
             Console.Write(e.Message);
         }
-
 
 
         return 0;
@@ -1431,12 +1428,12 @@ WHERE
 
     }
 
-    public Task<int> DeleteFactsTemplateSheetAsync(int templateSheetId)
+    public async Task<int> DeleteFactsTemplateSheetAsync(int templateSheetId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
         var sqlDelete = @"delete from TemplateSheetFact where TemplateSheetId=@TemplateSheetId;";
-        var count = connectionInsurance.ExecuteAsync(sqlDelete, new { templateSheetId });
+        var count = await connectionInsurance.ExecuteAsync(sqlDelete, new { templateSheetId });
         return count;
 
     }
