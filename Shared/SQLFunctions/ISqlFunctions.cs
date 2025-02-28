@@ -107,4 +107,5 @@ public interface ISqlFunctions
     public int CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow);
     public int CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow);
     public int DeleteFactsTemplateSheet(int templateSheetId);
+    public Task<int> DeleteFactsTemplateSheetAsync(int templateSheetId);
 }

@@ -39,7 +39,7 @@ public class CreateCombinedRun : ICreateCombinedRun
         _createSheetAndFacts = creatSheetAndFacts;
     }
 
-    public int Run()
+    public async Task<int> Run()
     {
         //module-code="qrs"
 
@@ -54,7 +54,7 @@ public class CreateCombinedRun : ICreateCombinedRun
         }
         _createSheetAndFacts.K_UpdateDocumentForeignKeys(documentId);
         Console.WriteLine("Create Sheet");
-        var facts=_createSheetAndFacts.CreateCombinedSheet(documentId);
+        var facts= await _createSheetAndFacts.CreateCombinedSheet(documentId);
         Console.WriteLine($"Completed. Facts created:{facts} ");
 
 

@@ -13,7 +13,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Shared;
+using Shared.Various;
 
 public class CreateSheetAndFacts
 {
@@ -51,15 +52,16 @@ public class CreateSheetAndFacts
     }
 
 
-    public int CreateCombinedSheet(int documentId)
+    public async Task<int> CreateCombinedSheet(int documentId)
     {
         //a new sheet will be created -- tableId=100001,tableCode="S.06.02.01.99"
 
         var sheet = _SqlFunctions.SelectTemplateSheetsByTableId(documentId, combinedTabelId).FirstOrDefault();
         if (sheet != null)
         {
-            _SqlFunctions.DeleteFactsTemplateSheet(sheet.TemplateSheetId); 
-            _SqlFunctions.DeleteTemplateSheet(sheet.TemplateSheetId);
+            _SqlFunctions.DeleteFactsTemplateSheet(sheet.TemplateSheetId);             
+          var xx= await _SqlFunctions.DeleteFactsTemplateSheetAsync(sheet.TemplateSheetId);
+            //_SqlFunctions.DeleteTemplateSheet(sheet.TemplateSheetId);
         }
 
         var newSheet = new TemplateSheetInstanceDataModel()
@@ -79,15 +81,16 @@ public class CreateSheetAndFacts
         var moreRows = true;
         var totalFacts = 0;
         var count = 1800;
-        var increment = 200;
+        var increment = 100;
         var testingCount = 0;
-        while (moreRows)
+        while (moreRows && testingCount <3)
         {
             var startRow = $"R{count+1:D4}"; 
             var endRow = $"R{count+increment:D4}";
             
             var facts61 = _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
             Console.Write("1");
+            //var facts62 = Performance.MeasureExecutionTime(() => _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow));
             var facts62 = _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
             Console.Write("2");
             count +=increment;

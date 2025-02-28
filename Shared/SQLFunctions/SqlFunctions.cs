@@ -1338,7 +1338,7 @@ S62 AS
    WHERE
       Sheett1.InstanceId = @DocumentId      
       AND Sheett1.Tablecode = 'S.06.02.01.02'
-      AND Factt1.Instanceid = S61c40.Instanceid
+      AND Factt1.Instanceid = @DocumentId
       
 )
 
@@ -1354,16 +1354,17 @@ SELECT
    '' -- Setting CurrencyDim to an empty string
 FROM S61c40
 LEFT JOIN S62 
-   ON S62.Instanceid = S61c40.Instanceid
-   AND S62.Row = S61c40.Rowforeign
-
+   ON S62.Row = S61c40.Rowforeign
+  AND S62.Instanceid = S61c40.Instanceid
+   
 
 ";
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-
+        connectionLocal.Open();
         try
         {
-            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId,startRow,endRow });
+         
+            var facts = connectionLocal.Execute(sqlInsert,new { documentId, sheetId,startRow,endRow },commandTimeout:120);
             return facts;
         }
         catch (Exception e)
@@ -1402,10 +1403,10 @@ WHERE
    
 ";
         using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
-
+        connectionLocal.Open();
         try
         {
-            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId,startRow,endRow });
+            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId,startRow,endRow },commandTimeout:120);
             return facts;
         }
         catch (Exception e)
@@ -1429,6 +1430,17 @@ WHERE
 
 
     }
+
+    public Task<int> DeleteFactsTemplateSheetAsync(int templateSheetId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlDelete = @"delete from TemplateSheetFact where TemplateSheetId=@TemplateSheetId;";
+        var count = connectionInsurance.ExecuteAsync(sqlDelete, new { templateSheetId });
+        return count;
+
+    }
+
 
 }
 

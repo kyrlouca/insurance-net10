@@ -2,6 +2,6 @@
 {
     public interface ICreateCombinedRun
     {
-        int Run();
+        Task<int> Run();
     }
 }
