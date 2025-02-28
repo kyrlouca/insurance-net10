@@ -1336,9 +1336,10 @@ S62 AS
       ON S61c40.Instanceid = Sheett1.Instanceid
       AND S61c40.Rowforeign = Factt1.Row      
    WHERE
-      Sheett1.Tablecode = 'S.06.02.01.02'
+      Sheett1.InstanceId = @DocumentId      
+      AND Sheett1.Tablecode = 'S.06.02.01.02'
       AND Factt1.Instanceid = S61c40.Instanceid
-      AND Sheett1.InstanceId = @DocumentId
+      
 )
 
 INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
@@ -1380,11 +1381,12 @@ LEFT JOIN S62
     public int CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow)
     {
         var sqlInsert = @"
-INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
+INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, rowForeign, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
 SELECT 
    Factt1.Instanceid, 
    @sheetId,
    Factt1.Row, 
+    Factt1.RowFOreign, 
    Factt1.Col,
    Factt1.Textvalue, 
    Factt1.Numericvalue, 
@@ -1417,7 +1419,16 @@ WHERE
         return 0;
     }
 
+    public int DeleteFactsTemplateSheet(int templateSheetId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
+        var sqlDelete = @"delete from TemplateSheetFact where TemplateSheetId=@TemplateSheetId;";
+        var count = connectionInsurance.Execute(sqlDelete, new { templateSheetId });
+        return count;
+
+
+    }
 
 }
 

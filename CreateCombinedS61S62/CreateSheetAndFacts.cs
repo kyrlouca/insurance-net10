@@ -58,6 +58,7 @@ public class CreateSheetAndFacts
         var sheet = _SqlFunctions.SelectTemplateSheetsByTableId(documentId, combinedTabelId).FirstOrDefault();
         if (sheet != null)
         {
+            _SqlFunctions.DeleteFactsTemplateSheet(sheet.TemplateSheetId); 
             _SqlFunctions.DeleteTemplateSheet(sheet.TemplateSheetId);
         }
 
@@ -77,11 +78,12 @@ public class CreateSheetAndFacts
         
         var moreRows = true;
         var totalFacts = 0;
-        var count = 0;
+        var count = 1800;
         var increment = 200;
+        var testingCount = 0;
         while (moreRows)
         {
-            var startRow = count==0?"R0000" : $"R{count+1:D4}"; 
+            var startRow = $"R{count+1:D4}"; 
             var endRow = $"R{count+increment:D4}";
             
             var facts61 = _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
@@ -89,6 +91,7 @@ public class CreateSheetAndFacts
             var facts62 = _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
             Console.Write("2");
             count +=increment;
+            testingCount += 1;
             totalFacts=totalFacts+ facts61 + facts62;
             moreRows = facts61 > 0 ;
         }
