@@ -2,7 +2,7 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=117\r\ncurrency-batch-id=1\r\neiopa-version=\"IU280\"\r\nmodule-code=\"qrs\"\r\nyear=2024\r\nquarter=4\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-282\\Altius QRTs Q4 2024 revised 06.02.2024.xbrl\"",
+      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=117\r\ncurrency-batch-id=1\r\neiopa-version=\"IU280\"\r\nmodule-code=\"qrs\"\r\nyear=2024\r\nquarter=3\r\nfile-name=\"C:\\Users\\kyrlo\\dotnet\\Testings\\testing-282\\2165_CNP_CYPRIALIFE_LTD_IU280_qrs_2024_3.xlsx\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
         "DOTNET_ENVIRONMENT": "Develop"
