@@ -129,16 +129,16 @@ public class ReaderMainApp : IReaderMainApp
     {
         List<ValidEiopaVersion> versions =
                 [
-                    new("IU260", 2021, [4]),
+                    new("IU260", 2021, [4, 0]),
                 new("IU260", 2022, [1, 2, 3]),
 
-                new("IU270", 2022, [4]),
+                new("IU270", 2022, [4,0]),
                 new("IU270", 2023, [1, 2, 3]),
 
-                new("IU280", 2023, [4]),
+                new("IU280", 2023, [4,0]),
                 new("IU280", 2024, [1, 2, 3]),
 
-                new("IU282", 2024, [4]),
+                new("IU282", 2024, [4,0]),
                 new("IU282", 2025, [1, 2, 3]),
 
             ];
