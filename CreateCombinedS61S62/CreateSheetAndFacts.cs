@@ -60,8 +60,8 @@ public class CreateSheetAndFacts
         if (sheet != null)
         {
             _SqlFunctions.DeleteFactsTemplateSheet(sheet.TemplateSheetId);             
-          var xx= await _SqlFunctions.DeleteFactsTemplateSheetAsync(sheet.TemplateSheetId);
-            //_SqlFunctions.DeleteTemplateSheet(sheet.TemplateSheetId);
+          //var xx= await _SqlFunctions.DeleteFactsTemplateSheetAsync(sheet.TemplateSheetId);
+           var y= _SqlFunctions.DeleteTemplateSheet(sheet.TemplateSheetId);
         }
 
         var newSheet = new TemplateSheetInstanceDataModel()

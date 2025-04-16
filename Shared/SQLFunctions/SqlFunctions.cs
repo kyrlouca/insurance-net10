@@ -1417,7 +1417,7 @@ WHERE
         return 0;
     }
 
-    public int DeleteFactsTemplateSheet(int templateSheetId)
+    public int  DeleteFactsTemplateSheet(int templateSheetId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
