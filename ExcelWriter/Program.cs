@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Shared.SharedHost;
 using ExcelWriter.Hosting;
-
+//test 28/08
 //var dir = Directory.GetCurrentDirectory();
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var missingParam = CheckParams(args);
