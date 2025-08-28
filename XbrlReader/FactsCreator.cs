@@ -59,7 +59,13 @@ public class FactsCreator : IFactsCreator
     public (bool success, string message) HandleExistingDocuments()
     {
         _parameterData = _parameterHandler.GetParameterData();
-        _mModule = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode);
+        _mModule = _SqlFunctions.SelectModuleByCode(_parameterData.ModuleCode) ?? new();
+            if(_mModule.ModuleID==0) { 
+            var message = $"Module code {_parameterData.ModuleCode} NOT found";
+            _logger.Error(message);
+            return (false, message);
+        }
+
 
         var existingDocs = _SqlFunctions.SelectDocInstances(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
         var lockedDocument = existingDocs.FirstOrDefault(doc => doc.Status.Trim() == "P");
