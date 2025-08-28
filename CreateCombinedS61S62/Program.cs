@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting.Internal;
 using Shared.SharedHost;
 using System;
 //using CreateCombinedS61S62
-
+//test 28/08
 
 
 //var dir = Directory.GetCurrentDirectory();
