@@ -24,6 +24,21 @@ public class SqlFunctions : ISqlFunctions
         _parameterHandler = parameterHandler;
         _parameterData = _parameterHandler?.GetParameterData() ?? new();
         _logger = logger;
+
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        var sqlSelect = @"select top 1 'OK' from DocInstance";
+        try
+        {
+            var rec = connectionLocal.QuerySingleOrDefault<string>(sqlSelect, new { });
+        }
+        catch (Exception e)
+        {
+            throw new ArgumentException($"** Cannot connect to System Database with the connection string --{_parameterData.SystemConnectionString}-- {e.Message}");
+        }
+        
+        
+
+
     }
 
 
