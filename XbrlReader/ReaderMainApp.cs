@@ -47,7 +47,7 @@ public class ReaderMainApp : IReaderMainApp
 
         var _documentId = 291; //set this when debugging. when you avoid to CreateLooseFacts
         var filingsSubmitted = new List<string>();
-        if (!_parameterData.IsDevelop || 1 == 2)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
             //need it when debugging
             filingsSubmitted = new List<string>() {
@@ -94,7 +94,7 @@ public class ReaderMainApp : IReaderMainApp
 
 
         //delete existing documents
-        if (!_parameterData.IsDevelop || 1 == 2)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -106,7 +106,7 @@ public class ReaderMainApp : IReaderMainApp
         }
 
         //create loose facts
-        if (!_parameterData.IsDevelop || 1 == 2)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)

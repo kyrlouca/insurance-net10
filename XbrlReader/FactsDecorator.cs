@@ -97,8 +97,8 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => filings.Contains(table.XbrlFilingIndicatorCode)).ToList();
         }
 
-        _testingTableId = 0;
-        //_testingTableId = 447;
+        //_testingTableId = 0;
+        _testingTableId = 447;
         if (_parameterData.IsDevelop && _testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
@@ -424,12 +424,29 @@ public partial class FactsDecorator : IFactsDecorator
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);
 
 
+        var allTableDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID);
+            
+
         //** i saw later that isrowIkey should NOT be checked because it might be optionalkey=1 on (maxis)
-        var yDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
+        var testYdims = allTableDims
+            .Where(ord => ord.AxisOrientation == "Y");
+        
+
+        var yDimsOld = allTableDims
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
-        var zDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
+        var yDims = allTableDims
+           .Where(ord => ord.AxisOrientation == "Y" && (ord.IsRowKey||ord.OptionalKey  ) && ord.IsOpenAxis)
+           .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
+
+        if(yDims.Count != yDimsOld.Count)
+        {
+            Console.Write($"Different dims - {table.TableCode}");
+        }
+        
+
+        var zDims = allTableDims
             .Where(ord => ord.AxisOrientation == "Z")
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 

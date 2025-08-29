@@ -1010,10 +1010,13 @@ public class SqlFunctions : ISqlFunctions
     {
         using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
         var sqlSelect = @"
-            SELECT ao.OrdinateID, ao.OrdinateCode as Col, ao.IsRowKey, mmm.AxisOrientation, mmm.IsOpenAxis, mmm.OptionalKey, mmm.AxisLabel, oc.DimensionMemberSignature as Signature
+            SELECT ao.OrdinateID, ao.OrdinateCode as Col, ao.IsRowKey, 
+                    LTRIM(RTRIM(CAST(mmm.AxisOrientation AS NCHAR(10)))) AS AxisOrientation,
+                    mmm.IsOpenAxis, mmm.OptionalKey, mmm.AxisLabel, oc.DimensionMemberSignature as Signature
             FROM
               mAxisOrdinate ao
               JOIN mTableAxis ta ON ta.AxisID= ao.AxisID
+               
               JOIN MAXIS mmm ON mmm.AxisID=ta.AxisID
               JOIN mOrdinateCategorisation oc ON oc.OrdinateID= ao.OrdinateID
             WHERE
