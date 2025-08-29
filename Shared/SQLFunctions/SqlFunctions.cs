@@ -684,23 +684,12 @@ public class SqlFunctions : ISqlFunctions
 
     public bool IsOpenTable(int tableId)
     {
-        //tableId = 354
-
-        var yOrdinatesForKeysTest = SelectTableAxisOrdinateInfo(tableId)
-            .Where(ord => ord.AxisOrientation == "Y" && (ord.IsRowKey || ord.OptionalKey  ) && ord.IsOpenAxis);
-
+        //tableId = 447
 
         var yOrdinatesForKeys = SelectTableAxisOrdinateInfo(tableId)
-            .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
-
-        var test= yOrdinatesForKeysTest.Any();
+            .Where(ord => ord.AxisOrientation == "Y" && (ord.IsRowKey || ord.OptionalKey  ) && ord.IsOpenAxis);        
         var res= yOrdinatesForKeys.Any();
-        if(test!=res)
-        {
-            Log.Warning($"Inconsistency in IsOpenTable for tableId={tableId} , yOrdinatesForKeysTest={test} , yOrdinatesForKeys={res}");
-        }
-
-        return yOrdinatesForKeys.Any();
+        return res;
     }
 
     public List<MTable> SelectTablesInModule280(int moduleId)
