@@ -415,13 +415,16 @@ public partial class FactsDecorator : IFactsDecorator
     private int UpdateTableFactsWithCellRowCols(MTable table)
     {
         //****
-        //zet and y are included is in the cell signature
-        //facts dims are found on their contexts (but they do not have row or column)
+        //each table has tablecells (with row and col)
+        //select the facts which match each cell signature (zdims,ydims,and xbrlcode)
+        //assign them  the row(if closed), col of the cell
+        //fact dims are found on their contexts (but they do not have row or column)
 
         var count = 0;
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);
 
 
+        //** i saw later that isrowIkey should NOT be checked because it might be optionalkey=1 on (maxis)
         var yDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID)
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
@@ -435,8 +438,7 @@ public partial class FactsDecorator : IFactsDecorator
         var xxx = 2;
 
         //*********************************************************************************
-        //for each cell of this table, select the fact and update the talbeId,zet, and row/col
-        //tableCells = tableCells.Where(tc => tc.CellID == 12801).ToList();
+        //for each cell of this table, select the fact and update the talbeId,zet, and row/col        
         tableCells = tableCells.Where(cell => !string.IsNullOrEmpty(cell.DatapointSignature)).ToList();
         foreach (var tableCell in tableCells)
         {
