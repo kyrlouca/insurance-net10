@@ -15,7 +15,7 @@ public class ReaderMainApp : IReaderMainApp
     private readonly IFactsDecorator _factsDecorator;
 
 
-    public int id = 282;
+    public int id = 291;
     public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator, IFactsDecorator factsDecorator)
     {
         _parameterHandler = getParameters;
@@ -32,9 +32,22 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 290; //set this when debugging. when you avoid to CreateLooseFacts
+        
+
+        Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
+
+        var isEiopaVersionValid = IsValidEiopaVersion();
+        if (!isEiopaVersionValid)
+        {
+            var errorEiopaMessage = $"Invalid Eiopa Version:{_parameterData.EiopaVersion} for year:{_parameterData.ApplicableYear}, quarter:{_parameterData.ApplicableQuarter}";
+            _logger.Error(errorEiopaMessage);
+            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorEiopaMessage);
+            return 1;
+        }
+
+        var _documentId = 291; //set this when debugging. when you avoid to CreateLooseFacts
         var filingsSubmitted = new List<string>();
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             //need it when debugging
             filingsSubmitted = new List<string>() {
@@ -76,22 +89,12 @@ public class ReaderMainApp : IReaderMainApp
             "S.30.04",
             "S.31.01",
 
-        }; 
+        };
         }
 
 
-        Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
-
-        var isEiopaVersionValid = IsValidEiopaVersion();
-        if (!isEiopaVersionValid)
-        {
-            var errorEiopaMessage = $"Invalid Eiopa Version:{_parameterData.EiopaVersion} for year:{_parameterData.ApplicableYear}, quarter:{_parameterData.ApplicableQuarter}";
-            _logger.Error(errorEiopaMessage);
-            _SqlFunctions.CreateTransactionLog(MessageType.ERROR, errorEiopaMessage);
-            return 1;
-        }
-
-        if (!_parameterData.IsDevelop || 1 == 1)
+        //delete existing documents
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -102,7 +105,8 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (!_parameterData.IsDevelop || 1 == 1)
+        //create loose facts
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)
@@ -111,7 +115,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-
+        //decorate facts and assign to sheets
         if (!_parameterData.IsDevelop || 1 == 1)
         {
             var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);

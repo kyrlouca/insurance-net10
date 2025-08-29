@@ -391,11 +391,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
             .Where(ord => ord.AxisOrientation == "Y" &&  ord.IsOpenAxis)
             .OrderBy(ykey => ykey.Col);
-
-        //var yOrdinatesForKeysOld = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
-        //      .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
-        //      .OrderByDescending(ykey => ykey.OrdinateID);
-
+        
 
         //expand the data range to include the keys
         var dataRangeWithKeys = HelperRoutines.ExtendRangeRowColsDirectional(dataRange, 0, yOrdinatesForKeys.Count() - 1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.None);

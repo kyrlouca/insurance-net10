@@ -97,7 +97,8 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => filings.Contains(table.XbrlFilingIndicatorCode)).ToList();
         }
 
-        //_testingTableId = 416;
+        _testingTableId = 0;
+        //_testingTableId = 447;
         if (_parameterData.IsDevelop && _testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
@@ -118,8 +119,8 @@ public partial class FactsDecorator : IFactsDecorator
 
             table.IsOpenTable = _SqlFunctions.IsOpenTable(table.TableID);
 
-            //*********** Select the facts for a template and update their tableId, zetvalues, RowSignatures and currencyDimValue            
-            //not associated with 
+            //*********** Select the facts for a template and update their tableId, zetvalues, RowSignatures and currencyDimValue
+            //UPDATE their row and col (from the corresponding cell which has the row and col in 2.8 )            
             var tableFactsCount = UpdateTableFactsWithCellRowCols(table);
             Console.WriteLine($"\n---facts updated:{tableFactsCount}");
             if (tableFactsCount == 0)
@@ -144,10 +145,15 @@ public partial class FactsDecorator : IFactsDecorator
             }
 
             //**********  if the table is open, update the rows
-            foreach (var sheetinfo in sheetsInfo)
+            if (table.IsOpenTable)
             {
-                UpdateRowForOpenTables(sheetinfo.TemplateSheetId);
+                Console.WriteLine($"\n---Updating rows for open table");
+                foreach (var sheetinfo in sheetsInfo)
+                {
+                    UpdateRowForOpenTables( sheetinfo);
+                }
             }
+
 
             CreateYFactsForOpenTable280(sheetsInfo);
 
@@ -185,23 +191,36 @@ public partial class FactsDecorator : IFactsDecorator
         return zetValues;
     }
 
-    private List<string> UpdateRowForOpenTables(int sheetId)
+    private List<string> UpdateRowForOpenTables(SheetInfoType sheetInfo)
+    //private List<string> UpdateRowForOpenTables(int sheetId, int tableId)
     {
         //only open tables have row signatures
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
-        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@_documentId and fact.TemplateSheetId = @sheetId";
-        var rowSignatures = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId })
-            .Where(sig => !string.IsNullOrEmpty(sig));
 
+        var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@_documentId and fact.TemplateSheetId = @sheetId";
+        //var rowSignaturesTest = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId= sheetInfo.TemplateSheetId });
+            
+
+        var rowSignatures = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId= sheetInfo.TemplateSheetId })
+            .Where(sig => !string.IsNullOrEmpty(sig));
+        
+        if(!rowSignatures.Any())
+        {
+            Console.WriteLine($"No RowSignatures for sheetId:{sheetInfo.TemplateSheetId}");
+        }
+        if(sheetInfo.TableId== 447)
+        {
+            //S.14.02.01.01 this sheet has two columns combined as row signature;
+        }
 
         var sqlUpdate = "update TemplateSheetFact set row= @row where InstanceId=@_documentId and TemplateSheetId=@sheetId and RowSignature=@rowSignature";
         var rowInt = 0;
         foreach (var rowSignature in rowSignatures)
-        {
+        {            
             rowInt++;
             var row = $"R{rowInt:D4}";
-            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId, sheetId, rowSignature, row });
+            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId, sheetInfo.TemplateSheetId, rowSignature, row });
             var xx = 33;
         }
 
@@ -395,8 +414,9 @@ public partial class FactsDecorator : IFactsDecorator
 
     private int UpdateTableFactsWithCellRowCols(MTable table)
     {
-        //****there are NO zet and Y dims on the table. They can be foun in Ordinates table
+        //****
         //zet and y are included is in the cell signature
+        //facts dims are found on their contexts (but they do not have row or column)
 
         var count = 0;
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);
