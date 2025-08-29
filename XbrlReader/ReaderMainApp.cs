@@ -32,9 +32,9 @@ public class ReaderMainApp : IReaderMainApp
     {
         _parameterData = _parameterHandler.GetParameterData();
 
-        var _documentId = 282;
+        var _documentId = 290; //set this when debugging. when you avoid to CreateLooseFacts
         var filingsSubmitted = new List<string>();
-        var filingsSubmittedxx = new List<string>()
+        filingsSubmitted = new List<string>()
         {
     "S.01.01",
     "S.01.02",
@@ -74,7 +74,7 @@ public class ReaderMainApp : IReaderMainApp
     "S.30.04",
     "S.31.01",
 
-        };
+        }; //need it when debugging
 
         Console.WriteLine($"Xbrl Reading and Loading file:{_parameterData.FileName}");
 
@@ -87,7 +87,7 @@ public class ReaderMainApp : IReaderMainApp
             return 1;
         }
 
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -98,7 +98,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)

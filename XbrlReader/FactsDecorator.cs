@@ -81,7 +81,7 @@ public partial class FactsDecorator : IFactsDecorator
         ////////////////////////////////////////////////////////////////////
         Console.WriteLine($"\n Facts processing Started");
 
-        ////////// Cleanup
+        ////////// Cleanup if you want to omit the loading of facts from the XBRL
         var deletedSheets = DeleteExistingSheets();
 
 

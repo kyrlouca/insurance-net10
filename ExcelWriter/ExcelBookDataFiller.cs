@@ -78,7 +78,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             .Where(sheet => sheet.TableCode.Trim()!=combinedTableCode);
 
 
-        if (_parameterData.IsDevelop && 1 == 2)
+        if (_parameterData.IsDevelop && 1 == 1)
         {
             //var debugClosedTableCode = "";
             var debugClosedTableCode = "S.04.04.01.02";
@@ -97,9 +97,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             .Where(sheet => sheet.IsOpenTable)
             .Where(sheet => sheet.TableCode.Trim() != combinedTableCode); 
 
-        if (_parameterData.IsDevelop && 1 == 2)
+        if (_parameterData.IsDevelop && 1 == 1)
         {
-            var debugOpenTableCode = "xS.04.03.01.01";
+            var debugOpenTableCode = "S.14.02.01.01";
             if (!string.IsNullOrEmpty(debugOpenTableCode))
             {
                 Console.Write($"In Develop and filtering Open: {debugOpenTableCode}");
