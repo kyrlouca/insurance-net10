@@ -97,7 +97,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             .Where(sheet => sheet.IsOpenTable)
             .Where(sheet => sheet.TableCode.Trim() != combinedTableCode); 
 
-        if (_parameterData.IsDevelop && 1 == 1)
+        if (_parameterData.IsDevelop && 1 == 2)
         {
             var debugOpenTableCode = "S.14.02.01.01";
             if (!string.IsNullOrEmpty(debugOpenTableCode))
