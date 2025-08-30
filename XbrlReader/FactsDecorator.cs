@@ -150,7 +150,7 @@ public partial class FactsDecorator : IFactsDecorator
                 Console.WriteLine($"\n---Updating rows for open table");
                 foreach (var sheetinfo in sheetsInfo)
                 {
-                    UpdateRowForOpenTables( sheetinfo);
+                    UpdateRowForOpenTables(sheetinfo);
                 }
             }
 
@@ -200,16 +200,16 @@ public partial class FactsDecorator : IFactsDecorator
 
         var sqlSelect = "select distinct(fact.RowSignature) from TemplateSheetFact fact where fact.InstanceId=@_documentId and fact.TemplateSheetId = @sheetId";
         //var rowSignaturesTest = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId= sheetInfo.TemplateSheetId });
-            
 
-        var rowSignatures = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId= sheetInfo.TemplateSheetId })
+
+        var rowSignatures = connectionInsurance.Query<string>(sqlSelect, new { _documentId, sheetId = sheetInfo.TemplateSheetId })
             .Where(sig => !string.IsNullOrEmpty(sig));
-        
-        if(!rowSignatures.Any())
+
+        if (!rowSignatures.Any())
         {
             Console.WriteLine($"No RowSignatures for sheetId:{sheetInfo.TemplateSheetId}");
         }
-        if(sheetInfo.TableId== 447)
+        if (sheetInfo.TableId == 447)
         {
             //S.14.02.01.01 this sheet has two columns combined as row signature;
         }
@@ -217,10 +217,10 @@ public partial class FactsDecorator : IFactsDecorator
         var sqlUpdate = "update TemplateSheetFact set row= @row where InstanceId=@_documentId and TemplateSheetId=@sheetId and RowSignature=@rowSignature";
         var rowInt = 0;
         foreach (var rowSignature in rowSignatures)
-        {            
+        {
             rowInt++;
             var row = $"R{rowInt:D4}";
-            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId,sheetId= sheetInfo.TemplateSheetId, rowSignature, row });
+            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId, sheetId = sheetInfo.TemplateSheetId, rowSignature, row });
             var xx = 33;
         }
 
@@ -286,12 +286,12 @@ public partial class FactsDecorator : IFactsDecorator
         foreach (var sheetInfo in sheetsInfo)
         {
 
-            //fuck99 Ι changed this to include C0016 from ordinates for form S.6.0.2.1
+            //Ι changed this to include C0016 from ordinates for form S.6.0.2.1
             //var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(sheetInfo.TableId)
             //.Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis);
 
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(sheetInfo.TableId)
-                .Where(ord => ord.AxisOrientation == "Y" && ord.IsOpenAxis);
+                .Where(ord => ord.AxisOrientation == "Y" && (ord.IsRowKey || ord.OptionalKey) && ord.IsOpenAxis);
 
             if (!yOrdinatesForKeys.Any())
             {
@@ -315,6 +315,7 @@ public partial class FactsDecorator : IFactsDecorator
 
     private void CreateYFactsForRow280(SheetInfoType sheetInfo, int rowInt, IEnumerable<TableAxisOrdinateInfoModel> yOrdinateKeys)
     {
+        //get the keys value from the domain of the context line. (for optional keys use the default member if no ctx)
         var row = $"R{rowInt:D4}";
         var rowFact = SelectRowFirstFact(sheetInfo.TemplateSheetId, row);
         if (rowFact is null)
@@ -334,28 +335,24 @@ public partial class FactsDecorator : IFactsDecorator
                 throw new Exception($"Ordinate is NULL and it is NOT optional: ordinateId:{ordinateKey.OrdinateID} ");
                 //continue;
             }
+                        
+            var keyTextValue = (ctxLine is null || ctxLine.IsNil) ? ""                
+                : ctxLine.IsExplicit ? ctxLine.Signature
+                : ctxLine.DomainValue;
+
+            //for optional dims use the default value if not found in the context
+            if (ordinateKey.OptionalKey && ctxLine is null)
+            {
+                var defaultMemberId = CellDim.ParseHierarchy(ordinateKey.Signature).HierarchyDefaultMember;
+                var member = _SqlFunctions.SelectMMember(defaultMemberId);
+                keyTextValue =  member?.MemberLabel??"";
+            }
+            //ctxLine = ctxLine ?? new ContextLine() { IsNil = true };            
 
             var newFact = rowFact.Adapt<TemplateSheetFact>();
             newFact.Col = ordinateKey.Col;
 
-            //fuck99 for optional dims use the default value 
-            var defaultMemberValue = "";
-            var isOptionalAndNotRowKey = false;
-            if (ordinateKey.OptionalKey && !ordinateKey.IsRowKey)
-            {
-                isOptionalAndNotRowKey = true;
-                var defaultMemberId = CellDim.ParseHierarchy(ordinateKey.Signature).HierarchyDefaultMember;
-                var member = _SqlFunctions.SelectMMember(defaultMemberId);
-                defaultMemberValue = member is null ? "" : member.MemberLabel;
-            }
-            ctxLine = ctxLine ?? new ContextLine() { IsNil = true };
-
-            var textValue = isOptionalAndNotRowKey ? defaultMemberValue
-                : ctxLine!.IsNil ? ""
-                : ctxLine.IsExplicit ? ctxLine.Signature
-                : ctxLine.DomainValue;
-
-            newFact.TextValue = textValue;
+            newFact.TextValue = keyTextValue;
             newFact.NumericValue = 0;
             newFact.ContextId = "";
             newFact.ContextNumberId = 0;
@@ -425,26 +422,26 @@ public partial class FactsDecorator : IFactsDecorator
 
 
         var allTableDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID);
-            
+
 
         //** i saw later that isrowIkey should NOT be checked because it might be optionalkey=1 on (maxis)
         var testYdims = allTableDims
             .Where(ord => ord.AxisOrientation == "Y");
-        
+
 
         var yDimsOld = allTableDims
             .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
             .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
         var yDims = allTableDims
-           .Where(ord => ord.AxisOrientation == "Y" && (ord.IsRowKey||ord.OptionalKey  ) && ord.IsOpenAxis)
+           .Where(ord => ord.AxisOrientation == "Y" && (ord.IsRowKey || ord.OptionalKey) && ord.IsOpenAxis)
            .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
 
-        if(yDims.Count != yDimsOld.Count)
+        if (yDims.Count != yDimsOld.Count)
         {
             Console.Write($"Different dims - {table.TableCode}");
         }
-        
+
 
         var zDims = allTableDims
             .Where(ord => ord.AxisOrientation == "Z")
