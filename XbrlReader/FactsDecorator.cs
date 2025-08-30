@@ -97,8 +97,8 @@ public partial class FactsDecorator : IFactsDecorator
             ModuleTables = ModuleTables.Where(table => filings.Contains(table.XbrlFilingIndicatorCode)).ToList();
         }
 
-        //_testingTableId = 0;
-        _testingTableId = 447;
+        _testingTableId = 0;
+        //_testingTableId = 447;
         if (_parameterData.IsDevelop && _testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
@@ -220,7 +220,7 @@ public partial class FactsDecorator : IFactsDecorator
         {            
             rowInt++;
             var row = $"R{rowInt:D4}";
-            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId, sheetInfo.TemplateSheetId, rowSignature, row });
+            var rowFacts = connectionInsurance.Execute(sqlUpdate, new { _documentId,sheetId= sheetInfo.TemplateSheetId, rowSignature, row });
             var xx = 33;
         }
 

@@ -14,8 +14,7 @@ public class ReaderMainApp : IReaderMainApp
     private readonly IFactsCreator _factsCreator;
     private readonly IFactsDecorator _factsDecorator;
 
-
-    public int id = 291;
+    
     public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator, IFactsDecorator factsDecorator)
     {
         _parameterHandler = getParameters;
@@ -45,9 +44,10 @@ public class ReaderMainApp : IReaderMainApp
             return 1;
         }
 
-        var _documentId = 291; //set this when debugging. when you avoid to CreateLooseFacts
+    
+        var _documentId = 293; //set this when debugging. when you avoid to CreateLooseFacts
         var filingsSubmitted = new List<string>();
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             //need it when debugging
             filingsSubmitted = new List<string>() {
@@ -94,7 +94,7 @@ public class ReaderMainApp : IReaderMainApp
 
 
         //delete existing documents
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
@@ -106,7 +106,7 @@ public class ReaderMainApp : IReaderMainApp
         }
 
         //create loose facts
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)
