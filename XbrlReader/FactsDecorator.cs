@@ -120,7 +120,7 @@ public partial class FactsDecorator : IFactsDecorator
             table.IsOpenTable = _SqlFunctions.IsOpenTable(table.TableID);
 
             //*********** Select the facts for a template and update their tableId, zetvalues, RowSignatures and currencyDimValue
-            //UPDATE their row and col (from the corresponding cell which has the row and col in 2.8 )            
+            //UPDATE their row and col (from the corresponding cell which has the row and col in 2.8 )     and Signature       
             var tableFactsCount = UpdateTableFactsWithCellRowCols(table);
             Console.WriteLine($"\n---facts updated:{tableFactsCount}");
             if (tableFactsCount == 0)
@@ -416,32 +416,14 @@ public partial class FactsDecorator : IFactsDecorator
         //select the facts which match each cell signature (zdims,ydims,and xbrlcode)
         //assign them  the row(if closed), col of the cell
         //fact dims are found on their contexts (but they do not have row or column)
-
+        //y and z dims are found on the table axis ordinates OR on the table itself 
         var count = 0;
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);
-
-
         var allTableDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID);
-
-
-        //** i saw later that isrowIkey should NOT be checked because it might be optionalkey=1 on (maxis)
-        var testYdims = allTableDims
-            .Where(ord => ord.AxisOrientation == "Y");
-
-
-        var yDimsOld = allTableDims
-            .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
-            .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
-
+                
         var yDims = allTableDims
            .Where(ord => ord.AxisOrientation == "Y" && (ord.IsRowKey || ord.OptionalKey) && ord.IsOpenAxis)
            .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
-
-        if (yDims.Count != yDimsOld.Count)
-        {
-            Console.Write($"Different dims - {table.TableCode}");
-        }
-
 
         var zDims = allTableDims
             .Where(ord => ord.AxisOrientation == "Z")
@@ -449,8 +431,7 @@ public partial class FactsDecorator : IFactsDecorator
 
         var currenciesAndCountryDims = new List<string>() { "OC", "CU" };
         var currencyDims = zDims.Where(zd => currenciesAndCountryDims.Contains(zd)).ToList();
-        var xxx = 2;
-
+        
         //*********************************************************************************
         //for each cell of this table, select the fact and update the talbeId,zet, and row/col        
         tableCells = tableCells.Where(cell => !string.IsNullOrEmpty(cell.DatapointSignature)).ToList();
@@ -647,6 +628,8 @@ public partial class FactsDecorator : IFactsDecorator
 
         List<string> fullDims = cellSignature
             .Split("|").ToList();
+
+        
         var dims = fullDims.Skip(1);
 
         List<TemplateSheetFact> factss = new();
@@ -655,13 +638,9 @@ public partial class FactsDecorator : IFactsDecorator
         var xbrlCodeFull = fullDims.FirstOrDefault() ?? "";
         var xbrlCodeMatch = rgxMet.Match(xbrlCodeFull);
         var xbrlCode = xbrlCodeMatch.Success ? xbrlCodeMatch.Groups[1].Value : "";
+        
 
-        var onlyOptionalDims = dims
-                        .Where(dim => !dim.Contains('*') && dim.Contains('?'))
-                        .OrderBy(dim => dim);
-
-
-        var mandatoryExactList = dims
+        var mandatoryExplicitOnlyList = dims
                         .Where(dim => !dim.Contains('*') && !dim.Contains('?'))
                         .OrderBy(dim => dim);
 
@@ -676,24 +655,19 @@ public partial class FactsDecorator : IFactsDecorator
 
 
 
-        var mandatoryExactDims = string.Join(",", mandatoryExactList.Select(dim => $"'{dim}'"));
+        var mandatoryExplicitOnlyDims = string.Join(",", mandatoryExplicitOnlyList.Select(dim => $"'{dim}'"));
         var mandatoryDims = string.Join(",", mandatoryDimsList.Select(dim => $"'{dim}'"));
 
         var allCellDims = string.Join(",", allCellDimsList.Select(dim => $"'{dim}'"));
 
         var exclusionFromDimsSQL = allCellDimsList.Any() ? $"AND NOT cl1.Dimension NOT IN ({allCellDims})" : "";
         var mandatoryDimsSQL = mandatoryDimsList.Any() ? $"AND cl1.Dimension IN ({mandatoryDims})" : "";
-        var mandatoryExactSQL = mandatoryExactList.Any() ? $"AND cl2.Signature IN ({mandatoryExactDims})" : "";
+        var mandatoryExplicitSQL = mandatoryExplicitOnlyList.Any() ? $"AND cl2.Signature IN ({mandatoryExplicitOnlyDims})" : "";
 
         //do not look for optinal, but check that there are no fact dims not specified in  celldims (Alldims)        
-        var exactCount = mandatoryExactList.Count();
+        var mandatoryExplicitCount = mandatoryExplicitOnlyList.Count();
         var mandatoryCount = mandatoryDimsList.Count();
-
-        if (onlyOptionalDims.Count() > 0)
-        {
-            var xxxx = 33;
-        }
-
+      
         var sqlSelectWithoutMandatory = @"
                 SELECT fact.FactId
                   FROM TemplateSheetFact fact                
@@ -734,16 +708,16 @@ public partial class FactsDecorator : IFactsDecorator
                 INNER JOIN f1 ON f1.FactId = f2.FactId
                 INNER JOIN ContextLine cl2 ON cl2.ContextId = f2.ContextNumberId
                 WHERE 1=1
-                  {mandatoryExactSQL}
+                  {mandatoryExplicitSQL}
                 GROUP BY f2.FactId
-                HAVING COUNT(*) = {exactCount};
+                HAVING COUNT(*) = {mandatoryExplicitCount};
             
             ";
 
 
 
 
-        var sqlSelect = exactCount > 0 ? sqlSelectWithExact
+        var sqlSelect = mandatoryExplicitCount > 0 ? sqlSelectWithExact
                         : mandatoryCount > 0 ? sqlSelectWithOnlyMandatory
                         : sqlSelectWithoutMandatory;
 
@@ -755,11 +729,7 @@ public partial class FactsDecorator : IFactsDecorator
             .Select(factId => _SqlFunctions.SelectFact(factId))
             .Where(f => f is not null)
             .ToList();
-
-        if (facts1.Count != fullFacts.Count)
-        {
-            var ss = 3;
-        }
+        
 
         var temp = fullFacts.Select(ff => ff.DataPointSignature).ToList();
         return fullFacts;
