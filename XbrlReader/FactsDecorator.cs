@@ -450,7 +450,8 @@ public partial class FactsDecorator : IFactsDecorator
 
             //*******************************************************
             //The most important Procedure is to select the FACT which are associated with the cell
-            //which has the exact dims (exact dims, wild dims, optional dims)                
+            //depending on the cell's dims (explicit  dims, wild dims, optional dims)                
+            //the fact's dims are on the context line . I still use fact.Signature which may have to change
             //Some facts may be associated with two cells. In this case, create a new fact
             //*******************************************************
             var cellFacts = SelectFactsForCellUsingDims(cellSignature);
