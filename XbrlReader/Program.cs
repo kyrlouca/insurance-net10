@@ -43,3 +43,4 @@ string? CheckParams(string[] args)
 	var missingParam = paramNames.FirstOrDefault(par => !args.Any(arg=>arg.Contains(par)));
 	return missingParam;
 }
+//test
