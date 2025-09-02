@@ -1,38 +1,28 @@
-﻿namespace CreateCombinedS61S62;
-using Mapster;
-using Microsoft.VisualBasic.FileIO;
-using Serilog;
+﻿using Serilog;
 using Shared.DataModels;
-using Shared.ExcelHelperRoutines;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
-using Syncfusion.XlsIO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Shared;
-using Shared.Various;
 
-public class CreateSheetAndFacts
+namespace XbrlReader;
+
+public class CombinedS62Services : ICombinedS62Services
 {
 
-    private readonly IParameterHandler _parameterHandler;
-    private ParameterData _parameterData = new();
+    ParameterData _parameterData = new();
     private readonly ILogger _logger;
     private readonly ISqlFunctions _SqlFunctions;
-
     const int combinedTabelId = 100001;
     const string combinedTableCode = "S.06.02.01.99";
 
 
-
-    public CreateSheetAndFacts(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions)
+    public CombinedS62Services(ILogger logger, ISqlFunctions sqlFunctions)
     {
-        _parameterHandler = getParameters;
-        _parameterData = getParameters.GetParameterData();
         _logger = logger;
         _SqlFunctions = sqlFunctions;
     }
@@ -59,8 +49,8 @@ public class CreateSheetAndFacts
         var sheet = _SqlFunctions.SelectTemplateSheetsByTableId(documentId, combinedTabelId).FirstOrDefault();
         if (sheet != null)
         {
-            _SqlFunctions.DeleteFactsTemplateSheet(sheet.TemplateSheetId);                       
-           var y= _SqlFunctions.DeleteTemplateSheet(sheet.TemplateSheetId);
+            _SqlFunctions.DeleteFactsTemplateSheet(sheet.TemplateSheetId);
+            var y = _SqlFunctions.DeleteTemplateSheet(sheet.TemplateSheetId);
         }
 
         var newSheet = new TemplateSheetInstanceDataModel()
@@ -71,12 +61,12 @@ public class CreateSheetAndFacts
             SheetCode = combinedTableCode,
             SheetCodeZet = combinedTableCode,
             DateCreated = DateTime.Now,
-            IsOpenTable=true,
+            IsOpenTable = true,
         };
-       var sheetId = _SqlFunctions.CreateTemplateSheet(newSheet);
+        var sheetId = _SqlFunctions.CreateTemplateSheet(newSheet);
         Console.WriteLine($"Sheet Created:{sheetId} sheetcode:{combinedTableCode}");
 
-        
+
         var moreRows = true;
         var totalFacts = 0;
         var count = 0;
@@ -84,20 +74,20 @@ public class CreateSheetAndFacts
         var testingCount = 0;
         while (moreRows)
         {
-            var startRow = $"R{count+1:D4}"; 
-            var endRow = $"R{count+increment:D4}";
-            
+            var startRow = $"R{count + 1:D4}";
+            var endRow = $"R{count + increment:D4}";
+
             var facts61 = await _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
             Console.Write("1");
             //var facts62 = Performance.MeasureExecutionTime(() => _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow));
             var facts62 = await _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
             Console.Write("2");
-            count +=increment;
+            count += increment;
             testingCount += 1;
-            totalFacts=totalFacts+ facts61 + facts62;
-            moreRows = facts61 > 0 ;
+            totalFacts = totalFacts + facts61 + facts62;
+            moreRows = facts61 > 0;
         }
-                
+
 
         return totalFacts;
     }
@@ -153,6 +143,5 @@ public class CreateSheetAndFacts
 
         return 0;
     }
-
 
 }

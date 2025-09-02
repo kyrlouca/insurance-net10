@@ -3,6 +3,7 @@ using Serilog;
 using Shared.HostParameters;
 using Shared.SharedHost;
 using Shared.SQLFunctions;
+using System.Reflection.Metadata;
 
 public class ReaderMainApp : IReaderMainApp
 {
@@ -13,21 +14,25 @@ public class ReaderMainApp : IReaderMainApp
     private readonly ISqlFunctions _SqlFunctions;
     private readonly IFactsCreator _factsCreator;
     private readonly IFactsDecorator _factsDecorator;
+    private readonly ICombinedS62Services _combinedS62Services;
 
-
-    public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IFactsCreator factsCreator, IFactsDecorator factsDecorator)
+    public ReaderMainApp(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, 
+        IFactsCreator factsCreator, 
+        IFactsDecorator factsDecorator,
+        ICombinedS62Services combinedS62Services
+        )
     {
         _parameterHandler = getParameters;
         _logger = logger;
         _SqlFunctions = sqlFunctions;
         _factsCreator = factsCreator;
         _factsDecorator = factsDecorator;
-
+        _combinedS62Services = combinedS62Services;
     }
 
 
 
-    public int Run()
+    public async Task<int> Run()
     {
         _parameterData = _parameterHandler.GetParameterData();
 
@@ -125,6 +130,16 @@ public class ReaderMainApp : IReaderMainApp
                 return res;
             }
         }
+
+        if (!_parameterData.IsDevelop || 1 == 2)
+        {
+            var cnt=_combinedS62Services.K_UpdateDocumentForeignKeys(_documentId);
+            Console.WriteLine("Create Sheet");
+            var facts = await _combinedS62Services.CreateCombinedSheet(_documentId);
+            Console.WriteLine($"Completed. Facts created:{facts} ");
+
+        }
+
 
         _SqlFunctions.UpdateDocumentStatus(_documentId, "L");
         var message = $"Xbrl Document Loaded Successfully:DocumentId= {_documentId}";

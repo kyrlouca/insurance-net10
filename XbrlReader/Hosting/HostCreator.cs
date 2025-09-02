@@ -40,9 +40,12 @@ public class HostCreator
 			 services.AddScoped<IFactsCreator, FactsCreator>();
              services.AddScoped<IFactsDecorator, FactsDecorator>();
              services.AddScoped<IReaderMainApp, ReaderMainApp>();
-			 
-			 
-		 })
+             services.AddScoped<ICombinedS62Services, CombinedS62Services>();
+             
+
+
+
+         })
 		.UseSerilog((hostingContext, loggerConfiguration) =>
 		{
 			loggerConfiguration
