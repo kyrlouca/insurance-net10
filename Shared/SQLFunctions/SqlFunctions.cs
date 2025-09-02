@@ -1425,7 +1425,7 @@ WHERE
         connectionLocal.Open();
         try
         {
-            var facts = await connectionLocal.ExecuteAsync(sqlInsert, new { documentId, sheetId,startRow,endRow },commandTimeout:120);
+            var facts = await connectionLocal.ExecuteAsync(sqlInsert, new { documentId, sheetId,startRow,endRow });
             return facts;
         }
         catch (Exception e)
