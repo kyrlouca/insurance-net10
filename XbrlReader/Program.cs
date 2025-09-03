@@ -1,8 +1,9 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using XbrlReader;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Shared.SharedHost;
+using Syncfusion.XlsIO.Implementation;
+using XbrlReader;
 
 //var dir = Directory.GetCurrentDirectory();
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
@@ -25,15 +26,34 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 ///Execute the MainApp
 ///////////////////////////////////////
+///
 try
 {
-	hostFluent.Services.GetService<IReaderMainApp>()?.Run();
+    var app = services.GetService<IReaderMainApp>();
+    if (app is not null)
+    {
+        var exitCode = await app.Run();   // 👈 await async Run
+        return exitCode;
+    }
 }
 catch (Exception ex)
 {
-	Console.WriteLine(ex.ToString());
-	return 1;
+    Console.WriteLine(ex.ToString());
+    return 1;
 }
+
+//try
+//{
+
+    
+
+//    hostFluent.Services.GetService<IReaderMainApp>()?.Run();
+//}
+//catch (Exception ex)
+//{
+//	Console.WriteLine(ex.ToString());
+//	return 1;
+//}
 
 return 0;
 

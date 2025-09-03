@@ -1218,7 +1218,7 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
-    public int CreateCombinedFacts(int documentId, int sheetId)
+    public int NotUsedCreateCombinedFacts(int documentId, int sheetId)
     {
         var sqlInsert = @"
 WITH S61c40 AS

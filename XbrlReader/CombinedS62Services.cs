@@ -1,4 +1,7 @@
-﻿using Serilog;
+﻿using Dapper;
+using Dapper.Contrib.Extensions;
+using Microsoft.Data.SqlClient;
+using Serilog;
 using Shared.DataModels;
 using Shared.HostParameters;
 using Shared.SharedHost;
@@ -6,6 +9,7 @@ using Shared.SQLFunctions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,28 +25,18 @@ public class CombinedS62Services : ICombinedS62Services
     const string combinedTableCode = "S.06.02.01.99";
 
 
-    public CombinedS62Services(ILogger logger, ISqlFunctions sqlFunctions)
+    public CombinedS62Services(IParameterHandler getParameters, ISqlFunctions sqlFunctions, ILogger logger)
     {
         _logger = logger;
+        _parameterData = getParameters.GetParameterData();
         _SqlFunctions = sqlFunctions;
+
     }
 
 
-    public int FindDocument()
-    {
-        var docs = _SqlFunctions.SelectDocInstances(_parameterData.FundId, _parameterData.ModuleCode, _parameterData.ApplicableYear, _parameterData.ApplicableQuarter);
-        if (!docs.Any())
-        {
-            var message = $"No documents found for module:{_parameterData.ModuleCode}, Fund:{_parameterData.FundId} Year:{_parameterData.ApplicableYear} Quarter:{_parameterData.ApplicableQuarter}";
-            _logger.Error(message);
-            return 0;
-        }
-        var doc = docs.FirstOrDefault();
-        return doc is null ? 0 : doc.InstanceId;
-    }
 
 
-    public async Task<int> CreateCombinedSheet(int documentId)
+    public int CreateCombinedSheetOnly(int documentId)
     {
         //a new sheet will be created -- tableId=100001,tableCode="S.06.02.01.99"
 
@@ -65,7 +59,16 @@ public class CombinedS62Services : ICombinedS62Services
         };
         var sheetId = _SqlFunctions.CreateTemplateSheet(newSheet);
         Console.WriteLine($"Sheet Created:{sheetId} sheetcode:{combinedTableCode}");
+        return sheetId;
+    }
 
+    public async Task<int> CreateCombinedFacts(int documentId, int sheetId)
+    {
+
+        //create facts in batches of 200 rows
+        //do not open and close connection in the loop, very slow
+        using var connectionLocal = new SqlConnection(_parameterData.SystemConnectionString);
+        connectionLocal.Open();
 
         var moreRows = true;
         var totalFacts = 0;
@@ -77,15 +80,15 @@ public class CombinedS62Services : ICombinedS62Services
             var startRow = $"R{count + 1:D4}";
             var endRow = $"R{count + increment:D4}";
 
-            var facts61 = await _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
+            var facts61 = await OpenConnection_CreateCombinedFactsForS61(connectionLocal, documentId, sheetId, startRow, endRow);
             Console.Write("1");
-            //var facts62 = Performance.MeasureExecutionTime(() => _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow));
-            var facts62 = await _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
+
+            var facts62 = await OpenConnection_CreateCombinedFactsForS62(connectionLocal, documentId, sheetId, startRow, endRow);
             Console.Write("2");
             count += increment;
             testingCount += 1;
             totalFacts = totalFacts + facts61 + facts62;
-            moreRows = facts61 > 0;
+            moreRows = (facts61 + facts62) > 0;
         }
 
 
@@ -142,6 +145,142 @@ public class CombinedS62Services : ICombinedS62Services
         //272
 
         return 0;
+    }
+
+
+    private async Task<int> OpenConnection_CreateCombinedFactsForS61(SqlConnection connectionLocal, int documentId, int sheetId, string startRow, string endRow)
+    {
+
+        var sqlInsert = @"
+INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, rowForeign, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
+SELECT 
+   Factt1.Instanceid, 
+   @sheetId,
+   Factt1.Row, 
+    Factt1.RowFOreign, 
+   Factt1.Col,
+   Factt1.Textvalue, 
+   Factt1.Numericvalue, 
+   Factt1.Datetimevalue, 
+   '' -- Setting CurrencyDim to an empty string
+FROM Dbo.Templatesheetfact AS Factt1
+INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+   ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+WHERE 
+   Sheett1.InstanceId = @DocumentId  
+   AND Sheett1.Tablecode = 'S.06.02.01.01'
+   AND (Factt1.Row between @startRow and @endRow)
+   
+";
+
+        try
+        {
+
+            var facts = await connectionLocal.ExecuteAsync(sqlInsert, new { documentId, sheetId, startRow, endRow });
+            return facts;
+
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e.Message);
+
+            Console.Write(e.Message);
+            throw (e);
+        }
+
+
+
+    }
+
+
+    private async Task<int> OpenConnection_CreateCombinedFactsForS62(SqlConnection connectionLocal, int documentId, int sheetId, string startRow, string endRow)
+    {
+        var sqlInsert = @"
+WITH S61c40 AS
+(
+   SELECT
+      Factt1.Instanceid,
+      Factt1.Templatesheetid,
+      Factt1.Row,
+      Factt1.Rowforeign
+   FROM
+      Dbo.Templatesheetfact AS Factt1
+   INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+      ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+      AND Sheett1.Instanceid = Factt1.Instanceid
+   WHERE
+      Sheett1.Tablecode = 'S.06.02.01.01'
+      AND Factt1.Col = 'C0001'
+      AND (Factt1.Row between @startRow and @endRow)
+      AND Sheett1.InstanceId = @DocumentId
+),
+S62 AS
+(
+   SELECT
+      Factt1.Instanceid,
+      Factt1.Templatesheetid,
+      Factt1.Row,
+      Factt1.Col,
+      Factt1.Textvalue,
+      Factt1.Numericvalue,
+      Factt1.Datetimevalue
+   FROM
+      Dbo.Templatesheetfact AS Factt1
+   INNER JOIN Dbo.Templatesheetinstance AS Sheett1 
+      ON Sheett1.Templatesheetid = Factt1.Templatesheetid
+      AND Sheett1.Instanceid = Factt1.Instanceid
+   INNER JOIN S61c40 
+      ON S61c40.Instanceid = Sheett1.Instanceid
+      AND S61c40.Rowforeign = Factt1.Row      
+   WHERE
+      Sheett1.InstanceId = @DocumentId      
+      AND Sheett1.Tablecode = 'S.06.02.01.02'
+      AND Factt1.Instanceid = @DocumentId
+      
+)
+
+INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
+SELECT 
+   S61c40.Instanceid, 
+   @sheetId,
+   S61c40.Row, 
+   Coalesce(S62.Col,'CXXXX'),
+   S62.Textvalue, 
+   S62.Numericvalue, 
+   S62.Datetimevalue, 
+   '' -- Setting CurrencyDim to an empty string
+FROM S61c40
+LEFT JOIN S62 
+   ON S62.Row = S61c40.Rowforeign
+  AND S62.Instanceid = S61c40.Instanceid
+   
+
+";
+        try
+        {
+            var facts = await connectionLocal.ExecuteAsync(sqlInsert, new { documentId, sheetId, startRow, endRow }, commandTimeout: 120);
+            return facts;
+        }
+        catch (Exception e)
+        {
+
+            _logger.Error(e.Message);
+            Console.Write(e.Message);
+            throw (e);
+        }
+
+        return 0;
+    }
+
+
+    private async Task<int> OpenConnection_DeleteFactsTemplateSheet(SqlConnection connectionLocal, int templateSheetId)
+    {
+
+
+        var sqlDelete = @"delete from TemplateSheetFact where TemplateSheetId=@TemplateSheetId;";
+        var count = await connectionLocal.ExecuteAsync(sqlDelete, new { templateSheetId });
+        return count;
+
     }
 
 }
