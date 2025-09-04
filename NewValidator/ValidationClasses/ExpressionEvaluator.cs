@@ -694,27 +694,7 @@ public partial class GeneralEvaluator
         }
 
 
-
-
-
-        static OperatorManager.OperatorRecord selectOperatorToProcessOld(string contentFormulaWithSymbols)
-        {
-            char[] minusPlusOps = { '+', '-' };
-            char[] multiplyOps = { '*' };
-            char[] allOps = minusPlusOps.Concat(multiplyOps).ToArray();
-
-            var opPlusOrMinus = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, minusPlusOps);
-            var opMulti = OperatorManager.PlaceOperatorsInList(contentFormulaWithSymbols, allOps, multiplyOps);
-
-            var ordered = new List<OperatorManager.OperatorRecord>()
-                    .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator != ArithmeticOperators.UnaryMinus))
-                    .Concat(opMulti)
-                    .Concat(opPlusOrMinus.Where(op => op.arithmeticOperator == ArithmeticOperators.UnaryMinus))
-                    .ToList();
-            var opNew = ordered.FirstOrDefault();
-
-            return opNew;
-        }
+        
     }
 
     public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)

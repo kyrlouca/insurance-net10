@@ -115,6 +115,7 @@ public class DocumentValidator : IDocumentValidator
         }
         var testingId = 0;
         testingId = 1253;
+        
         if (_parameterData.IsDevelop && testingId>0)
         {
             validationRules = validationRules.Where(vr => vr.ValidationID == testingId).ToList();
@@ -224,12 +225,10 @@ public class DocumentValidator : IDocumentValidator
                     }
                     var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
 
-
-                    var test = ruleForScope.ScopeRowCols;
-                    var testMainTable = tablesInValidation.FirstOrDefault(tbl => tbl.TableCode == ruleForScope.IfComponent.RuleTerms[0].T);
-                    if(testMainTable is not null && testMainTable.TableCode!=mainTableCode)
+                    var testMainTable = ruleForScope.ScopeTable;
+                    if(!string.IsNullOrEmpty(testMainTable) && testMainTable !=mainTableCode)
                     {
-                     Console.WriteLine()
+                        Console.WriteLine($"Dif {mainTableCode}");
                     }
 
 
@@ -238,8 +237,13 @@ public class DocumentValidator : IDocumentValidator
                         .ToList();
 
 
-                    // add kyrTable record with main table in order to update the main table row                     
-                    kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
+                    // add kyrTable record with main table in order to update the main table row
+                    //fuck99 added on 04/09/2025
+                    if (!kyrTables.Any())
+                    {
+                        kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
+                    }
+                    
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
 
@@ -553,7 +557,7 @@ public class DocumentValidator : IDocumentValidator
         {
             if ((fact?.FactId ?? 0) == 0)
             {
-                var xxh = 32;
+                //var xxh = 32;
             }
             var defaultDataType = defaultValue.Trim() switch
             {

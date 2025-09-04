@@ -22,7 +22,7 @@ public class RuleComponent280
 
     public bool IsEmpty { get; init; }
     public bool IsValid { get; set; } = true;
-    public string Expression { get; init; }
+    public string Expression { get; init; }="";
     public List<RuleTerm280> RuleTerms { get; set; } = new();
     public string SymbolExpression { get; set; } = "";
     public Dictionary<string, ObjectTerm280> ObjectTerms { get; set; } = new();

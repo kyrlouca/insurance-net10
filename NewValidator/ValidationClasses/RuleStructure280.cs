@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NewValidator.ValidationClasses;
@@ -19,11 +20,12 @@ public class RuleStructure280
     public RuleComponent280 ElseComponent { get; init; }
     public RuleComponent280 FilterComponent { get; init; }
     public List<string> ScopeRowCols { get; init; }
+    public string ScopeTable { get; init; } = "";
     public ScopeType ScopeType { get; init; }
     public string ZetValue { get; set; }
 
     public List<MTable> RuleTables { get; set; } = new List<MTable>();
-    private RuleStructure280(int ruleId, List<MTable> ruleTables, string ruleFormula, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent, RuleComponent280 filter, List<string> rowsCols, ScopeType scopeType)
+    private RuleStructure280(int ruleId, List<MTable> ruleTables, string ruleFormula, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent, RuleComponent280 filter, List<string> rowsCols, ScopeType scopeType,string scopeTable="")
     {
         RuleId = ruleId;
         RuleFormula = ruleFormula;
@@ -31,6 +33,7 @@ public class RuleStructure280
         ThenComponent = thenComponent;
         ElseComponent = elseComponent;
         FilterComponent = filter;
+        ScopeTable = scopeTable;
         ScopeType = scopeType;
         ScopeRowCols = rowsCols;
         ZetValue = "";
@@ -78,20 +81,28 @@ public class RuleStructure280
         var elseComponent = RuleComponent280.CreateComponent(elseExpression);
         var filter = RuleComponent280.CreateComponent(filterFormula);
         var scope = RuleComponent280.CreateComponent(scopeFormula);
-        var (scopeType, scopeRowCols) = GetScopeItems(scope);
+        var (scopeType, scopeRowCols,scopeTable) = GetScopeItems(scope);
         
 
-        var rec = new RuleStructure280(ruleId,ruleTables, ruleFormula, ifComponent, thenComponent, elseComponent, filter, scopeRowCols, scopeType);
+        var rec = new RuleStructure280(ruleId,ruleTables, ruleFormula, ifComponent, thenComponent, elseComponent, filter, scopeRowCols, scopeType,scopeTable);
         return rec;
     }
 
-    private static (ScopeType scopeType, List<string> rowsCols) GetScopeItems(RuleComponent280 scopeComponent)
+    private static (ScopeType scopeType, List<string> rowsCols ,string scopeTable) GetScopeItems(RuleComponent280 scopeComponent)
     {
         var scope = scopeComponent.RuleTerms.FirstOrDefault();
         if (scope == null)
         {
-            return (ScopeType.None, new List<string>());
+            return (ScopeType.None, new List<string>(),"");
         }
+        /////////////////
+        
+        var rgxScopeTable = new Regex(@"\{t:(.*?),", RegexOptions.Compiled);
+        var matchScope = rgxScopeTable.Match(scopeComponent.Expression);
+        var scopeTable=matchScope.Success ? matchScope.Groups[1].Value.Trim() : "";
+        
+        //////////////////
+
         var rows = (scope == null) ? new List<string>() : scope.R.Split(";", StringSplitOptions.RemoveEmptyEntries).ToList();
         var cols = (scope == null) ? new List<string>() : scope.C.Split(";", StringSplitOptions.RemoveEmptyEntries).ToList();
 
@@ -108,7 +119,7 @@ public class RuleStructure280
             ScopeType.Cols => cols,
             _ => new List<string>()
         };
-        return (scopeType, rowCols);
+        return (scopeType, rowCols,scopeTable);
 
     }
 
