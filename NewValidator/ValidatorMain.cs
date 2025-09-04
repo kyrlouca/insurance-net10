@@ -22,7 +22,7 @@ public class ValidatorMain : IValidatorMain
     public ValidatorMain(IParameterHandler getParameters, ILogger logger, ISqlFunctions sqlFunctions, IDocumentValidator documentValidator)
     {
         _parameterHandler = getParameters;
-        _parameterData = getParameters.GetParameterData();
+        _parameterData = getParameters.GetParameterData();        
         _logger = logger;
         _SqlFunctions = sqlFunctions;
         _documentValidator = documentValidator;

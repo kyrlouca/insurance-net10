@@ -107,13 +107,14 @@ public class DocumentValidator : IDocumentValidator
 
 
         //************************************************************* Exempt
-        if (_parameterData.IsDevelop && 1 == 2)
+        var isTesting = false;
+        if (_parameterData.IsDevelop && isTesting )
         {
             var exempted = new[] { 0 };
             validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         }
         var testingId = 0;
-        //testingId = 1678;
+        testingId = 1253;
         if (_parameterData.IsDevelop && testingId>0)
         {
             validationRules = validationRules.Where(vr => vr.ValidationID == testingId).ToList();
@@ -214,12 +215,23 @@ public class DocumentValidator : IDocumentValidator
                     //create one rule for each row and apply filter
                     //there is no aggregate. Therefore do not check for zets for open or closed terms 
 
+
+                    
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
                     if (mainTable is null)
                     {
                         mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
                     }
                     var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
+
+
+                    var test = ruleForScope.ScopeRowCols;
+                    var testMainTable = tablesInValidation.FirstOrDefault(tbl => tbl.TableCode == ruleForScope.IfComponent.RuleTerms[0].T);
+                    if(testMainTable is not null && testMainTable.TableCode!=mainTableCode)
+                    {
+                     Console.WriteLine()
+                    }
+
 
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "xxx")
                         .Where(kt => tablesInValidation.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
@@ -262,6 +274,7 @@ public class DocumentValidator : IDocumentValidator
                                 var relatedTableCol = kyrTbl?.FK_TableCol?.Trim() ?? "";
                                 var mainTableCol = kyrTbl?.TableCol?.Trim() ?? "";
 
+                                //get the text valueof the main's key and find the corresponding row of the related table using the foreign key. 
                                 var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode, sheet.ZDimVal, row, mainTableCol);
                                 var factFromMainValue = factFromMain?.TextValue.Trim() ?? "";
                                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, factFromMainValue).FirstOrDefault();

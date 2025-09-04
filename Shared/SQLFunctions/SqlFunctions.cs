@@ -725,7 +725,10 @@ public class SqlFunctions : ISqlFunctions
 			where vrt.ValidationID= @validationRuleId;
         ";
 
-        var tables = connectionEiopa.Query<MTable>(sqlSelect, new { validationRuleId }).ToList();
+        var tables = connectionEiopa.Query<MTable>(sqlSelect, new { validationRuleId })
+            .DistinctBy(t => t.TableID)
+            .ToList();
+        
         foreach (MTable table in tables)
         {
             table.IsOpenTable = IsOpenTable(table.TableID);
