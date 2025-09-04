@@ -114,8 +114,11 @@ public class DocumentValidator : IDocumentValidator
             validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         }
         var testingId = 0;
-        testingId = 1253;
+        //testingId = 1253;
+        testingId = 1698;
         
+
+
         if (_parameterData.IsDevelop && testingId>0)
         {
             validationRules = validationRules.Where(vr => vr.ValidationID == testingId).ToList();
@@ -228,7 +231,7 @@ public class DocumentValidator : IDocumentValidator
                     var testMainTable = ruleForScope.ScopeTable;
                     if(!string.IsNullOrEmpty(testMainTable) && testMainTable !=mainTableCode)
                     {
-                        Console.WriteLine($"Dif {mainTableCode}");
+                        Console.WriteLine($"Dif @&@&@&@&@&@&@&@&!!!!^^^^!!{mainTableCode}");
                     }
 
 
@@ -237,8 +240,7 @@ public class DocumentValidator : IDocumentValidator
                         .ToList();
 
 
-                    // add kyrTable record with main table in order to update the main table row
-                    //fuck99 added on 04/09/2025
+                    // add kyrTable record with main table in order to update the main table row                    
                     if (!kyrTables.Any())
                     {
                         kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
@@ -289,14 +291,19 @@ public class DocumentValidator : IDocumentValidator
                                 // if the factFromMainValue is null or isEmpty (isEmpty was updated if contextline was optional and value was "None") 
                                 // the rule should not be checked. 
                                 // it means that the foreign key on the maintable is optional and has no value and therfore the related table row cannot be found, make the rule=>valid
+                                
+                                    var xxs = ruleOpen.IfComponent.RuleTerms.Any(rt=>rt.T.Trim() ==relatedTableCode);
+                                
+
                                 if (factFromMain is null || factFromMain.IsEmpty)
                                 {
-                                    ruleOpen.IsInvalidOptionalKey= true;
+                                    
+                                        ruleOpen.IsInvalidOptionalKey= true;
                                     
                                         //the rule is not checked because the foreign key on the maintable is optional and has no value
                                         //therefore the related table row cannot be found, make the rule=>valid
-                                        Console.Write($"*");
-                                        //continue;                                    
+                                        Console.Write($"@");
+                                        continue;                                    
                                 }
                                 //************************************
 

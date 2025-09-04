@@ -2,7 +2,7 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=69\r\ncurrency-batch-id=1\r\neiopa-version=\"IU282\"\r\nmodule-code=\"ars\"\r\nyear=2024\r\nquarter=0\r\nfile-name=\"C:\\Users\\kyrlo\\Soft\\Blazor\\eforos-Insurance\\Testing\\TestingS14\\CNP Asfalistiki Annual QRTs 2024.xbrl\"",
+      "commandLineArgs": "external-id=999\r\nuser-id=1\r\nfund-id=69\r\ncurrency-batch-id=1\r\neiopa-version=\"IU282\"\r\nmodule-code=\"ars\"\r\nyear=2024\r\nquarter=0\r\nfile-name=\"C:\\Users\\kyrlo\\Soft\\eforos-Insurance-docs\\Testing\\TestingS14\\CNP Asfalistiki Annual QRTs 2024-second.xbrl\"",
       "environmentVariables": {
         "AllowedHosts": "Fuckyou",
         "DOTNET_ENVIRONMENT": "Develop"

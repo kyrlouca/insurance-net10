@@ -53,7 +53,7 @@ public class ReaderMainApp : IReaderMainApp
         var _documentId = 298; //set this when debugging. when you avoid to CreateLooseFacts
         //*****************************************************************************
         var filingsSubmitted = new List<string>();
-        if (_parameterData.IsDevelop && 1 != 2)
+        if (_parameterData.IsDevelop && 1 != 1)
         {
             //only if debugging and not creating loose facts
             filingsSubmitted = new List<string>() {
@@ -100,8 +100,8 @@ public class ReaderMainApp : IReaderMainApp
 
 
         //delete existing documents
-        if (!_parameterData.IsDevelop || 1 == 2)
-        {
+        if (!_parameterData.IsDevelop || 1 == 1)
+            {
             var (isHandleSuccess, handleMessage) = _factsCreator.HandleExistingDocuments();
             if (!isHandleSuccess)
             {
@@ -112,7 +112,7 @@ public class ReaderMainApp : IReaderMainApp
         }
 
         //create loose facts
-        if (!_parameterData.IsDevelop || 1 == 2)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
             (_documentId, filingsSubmitted) = _factsCreator.CreateLooseFacts();
             if (_documentId == 0)
@@ -131,7 +131,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (!_parameterData.IsDevelop || 1 == 2)
+        if (!_parameterData.IsDevelop || 1 == 1)
         {
             var cnt = _combinedS62Services.K_UpdateDocumentForeignKeys(_documentId);
             Console.WriteLine("Create Sheet S.06.02.01.99");
