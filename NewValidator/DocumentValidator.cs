@@ -283,7 +283,22 @@ public class DocumentValidator : IDocumentValidator
                                 var factFromMainValue = factFromMain?.TextValue.Trim() ?? "";
                                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, factFromMainValue).FirstOrDefault();
                                 var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
-
+                                //************************************
+                                //************************************
+                                //fuck99 04/09/2025
+                                // if the factFromMainValue is null or isEmpty (isEmpty was updated if contextline was optional and value was "None") 
+                                // the rule should not be checked. 
+                                // it means that the foreign key on the maintable is optional and has no value and therfore the related table row cannot be found, make the rule=>valid
+                                if (factFromMain is null || factFromMain.IsEmpty)
+                                {
+                                    ruleOpen.IsInvalidOptionalKey= true;
+                                    
+                                        //the rule is not checked because the foreign key on the maintable is optional and has no value
+                                        //therefore the related table row cannot be found, make the rule=>valid
+                                        Console.Write($"*");
+                                        //continue;                                    
+                                }
+                                //************************************
 
                                 UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                                 UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
@@ -303,6 +318,9 @@ public class DocumentValidator : IDocumentValidator
                             {
                                 continue;
                             };
+
+
+                            
 
                             var isValidRowRule = GeneralEvaluator.ValidateRule(ruleOpen);
 

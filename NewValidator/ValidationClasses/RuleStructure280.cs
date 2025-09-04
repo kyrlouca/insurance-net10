@@ -24,6 +24,7 @@ public class RuleStructure280
     public ScopeType ScopeType { get; init; }
     public string ZetValue { get; set; }
 
+    public bool IsInvalidOptionalKey { get; set; } = false;
     public List<MTable> RuleTables { get; set; } = new List<MTable>();
     private RuleStructure280(int ruleId, List<MTable> ruleTables, string ruleFormula, RuleComponent280 ifComponent, RuleComponent280 thenComponent, RuleComponent280 elseComponent, RuleComponent280 filter, List<string> rowsCols, ScopeType scopeType,string scopeTable="")
     {

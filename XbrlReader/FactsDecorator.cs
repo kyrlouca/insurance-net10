@@ -98,7 +98,7 @@ public partial class FactsDecorator : IFactsDecorator
         }
 
         _testingTableId = 0;
-        //_testingTableId = 447;
+        //_testingTableId = 802;
         if (_parameterData.IsDevelop && _testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
@@ -335,7 +335,8 @@ public partial class FactsDecorator : IFactsDecorator
                 throw new Exception($"Ordinate is NULL and it is NOT optional: ordinateId:{ordinateKey.OrdinateID} ");
                 //continue;
             }
-                        
+
+            var isEmpty = false;
             var keyTextValue = (ctxLine is null || ctxLine.IsNil) ? ""                
                 : ctxLine.IsExplicit ? ctxLine.Signature
                 : ctxLine.DomainValue;
@@ -346,11 +347,18 @@ public partial class FactsDecorator : IFactsDecorator
                 var defaultMemberId = CellDim.ParseHierarchy(ordinateKey.Signature).HierarchyDefaultMember;
                 var member = _SqlFunctions.SelectMMember(defaultMemberId);
                 keyTextValue =  member?.MemberLabel??"";
+                isEmpty = true;
+            }
+            if (ordinateKey.OptionalKey && ctxLine is not null && ctxLine.DomainValue.Trim()=="None")
+            {                
+                    isEmpty = true;
             }
             //ctxLine = ctxLine ?? new ContextLine() { IsNil = true };            
 
             var newFact = rowFact.Adapt<TemplateSheetFact>();
+            newFact.IsEmpty = isEmpty;
             newFact.Col = ordinateKey.Col;
+
 
             newFact.TextValue = keyTextValue;
             newFact.NumericValue = 0;

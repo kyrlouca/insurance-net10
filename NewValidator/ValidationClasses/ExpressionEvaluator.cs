@@ -140,7 +140,7 @@ public partial class GeneralEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = EvaluateBooleanExpression(ruleId, fnArgument, terms);
+                    var resNot = EvaluateBooleanExpression(ruleId, fnArgument, terms); 
                     return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
                         : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
