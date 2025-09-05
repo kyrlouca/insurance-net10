@@ -117,7 +117,7 @@ public class DocumentValidator : IDocumentValidator
         var testingId = 0;
         //testingId = 1253;
         //testingId = 1698;
-        testingId = 1559;
+        testingId = 1428;
 
 
 
@@ -346,7 +346,7 @@ public class DocumentValidator : IDocumentValidator
                                 if (factFromMain is null || factFromMain.IsEmpty)
                                 {
 
-                                    ruleOpen.IsInvalidOptionalKey = true;
+                                     ruleOpen.IsInvalidOptionalKey = true;
 
                                     //the rule is not checked because the foreign key on the maintable is optional and has no value
                                     //therefore the related table row cannot be found, make the rule=>valid
