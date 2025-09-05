@@ -27,6 +27,7 @@ using Shared.CommonRoutines;
 namespace NewValidator;
 
 internal enum ValidStatus { Valid, Error, Waring };
+public record RelatedRowRecord(string MainTable, string MainRow, string MainCol, string FKTable, string FKRow, string FKCol);
 public class DocumentValidator : IDocumentValidator
 {
     private readonly IParameterHandler _parameterHandler;
@@ -108,7 +109,7 @@ public class DocumentValidator : IDocumentValidator
 
         //************************************************************* Exempt
         var isTesting = false;
-        if (_parameterData.IsDevelop && isTesting )
+        if (_parameterData.IsDevelop && isTesting)
         {
             var exempted = new[] { 0 };
             validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
@@ -116,16 +117,16 @@ public class DocumentValidator : IDocumentValidator
         var testingId = 0;
         //testingId = 1253;
         testingId = 1698;
-        
 
 
-        if (_parameterData.IsDevelop && testingId>0)
+
+        if (_parameterData.IsDevelop && testingId > 0)
         {
             validationRules = validationRules.Where(vr => vr.ValidationID == testingId).ToList();
         }
 
         //************************************************************* testing
-        
+
 
         foreach (var validationRule in validationRules)
         {
@@ -138,7 +139,7 @@ public class DocumentValidator : IDocumentValidator
             //Todo
             //282 has introduced validations without tables (validation 135)
             //at the moment skip those
-            if(tablesInValidation.Count == 0)
+            if (tablesInValidation.Count == 0)
             {
                 continue;
             }
@@ -220,7 +221,7 @@ public class DocumentValidator : IDocumentValidator
                     //there is no aggregate. Therefore do not check for zets for open or closed terms 
 
 
-                    
+
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
                     if (mainTable is null)
                     {
@@ -229,10 +230,12 @@ public class DocumentValidator : IDocumentValidator
                     var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
 
                     var testMainTable = ruleForScope.ScopeTable;
-                    if(!string.IsNullOrEmpty(testMainTable) && testMainTable !=mainTableCode)
+                    if (!string.IsNullOrEmpty(testMainTable) && testMainTable != mainTableCode)
                     {
                         Console.WriteLine($"Dif @&@&@&@&@&@&@&@&!!!!^^^^!!{mainTableCode}");
                     }
+
+                    
 
 
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "xxx")
@@ -245,7 +248,7 @@ public class DocumentValidator : IDocumentValidator
                     {
                         kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
                     }
-                    
+
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
 
@@ -268,11 +271,25 @@ public class DocumentValidator : IDocumentValidator
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
                         //rows = rows.Take(1).ToList();
                         var prevRowValid = true;
+
+
+                        var kyrTablesNew = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
+                                        .Where(kt =>
+                                            !string.IsNullOrEmpty(kt.TableCol) &&
+                                            !string.IsNullOrEmpty(kt.FK_TableCode) &&
+                                            !string.IsNullOrEmpty(kt.FK_TableCol))
+                                        .ToList();
+
                         foreach (var row in rows)
                         {
                             //create one rule for each rule
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
+
+                            foreach(var term in ruleOpen.IfComponent.RuleTerms)
+                            {
+
+                            }
                             foreach (var kyrTbl in kyrTables)
                             {
                                 //update the row number for each related table
@@ -291,19 +308,19 @@ public class DocumentValidator : IDocumentValidator
                                 // if the factFromMainValue is null or isEmpty (isEmpty was updated if contextline was optional and value was "None") 
                                 // the rule should not be checked. 
                                 // it means that the foreign key on the maintable is optional and has no value and therfore the related table row cannot be found, make the rule=>valid
-                                
-                                    var xxs = ruleOpen.IfComponent.RuleTerms.Any(rt=>rt.T.Trim() ==relatedTableCode);
-                                
+
+                                var xxs = ruleOpen.IfComponent.RuleTerms.Any(rt => rt.T.Trim() == relatedTableCode);
+
 
                                 if (factFromMain is null || factFromMain.IsEmpty)
                                 {
-                                    
-                                        ruleOpen.IsInvalidOptionalKey= true;
-                                    
-                                        //the rule is not checked because the foreign key on the maintable is optional and has no value
-                                        //therefore the related table row cannot be found, make the rule=>valid
-                                        Console.Write($"@");
-                                        continue;                                    
+
+                                    ruleOpen.IsInvalidOptionalKey = true;
+
+                                    //the rule is not checked because the foreign key on the maintable is optional and has no value
+                                    //therefore the related table row cannot be found, make the rule=>valid
+                                    Console.Write($"@");
+                                    continue;
                                 }
                                 //************************************
 
@@ -324,10 +341,11 @@ public class DocumentValidator : IDocumentValidator
                             if (filterKleeneValue != KleeneValue.True)
                             {
                                 continue;
-                            };
+                            }
+                            ;
 
 
-                            
+
 
                             var isValidRowRule = GeneralEvaluator.ValidateRule(ruleOpen);
 
@@ -470,7 +488,8 @@ public class DocumentValidator : IDocumentValidator
                             if (filterKleeneValue != KleeneValue.True)
                             {
                                 continue;
-                            };
+                            }
+                            ;
 
                             var isValidRowRule = GeneralEvaluator.ValidateRule(ruleOpen);
 
@@ -534,6 +553,7 @@ public class DocumentValidator : IDocumentValidator
             }
         }
     }
+
 
     private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType, bool IsClosedTables = false)
     {
@@ -884,7 +904,7 @@ public class DocumentValidator : IDocumentValidator
             RuleMessage = RegexUtils.TruncateString(validationRule.ErrorMessage, 2490),
             ShortLabel = RegexUtils.TruncateString(validationRule.ShortLabel, 900),
             IsWarning = validationRule.Severity.Trim().ToUpper() == "WARNING",
-            IsError = validationRule.Severity.Trim().ToUpper ()== "ERROR",
+            IsError = validationRule.Severity.Trim().ToUpper() == "ERROR",
             IsDataError = false,
 
             FormulaForIf = RegexUtils.TruncateString(BuildComponentValues(ruleStructure.IfComponent), 800),
@@ -942,6 +962,6 @@ public class DocumentValidator : IDocumentValidator
 
 
 
-    
+
 
 }
