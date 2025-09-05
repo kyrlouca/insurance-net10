@@ -27,7 +27,7 @@ using Shared.CommonRoutines;
 namespace NewValidator;
 
 internal enum ValidStatus { Valid, Error, Waring };
-public record RelatedRowRecord(string MainTable, string MainRow, string MainCol, string FKTable, string FKRow, string FKCol);
+public record RelatedRowRecord(string TableCode, string RowActual);
 public class DocumentValidator : IDocumentValidator
 {
     private readonly IParameterHandler _parameterHandler;
@@ -116,7 +116,8 @@ public class DocumentValidator : IDocumentValidator
         }
         var testingId = 0;
         //testingId = 1253;
-        testingId = 1698;
+        //testingId = 1698;
+        testingId = 1839;
 
 
 
@@ -235,7 +236,7 @@ public class DocumentValidator : IDocumentValidator
                         Console.WriteLine($"Dif @&@&@&@&@&@&@&@&!!!!^^^^!!{mainTableCode}");
                     }
 
-                    
+
 
 
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "xxx")
@@ -285,11 +286,41 @@ public class DocumentValidator : IDocumentValidator
                             //create one rule for each rule
                             var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
+                            List<RelatedRowRecord> derivedRows = new();
 
-                            foreach(var term in ruleOpen.IfComponent.RuleTerms)
+                            var allTerms = ruleOpen.IfComponent.RuleTerms
+                                .Concat(ruleOpen.ThenComponent.RuleTerms)
+                                .Concat(ruleOpen.ElseComponent.RuleTerms)
+                                .Concat(ruleOpen.FilterComponent.RuleTerms)
+                                .DistinctBy(rt => rt.T);
+
+                            var distinctTerms = allTerms
+                                .DistinctBy(rt => rt.T);
+
+                            foreach (var term in distinctTerms)
                             {
+                                //find the related entry 
+                                var tblKyr = kyrTablesNew.FirstOrDefault(kt => kt.FK_TableCode.Trim() == term.T.Trim());
+                                if (tblKyr is null)
+                                {
+                                    derivedRows.Add(new RelatedRowRecord(term.T.Trim(), row));
+                                    continue;
+                                }
 
+                                var factMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, tblKyr.TableCode, sheet.ZDimVal, row, tblKyr.TableCol);
+                                var factMainValue = factMain?.TextValue.Trim() ?? "";
+                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, tblKyr.FK_TableCode, tblKyr.FK_TableCol, factMainValue)
+                                    .FirstOrDefault();
+                                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
+                                derivedRows.Add(new RelatedRowRecord(term.T.Trim(), relatedRow));
                             }
+
+                            foreach (var term in allTerms)
+                            {
+                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
+                                term.TestRow = derivedRow?.RowActual ?? row;
+                            }
+
                             foreach (var kyrTbl in kyrTables)
                             {
                                 //update the row number for each related table
@@ -329,6 +360,16 @@ public class DocumentValidator : IDocumentValidator
                                 UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                                 UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                             }
+                            var diff = allTerms.FirstOrDefault(rt => rt.R != rt.TestRow);
+                            if(diff is not null)
+                            {
+                                Console.Write($"Different related : {ruleOpen.RuleId}- table:{diff.T} row:{diff.R} testRow:{diff.TestRow} , col:{diff.C}");
+                            }
+
+                            //some terms do not have a row. This is because the main table has a foreign key to a table but the rule does not use this table
+                            //therefore the term has no row. 
+                            //example rule 1253 with tables S.  
+
                             ruleOpen.ZetValue = sheet.ZDimVal;
                             //MAKE usingZet to false to avoid finding facts using zet. the closed table has no zet but the open tables for sum do have a zet
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
