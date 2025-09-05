@@ -116,7 +116,7 @@ public class DocumentValidator : IDocumentValidator
         }
         var testingId = 0;
         //testingId = 1253;
-        testingId = 1698;
+        //testingId = 1698;
         //testingId = 1839;
 
 
@@ -351,7 +351,7 @@ public class DocumentValidator : IDocumentValidator
                                     //the rule is not checked because the foreign key on the maintable is optional and has no value
                                     //therefore the related table row cannot be found, make the rule=>valid
                                     Console.Write($"@");
-                                    continue;
+                                    //continue;
                                 }
                                 //************************************
 
@@ -386,7 +386,10 @@ public class DocumentValidator : IDocumentValidator
                             ;
 
 
-
+                            if (ruleOpen.IsInvalidOptionalKey)
+                            {
+                                continue;
+                            }
 
                             var isValidRowRule = GeneralEvaluator.ValidateRule(ruleOpen);
 
