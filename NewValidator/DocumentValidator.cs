@@ -345,7 +345,7 @@ public class DocumentValidator : IDocumentValidator
                                 term.R = derivedRow?.RowRelated ?? row;
                             }
 
-                            //HERE WAS THE OLD UPDATING of related terms
+                            //**HERE WAS THE OLD UPDATING of related terms**
 
                             //some terms do not have a row. This is because the main table has a foreign key to a table but the rule does not use this table
                             //therefore the term has no row. 
