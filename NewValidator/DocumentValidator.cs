@@ -24,6 +24,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using Validator.ValidationClasses;
 using Microsoft.Identity.Client;
 using Shared.CommonRoutines;
+using Serilog.Sinks.File;
 namespace NewValidator;
 
 internal enum ValidStatus { Valid, Error, Waring };
@@ -118,7 +119,8 @@ public class DocumentValidator : IDocumentValidator
         //testingId = 1253;
         //testingId = 1698;
         //testingId = 1428;
-        //testingRuleId = 1677;
+        //testingRuleId = 4916;
+        //testingRuleId = 1088;
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
@@ -220,20 +222,37 @@ public class DocumentValidator : IDocumentValidator
                     //there is no aggregate. Therefore do not check for zets for open or closed terms 
 
 
+                    var ruleTest = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
-                    var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
-                    if (mainTable is null)
+                    var allTermsTest = ruleTest.IfComponent.RuleTerms
+                          .Concat(ruleTest.ThenComponent.RuleTerms)
+                          .Concat(ruleTest.ElseComponent.RuleTerms)
+                          .Concat(ruleTest.FilterComponent.RuleTerms);
+                          
+
+                    var distinctTermsTest = allTermsTest
+                        .DistinctBy(rt => rt.T);
+
+                    var mainTableCode = ruleTest.ScopeTable.Trim();
+                    if (string.IsNullOrEmpty(mainTableCode))
                     {
-                        mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
+                        mainTableCode = allTermsTest.FirstOrDefault()?.T?.Trim() ?? "";
                     }
-                    var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
+                                            
+                    var mainTable = tablesInValidation.FirstOrDefault(tb => tb.TableCode.Trim() == mainTableCode);
 
-                    var testMainTable = ruleForScope.ScopeTable;
-                    if (!string.IsNullOrEmpty(testMainTable) && testMainTable != mainTableCode)
+                    var mainTableOld = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
+                    if (mainTableOld is null)
                     {
-                        Console.WriteLine($"Dif @&@&@&@&@&@&@&@&!!!!^^^^!!{mainTableCode}");
+                        mainTableOld = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
                     }
+                    var mainTableCodeOld = mainTableOld?.TableCode?.Trim() ?? "";
 
+                    
+                    if(mainTableCode != (mainTableOld?.TableCode ??"") )
+                    {
+                        _logger.Error($"&&&& ValidationID:{validationRule.ValidationID} MainTable from scope or first term {mainTableCode} is different from main table in KyrTable {mainTableOld?.TableCode ??""}");
+                    }
 
 
 
@@ -289,13 +308,13 @@ public class DocumentValidator : IDocumentValidator
                             var allTerms = ruleOpen.IfComponent.RuleTerms
                                 .Concat(ruleOpen.ThenComponent.RuleTerms)
                                 .Concat(ruleOpen.ElseComponent.RuleTerms)
-                                .Concat(ruleOpen.FilterComponent.RuleTerms)
-                                .DistinctBy(rt => rt.T);
+                                .Concat(ruleOpen.FilterComponent.RuleTerms);
+                                
 
                             var distinctTerms = allTerms
                                 .DistinctBy(rt => rt.T);
 
-                            // find the related row for each term table using KyrTable (only for open tables)
+                            // find and UPDATE the related row for each term table using KyrTable (only for open tables)
                             
                             foreach (var term in distinctTerms)
                             {
@@ -340,59 +359,15 @@ public class DocumentValidator : IDocumentValidator
                             foreach (var term in allTerms)
                             {
                                 if (!string.IsNullOrWhiteSpace(term.R))
-                                {
-                                    term.TestRow=term.R;
+                                {                                 
                                     continue;
                                 }
                                 var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());                                
-                                term.TestRow = derivedRow?.RowRelated ?? row;
+                                term.R = derivedRow?.RowRelated ?? row;
                             }
 
-                            foreach (var kyrTbl in kyrTables)
-                            {
-                                //update the row number for each related table
-                                var relatedTableCode = kyrTbl?.FK_TableCode?.Trim() ?? "";
-                                var relatedTableCol = kyrTbl?.FK_TableCol?.Trim() ?? "";
-                                var mainTableCol = kyrTbl?.TableCol?.Trim() ?? "";
-
-                                //get the text valueof the main's key and find the corresponding row of the related table using the foreign key. 
-                                var factFromMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, mainTableCode, sheet.ZDimVal, row, mainTableCol);
-                                var factFromMainValue = factFromMain?.TextValue.Trim() ?? "";
-                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, relatedTableCode, relatedTableCol, factFromMainValue).FirstOrDefault();
-                                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
-                                //************************************
-                                //************************************
-                                //fuck99 04/09/2025
-                                // if the factFromMainValue is null or isEmpty (isEmpty was updated if contextline was optional and value was "None") 
-                                // the rule should not be checked. 
-                                // it means that the foreign key on the maintable is optional and has no value and therfore the related table row cannot be found, make the rule=>valid
-
-                                var xxs = ruleOpen.IfComponent.RuleTerms.Any(rt => rt.T.Trim() == relatedTableCode);
-
-
-                                if (factFromMain is null || factFromMain.IsEmpty)
-                                {
-
-                                    ruleOpen.IsInvalidOptionalKey = true;
-
-                                    //the rule is not checked because the foreign key on the maintable is optional and has no value
-                                    //therefore the related table row cannot be found, make the rule=>valid
-                                    Console.Write($"@");
-                                    //continue;
-                                }
-                                //************************************
-
-                                UpdateRuleTermsWithRowCol(ruleOpen.IfComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                UpdateRuleTermsWithRowCol(ruleOpen.ThenComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                UpdateRuleTermsWithRowCol(ruleOpen.ElseComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                                UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
-                            }
-                            var diff = allTerms.FirstOrDefault(rt => rt.R != rt.TestRow);
-                            if (diff is not null)
-                            {
-                                Console.Write($"Different related : {ruleOpen.RuleId}- table:{diff.T} row:{diff.R} testRow:{diff.TestRow} , col:{diff.C}");
-                            }
-
+                            //HERE WAS THE OLD UPDATING of related terms
+                                                        
                             //some terms do not have a row. This is because the main table has a foreign key to a table but the rule does not use this table
                             //therefore the term has no row. 
                             //example rule 1253 with tables S.  

@@ -39,7 +39,7 @@ public record RuleTerm280
     public string ToleranceChar { get; set; } = "";
     public bool IsSequence { get=>Seq.ToLower()=="true";  }
     public bool IsTolerance { get=>ToleranceChar=="Y"; }
-    public string TestRow { get; set; } = "";
+    
 
     public static RuleTerm280? CreateRuleTerm280(string letter, string formula)
     {
