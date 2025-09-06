@@ -1,7 +1,10 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Identity.Client;
 using NewValidator.ValidationClasses;
 using Serilog;
+using Serilog.Sinks.File;
+using Shared.CommonRoutines;
 using Shared.DataModels;
 using Shared.GeneralUtils;
 using Shared.HostParameters;
@@ -11,6 +14,7 @@ using Syncfusion.Office;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -20,15 +24,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Schema;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using Validator.ValidationClasses;
-using Microsoft.Identity.Client;
-using Shared.CommonRoutines;
-using Serilog.Sinks.File;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace NewValidator;
 
 internal enum ValidStatus { Valid, Error, Waring };
-public record RelatedRowRecord(string TableCode, string RowRelated);
+public record RelatedRowRecord(string TableCode, string RowRelatedOrActual);
 public class DocumentValidator : IDocumentValidator
 {
     private readonly IParameterHandler _parameterHandler;
@@ -279,10 +280,14 @@ public class DocumentValidator : IDocumentValidator
                     {
                         kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
                     }
-
+                    var kyrTablesNew = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
+                                        .Where(kt =>
+                                            !string.IsNullOrEmpty(kt.TableCol) &&
+                                            !string.IsNullOrEmpty(kt.FK_TableCode) &&
+                                            !string.IsNullOrEmpty(kt.FK_TableCol))
+                                        .ToList();
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
-
 
                     foreach (var sheet in sheets)
                     {
@@ -303,18 +308,17 @@ public class DocumentValidator : IDocumentValidator
                         //rows = rows.Take(1).ToList();
                         var prevRowValid = true;
 
-
-                        var kyrTablesNew = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
-                                        .Where(kt =>
-                                            !string.IsNullOrEmpty(kt.TableCol) &&
-                                            !string.IsNullOrEmpty(kt.FK_TableCode) &&
-                                            !string.IsNullOrEmpty(kt.FK_TableCol))
-                                        .ToList();
-
                         foreach (var row in rows)
                         {
                             //create one rule for each rule
-                            var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+                            RuleStructure280 ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+
+                            if(ruleOpen is null)
+                            {
+                                var message = $"Cannot create rule structure for rule:{validationRule.ValidationID} ";
+                                _logger.Error(message);
+                                continue;
+                            }
 
                             List<RelatedRowRecord> derivedRows = new();
 
@@ -367,6 +371,14 @@ public class DocumentValidator : IDocumentValidator
                                 var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
                                 derivedRows.Add(new RelatedRowRecord(term.T.Trim(), relatedRow));
                             }
+                                    
+                            var derivedRows2=GetDerivedRows( distinctTerms, mainTable,tablesInValidation,kyrTablesNew,DocumentId, ruleOpen.ZetValue, row);
+                            bool areEqual = derivedRows.SequenceEqual(derivedRows2);
+                            if (!areEqual)
+                            {
+                                var message = $"Different derived rows for rule:{validationRule.ValidationID} row:{row} ";
+                                _logger.Error(message);
+                            }
 
                             //update the row of each term for open tables
                             foreach (var term in allTerms)
@@ -376,7 +388,7 @@ public class DocumentValidator : IDocumentValidator
                                     continue;
                                 }
                                 var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
-                                term.R = derivedRow?.RowRelated ?? row;
+                                term.R = derivedRow?.RowRelatedOrActual ?? row;
                             }
 
                             //HERE WAS THE OLD UPDATING of related terms
@@ -485,18 +497,27 @@ public class DocumentValidator : IDocumentValidator
                 {
                     //create one rule for each row and apply filter 
 
-                    var mainTable = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
+                    ///////////////////////////////////////////
+
+                    var (mainTable, mainTableCode) = GetMainTable(ruleForScope, tablesInValidation);
                     if (mainTable is null)
                     {
-                        mainTable = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
+                        var message = $"Missing entry in TablesInValidation for main table:{mainTableCode} ";
+                        _logger.Error(message);
+                        continue;
                     }
+                    ////////////////////////////////////////////
 
-                    var mainTableCode = mainTable?.TableCode?.Trim() ?? "";
+
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
                                 .Where(kt => tablesInValidation.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
                                 .ToList();
 
-                    kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
+                    if (!kyrTables.Any())
+                    {
+                        kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
+                    }
+
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
@@ -504,8 +525,22 @@ public class DocumentValidator : IDocumentValidator
                         var rows = _SqlFunctions.SelectDistinctRowsInSheet(DocumentId, sheet.TemplateSheetId);
                         var prevRowValid = true;
                         var ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+
+
                         foreach (var row in rows)
                         {
+                            //ToDo get derived rows for each row and then update the terms directly without using the tables
+                            //var derivedRows = GetDerivedRows(ruleOpen, mainTable, tablesInValidation, kyrTables, DocumentId, sheet.ZDimVal, row);
+                            //foreach (var term in allTerms)
+                            //{
+                            //    if (!string.IsNullOrWhiteSpace(term.R))
+                            //    {
+                            //        continue;
+                            //    }
+                            //    var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
+                            //    term.R = derivedRow?.RowRelated ?? row;
+                            //}
+
 
                             foreach (var kyrTbl in kyrTables)
                             {
@@ -639,8 +674,8 @@ public class DocumentValidator : IDocumentValidator
 
 
 
-
-    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType, bool IsClosedTables = false)
+    //private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType, bool IsClosedTables = false)
+    private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType)
     {
         //We do not have the concept of master-slave table for closed tables.
         //Therefore, the rowcol of the main table as difened in the scope, should be applied to the other closed tables
@@ -649,7 +684,8 @@ public class DocumentValidator : IDocumentValidator
             var rTerms = ruleTerms.Where(term => string.IsNullOrEmpty(term.R)).ToList();
             foreach (var term in rTerms)
             {
-                if (term.T.Trim() == mainTableCode.Trim() || IsClosedTables)
+                //if (term.T.Trim() == mainTableCode.Trim() || IsClosedTables)
+                if (term.T.Trim() == mainTableCode.Trim())
                 {
                     term.R = rowCol;
                 }
@@ -666,7 +702,8 @@ public class DocumentValidator : IDocumentValidator
 
             foreach (var term in cTerms)
             {
-                if (term.T.Trim() == mainTableCode.Trim() || IsClosedTables)
+                //if (term.T.Trim() == mainTableCode.Trim() || IsClosedTables)
+                if (term.T.Trim() == mainTableCode.Trim())
                 {
                     term.C = rowCol;
                 }
@@ -918,7 +955,11 @@ public class DocumentValidator : IDocumentValidator
             .Where(kt => ruleTables.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
             .ToList();
 
-        kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
+        if (!kyrTables.Any())
+        {
+            kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
+        }
+
 
         var seqSheet = _SqlFunctions.SelectTemplateSheets(_documentInstance.InstanceId).Where(sheet => sheet.TableCode == seqTableCode).FirstOrDefault();
         if (seqSheet is null)
@@ -1046,20 +1087,78 @@ public class DocumentValidator : IDocumentValidator
     }
 
 
-    
+
 
     private static void UpdateClosedTableTerm(RuleTerm280 term, ScopeType scopeType, string rowCol)
     {
         switch (scopeType)
         {
-            case ScopeType.Rows: term.R = rowCol; 
+            case ScopeType.Rows:
+                term.R = rowCol;
                 break;
-            case ScopeType.Cols: term.ColTest = rowCol; 
+            case ScopeType.Cols:
+                term.C = rowCol;
                 break;
-            case ScopeType.None: default: 
+            case ScopeType.None:
+            default:
                 break;
         }
 
+    }
+
+    private List<RelatedRowRecord> GetDerivedRows(
+    IEnumerable<RuleTerm280>  ruleTerms,
+    MTable mainTable,
+    IEnumerable<MTable> tablesInValidation,
+    IEnumerable<MTableKyrKeys> kyrTablesNew,
+    int DocumentId,
+    string sheetZDimVal,
+    string row)
+    {
+        var derivedRows = new List<RelatedRowRecord>();
+       
+
+        foreach (var term in ruleTerms)
+        {
+            var termTableCode = term.T.Trim();
+
+            // Skip if term table is the main table
+            if (termTableCode == mainTable.TableCode)
+                continue;
+
+            // Find related table in validation
+            var relatedTbl = tablesInValidation.FirstOrDefault(tv => tv.TableCode == termTableCode);
+            if (relatedTbl is null)
+            {
+                _logger.Error($"Missing entry in TablesInValidation for table: {termTableCode}");
+                continue;
+            }
+
+            // Skip if related table is not open
+            if (!relatedTbl.IsOpenTable)
+                continue;
+
+            // Find KyrTable mapping
+            var tblKyr = kyrTablesNew.FirstOrDefault(kt => kt.FK_TableCode.Trim() == termTableCode);
+            if (tblKyr is null)
+            {
+                _logger.Error($"Missing entry in KyrTable for table: {mainTable.TableCode} fk_table: {termTableCode}");
+                continue;
+            }
+
+            // Get main fact
+            var factMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, tblKyr.TableCode, sheetZDimVal, row, tblKyr.TableCol);
+            var factMainValue = factMain?.TextValue.Trim() ?? "";
+
+            // Get related row
+            var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, tblKyr.FK_TableCode, tblKyr.FK_TableCol, factMainValue)
+                .FirstOrDefault();
+            var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
+
+            derivedRows.Add(new RelatedRowRecord(termTableCode, relatedRow));
+        }
+
+        return derivedRows;
     }
 
 
