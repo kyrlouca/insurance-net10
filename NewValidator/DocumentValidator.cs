@@ -27,7 +27,7 @@ using Shared.CommonRoutines;
 namespace NewValidator;
 
 internal enum ValidStatus { Valid, Error, Waring };
-public record RelatedRowRecord(string TableCode, string RowActual);
+public record RelatedRowRecord(string TableCode, string RowRelated);
 public class DocumentValidator : IDocumentValidator
 {
     private readonly IParameterHandler _parameterHandler;
@@ -107,27 +107,25 @@ public class DocumentValidator : IDocumentValidator
             .OrderBy(rl => rl.ValidationID).ToList();
 
 
-        //************************************************************* Exempt
+        //************************************************************* Testing 
         var isTesting = false;
         if (_parameterData.IsDevelop && isTesting)
         {
             var exempted = new[] { 0 };
             validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
         }
-        var testingId = 0;
+        var testingRuleId = 0;
         //testingId = 1253;
         //testingId = 1698;
-        testingId = 1428;
+        //testingId = 1428;
+        //testingRuleId = 1677;
 
-
-
-        if (_parameterData.IsDevelop && testingId > 0)
+        if (_parameterData.IsDevelop && testingRuleId > 0)
         {
-            validationRules = validationRules.Where(vr => vr.ValidationID == testingId).ToList();
+            Console.WriteLine($"\n***DEGUGGING ONLY Rule:{testingRuleId}");
+            validationRules = validationRules.Where(vr => vr.ValidationID == testingRuleId).ToList();
         }
-
-        //************************************************************* testing
-
+        //************************************************************* 
 
         foreach (var validationRule in validationRules)
         {
@@ -297,13 +295,36 @@ public class DocumentValidator : IDocumentValidator
                             var distinctTerms = allTerms
                                 .DistinctBy(rt => rt.T);
 
+                            // find the related row for each term table using KyrTable (only for open tables)
+                            
                             foreach (var term in distinctTerms)
                             {
-                                //find the related entry 
-                                var tblKyr = kyrTablesNew.FirstOrDefault(kt => kt.FK_TableCode.Trim() == term.T.Trim());
+                                // find the kyrtable entry using MainTable= TableCode and RELATED table = FK_TableCode
+                                var termTableCode = term.T.Trim();
+                                if (termTableCode == mainTable.TableCode)
+                                {
+                                    continue;
+                                }
+
+                                var relatedTbl = tablesInValidation.FirstOrDefault(tv => tv.TableCode == termTableCode);
+                                
+                                if (relatedTbl is null)
+                                {
+                                    var message = $"Missing entry in TablesInValidation for table:{termTableCode} ";
+                                    _logger.Error(message);
+                                    continue;
+                                }
+                                if (!relatedTbl.IsOpenTable)
+                                {
+                                    //this is NOT an open table, will use its own row 
+                                    continue;
+                                }
+
+                                var tblKyr = kyrTablesNew.FirstOrDefault(kt => kt.FK_TableCode.Trim() == termTableCode);
                                 if (tblKyr is null)
                                 {
-                                    derivedRows.Add(new RelatedRowRecord(term.T.Trim(), row));
+                                    var message = $"Missing entry in KyrTable for table:{mainTable.TableCode} fk_table:{termTableCode} ";
+                                    _logger.Error(message);
                                     continue;
                                 }
 
@@ -311,14 +332,20 @@ public class DocumentValidator : IDocumentValidator
                                 var factMainValue = factMain?.TextValue.Trim() ?? "";
                                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, tblKyr.FK_TableCode, tblKyr.FK_TableCol, factMainValue)
                                     .FirstOrDefault();
-                                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
+                                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";                                
                                 derivedRows.Add(new RelatedRowRecord(term.T.Trim(), relatedRow));
                             }
 
+                            //update the row of each term for open tables
                             foreach (var term in allTerms)
                             {
-                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
-                                term.TestRow = derivedRow?.RowActual ?? row;
+                                if (!string.IsNullOrWhiteSpace(term.R))
+                                {
+                                    term.TestRow=term.R;
+                                    continue;
+                                }
+                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());                                
+                                term.TestRow = derivedRow?.RowRelated ?? row;
                             }
 
                             foreach (var kyrTbl in kyrTables)
@@ -346,7 +373,7 @@ public class DocumentValidator : IDocumentValidator
                                 if (factFromMain is null || factFromMain.IsEmpty)
                                 {
 
-                                     ruleOpen.IsInvalidOptionalKey = true;
+                                    ruleOpen.IsInvalidOptionalKey = true;
 
                                     //the rule is not checked because the foreign key on the maintable is optional and has no value
                                     //therefore the related table row cannot be found, make the rule=>valid
@@ -361,7 +388,7 @@ public class DocumentValidator : IDocumentValidator
                                 UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
                             }
                             var diff = allTerms.FirstOrDefault(rt => rt.R != rt.TestRow);
-                            if(diff is not null)
+                            if (diff is not null)
                             {
                                 Console.Write($"Different related : {ruleOpen.RuleId}- table:{diff.T} row:{diff.R} testRow:{diff.TestRow} , col:{diff.C}");
                             }
@@ -382,9 +409,7 @@ public class DocumentValidator : IDocumentValidator
                             if (filterKleeneValue != KleeneValue.True)
                             {
                                 continue;
-                            }
-                            ;
-
+                            }                           
 
                             if (ruleOpen.IsInvalidOptionalKey)
                             {
