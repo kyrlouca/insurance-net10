@@ -120,7 +120,7 @@ public class DocumentValidator : IDocumentValidator
         //testingId = 1698;
         //testingId = 1428;
         //testingRuleId = 4916;
-        //testingRuleId = 4843;
+        //testingRuleId = 1696;
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
@@ -175,8 +175,27 @@ public class DocumentValidator : IDocumentValidator
 
                 if ((!hasAggregateFn || hasAggregateFn) && hasOnlyClosedTables)
                 {
+
+                    ///////////////////////////////////////////
+                    
+                    var (mainTable3, mainTableCode3)=GetMainTable(ruleForScope, tablesInValidation);
+                    if (mainTable3 is null)
+                    {
+                        var message = $"Missing entry in TablesInValidation for main table:{mainTableCode3} ";
+                        _logger.Error(message);
+                        continue;
+                    }
+                    ////////////////////////////////////////////
                     var mainTable = tablesInValidation.FirstOrDefault(tbl => tbl.TableCode == ruleForScope.IfComponent.RuleTerms[0].T);
                     var mainTableCode = mainTable?.TableCode ?? "";
+
+                    if (mainTable3.TableCode != (mainTable?.TableCode??"") )
+                    {
+                        var message = $"DIFFERNET MAINTABEL :{mainTableCode3} ";
+                        _logger.Error(message);
+                    }
+
+
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
                     {
@@ -585,6 +604,34 @@ public class DocumentValidator : IDocumentValidator
             }
         }
     }
+
+
+    private ( MTable? MainTable, string MainTableCode) GetMainTable(
+    RuleStructure280 ruleForScope,
+    IEnumerable<MTable> tablesInValidation)
+    {
+        // Collect all terms
+        var allTermsForRule = ruleForScope.IfComponent.RuleTerms
+            .Concat(ruleForScope.ThenComponent.RuleTerms)
+            .Concat(ruleForScope.ElseComponent.RuleTerms)
+            .Concat(ruleForScope.FilterComponent.RuleTerms);
+
+        // Determine main table code
+        var mainTableCode = ruleForScope.ScopeTable?.Trim();
+
+        if (string.IsNullOrEmpty(mainTableCode))
+        {
+            mainTableCode = allTermsForRule.FirstOrDefault()?.T?.Trim() ?? "";
+        }
+
+        // Find the table
+        var mainTable = tablesInValidation
+            .FirstOrDefault(tb => tb.TableCode.Trim() == mainTableCode);
+
+        return (mainTable,mainTableCode);
+    }
+
+
 
 
     private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType, bool IsClosedTables = false)
