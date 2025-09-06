@@ -484,17 +484,8 @@ public class DocumentValidator : IDocumentValidator
                         foreach (var row in rows)
                         {
                             //ToDo get derived rows for each row and then update the terms directly without using the tables
-                            //var derivedRows = GetDerivedRows(ruleOpen, mainTable, tablesInValidation, kyrTables, DocumentId, sheet.ZDimVal, row);
-                            //foreach (var term in allTerms)
-                            //{
-                            //    if (!string.IsNullOrWhiteSpace(term.R))
-                            //    {
-                            //        continue;
-                            //    }
-                            //    var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
-                            //    term.R = derivedRow?.RowRelated ?? row;
-                            //}
 
+                            
 
                             foreach (var kyrTbl in kyrTables)
                             {
@@ -515,7 +506,40 @@ public class DocumentValidator : IDocumentValidator
                                 UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
 
                             }
+                            if (1 == 2)
+                            {
+                                //###############################################
+                                //NEED To test this before removing the old code
+                                var allTerms = ruleOpen.IfComponent.RuleTerms
+                                    .Concat(ruleOpen.ThenComponent.RuleTerms)
+                                    .Concat(ruleOpen.ElseComponent.RuleTerms)
+                                    .Concat(ruleOpen.FilterComponent.RuleTerms);
 
+
+                                var distinctTerms = allTerms
+                                    .DistinctBy(rt => rt.T);
+
+
+                                var derivedRows = GetDerivedRows(allTerms, mainTable, tablesInValidation, kyrTables, DocumentId, sheet.ZDimVal, row);
+                                foreach (var term in allTerms)
+                                {
+                                    if (!string.IsNullOrWhiteSpace(term.R))
+                                    {
+                                        continue;
+                                    }
+                                    var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
+                                    term.RowTest = derivedRow?.RowRelated ?? row;
+                                }
+                                if (allTerms.Any(t => t.R != t.RowTest))
+                                {
+                                    //this should not happen
+
+                                    var message = $"DIFF ROW ";
+                                    _logger.Error(message);                                    
+                                }
+                            }
+
+                            
 
                             //MAKE usingZet to false to avoid finding facts using zet. the closed table has no zet but the open tables for sum do have a zet
                             ruleOpen.ZetValue = sheet.ZDimVal;
