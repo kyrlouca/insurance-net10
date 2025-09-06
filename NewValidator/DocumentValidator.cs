@@ -178,23 +178,15 @@ public class DocumentValidator : IDocumentValidator
 
                     ///////////////////////////////////////////
                     
-                    var (mainTable3, mainTableCode3)=GetMainTable(ruleForScope, tablesInValidation);
-                    if (mainTable3 is null)
+                    var (mainTable, mainTableCode)=GetMainTable(ruleForScope, tablesInValidation);
+                    if (mainTable is null)
                     {
-                        var message = $"Missing entry in TablesInValidation for main table:{mainTableCode3} ";
+                        var message = $"Missing entry in TablesInValidation for main table:{mainTableCode} ";
                         _logger.Error(message);
                         continue;
                     }
                     ////////////////////////////////////////////
-                    var mainTable = tablesInValidation.FirstOrDefault(tbl => tbl.TableCode == ruleForScope.IfComponent.RuleTerms[0].T);
-                    var mainTableCode = mainTable?.TableCode ?? "";
-
-                    if (mainTable3.TableCode != (mainTable?.TableCode??"") )
-                    {
-                        var message = $"DIFFERNET MAINTABEL :{mainTableCode3} ";
-                        _logger.Error(message);
-                    }
-
+                    
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
