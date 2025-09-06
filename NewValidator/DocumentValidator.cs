@@ -153,7 +153,7 @@ public class DocumentValidator : IDocumentValidator
             //**todo check if all the sheets exist for this rule??
 
             //*********** SCOPE 
-            var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);            
+            var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
             var scopeRowcols = ruleForScope.ScopeRowCols;
             var scopeType = ruleForScope.ScopeType;
             //** if no scope, add one entry to go through
@@ -161,7 +161,7 @@ public class DocumentValidator : IDocumentValidator
             {
                 scopeRowcols.Add("");
             }
-            
+
             foreach (var scopeRowCol in scopeRowcols)
             {
 
@@ -177,8 +177,8 @@ public class DocumentValidator : IDocumentValidator
                 {
 
                     ///////////////////////////////////////////
-                    
-                    var (mainTable, mainTableCode)=GetMainTable(ruleForScope, tablesInValidation);
+
+                    var (mainTable, mainTableCode) = GetMainTable(ruleForScope, tablesInValidation);
                     if (mainTable is null)
                     {
                         var message = $"Missing entry in TablesInValidation for main table:{mainTableCode} ";
@@ -186,7 +186,7 @@ public class DocumentValidator : IDocumentValidator
                         continue;
                     }
                     ////////////////////////////////////////////
-                    
+
 
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
                     foreach (var sheet in sheets)
@@ -198,13 +198,27 @@ public class DocumentValidator : IDocumentValidator
                             continue;
                         }
                         var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-                        if (scopeType != ScopeType.None)
+                        //if (scopeType != ScopeType.None)
+                        //{
+                        //    UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
+                        //    UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
+                        //    UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
+                        //    UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
+                        //}
+
+                        ////////////////////////////////////////
+                        var allTerms = ruleClosed.IfComponent.RuleTerms
+                                .Concat(ruleClosed.ThenComponent.RuleTerms)
+                                .Concat(ruleClosed.ElseComponent.RuleTerms)
+                                .Concat(ruleClosed.FilterComponent.RuleTerms);
+
+                        foreach (var term in allTerms)
                         {
-                            UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
-                            UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
-                            UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
-                            UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
+                            UpdateClosedTableTerm(term, ruleClosed.ScopeType, scopeRowCol);
                         }
+
+                        /////////////////////////////////////////
+
 
                         //MAKE usingZet to true to  find facts using zet. 
                         ruleClosed.ZetValue = sheet.ZDimVal;
@@ -239,21 +253,21 @@ public class DocumentValidator : IDocumentValidator
                           .Concat(ruleTest.ThenComponent.RuleTerms)
                           .Concat(ruleTest.ElseComponent.RuleTerms)
                           .Concat(ruleTest.FilterComponent.RuleTerms);
-                                              
+
                     var mainTableCode = ruleTest.ScopeTable.Trim();
                     if (string.IsNullOrEmpty(mainTableCode))
                     {
                         mainTableCode = allTermsForRUle.FirstOrDefault()?.T?.Trim() ?? "";
                     }
-                                            
+
                     var mainTable = tablesInValidation.FirstOrDefault(tb => tb.TableCode.Trim() == mainTableCode);
-                    if(mainTable is null)
+                    if (mainTable is null)
                     {
                         var message = $"Missing entry in TablesInValidation for main table:{mainTableCode} ";
                         _logger.Error(message);
                         continue;
-                    }   
-                    
+                    }
+
 
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "xxx")
                         .Where(kt => tablesInValidation.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
@@ -308,13 +322,13 @@ public class DocumentValidator : IDocumentValidator
                                 .Concat(ruleOpen.ThenComponent.RuleTerms)
                                 .Concat(ruleOpen.ElseComponent.RuleTerms)
                                 .Concat(ruleOpen.FilterComponent.RuleTerms);
-                                
+
 
                             var distinctTerms = allTerms
                                 .DistinctBy(rt => rt.T);
 
                             // find and UPDATE the related row for each term table using KyrTable (only for open tables)
-                            
+
                             foreach (var term in distinctTerms)
                             {
                                 // find the kyrtable entry using MainTable= TableCode and RELATED table = FK_TableCode
@@ -325,7 +339,7 @@ public class DocumentValidator : IDocumentValidator
                                 }
 
                                 var relatedTbl = tablesInValidation.FirstOrDefault(tv => tv.TableCode == termTableCode);
-                                
+
                                 if (relatedTbl is null)
                                 {
                                     var message = $"Missing entry in TablesInValidation for table:{termTableCode} ";
@@ -350,7 +364,7 @@ public class DocumentValidator : IDocumentValidator
                                 var factMainValue = factMain?.TextValue.Trim() ?? "";
                                 var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, tblKyr.FK_TableCode, tblKyr.FK_TableCol, factMainValue)
                                     .FirstOrDefault();
-                                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";                                
+                                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
                                 derivedRows.Add(new RelatedRowRecord(term.T.Trim(), relatedRow));
                             }
 
@@ -358,15 +372,15 @@ public class DocumentValidator : IDocumentValidator
                             foreach (var term in allTerms)
                             {
                                 if (!string.IsNullOrWhiteSpace(term.R))
-                                {                                 
+                                {
                                     continue;
                                 }
-                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());                                
+                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
                                 term.R = derivedRow?.RowRelated ?? row;
                             }
 
                             //HERE WAS THE OLD UPDATING of related terms
-                                                        
+
                             //some terms do not have a row. This is because the main table has a foreign key to a table but the rule does not use this table
                             //therefore the term has no row. 
                             //example rule 1253 with tables S.  
@@ -383,7 +397,7 @@ public class DocumentValidator : IDocumentValidator
                             if (filterKleeneValue != KleeneValue.True)
                             {
                                 continue;
-                            }                           
+                            }
 
                             if (ruleOpen.IsInvalidOptionalKey)
                             {
@@ -598,7 +612,7 @@ public class DocumentValidator : IDocumentValidator
     }
 
 
-    private ( MTable? MainTable, string MainTableCode) GetMainTable(
+    private (MTable? MainTable, string MainTableCode) GetMainTable(
     RuleStructure280 ruleForScope,
     IEnumerable<MTable> tablesInValidation)
     {
@@ -620,7 +634,7 @@ public class DocumentValidator : IDocumentValidator
         var mainTable = tablesInValidation
             .FirstOrDefault(tb => tb.TableCode.Trim() == mainTableCode);
 
-        return (mainTable,mainTableCode);
+        return (mainTable, mainTableCode);
     }
 
 
@@ -1032,6 +1046,21 @@ public class DocumentValidator : IDocumentValidator
     }
 
 
+    
+
+    private static void UpdateClosedTableTerm(RuleTerm280 term, ScopeType scopeType, string rowCol)
+    {
+        switch (scopeType)
+        {
+            case ScopeType.Rows: term.R = rowCol; 
+                break;
+            case ScopeType.Cols: term.ColTest = rowCol; 
+                break;
+            case ScopeType.None: default: 
+                break;
+        }
+
+    }
 
 
 
