@@ -153,15 +153,15 @@ public class DocumentValidator : IDocumentValidator
             //**todo check if all the sheets exist for this rule??
 
             //*********** SCOPE 
-            var rulex1 = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-            var scopeRowcols = rulex1.ScopeRowCols;
-            var scopeType = rulex1.ScopeType;
+            var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);            
+            var scopeRowcols = ruleForScope.ScopeRowCols;
+            var scopeType = ruleForScope.ScopeType;
             //** if no scope, add one entry to go through
             if (scopeType == ScopeType.None)
             {
                 scopeRowcols.Add("");
             }
-            var ruleForScope = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
+            
             foreach (var scopeRowCol in scopeRowcols)
             {
 
