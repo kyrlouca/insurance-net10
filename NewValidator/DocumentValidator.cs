@@ -120,7 +120,7 @@ public class DocumentValidator : IDocumentValidator
         //testingId = 1698;
         //testingId = 1428;
         //testingRuleId = 4916;
-        //testingRuleId = 1088;
+        //testingRuleId = 1613;
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
@@ -224,37 +224,25 @@ public class DocumentValidator : IDocumentValidator
 
                     var ruleTest = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
-                    var allTermsTest = ruleTest.IfComponent.RuleTerms
+                    var allTermsForRUle = ruleTest.IfComponent.RuleTerms
                           .Concat(ruleTest.ThenComponent.RuleTerms)
                           .Concat(ruleTest.ElseComponent.RuleTerms)
                           .Concat(ruleTest.FilterComponent.RuleTerms);
-                          
-
-                    var distinctTermsTest = allTermsTest
-                        .DistinctBy(rt => rt.T);
-
+                                              
                     var mainTableCode = ruleTest.ScopeTable.Trim();
                     if (string.IsNullOrEmpty(mainTableCode))
                     {
-                        mainTableCode = allTermsTest.FirstOrDefault()?.T?.Trim() ?? "";
+                        mainTableCode = allTermsForRUle.FirstOrDefault()?.T?.Trim() ?? "";
                     }
                                             
                     var mainTable = tablesInValidation.FirstOrDefault(tb => tb.TableCode.Trim() == mainTableCode);
-
-                    var mainTableOld = tablesInValidation.FirstOrDefault(tbl => _SqlFunctions.SelectTableKyrKey(tbl.TableCode)?.FK_TableCode is not null);
-                    if (mainTableOld is null)
+                    if(mainTable is null)
                     {
-                        mainTableOld = tablesInValidation.FirstOrDefault(tb => tb.IsOpenTable);
-                    }
-                    var mainTableCodeOld = mainTableOld?.TableCode?.Trim() ?? "";
-
+                        var message = $"Missing entry in TablesInValidation for main table:{mainTableCode} ";
+                        _logger.Error(message);
+                        continue;
+                    }   
                     
-                    if(mainTableCode != (mainTableOld?.TableCode ??"") )
-                    {
-                        _logger.Error($"&&&& ValidationID:{validationRule.ValidationID} MainTable from scope or first term {mainTableCode} is different from main table in KyrTable {mainTableOld?.TableCode ??""}");
-                    }
-
-
 
                     var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "xxx")
                         .Where(kt => tablesInValidation.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
