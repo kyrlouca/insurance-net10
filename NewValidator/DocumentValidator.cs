@@ -29,7 +29,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace NewValidator;
 
 internal enum ValidStatus { Valid, Error, Waring };
-public record RelatedRowRecord(string TableCode, string RowRelatedOrActual);
+public record RelatedRowRecord(string TableCode, string RowRelated);
 public class DocumentValidator : IDocumentValidator
 {
     private readonly IParameterHandler _parameterHandler;
@@ -320,8 +320,6 @@ public class DocumentValidator : IDocumentValidator
                                 continue;
                             }
 
-                            List<RelatedRowRecord> derivedRows = new();
-
                             var allTerms = ruleOpen.IfComponent.RuleTerms
                                 .Concat(ruleOpen.ThenComponent.RuleTerms)
                                 .Concat(ruleOpen.ElseComponent.RuleTerms)
@@ -331,64 +329,20 @@ public class DocumentValidator : IDocumentValidator
                             var distinctTerms = allTerms
                                 .DistinctBy(rt => rt.T);
 
-                            // find and UPDATE the related row for each term table using KyrTable (only for open tables)
+                            // find and UPDATE the related row for each term table using KyrTable (only for open tables)                                                               
+                            var derivedRows=GetDerivedRows( distinctTerms, mainTable,tablesInValidation,kyrTablesNew,DocumentId, ruleOpen.ZetValue, row);
 
-                            foreach (var term in distinctTerms)
-                            {
-                                // find the kyrtable entry using MainTable= TableCode and RELATED table = FK_TableCode
-                                var termTableCode = term.T.Trim();
-                                if (termTableCode == mainTable.TableCode)
-                                {
-                                    continue;
-                                }
-
-                                var relatedTbl = tablesInValidation.FirstOrDefault(tv => tv.TableCode == termTableCode);
-
-                                if (relatedTbl is null)
-                                {
-                                    var message = $"Missing entry in TablesInValidation for table:{termTableCode} ";
-                                    _logger.Error(message);
-                                    continue;
-                                }
-                                if (!relatedTbl.IsOpenTable)
-                                {
-                                    //this is NOT an open table, will use its own row 
-                                    continue;
-                                }
-
-                                var tblKyr = kyrTablesNew.FirstOrDefault(kt => kt.FK_TableCode.Trim() == termTableCode);
-                                if (tblKyr is null)
-                                {
-                                    var message = $"Missing entry in KyrTable for table:{mainTable.TableCode} fk_table:{termTableCode} ";
-                                    _logger.Error(message);
-                                    continue;
-                                }
-
-                                var factMain = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, tblKyr.TableCode, sheet.ZDimVal, row, tblKyr.TableCol);
-                                var factMainValue = factMain?.TextValue.Trim() ?? "";
-                                var relatedRowNew = _SqlFunctions.SelectFactsByColAndTextValue(DocumentId, tblKyr.FK_TableCode, tblKyr.FK_TableCol, factMainValue)
-                                    .FirstOrDefault();
-                                var relatedRow = relatedRowNew?.Row?.Trim() ?? "";
-                                derivedRows.Add(new RelatedRowRecord(term.T.Trim(), relatedRow));
-                            }
-                                    
-                            var derivedRows2=GetDerivedRows( distinctTerms, mainTable,tablesInValidation,kyrTablesNew,DocumentId, ruleOpen.ZetValue, row);
-                            bool areEqual = derivedRows.SequenceEqual(derivedRows2);
-                            if (!areEqual)
-                            {
-                                var message = $"Different derived rows for rule:{validationRule.ValidationID} row:{row} ";
-                                _logger.Error(message);
-                            }
 
                             //update the row of each term for open tables
+                            //if you find a derived row use it, otherwise use the current row
                             foreach (var term in allTerms)
                             {
                                 if (!string.IsNullOrWhiteSpace(term.R))
                                 {
                                     continue;
                                 }
-                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
-                                term.R = derivedRow?.RowRelatedOrActual ?? row;
+                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());                                
+                                term.R = derivedRow?.RowRelated ?? row;
                             }
 
                             //HERE WAS THE OLD UPDATING of related terms
