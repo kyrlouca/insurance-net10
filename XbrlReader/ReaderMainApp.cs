@@ -50,7 +50,7 @@ public class ReaderMainApp : IReaderMainApp
         }
 
         //*****************************************************************************
-        var _documentId = 298; //set this when debugging. when you avoid to CreateLooseFacts
+        var _documentId = 301; //set this when debugging. when you avoid to CreateLooseFacts
         //*****************************************************************************
         var filingsSubmitted = new List<string>();
         if (_parameterData.IsDevelop && 1 != 1)
@@ -122,7 +122,7 @@ public class ReaderMainApp : IReaderMainApp
         }
 
         //decorate facts and assign to sheets
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             var res = _factsDecorator.DecorateFactsAndAssignToSheets(_documentId, filingsSubmitted);
             if (res != 0)
@@ -131,7 +131,7 @@ public class ReaderMainApp : IReaderMainApp
             }
         }
 
-        if (!_parameterData.IsDevelop || 1 == 1)
+        if (!_parameterData.IsDevelop || 1 == 2)
         {
             var cnt = _combinedS62Services.K_UpdateDocumentForeignKeys(_documentId);
             Console.WriteLine("Create Sheet S.06.02.01.99");

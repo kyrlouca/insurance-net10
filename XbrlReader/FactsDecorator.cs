@@ -98,7 +98,7 @@ public partial class FactsDecorator : IFactsDecorator
         }
 
         _testingTableId = 0;
-        //_testingTableId = 802;
+        _testingTableId = 417;
         if (_parameterData.IsDevelop && _testingTableId > 0)
         {
             ModuleTables = ModuleTables.Where(mt => mt.TableID == _testingTableId).ToList();
@@ -471,8 +471,9 @@ public partial class FactsDecorator : IFactsDecorator
 
                 if (cellFact.TableID > 0)
                 {
-                    Console.Write("&");
-                    //Maybe I neeed to change the row and col of the fact here based on the cellSignature
+                    //this fact is already assigned to another table (two cells with same signature)
+                    //therefore create a new fact and assign it to this table (factId= newFactId)
+                    Console.Write("&");                    
                     cellFact!.FieldOrigin = "D";
                     var newFactId = _SqlFunctions.CreateTemplateSheetFact(cellFact, true);//loose fact without TemplateSheetId                               
                     cellFact.FactId = newFactId;
