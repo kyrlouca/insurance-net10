@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Shared.SharedHost;
 using Syncfusion.XlsIO.Implementation;
+using System.Reflection;
 using XbrlReader;
 
 //var dir = Directory.GetCurrentDirectory();
@@ -33,6 +34,9 @@ try
     if (app is not null)
     {
         var exitCode = await app.Run();   // 👈 await async Run
+        var assembly = Assembly.GetExecutingAssembly();
+        Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
+        Console.WriteLine($"Version: {assembly.GetName().Version}");
         return exitCode;
     }
 }

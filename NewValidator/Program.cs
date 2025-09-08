@@ -1,9 +1,10 @@
-﻿  // See https://aka.ms/new-console-template for more information
-using NewValidator;
+﻿// See https://aka.ms/new-console-template for more information
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
-using Shared.SharedHost;
+using NewValidator;
 using NewValidator.Hosting;
+using Shared.SharedHost;
+using System.Reflection;
 
 //var dir = Directory.GetCurrentDirectory();
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
@@ -27,7 +28,12 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try
 {
-    host.Services.GetService<IValidatorMain>()?.Run();
+    var assembly = Assembly.GetExecutingAssembly();
+    Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
+    Console.WriteLine($"Version: {assembly.GetName().Version}");
+    var mainApp = host.Services.GetService<IValidatorMain>()
+        ?? throw new InvalidOperationException("IValidatorMain service not found");
+    mainApp.Run();
 }
 catch (Exception ex)
 {

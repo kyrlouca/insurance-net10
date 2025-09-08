@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Shared.SharedHost;
 using ExcelWriter.Hosting;
+using System.Reflection;
+
+
 //test 28/08
 //var dir = Directory.GetCurrentDirectory();
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
@@ -22,16 +25,23 @@ using var scope = host.Services.CreateScope();
 var services = scope.ServiceProvider;
 
 
-///////////////////////////////////////
-///Execute the MainApp
-///////////////////////////////////////
-try 
-{	
-	host.Services.GetService<IExcelWriterMainApp>()?.Run();
+
+// ─────────────────────────────────────────────
+// Execute the Main Application
+// ─────────────────────────────────────────────
+try
+{
+    var mainApp = host.Services.GetService<IExcelWriterMainApp>();
+    mainApp?.Run();
+    
+    var assembly = Assembly.GetExecutingAssembly();
+    Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
+    Console.WriteLine($"Version: {assembly.GetName().Version}");
+
 }
 catch (Exception ex)
 {
-	Console.WriteLine(ex.ToString());
+    Console.Error.WriteLine($"Unhandled exception in MainApp: {ex}");
 }
 
 return 0;
