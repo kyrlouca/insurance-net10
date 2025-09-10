@@ -122,7 +122,7 @@ public class DocumentValidator : IDocumentValidator
         //testingId = 1428;
         //testingRuleId = 4916;
         //testingRuleId = 1696;
-        testingRuleId = 1699;
+        testingRuleId = 470;
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
@@ -256,38 +256,22 @@ public class DocumentValidator : IDocumentValidator
                           .Concat(ruleTest.ElseComponent.RuleTerms)
                           .Concat(ruleTest.FilterComponent.RuleTerms);
 
-                    var mainTableCode = ruleTest.ScopeTable.Trim();
-                    if (string.IsNullOrEmpty(mainTableCode))
-                    {
-                        mainTableCode = allTermsForRUle.FirstOrDefault()?.T?.Trim() ?? "";
-                    }
-
-                    var mainTable = tablesInValidation.FirstOrDefault(tb => tb.TableCode.Trim() == mainTableCode);
-                    if (mainTable is null)
-                    {
-                        var message = $"Missing entry in TablesInValidation for main table:{mainTableCode} ";
-                        _logger.Error(message);
-                        continue;
-                    }
-
-
-                    var kyrTables = _SqlFunctions.SelectTableKyrKeys(mainTable?.TableCode ?? "xxx")
-                        .Where(kt => tablesInValidation.Any(table => table.TableCode.Trim() == (kt.FK_TableCode ?? "").Trim()))
-                        .ToList();
-
-
-                    // add kyrTable record with main table in order to update the main table row                    
-                    if (!kyrTables.Any())
-                    {
-                        kyrTables.Add(new MTableKyrKeys() { TableCode = mainTableCode });
-                    }
-                    var kyrTablesNew = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
+                    var (mainTable, mainTableCode) = GetMainTable(ruleForScope, tablesInValidation);
+                    
+                    var kyrTablesEntries = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
                                         .Where(kt =>
                                             !string.IsNullOrEmpty(kt.TableCol) &&
                                             !string.IsNullOrEmpty(kt.FK_TableCode) &&
                                             !string.IsNullOrEmpty(kt.FK_TableCol))
                                         .ToList();
 
+
+                    var isErrorUnmatched= LogUnmatchedForeignTables(mainTableCode, tablesInValidation, kyrTablesEntries, _logger);
+                    if (isErrorUnmatched)
+                    {
+                        continue;
+                    }
+                    
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
 
                     foreach (var sheet in sheets)
@@ -314,7 +298,7 @@ public class DocumentValidator : IDocumentValidator
                             //create one rule for each rule
                             RuleStructure280 ruleOpen = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
-                            if(ruleOpen is null)
+                            if (ruleOpen is null)
                             {
                                 var message = $"Cannot create rule structure for rule:{validationRule.ValidationID} ";
                                 _logger.Error(message);
@@ -331,7 +315,7 @@ public class DocumentValidator : IDocumentValidator
                                 .DistinctBy(rt => rt.T);
 
                             // find and UPDATE the related row for each term table using KyrTable (only for open tables)                                                               
-                            var derivedRows=GetDerivedRows( distinctTerms, mainTable,tablesInValidation,kyrTablesNew,DocumentId, ruleOpen.ZetValue, row);
+                            var derivedRows = GetDerivedRows(distinctTerms, mainTable, tablesInValidation, kyrTablesEntries, DocumentId, ruleOpen.ZetValue, row);
 
 
                             //update the row of each term for open tables
@@ -342,7 +326,7 @@ public class DocumentValidator : IDocumentValidator
                                 {
                                     continue;
                                 }
-                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());                                
+                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
                                 term.R = derivedRow?.RowRelated ?? row;
                             }
 
@@ -486,7 +470,7 @@ public class DocumentValidator : IDocumentValidator
                         {
                             //ToDo get derived rows for each row and then update the terms directly without using the tables
 
-                            
+
 
                             foreach (var kyrTbl in kyrTables)
                             {
@@ -536,11 +520,11 @@ public class DocumentValidator : IDocumentValidator
                                     //this should not happen
 
                                     var message = $"DIFF ROW ";
-                                    _logger.Error(message);                                    
+                                    _logger.Error(message);
                                 }
                             }
 
-                            
+
 
                             //MAKE usingZet to false to avoid finding facts using zet. the closed table has no zet but the open tables for sum do have a zet
                             ruleOpen.ZetValue = sheet.ZDimVal;
@@ -1086,7 +1070,7 @@ public class DocumentValidator : IDocumentValidator
     }
 
     private List<RelatedRowRecord> GetDerivedRows(
-    IEnumerable<RuleTerm280>  ruleTerms,
+    IEnumerable<RuleTerm280> ruleTerms,
     MTable mainTable,
     IEnumerable<MTable> tablesInValidation,
     IEnumerable<MTableKyrKeys> kyrTablesNew,
@@ -1095,7 +1079,7 @@ public class DocumentValidator : IDocumentValidator
     string row)
     {
         var derivedRows = new List<RelatedRowRecord>();
-       
+
 
         foreach (var term in ruleTerms)
         {
@@ -1140,6 +1124,27 @@ public class DocumentValidator : IDocumentValidator
         return derivedRows;
     }
 
+    private bool LogUnmatchedForeignTables(
+                    string mainTableCode,
+                    IEnumerable<MTable> tablesInValidation,
+                    IEnumerable<MTableKyrKeys> kyrTablesEntries,                    
+                    ILogger _logger
+        )
+    {
+        bool isError = false;
+        var foreignOpenTables = tablesInValidation.Where(ti => ti.IsOpenTable && ti.TableCode != mainTableCode).ToList();
+        var unmatchedForeign = foreignOpenTables.Where(fo => !kyrTablesEntries.Any(kt => kt.FK_TableCode == fo.TableCode));
+
+        foreach (var un in unmatchedForeign)
+        {
+            string message =
+                $"Missing entry in KyrTable => foreign open table:{un.TableCode} related to main table:{mainTableCode}";
+            _logger.Error(message);
+            isError = true; // mark error if at least one exists
+        }
+
+        return isError;
+    }
 
 
 }
