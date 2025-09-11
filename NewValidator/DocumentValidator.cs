@@ -122,7 +122,8 @@ public class DocumentValidator : IDocumentValidator
         //testingId = 1428;
         //testingRuleId = 4916;
         //testingRuleId = 1696;
-        testingRuleId = 470;
+        testingRuleId = 4643;
+
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
@@ -133,11 +134,11 @@ public class DocumentValidator : IDocumentValidator
 
         foreach (var validationRule in validationRules)
         {
+            //testingRuleId = 470 cannot validate this rule and was disabled;
             Console.WriteLine($"\n***Validating Rule:{validationRule.ValidationID}");
             var tablesInValidation = _SqlFunctions.SelectTablesForValidationRule(validationRule.ValidationID)
                 .DistinctBy(tbl => tbl.TableID)
                 .ToList();
-
 
             //Todo
             //282 has introduced validations without tables (validation 135)
@@ -179,18 +180,24 @@ public class DocumentValidator : IDocumentValidator
                 {
 
                     ///////////////////////////////////////////
+                    // Collect all terms
+                    var allTermsForRule = ruleForScope.IfComponent.RuleTerms
+                        .Concat(ruleForScope.ThenComponent.RuleTerms)
+                        .Concat(ruleForScope.ElseComponent.RuleTerms)
+                        .Concat(ruleForScope.FilterComponent.RuleTerms);
+                    
 
-                    var (mainTable, mainTableCode) = GetMainTable(ruleForScope, tablesInValidation);
+                    var mainTable = GetMainOpenTable(ruleForScope, allTermsForRule, tablesInValidation);
                     if (mainTable is null)
                     {
-                        var message = $"Missing entry in TablesInValidation for main table:{mainTableCode} ";
+                        var message = $"Missing entry of main table:{ ruleForScope.RuleFormula} ";
                         _logger.Error(message);
                         continue;
                     }
                     ////////////////////////////////////////////
 
 
-                    var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
+                    var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable.TableID);
                     foreach (var sheet in sheets)
                     {
                         //if any sheet (with this zet) is null do NOT check the rule
@@ -251,13 +258,14 @@ public class DocumentValidator : IDocumentValidator
 
                     var ruleTest = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
 
-                    var allTermsForRUle = ruleTest.IfComponent.RuleTerms
+                    var allRuleTerms = ruleTest.IfComponent.RuleTerms
                           .Concat(ruleTest.ThenComponent.RuleTerms)
                           .Concat(ruleTest.ElseComponent.RuleTerms)
                           .Concat(ruleTest.FilterComponent.RuleTerms);
 
-                    var (mainTable, mainTableCode) = GetMainTable(ruleForScope, tablesInValidation);
-                    
+                    var mainTable = GetMainOpenTable(ruleForScope, allRuleTerms, tablesInValidation);
+                    var mainTableCode = mainTable?.TableCode.Trim() ?? "";
+
                     var kyrTablesEntries = _SqlFunctions.SelectTableKyrKeys(mainTableCode)
                                         .Where(kt =>
                                             !string.IsNullOrEmpty(kt.TableCol) &&
@@ -266,12 +274,12 @@ public class DocumentValidator : IDocumentValidator
                                         .ToList();
 
 
-                    var isErrorUnmatched= LogUnmatchedForeignTables(mainTableCode, tablesInValidation, kyrTablesEntries, _logger);
+                    var isErrorUnmatched = LogUnmatchedForeignTables(mainTableCode, tablesInValidation, kyrTablesEntries, _logger);
                     if (isErrorUnmatched)
                     {
                         continue;
                     }
-                    
+
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
 
                     foreach (var sheet in sheets)
@@ -403,6 +411,9 @@ public class DocumentValidator : IDocumentValidator
 
 
                     var mainTable = tablesInValidation.Where(tbl => !tbl.IsOpenTable).FirstOrDefault();
+                    var xxxxmainTableCode = mainTable?.TableCode.Trim() ?? "";
+
+
                     var sheets = _SqlFunctions.SelectTemplateSheetsByTableId(DocumentId, mainTable!.TableID);
 
                     foreach (var sheet in sheets)
@@ -437,11 +448,17 @@ public class DocumentValidator : IDocumentValidator
                     //create one rule for each row and apply filter 
 
                     ///////////////////////////////////////////
+                    // Collect all terms
+                    var allTermsForRule = ruleForScope.IfComponent.RuleTerms
+                        .Concat(ruleForScope.ThenComponent.RuleTerms)
+                        .Concat(ruleForScope.ElseComponent.RuleTerms)
+                        .Concat(ruleForScope.FilterComponent.RuleTerms);
 
-                    var (mainTable, mainTableCode) = GetMainTable(ruleForScope, tablesInValidation);
+                    var mainTable = GetMainOpenTable(ruleForScope, allTermsForRule, tablesInValidation);
+                    var mainTableCode = mainTable?.TableCode.Trim() ?? "";
                     if (mainTable is null)
                     {
-                        var message = $"Missing entry in TablesInValidation for main table:{mainTableCode} ";
+                        var message = $"Missing entry in TablesInValidation for main table:{mainTable?.TableCode} ";
                         _logger.Error(message);
                         continue;
                     }
@@ -610,7 +627,7 @@ public class DocumentValidator : IDocumentValidator
     }
 
 
-    private (MTable? MainTable, string MainTableCode) GetMainTable(
+    private (MTable? MainTable, string MainTableCode) GetMainOpenTableOld(
     RuleStructure280 ruleForScope,
     IEnumerable<MTable> tablesInValidation)
     {
@@ -630,10 +647,12 @@ public class DocumentValidator : IDocumentValidator
 
         // Find the table
         var mainTable = tablesInValidation
+            .Where(t => t.IsOpenTable)
             .FirstOrDefault(tb => tb.TableCode.Trim() == mainTableCode);
 
         return (mainTable, mainTableCode);
     }
+
 
 
 
@@ -1124,26 +1143,67 @@ public class DocumentValidator : IDocumentValidator
         return derivedRows;
     }
 
-    private bool LogUnmatchedForeignTables(
+    private static bool LogUnmatchedForeignTables(
                     string mainTableCode,
                     IEnumerable<MTable> tablesInValidation,
-                    IEnumerable<MTableKyrKeys> kyrTablesEntries,                    
+                    IEnumerable<MTableKyrKeys> kyrTablesEntries,
                     ILogger _logger
         )
     {
+        // Check for unmatched foreign open tables when there are two or more open tables
+        //the first table would be the first open table in the rule
         bool isError = false;
         var foreignOpenTables = tablesInValidation.Where(ti => ti.IsOpenTable && ti.TableCode != mainTableCode).ToList();
-        var unmatchedForeign = foreignOpenTables.Where(fo => !kyrTablesEntries.Any(kt => kt.FK_TableCode == fo.TableCode));
+        //var unmatchedForeign = foreignOpenTables.Where(fo => !kyrTablesEntries.Any(kt => kt.FK_TableCode == fo.TableCode));
+        var unmatchedForeign = foreignOpenTables.Where(fo => !kyrTablesEntries.Any(kt => kt.FK_TableCode.Trim() == fo.TableCode.Trim()));
 
         foreach (var un in unmatchedForeign)
         {
             string message =
-                $"Missing entry in KyrTable => foreign open table:{un.TableCode} related to main table:{mainTableCode}";
+                $"Missing entry in KyrTable =>  main table:{mainTableCode}, foreign open table:{un.TableCode} ";
             _logger.Error(message);
             isError = true; // mark error if at least one exists
         }
 
         return isError;
+    }
+
+    private static bool HasManyOpenTables(IEnumerable<MTable> tablesInValidation)
+    {
+        var openTables = tablesInValidation.DistinctBy(tab => tab.TableID).Where(ti => ti.IsOpenTable).ToList();
+        return openTables.Count() > 1;
+    }
+
+    private static MTable? GetMainOpenTable(RuleStructure280 ruleForScope, IEnumerable<RuleTerm280> ruleTerms, IEnumerable<MTable> tablesInValidation)
+    {
+
+        // check first in the scope
+        var mainTableCode = ruleForScope.ScopeTable?.Trim() ?? "";
+        MTable? mainTable = null;
+
+        if (!string.IsNullOrEmpty(mainTableCode))
+        {
+            mainTable = tablesInValidation.FirstOrDefault(tb => tb.TableCode.Trim() == mainTableCode);
+            return mainTable;
+        }
+
+        //if there are NO more than one open table, take the first table in the rule
+        if (!HasManyOpenTables(tablesInValidation))
+        {
+            var firstTableTerm = ruleTerms.FirstOrDefault()?.T ?? "";
+            mainTable = tablesInValidation.FirstOrDefault(tv => tv.TableCode.Equals(firstTableTerm));
+            return mainTable;
+        }
+
+        var openValidationTables = tablesInValidation.Where(t => t.IsOpenTable);
+        var firstMatch = ruleTerms.FirstOrDefault(rt => openValidationTables.Any(tv => tv.TableCode == rt.T));
+        if (firstMatch == null)
+        {
+            return null;
+        }
+        mainTable = openValidationTables.FirstOrDefault(tb => tb.TableCode.Trim() == firstMatch.T);
+        return mainTable;
+
     }
 
 
