@@ -123,6 +123,7 @@ public class DocumentValidator : IDocumentValidator
         //testingRuleId = 4916;
         //testingRuleId = 1696;
         //testingRuleId = 1613;
+        testingRuleId = 5071;
 
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
@@ -1153,8 +1154,14 @@ public class DocumentValidator : IDocumentValidator
         // Check for unmatched foreign open tables when there are two or more open tables
         //the first table would be the first open table in the rule
         bool isError = false;
+
+        var openTablesCount = tablesInValidation.DistinctBy(tab => tab.TableID).Count(ti => ti.IsOpenTable);
+        if (openTablesCount < 2)
+        {
+            return false; // no error if less than two open tables
+        }
         var foreignOpenTables = tablesInValidation.Where(ti => ti.IsOpenTable && ti.TableCode != mainTableCode).ToList();
-        //var unmatchedForeign = foreignOpenTables.Where(fo => !kyrTablesEntries.Any(kt => kt.FK_TableCode == fo.TableCode));
+        
         var unmatchedForeign = foreignOpenTables.Where(fo => !kyrTablesEntries.Any(kt => kt.FK_TableCode.Trim() == fo.TableCode.Trim()));
 
         foreach (var un in unmatchedForeign)
