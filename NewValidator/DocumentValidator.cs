@@ -324,19 +324,19 @@ public class DocumentValidator : IDocumentValidator
                                 .DistinctBy(rt => rt.T);
 
                             // find and UPDATE the related row for each term table using KyrTable (only for open tables)                                                               
-                            var derivedRows = GetDerivedRows(distinctTerms, mainTable, tablesInValidation, kyrTablesEntries, DocumentId, ruleOpen.ZetValue, row);
+                            var relatedRows = GetRelatedOpenRows(distinctTerms, mainTable, tablesInValidation, kyrTablesEntries, DocumentId, ruleOpen.ZetValue, row);
 
 
                             //update the row of each term for open tables
-                            //if you find a derived row use it, otherwise use the current row
+                            //***if you find a related row use it, otherwise use the current row
                             foreach (var term in allTerms)
                             {
                                 if (!string.IsNullOrWhiteSpace(term.R))
                                 {
                                     continue;
                                 }
-                                var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
-                                term.R = derivedRow?.RowRelated ?? row;
+                                var actualOrRelatedRow = relatedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
+                                term.R = actualOrRelatedRow?.RowRelated ?? row;
                             }
 
                             //**HERE WAS THE OLD UPDATING of related terms**
@@ -523,7 +523,7 @@ public class DocumentValidator : IDocumentValidator
                                     .DistinctBy(rt => rt.T);
 
 
-                                var derivedRows = GetDerivedRows(allTerms, mainTable, tablesInValidation, kyrTables, DocumentId, sheet.ZDimVal, row);
+                                var derivedRows = GetRelatedOpenRows(allTerms, mainTable, tablesInValidation, kyrTables, DocumentId, sheet.ZDimVal, row);
                                 foreach (var term in allTerms)
                                 {
                                     if (!string.IsNullOrWhiteSpace(term.R))
@@ -1089,7 +1089,7 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
-    private List<RelatedRowRecord> GetDerivedRows(
+    private List<RelatedRowRecord> GetRelatedOpenRows(
     IEnumerable<RuleTerm280> ruleTerms,
     MTable mainTable,
     IEnumerable<MTable> tablesInValidation,
