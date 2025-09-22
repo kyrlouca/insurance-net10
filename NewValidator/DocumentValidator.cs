@@ -123,7 +123,7 @@ public class DocumentValidator : IDocumentValidator
         //testingRuleId = 4916;
         //testingRuleId = 1696;
         //testingRuleId = 1613;
-        testingRuleId = 5071;
+        //testingRuleId = 5071;
 
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
