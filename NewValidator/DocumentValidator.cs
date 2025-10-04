@@ -186,12 +186,12 @@ public class DocumentValidator : IDocumentValidator
                         .Concat(ruleForScope.ThenComponent.RuleTerms)
                         .Concat(ruleForScope.ElseComponent.RuleTerms)
                         .Concat(ruleForScope.FilterComponent.RuleTerms);
-                    
+
 
                     var mainTable = GetMainOpenTable(ruleForScope, allTermsForRule, tablesInValidation);
                     if (mainTable is null)
                     {
-                        var message = $"Missing entry of main table:{ ruleForScope.RuleFormula} ";
+                        var message = $"Missing entry of main table:{ruleForScope.RuleFormula} ";
                         _logger.Error(message);
                         continue;
                     }
@@ -952,6 +952,7 @@ public class DocumentValidator : IDocumentValidator
 
         var facts = _SqlFunctions.SelectFactsInEveryRowForColumn(DocumentId, seqSheet.TemplateSheetId, seqTableTerm.C);
         double sum = 0;
+        string aggregateText = "";
         var count = 0;
         var decimals = 0;
         foreach (var fact in facts)
@@ -974,10 +975,26 @@ public class DocumentValidator : IDocumentValidator
                                 : GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterComponent.ObjectTerms);
             if (GeneralEvaluator.ToBoolean(isFilterValid))
             {
-                sum += fact.NumericValue;
                 count++;
-                decimals = Math.Abs(decimals) > Math.Abs(fact.Decimals) ? decimals : fact.Decimals;
+                if (fact.DataTypeUse == "E" || fact.DataTypeUse == "S")
+                {
+                    if (!string.IsNullOrWhiteSpace(fact.TextValue))
+                    {
+                        aggregateText = fact.TextValue;
+                    }
+                }
+                else
+                {
+                    sum += fact.NumericValue;
+
+                    decimals = Math.Abs(decimals) > Math.Abs(fact.Decimals) ? decimals : fact.Decimals;
+                }
+
             }
+        }
+        if (!string.IsNullOrWhiteSpace(aggregateText))
+        {
+            return (count, 1, 0);
         }
         return (count, sum, decimals);
     }
@@ -1161,7 +1178,7 @@ public class DocumentValidator : IDocumentValidator
             return false; // no error if less than two open tables
         }
         var foreignOpenTables = tablesInValidation.Where(ti => ti.IsOpenTable && ti.TableCode != mainTableCode).ToList();
-        
+
         var unmatchedForeign = foreignOpenTables.Where(fo => !kyrTablesEntries.Any(kt => kt.FK_TableCode.Trim() == fo.TableCode.Trim()));
 
         foreach (var un in unmatchedForeign)
