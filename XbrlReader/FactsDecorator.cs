@@ -416,7 +416,7 @@ public partial class FactsDecorator : IFactsDecorator
         {
             var mp = DimDom.GetParts(ordinateKey.Signature);
             var ctxLine = contextLines.FirstOrDefault(cl => cl.Dimension == mp.Dim);
-            //fuck99 if the dim is not found in the context and is optional still create a y fact
+            // if the dim is not found in the context and is optional still create a y fact
             if (ctxLine is null && !ordinateKey.OptionalKey)
             {
                 throw new Exception($"Ordinate is NULL and it is NOT optional: ordinateId:{ordinateKey.OrdinateID} ");
