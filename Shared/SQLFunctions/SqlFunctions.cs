@@ -519,7 +519,7 @@ public class SqlFunctions : ISqlFunctions
         }
 
     }
-
+    
     public int DeleteTemplateSheet(int templateSheetId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
@@ -529,6 +529,48 @@ public class SqlFunctions : ISqlFunctions
         return count;
 
 
+    }
+
+    public int CreateTemplateSheetDim(TemplateSheetInstanceDimDataModel templateSheetInstance)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        try
+        {
+            var res = connectionInsurance.Insert(templateSheetInstance);
+            return (int)res;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            return 0;
+        }
+    }
+
+    public TemplateSheetInstanceDimDataModel? SelectTemplateSheetDim(int templateSheetInstanceDimId)
+    {    
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelect = @"select * from TemplateSheetInstanceDim where TemplateSheetInstanceDimId = @templateSheetInstanceDimId";
+        var val = connectionEiopa.QuerySingleOrDefault<TemplateSheetInstanceDimDataModel>(sqlSelect, new { templateSheetInstanceDimId });
+        return val;
+    }
+
+    public List<TemplateSheetInstanceDimDataModel> SelectTemplateSheetDims(int templateSheetInstanceId)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlSelect = @"select * from TemplateSheetInstanceDim where TemplateSheetInstanceid = @templateSheetInstanceId";
+        var res = connectionEiopa.Query<TemplateSheetInstanceDimDataModel>(sqlSelect, new { templateSheetInstanceId })?.ToList() ?? new();
+        return res;
+        
+    }
+
+    public int DeleteTemplateSheetDim(int templateSheetInstanceDimId)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sqlDelete = @"delete from TemplateSheetInstanceDim where TemplateSheetInstanceDimid = @TemplateSheetInstanceDimId";
+        var count = connectionInsurance.Execute(sqlDelete, new { templateSheetInstanceDimId });
+        return count;
     }
 
     public int CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact)
