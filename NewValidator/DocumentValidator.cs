@@ -976,6 +976,8 @@ public class DocumentValidator : IDocumentValidator
             if (GeneralEvaluator.ToBoolean(isFilterValid))
             {
                 count++;
+                
+                //*** this is a dirty trick i use to make the Sum of text values to return 1 if any fact is has a value
                 if (fact.DataTypeUse == "E" || fact.DataTypeUse == "S")
                 {
                     if (!string.IsNullOrWhiteSpace(fact.TextValue))
