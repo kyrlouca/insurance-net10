@@ -222,7 +222,7 @@ public class ExcelBookMerger : IExcelBookMerger
         string BuildMergedTableDescription(string templateDescription, string zetBlCode)
         {
 
-            var dimDomZet = DimDom.GetParts(zetBlCode)?.DomAndValRaw ?? "";
+            var dimDomZet = DimDom.GetParts(zetBlCode)?.DomAndValXbrlCode ?? "";
             var label = _SqlFunctions.SelectMMember(dimDomZet)?.MemberLabel ?? "";
 
             var templateDesciption = string.IsNullOrEmpty(label)
@@ -630,9 +630,7 @@ public class ExcelBookMerger : IExcelBookMerger
         var last = S61DataRange.Rows.First().Columns.Last();
         var s62InCombined = sCombinedWorksheet.Range[last.Row, last.Column + 1, last.Row, last.Column + 20];
         var cellx = s62InCombined.Cells.FirstOrDefault(cell => Regex.IsMatch(cell.Value, @"C\d{4}"));
-
-
-        //fuck 99. They changed the position of column C0040 which has the ISIN
+        
         var rowOfColumns = S61DataRange!.Rows.First();
         var keyColumn = rowOfColumns.Cells.FirstOrDefault(cc => cc.Text == "C0040")?.Column ?? throw new Exception("Cannot Find the C0040 column which contains the key");
         var rangeKeyColumn  = keyColumn - rowOfColumns.Cells.FirstOrDefault()!.Column;

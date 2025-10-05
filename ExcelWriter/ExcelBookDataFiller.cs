@@ -547,10 +547,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             .Select(dimDom =>
             {
                 var dimension = _SqlFunctions.SelectDimensionByCode(dimDom.Dim);
-                var member = _SqlFunctions.SelectMMember(dimDom.DomAndValRaw);
+                var member = _SqlFunctions.SelectMMember(dimDom.DomAndValXbrlCode);
                 if (dimension is null) return ("", "");
                 var tx = member is null
-                    ? (dimension?.DimensionLabel?.Trim() ?? "", dimDom?.DomAndValRaw?.Trim() ?? "")
+                    ? (dimension?.DimensionLabel?.Trim() ?? "", dimDom?.DomAndValXbrlCode?.Trim() ?? "")
                     : (dimension?.DimensionLabel?.Trim() ?? "", member?.MemberLabel?.Trim() ?? "");
                 return tx;
             })
@@ -617,12 +617,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             }
         }
         if (aboveRange == null)
-        {
-            //fuck
-            //var fftitleRange = wholeRange[dataRange.Row - 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
+        {                       
             var fftitleRange = wholeRange[dataRange.Row, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
-            return fftitleRange;
-            return null;
+            return fftitleRange;         
         }
         var titleRange = wholeRange[aboveRange.Row + 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
         return titleRange;

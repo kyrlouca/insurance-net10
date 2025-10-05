@@ -46,19 +46,6 @@ catch (Exception ex)
     return 1;
 }
 
-//try
-//{
-
-    
-
-//    hostFluent.Services.GetService<IReaderMainApp>()?.Run();
-//}
-//catch (Exception ex)
-//{
-//	Console.WriteLine(ex.ToString());
-//	return 1;
-//}
-
 return 0;
 
 string? CheckParams(string[] args)

@@ -18,7 +18,7 @@ public class DimDom
     public string Dom { get; internal set; } = "";//CU
     public string DomAndVal { get; internal set; } = "";//CU:GBP
     public string DomValue { get; internal set; } = "";//USD
-    public string DomAndValRaw { get; internal set; } = "";// s2c_CU:USD
+    public string DomAndValXbrlCode { get; internal set; } = "";// s2c_CU:USD
     public string Signature { get; internal set; } //"s2c_dim:OC(s2c_CU:GBP)"
     public bool IsWild { get; internal set; } = false;
     public bool IsOptional { get; internal set; } = false;
@@ -37,8 +37,8 @@ public class DimDom
         }
 
         Dim = res[1];
-        DomAndValRaw = res[2];
-        var domParts = DomAndValRaw.Split(":");
+        DomAndValXbrlCode = res[2];
+        var domParts = DomAndValXbrlCode.Split(":");
         if (domParts.Length == 2)
         {
             DomAndVal = res[2].Replace("s2c_", "");

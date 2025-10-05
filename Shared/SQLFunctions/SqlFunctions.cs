@@ -298,6 +298,28 @@ public class SqlFunctions : ISqlFunctions
     }
 
 
+    public MDomain? SelectMDomain(string domainCode)
+    {     
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+
+        //module code : {ari, qri, ara, ...}
+        var sqlModule = "select * from mdomain where DomainCode = @DomainCode";
+        var domain = connectionEiopa.QuerySingleOrDefault<MDomain>(sqlModule, new { domainCode });
+        return domain;
+
+    }
+
+    public  MDomain? SelectMDomain(int domainID)
+    {     
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+
+        //module code : {ari, qri, ara, ...}
+        var sqlModule = "select * from mdomain where DomainID = @domainID";
+        var res = connectionEiopa.QuerySingleOrDefault<MDomain>(sqlModule, new {domainID});
+        return res;
+    }
+
+
     public MMetric? SelectMMetric(string xbrlCode)
     {
         //memberXbrlCode= s2c_AM:x2 => find metric
@@ -531,13 +553,13 @@ public class SqlFunctions : ISqlFunctions
 
     }
 
-    public int CreateTemplateSheetDim(TemplateSheetInstanceDimDataModel templateSheetInstance)
+    public int CreateTemplateSheetDim(TemplateSheetInstanceDimDataModel templateSheetInstanceDim)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
         try
         {
-            var res = connectionInsurance.Insert(templateSheetInstance);
+            var res = connectionInsurance.Insert(templateSheetInstanceDim);
             return (int)res;
         }
         catch (Exception e)

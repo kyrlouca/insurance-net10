@@ -243,7 +243,7 @@ public class FactsCreator : IFactsCreator
 
                     var ctxSignature = $"{dimAndType}({domainAndMember})";
                     var dimDom = DimDom.GetParts(ctxSignature);
-                    var ctxLine = new ContextLine() { ContextId = 0, Signature = dimDom.Signature, Dimension = dimDom.Dim, Domain = dimDom.Dom, DomainAndValue = dimDom.DomAndValRaw, DomainValue = dimDom.DomValue, IsExplicit = true };
+                    var ctxLine = new ContextLine() { ContextId = 0, Signature = dimDom.Signature, Dimension = dimDom.Dim, Domain = dimDom.Dom, DomainAndValue = dimDom.DomAndValXbrlCode, DomainValue = dimDom.DomValue, IsExplicit = true };
                     contextLines.Add(ctxLine);
                 }
 
@@ -267,7 +267,7 @@ public class FactsCreator : IFactsCreator
                     var isNil = domNode?.Attribute(xsiNs + "nil")?.Value ?? ""; //true 
 
                     var dimDom = DimDom.GetParts(ctxTypedSignature);
-                    var ctxTypedLine = new ContextLine() { ContextId = 0, IsNil = isNil == "true", Signature = dimDom.Signature, Dimension = dimDom.Dim, Domain = dimDom.Dom, DomainAndValue = dimDom.DomAndValRaw, DomainValue = dimDom.DomValue, IsExplicit = false };
+                    var ctxTypedLine = new ContextLine() { ContextId = 0, IsNil = isNil == "true", Signature = dimDom.Signature, Dimension = dimDom.Dim, Domain = dimDom.Dom, DomainAndValue = dimDom.DomAndValXbrlCode, DomainValue = dimDom.DomValue, IsExplicit = false };
                     contextLines.Add(ctxTypedLine);
                 }
 

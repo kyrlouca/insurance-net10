@@ -127,16 +127,51 @@ public partial class FactsDecorator : IFactsDecorator
             {
                 continue;
             }
-            //fuck99
+
             //*********** Create one  sheet per zet             
             //fact.ZetValues is a string concatenating the Facts' zet dims
             //facts with the same zet values(concatenated as a string) should be assigned to the same sheet
             var zetValues = GetDistinctZetValues(table.TableID);
 
-            //moduleZets.AddRange(zetValues);
+
             Console.WriteLine($"\n---Grouping table facts by Zet");
 
             List<SheetInfoType> sheetsInfo = CreateSheetForEachZet(table, zetValues);
+
+            //fuck99 - zet values            
+            foreach (var sheet in sheetsInfo)
+            {
+                var zets = sheet.SheetCodeZet.Split("|");
+                var zetsList = zets.Where(z => !string.IsNullOrWhiteSpace(z));
+                foreach (var zet in zetsList)
+                {
+                    var dimDom= DimDom.GetParts(zet);
+                    var member = _SqlFunctions.SelectMMember(dimDom.DomAndValXbrlCode);
+                    if (member is null)
+                    {
+                        continue;
+                    }
+                    var domain = _SqlFunctions.SelectMDomain(member.DomainID);
+                    if (domain is null)
+                    {
+                        continue;
+                    }
+
+                    var sheetZet = new TemplateSheetInstanceDimDataModel()
+                    {
+                        TemplateSheetId = sheet.TemplateSheetId,
+                        MemberId = member.MemberID,
+                        MemberLabel = member.MemberLabel,
+                        MemberXBRLCode = member.MemberXBRLCode,
+                        DomainCode = domain.DomainCode ?? "",
+                        DomainLabel = domain.DomainLabel ?? "",
+                    };
+                    var cnt= _SqlFunctions.CreateTemplateSheetDim(sheetZet);
+                }
+            }
+
+
+
 
             //*********** Assign facts to sheets and update fact row, col, etc
             foreach (var sheetInfo in sheetsInfo)
@@ -149,7 +184,7 @@ public partial class FactsDecorator : IFactsDecorator
             {
                 Console.WriteLine($"\n---Updating rows for open table");
                 foreach (var sheetinfo in sheetsInfo)
-                {                                     
+                {
                     UpdateRowForOpenTables(sheetinfo);
                 }
             }
@@ -337,7 +372,7 @@ public partial class FactsDecorator : IFactsDecorator
             }
 
             var isEmpty = false;
-            var keyTextValue = (ctxLine is null || ctxLine.IsNil) ? ""                
+            var keyTextValue = (ctxLine is null || ctxLine.IsNil) ? ""
                 : ctxLine.IsExplicit ? ctxLine.Signature
                 : ctxLine.DomainValue;
 
@@ -346,12 +381,12 @@ public partial class FactsDecorator : IFactsDecorator
             {
                 var defaultMemberId = CellDim.ParseHierarchy(ordinateKey.Signature).HierarchyDefaultMember;
                 var member = _SqlFunctions.SelectMMember(defaultMemberId);
-                keyTextValue =  member?.MemberLabel??"";
+                keyTextValue = member?.MemberLabel ?? "";
                 isEmpty = true;
             }
-            if (ordinateKey.OptionalKey && ctxLine is not null && ctxLine.DomainValue.Trim()=="None")
-            {                
-                    isEmpty = true;
+            if (ordinateKey.OptionalKey && ctxLine is not null && ctxLine.DomainValue.Trim() == "None")
+            {
+                isEmpty = true;
             }
             //ctxLine = ctxLine ?? new ContextLine() { IsNil = true };            
 
@@ -428,7 +463,7 @@ public partial class FactsDecorator : IFactsDecorator
         var count = 0;
         var tableCells = _SqlFunctions.SelectTableCells(table.TableID);
         var allTableDims = _SqlFunctions.SelectTableAxisOrdinateInfo(table.TableID);
-                
+
         var yDims = allTableDims
            .Where(ord => ord.AxisOrientation == "Y" && (ord.IsRowKey || ord.OptionalKey) && ord.IsOpenAxis)
            .Select(dd => DimDom.GetParts(dd.Signature).Dim).ToList();
@@ -439,7 +474,7 @@ public partial class FactsDecorator : IFactsDecorator
 
         var currenciesAndCountryDims = new List<string>() { "OC", "CU" };
         var currencyDims = zDims.Where(zd => currenciesAndCountryDims.Contains(zd)).ToList();
-        
+
         //*********************************************************************************
         //for each cell of this table, select the fact and update the talbeId,zet, and row/col        
         tableCells = tableCells.Where(cell => !string.IsNullOrEmpty(cell.DatapointSignature)).ToList();
@@ -473,7 +508,7 @@ public partial class FactsDecorator : IFactsDecorator
                 {
                     //this fact is already assigned to another table (two cells with same signature)
                     //therefore create a new fact and assign it to this table (factId= newFactId)
-                    Console.Write("&");                    
+                    Console.Write("&");
                     cellFact!.FieldOrigin = "D";
                     var newFactId = _SqlFunctions.CreateTemplateSheetFact(cellFact, true);//loose fact without TemplateSheetId                               
                     cellFact.FactId = newFactId;
@@ -639,7 +674,7 @@ public partial class FactsDecorator : IFactsDecorator
         List<string> fullDims = cellSignature
             .Split("|").ToList();
 
-        
+
         var dims = fullDims.Skip(1);
 
         List<TemplateSheetFact> factss = new();
@@ -648,7 +683,7 @@ public partial class FactsDecorator : IFactsDecorator
         var xbrlCodeFull = fullDims.FirstOrDefault() ?? "";
         var xbrlCodeMatch = rgxMet.Match(xbrlCodeFull);
         var xbrlCode = xbrlCodeMatch.Success ? xbrlCodeMatch.Groups[1].Value : "";
-        
+
 
         var mandatoryExplicitOnlyList = dims
                         .Where(dim => !dim.Contains('*') && !dim.Contains('?'))
@@ -677,7 +712,7 @@ public partial class FactsDecorator : IFactsDecorator
         //do not look for optinal, but check that there are no fact dims not specified in  celldims (Alldims)        
         var mandatoryExplicitCount = mandatoryExplicitOnlyList.Count();
         var mandatoryCount = mandatoryDimsList.Count();
-      
+
         var sqlSelectWithoutMandatory = @"
                 SELECT fact.FactId
                   FROM TemplateSheetFact fact                
@@ -739,7 +774,7 @@ public partial class FactsDecorator : IFactsDecorator
             .Select(factId => _SqlFunctions.SelectFact(factId))
             .Where(f => f is not null)
             .ToList();
-        
+
 
         var temp = fullFacts.Select(ff => ff.DataPointSignature).ToList();
         return fullFacts;

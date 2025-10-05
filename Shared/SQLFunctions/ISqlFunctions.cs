@@ -30,6 +30,10 @@ public interface ISqlFunctions
     List<TemplateSheetInstance> SelectTemplateSheets(int documentId);
     public List<TemplateSheetInstance> SelectTemplateSheetsByTableId(int documentId, int tableId);
     public void UpdateTemplateSheetName(int templateSheetId, string sheetTabName);
+    //************SheetDims
+    public int CreateTemplateSheetDim(TemplateSheetInstanceDimDataModel templateSheetInstanceDim);
+    public TemplateSheetInstanceDimDataModel? SelectTemplateSheetDim(int templateSheetInstanceDimId);
+    public List<TemplateSheetInstanceDimDataModel> SelectTemplateSheetDims(int templateSheetInstanceId);
     //*********facts
 
     public int CreateTemplateSheetFact(TemplateSheetFact fact, bool isLooseFact);
@@ -52,6 +56,9 @@ public interface ISqlFunctions
 
     public List<TemplateSheetFactDim> SelectFactDims(int factId);
     MModule? SelectModuleByCode(string moduleCode);
+
+    public MDomain? SelectMDomain(string domainCode);
+    public MDomain? SelectMDomain(int domainId);
 
     public MMetric? SelectMMetric(string xbrlCode);
     public MMember? SelectMMember(int memberId);
