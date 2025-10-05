@@ -146,6 +146,11 @@ public partial class FactsDecorator : IFactsDecorator
                 foreach (var zet in zetsList)
                 {
                     var dimDom= DimDom.GetParts(zet);
+                    var dim = _SqlFunctions.SelectMDimension(dimDom.Dim);
+                    if (dim is null)
+                    {
+                        continue;
+                    }
                     var member = _SqlFunctions.SelectMMember(dimDom.DomAndValXbrlCode);
                     if (member is null)
                     {
@@ -155,7 +160,7 @@ public partial class FactsDecorator : IFactsDecorator
                     if (domain is null)
                     {
                         continue;
-                    }
+                    }                    
 
                     var sheetZet = new TemplateSheetInstanceDimDataModel()
                     {
@@ -165,6 +170,8 @@ public partial class FactsDecorator : IFactsDecorator
                         MemberXBRLCode = member.MemberXBRLCode,
                         DomainCode = domain.DomainCode ?? "",
                         DomainLabel = domain.DomainLabel ?? "",
+                        DimensionCode = dim.DimensionCode ?? "",
+                        DimensionLabel = dim.DimensionLabel ?? ""
                     };
                     var cnt= _SqlFunctions.CreateTemplateSheetDim(sheetZet);
                 }

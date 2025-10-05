@@ -19,6 +19,12 @@ public class TemplateSheetInstanceDimDataModel
 
     public string DomainLabel { get; set; } = string.Empty;
 
+
+    public string DimensionCode { get; set; } = string.Empty;
+
+    public string DimensionLabel { get; set; } = string.Empty;
+    
+
 }
 
 

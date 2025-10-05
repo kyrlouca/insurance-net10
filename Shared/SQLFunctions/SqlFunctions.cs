@@ -311,14 +311,19 @@ public class SqlFunctions : ISqlFunctions
 
     public  MDomain? SelectMDomain(int domainID)
     {     
-        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
-
-        //module code : {ari, qri, ara, ...}
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);        
         var sqlModule = "select * from mdomain where DomainID = @domainID";
         var res = connectionEiopa.QuerySingleOrDefault<MDomain>(sqlModule, new {domainID});
         return res;
     }
 
+    public MDimensionModel? SelectMDimension(string dimensionCode)
+    {
+        using var connectionEiopa = new SqlConnection(_parameterData.EiopaConnectionString);
+        var sqlModule = "select * from mdimension dim where dim.DimensionCode= @dimensionCode";
+        var res = connectionEiopa.QuerySingleOrDefault<MDimensionModel>(sqlModule, new { dimensionCode });
+        return res;
+    }
 
     public MMetric? SelectMMetric(string xbrlCode)
     {

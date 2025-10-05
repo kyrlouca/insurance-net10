@@ -60,6 +60,8 @@ public interface ISqlFunctions
     public MDomain? SelectMDomain(string domainCode);
     public MDomain? SelectMDomain(int domainId);
 
+    public MDimensionModel? SelectMDimension(string dimensionCode);
+
     public MMetric? SelectMMetric(string xbrlCode);
     public MMember? SelectMMember(int memberId);
     public MMember? SelectMMember(string domainString);
