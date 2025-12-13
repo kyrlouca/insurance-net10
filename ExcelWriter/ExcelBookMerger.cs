@@ -172,8 +172,9 @@ public class ExcelBookMerger : IExcelBookMerger
                     //specialSheetName = $"{specialSheetName}_{line:D2}";
                     var dim = DimDom.GetParts(blZet);
                     var tabLabel = _SqlFunctions.SelectSheetTabLabel(dim.DomAndValXbrlCode)?.ShortLabel??"";
-                   specialSheetName = string.IsNullOrEmpty(tabLabel) 
-                        ? $"{specialSheetName}_{line:D2}"
+                    var xbrlStripped = dim?.DomAndValXbrlCode.Replace(":", "");
+                    specialSheetName = string.IsNullOrEmpty(tabLabel) 
+                        ? $"{specialSheetName}_{line:D2}_{xbrlStripped}"
                         : $"{specialSheetName}_{line:D2}_{tabLabel}";
                 }
 
