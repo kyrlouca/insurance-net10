@@ -117,4 +117,5 @@ public interface ISqlFunctions
     public Task<int> CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow);
     public int DeleteFactsTemplateSheet(int templateSheetId);
     public Task<int> DeleteFactsTemplateSheetAsync(int templateSheetId);
+    public SheetTabLabelDto? SelectSheetTabLabel(string memberXbrlCode);
 }

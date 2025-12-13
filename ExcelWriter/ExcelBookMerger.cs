@@ -1,4 +1,5 @@
 ﻿namespace ExcelWriter;
+
 using Dapper;
 using Shared.ExcelHelperRoutines;
 using ExcelWriter.ExcelDataModels;
@@ -168,7 +169,12 @@ public class ExcelBookMerger : IExcelBookMerger
                 var specialSheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;
                 if (distinctBlZets.Count > 1)
                 {
-                    specialSheetName = $"{specialSheetName}_{line:D2}";
+                    //specialSheetName = $"{specialSheetName}_{line:D2}";
+                    var dim = DimDom.GetParts(blZet);
+                    var tabLabel = _SqlFunctions.SelectSheetTabLabel(dim.DomAndValXbrlCode)?.ShortLabel??"";
+                   specialSheetName = string.IsNullOrEmpty(tabLabel) 
+                        ? $"{specialSheetName}_{line:D2}"
+                        : $"{specialSheetName}_{line:D2}_{tabLabel}";
                 }
 
                 zetTemplateLayout.SheetName = specialSheetName;
@@ -630,10 +636,10 @@ public class ExcelBookMerger : IExcelBookMerger
         var last = S61DataRange.Rows.First().Columns.Last();
         var s62InCombined = sCombinedWorksheet.Range[last.Row, last.Column + 1, last.Row, last.Column + 20];
         var cellx = s62InCombined.Cells.FirstOrDefault(cell => Regex.IsMatch(cell.Value, @"C\d{4}"));
-        
+
         var rowOfColumns = S61DataRange!.Rows.First();
         var keyColumn = rowOfColumns.Cells.FirstOrDefault(cc => cc.Text == "C0040")?.Column ?? throw new Exception("Cannot Find the C0040 column which contains the key");
-        var rangeKeyColumn  = keyColumn - rowOfColumns.Cells.FirstOrDefault()!.Column;
+        var rangeKeyColumn = keyColumn - rowOfColumns.Cells.FirstOrDefault()!.Column;
 
         foreach (var s61row in S61DataRange!.Rows.Skip(1))
         {

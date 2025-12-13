@@ -1532,6 +1532,15 @@ WHERE
 
     }
 
+    public SheetTabLabelDto? SelectSheetTabLabel(string memberXbrlCode)
+    {
+        using var connectionInsurance = new SqlConnection(_parameterData?.SystemConnectionString);
+
+        var sqlSelect = @"select * from sheettabLabel where memberxbrlCode = @memberxbrlCode";
+        var cb = connectionInsurance.QueryFirstOrDefault<SheetTabLabelDto>(sqlSelect, new { memberXbrlCode });
+        return cb;
+
+    }
 
 }
 
