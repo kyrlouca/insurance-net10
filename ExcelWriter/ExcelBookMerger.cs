@@ -31,7 +31,7 @@ public class ExcelBookMerger : IExcelBookMerger
     private IWorkbook? SourceWorkbook;
     private IWorkbook? DestWorkbook;
     int _documentId = 0;
-    DocInstance _documentInstance;
+    DocInstance? _documentInstance;
     const int SPACE_BETWEEN_TABLES_HORIZONTAL = 0;
     const int SPACE_BETWEEN_TABLES_VERTICAL = 3;
 
@@ -54,7 +54,7 @@ public class ExcelBookMerger : IExcelBookMerger
         _documentInstance = _SqlFunctions.SelectDocInstance(_documentId)!;
         if (_documentInstance is null)
         {
-            var eMessage = "Document not fuound";
+            var eMessage = "Document not found";
             _logger.Error(eMessage);
             _SqlFunctions.CreateTransactionLog(MessageType.ERROR, eMessage);
             return false;
