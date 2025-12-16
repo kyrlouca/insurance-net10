@@ -1,13 +1,16 @@
 ﻿namespace ExcelWriter;
 
 using Dapper;
-using Shared.ExcelHelperRoutines;
 using ExcelWriter.ExcelDataModels;
 using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Shared.DataModels;
+using Shared.ExcelHelperRoutines;
+using Shared.GeneralUtils;
 using Shared.HostParameters;
 using Shared.SharedHost;
+using Shared.SpecialRoutines;
 using Shared.SQLFunctions;
 using Syncfusion.Compression;
 using Syncfusion.XlsIO;
@@ -16,8 +19,7 @@ using Syncfusion.XlsIO.Implementation;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Shared.SpecialRoutines;
-using Microsoft.IdentityModel.Tokens;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 public class ExcelBookMerger : IExcelBookMerger
 {
@@ -167,15 +169,24 @@ public class ExcelBookMerger : IExcelBookMerger
 
 
                 var specialSheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;
+                specialSheetName = CleanTabName(specialSheetName);
                 if (distinctBlZets.Count > 1)
                 {
                     //specialSheetName = $"{specialSheetName}_{line:D2}";
                     var dim = DimDom.GetParts(blZet);
                     var tabLabel = _SqlFunctions.SelectSheetTabLabel(dim.DomAndValXbrlCode)?.ShortLabel??"";
-                    var xbrlStripped = dim?.DomAndValXbrlCode.Replace(":", "");
-                    specialSheetName = string.IsNullOrEmpty(tabLabel) 
-                        ? $"{specialSheetName}_{line:D2}_{xbrlStripped}"
-                        : $"{specialSheetName}_{line:D2}_{tabLabel}";
+                                        
+                    var xbrlCleaned = dim?.DomAndValXbrlCode.Replace(":", "");                    
+
+                    //specialSheetName= $"{specialSheetName}_{line:D2}_{xbrlStripped}";
+                    specialSheetName = string.IsNullOrEmpty(xbrlCleaned)
+                            ? $"{specialSheetName}_{line:D2}"
+                            : (string.IsNullOrEmpty(tabLabel)
+                                ? $"{specialSheetName}_{line:D2}_{xbrlCleaned}"
+                                : $"{specialSheetName}_{line:D2}_{tabLabel}");
+
+                    specialSheetName = CleanTabName(specialSheetName);
+
                 }
 
                 zetTemplateLayout.SheetName = specialSheetName;
@@ -246,6 +257,13 @@ public class ExcelBookMerger : IExcelBookMerger
         }
     }
 
+    private string CleanTabName(string tabName)
+    {
+        string pattern = @"[\/\\*?\[\]:\/\']";
+        string tabLabelCleaned = Regex.Replace(tabName, pattern, "");
+        var shortLabel = RegexUtils.TruncateString(tabLabelCleaned, 30);
+        return shortLabel;
+    }
 
     private ZetTemplateLayout ToZetTemplateLayout(TableGroup tableGroup, string sheetCodeZet)
     {
@@ -694,6 +712,8 @@ public class ExcelBookMerger : IExcelBookMerger
     }
     private void SortWorksheets(IWorkbook workbook, IndexSheetList indexList)
     {
+        //var xx=workbook.Worksheets.Select(ws=>ws.Name).ToList();
+        
         var list = indexList.ListItems;
         foreach (var li in indexList.ListItems)
         {
@@ -705,6 +725,7 @@ public class ExcelBookMerger : IExcelBookMerger
         listsheet.Move(0);
 
     }
+
     static List<TableGroup> BreakTableGroup(TableGroup tableGroup)
     {
         var list = tableGroup.TableCodes.Select(tc => new TableGroup(tc, tableGroup.TemplateDescription, new List<string>() { tc })).ToList();
