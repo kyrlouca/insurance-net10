@@ -28,7 +28,7 @@ public class ValidatorMain : IValidatorMain
         _documentValidator = documentValidator;
     }
 
-    public int Run()
+    public async Task<int> Run()
     {
 
         

@@ -28,12 +28,23 @@ var services = scope.ServiceProvider;
 ///////////////////////////////////////
 try
 {
-    var assembly = Assembly.GetExecutingAssembly();
-    Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
-    Console.WriteLine($"Version: {assembly.GetName().Version}");
-    var mainApp = host.Services.GetService<IValidatorMain>()
-        ?? throw new InvalidOperationException("IValidatorMain service not found");
-    mainApp.Run();
+    var mainApp = host.Services.GetService<IValidatorMain>();
+    if( mainApp != null)
+    {
+        var exitCode = await mainApp.Run();
+        var assembly = Assembly.GetExecutingAssembly();
+        Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
+        Console.WriteLine($"Version: {assembly.GetName().Version}");
+        return exitCode; 
+    }
+
+    //var assembly = Assembly.GetExecutingAssembly();
+    //Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
+    //Console.WriteLine($"Version: {assembly.GetName().Version}");
+    //var mainApp = host.Services.GetService<IValidatorMain>()
+    //    ?? throw new InvalidOperationException("IValidatorMain service not found");
+   
+    //var exitCode = mainApp.Run();
 }
 catch (Exception ex)
 {

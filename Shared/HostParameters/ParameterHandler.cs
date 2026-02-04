@@ -20,7 +20,7 @@ public class ParameterHandler : IParameterHandler
     IConfiguration _configuration;
     IOptions<VersionData> _optionsVersionData;
     //IOptions<LoggerFiles> _optionsLoggerFiles;
-    ParameterData _parameterData;
+    ParameterData? _parameterData;
 
 
     public ParameterHandler(IConfiguration config, IOptions<VersionData> optionVersionData)
