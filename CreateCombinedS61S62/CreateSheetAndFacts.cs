@@ -108,6 +108,7 @@ public class CreateSheetAndFacts
         Console.WriteLine($"---------- DocumentID:{documentId}");
         var kyrTables = _SqlFunctions.K_SelectKyrTables()
             .Where(k => k.TableCode.Trim() == "S.06.02.01.01")
+            .Where(k => k.FK_TableCode.Trim() == "S.06.02.01.02")
             .ToList();
         var sheets = _SqlFunctions.SelectTemplateSheets(documentId);
         foreach (var kyrTable in kyrTables)

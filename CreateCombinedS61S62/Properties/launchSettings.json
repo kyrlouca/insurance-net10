@@ -2,7 +2,7 @@
   "profiles": {
     "CreateCombinedS61S62": {
       "commandName": "Project",
-      "commandLineArgs": "external-id=999\r\nfund-id=69\r\neiopa-version=\"IU282\"\r\nmodule-code=\"ars\"\r\nyear=2024\r\nquarter=0",
+      "commandLineArgs": "external-id=999\r\nfund-id=76\r\neiopa-version=\"IU282\"\r\nmodule-code=\"qrs\"\r\nyear=2025\r\nquarter=3",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }
