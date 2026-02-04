@@ -175,6 +175,9 @@ public class ReaderMainApp : IReaderMainApp
                 new("IU282", 2024, [4,0]),
                 new("IU282", 2025, [1, 2, 3]),
 
+                new("IU282HOT", 2025, [4,0]),
+                new("IU282HOT", 2026, [1, 2, 3]),
+
             ];
 
         var versionData = versions.Where(x => x.EiopaVersion == _parameterData.EiopaVersion);
