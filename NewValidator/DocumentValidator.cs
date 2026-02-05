@@ -110,11 +110,12 @@ public class DocumentValidator : IDocumentValidator
 
 
         //************************************************************* Testing 
-        var isTesting = false;
+        var isTesting = true;
         if (_parameterData.IsDevelop && isTesting)
         {
-            var exempted = new[] { 0 };
-            validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
+            //var exempted = new[] { 0 };
+            //validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
+            validationRules =validationRules.Where(rl => rl.ValidationID>677).ToList();
         }
         var testingRuleId = 0;
         //testingRuleId = 1253;

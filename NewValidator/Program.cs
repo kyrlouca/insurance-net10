@@ -31,10 +31,11 @@ try
     var mainApp = host.Services.GetService<IValidatorMain>();
     if( mainApp != null)
     {
-        var exitCode = await mainApp.Run();
+        
         var assembly = Assembly.GetExecutingAssembly();
         Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
         Console.WriteLine($"Version: {assembly.GetName().Version}");
+        var exitCode = await mainApp.Run();
         return exitCode; 
     }
 

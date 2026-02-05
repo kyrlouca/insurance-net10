@@ -37,7 +37,7 @@ public class ValidatorMain : IValidatorMain
 
         //_documentValidator.UpdateForeignKeysAllDocuments()
 
-        Console.WriteLine($"started Validating Document - DocumentId:{_parameterData.DocumentId}");
+            Console.WriteLine($"started Validating Document - DocumentId:{_parameterData.DocumentId}");
 
         var doc = _SqlFunctions.SelectDocInstance(_parameterData.DocumentId);
 
