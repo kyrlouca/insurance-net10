@@ -112,21 +112,14 @@ public class DocumentValidator : IDocumentValidator
         //************************************************************* Testing 
         var isTesting = true;
         if (_parameterData.IsDevelop && isTesting)
-        {
+        {            
             //var exempted = new[] { 0 };
-            //validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();
-            validationRules =validationRules.Where(rl => rl.ValidationID>677).ToList();
+            //validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();            
+            //Console.WriteLine($"\n***DEBUGGING exempted: {string.Join(", ", exempted)}");
         }
+
         var testingRuleId = 0;
-        //testingRuleId = 1253;
-        //testingId = 1698;
-        //testingId = 1428;
-        //testingRuleId = 4916;
-        //testingRuleId = 1696;
-        //testingRuleId = 1613;
-        //testingRuleId = 5071;
-
-
+        
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
             Console.WriteLine($"\n***DEGUGGING ONLY Rule:{testingRuleId}");
