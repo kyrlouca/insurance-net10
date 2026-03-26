@@ -137,8 +137,7 @@ public partial class FactsDecorator : IFactsDecorator
             Console.WriteLine($"\n---Grouping table facts by Zet");
 
             List<SheetInfoType> sheetsInfo = CreateSheetForEachZet(table, zetValues);
-
-            //fuck99 - zet values            
+            
             foreach (var sheet in sheetsInfo)
             {
                 var zets = sheet.SheetCodeZet.Split("|");

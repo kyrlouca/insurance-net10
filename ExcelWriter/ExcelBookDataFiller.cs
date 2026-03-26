@@ -496,11 +496,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         int AssignYKeysToColumns(TemplateSheetInstance dbSheet, IRange dataRange)
-        {
-            //fuck99
-            //var yOrdinatesForKeysOld = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
-            //      .Where(ord => ord.AxisOrientation == "Y" && ord.IsRowKey && ord.IsOpenAxis)
-            //      .OrderBy(ykey => ykey.OrdinateID);
+        {            
 
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
                   .Where(ord => ord.AxisOrientation == "Y"  && ord.IsOpenAxis)

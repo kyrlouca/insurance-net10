@@ -947,9 +947,7 @@ public class SqlFunctions : ISqlFunctions
             //multiple facts for each row/col because of either currency or multiple country f            
             var sum = facts.Sum(fact => fact.NumericValue);
             var firstFact = facts.First();
-            firstFact.NumericValue = sum;
-            //fuck99
-            //_logger.Error($"MULTIPLE!! Facts! documentId:{documentId}, tableCode:{tableCode}, row:{row}, col:{col}, Zet:{zet}");
+            firstFact.NumericValue = sum;            
             return firstFact;
         }
 

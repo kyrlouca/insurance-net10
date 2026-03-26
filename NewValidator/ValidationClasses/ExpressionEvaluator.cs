@@ -520,6 +520,7 @@ public partial class GeneralEvaluator
     {
         var rgxTerm = new Regex(@"([XA]\d\d)", RegexOptions.Compiled);
         var matchTersm = rgxTerm.Match(symbolFormula);
+        //fuck99 check for null terms
         var isAnyTermNull = terms.Any(ft => ft.Value.Obj is null);
 
         if (isAnyTermNull)

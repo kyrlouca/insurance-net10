@@ -119,8 +119,8 @@ public class DocumentValidator : IDocumentValidator
         }
 
 
-        //var testingRuleId = 693;
-        var testingRuleId = 0;
+        var testingRuleId = 675;
+        //var testingRuleId = 0;
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
@@ -498,41 +498,7 @@ public class DocumentValidator : IDocumentValidator
                                 UpdateRuleTermsWithRowCol(ruleOpen.FilterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
 
                             }
-                            if (1 == 2)
-                            {
-                                //###############################################
-                                //NEED To test this before removing the old code
-                                var allTerms = ruleOpen.IfComponent.RuleTerms
-                                    .Concat(ruleOpen.ThenComponent.RuleTerms)
-                                    .Concat(ruleOpen.ElseComponent.RuleTerms)
-                                    .Concat(ruleOpen.FilterComponent.RuleTerms);
-
-
-                                var distinctTerms = allTerms
-                                    .DistinctBy(rt => rt.T);
-
-
-                                var derivedRows = GetRelatedOpenRows(allTerms, mainTable, tablesInValidation, kyrTables, DocumentId, sheet.ZDimVal, row);
-                                foreach (var term in allTerms)
-                                {
-                                    if (!string.IsNullOrWhiteSpace(term.R))
-                                    {
-                                        continue;
-                                    }
-                                    var derivedRow = derivedRows.FirstOrDefault(dr => dr.TableCode == term.T.Trim());
-                                    term.RowTest = derivedRow?.RowRelated ?? row;
-                                }
-                                if (allTerms.Any(t => t.R != t.RowTest))
-                                {
-                                    //this should not happen
-
-                                    var message = $"DIFF ROW ";
-                                    _logger.Error(message);
-                                }
-                            }
-
-
-
+                            
                             //MAKE usingZet to false to avoid finding facts using zet. the closed table has no zet but the open tables for sum do have a zet
                             ruleOpen.ZetValue = sheet.ZDimVal;
                             ruleOpen = FillRuleStructureWithFactValues(ruleOpen);
@@ -643,10 +609,7 @@ public class DocumentValidator : IDocumentValidator
         return (mainTable, mainTableCode);
     }
 
-
-
-
-    //private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType, bool IsClosedTables = false)
+    
     private static void UpdateRuleTermsWithRowCol(List<RuleTerm280> ruleTerms, string mainTableCode, string slaveTableCode, string rowCol, string relatedRowCol, ScopeType scopeType)
     {
         //We do not have the concept of master-slave table for closed tables.
