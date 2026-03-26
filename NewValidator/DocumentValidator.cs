@@ -118,7 +118,7 @@ public class DocumentValidator : IDocumentValidator
             //Console.WriteLine($"\n***DEBUGGING exempted: {string.Join(", ", exempted)}");
         }
 
-        var testingRuleId = 0;
+        var testingRuleId = 616;
         
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
