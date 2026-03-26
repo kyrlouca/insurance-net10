@@ -14,7 +14,7 @@ internal class IntervalFunctionsNew
 
     public static bool IsIntervalExpressionValid(string operatorI, OptionalObject leftMin, OptionalObject leftMax, OptionalObject rightMin, OptionalObject rightMax)
     {
-        //fuck99 Just allow some margin to avoid precision issues with kleene margins 
+        //allow some margin to avoid precision issues with kleene margins 
         //todo if any operand is null the result is NULL
         var lmin = Math.Min((double)(leftMin?.Value ?? 0.0), (double)(leftMax?.Value ?? 0.0));
         var lmax = Math.Max((double)(leftMin?.Value ?? 0.0), (double)(leftMax?.Value ?? 0.0));

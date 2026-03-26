@@ -703,16 +703,8 @@ public class DocumentValidator : IDocumentValidator
         //var ruleTermsWithZet = ruleTerms.Select(rt => rt with { Z =   rt.Z.Contains("Z00") ? zetValue : "" });
         var openTables = ruleTables.Where(tbl => tbl.IsOpenTable).Select(tbl => tbl.TableCode);
         var ruleTermsWithUpdatedZetValue = ruleTerms.Select(rt => rt with { Z = (openTables.Contains(rt.T.Trim()) || !rt.Z.Contains("Z00")) ? "" : zetValue });
-        Dictionary<string, ObjectTerm280> plainTermsOld = ruleTermsWithUpdatedZetValue
-            .Select(rtm => new
-            {
-                rtm.Letter,
-                Zet = rtm.Z,
-                Fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C),
-                ObjectTerm = CreateObjectTerm280(_SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C), rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter))
-            })
-            .ToDictionary(kd => kd.Letter, kv => kv.ObjectTerm);
-
+        
+        //fuck99 how to treat null facts
         Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithUpdatedZetValue
             .Select(rtm =>
             {

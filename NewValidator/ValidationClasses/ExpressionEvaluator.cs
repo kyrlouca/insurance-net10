@@ -109,6 +109,14 @@ public partial class GeneralEvaluator
         //2. single function (boolean)
         //---- if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
         //3. arithmetic
+        //fuck99 check for empty terms
+        if (terms.Any(tr => tr.Value.fact is null))
+        {
+            var ret = KleeneValue.Unknown;
+        }
+
+
+
 
         if (string.IsNullOrEmpty(formula))
         {
@@ -140,7 +148,7 @@ public partial class GeneralEvaluator
             switch (fn)
             {
                 case "not":
-                    var resNot = EvaluateBooleanExpression(ruleId, fnArgument, terms); 
+                    var resNot = EvaluateBooleanExpression(ruleId, fnArgument, terms);
                     return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
                         : resNot == KleeneValue.False ? KleeneValue.True
                         : KleeneValue.False;
@@ -535,8 +543,6 @@ public partial class GeneralEvaluator
 
         var result = Eval.Execute<bool>(cleanFormula, plainObjects);
         return result ? KleeneValue.True : KleeneValue.False;
-        //return result;
-
 
     }
 
@@ -695,7 +701,7 @@ public partial class GeneralEvaluator
         }
 
 
-        
+
     }
 
     public static (string symbolFormula, List<FunctionObject> FunctionTerms) ToFunctionObjectsFromTextFormula(string text, Regex regex, string letter)
