@@ -112,14 +112,16 @@ public class DocumentValidator : IDocumentValidator
         //************************************************************* Testing 
         var isTesting = true;
         if (_parameterData.IsDevelop && isTesting)
-        {            
+        {
             //var exempted = new[] { 0 };
             //validationRules = validationRules.Where(vr => !exempted.Contains(vr.ValidationID)).OrderBy(rl => rl.ValidationID).ToList();            
             //Console.WriteLine($"\n***DEBUGGING exempted: {string.Join(", ", exempted)}");
         }
 
-        var testingRuleId = 616;
-        
+
+        //var testingRuleId = 693;
+        var testingRuleId = 0;
+
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
             Console.WriteLine($"\n***DEGUGGING ONLY Rule:{testingRuleId}");
@@ -202,13 +204,7 @@ public class DocumentValidator : IDocumentValidator
                             continue;
                         }
                         var ruleClosed = RuleStructure280.CreateRuleStructure(validationRule.ValidationID, tablesInValidation, validationRule.Rule, validationRule.Filter, validationRule.Scope);
-                        //if (scopeType != ScopeType.None)
-                        //{
-                        //    UpdateRuleTermsWithRowCol(ruleClosed.IfComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
-                        //    UpdateRuleTermsWithRowCol(ruleClosed.ThenComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
-                        //    UpdateRuleTermsWithRowCol(ruleClosed.ElseComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
-                        //    UpdateRuleTermsWithRowCol(ruleClosed.FilterComponent.RuleTerms, mainTableCode, "", scopeRowCol, scopeRowCol, ruleClosed.ScopeType, true);
-                        //}
+                        ////////////////////////////////////////
 
                         ////////////////////////////////////////
                         var allTerms = ruleClosed.IfComponent.RuleTerms
@@ -221,12 +217,11 @@ public class DocumentValidator : IDocumentValidator
                             UpdateClosedTableTerm(term, ruleClosed.ScopeType, scopeRowCol);
                         }
 
-                        /////////////////////////////////////////
-
 
                         //MAKE usingZet to true to  find facts using zet. 
                         ruleClosed.ZetValue = sheet.ZDimVal;
                         ruleClosed = FillRuleStructureWithFactValues(ruleClosed);
+                        var test = ruleClosed.IfComponent.RuleTerms.ToList();
                         //var objs = ruleClosed.IfComponent.ObjectTerms.Select(ot => ot.Value.Obj).ToList();
                         var sumTerm = ruleClosed.IfComponent.RuleTerms.Where(rt => rt.IsSequence).FirstOrDefault();
 
@@ -970,7 +965,7 @@ public class DocumentValidator : IDocumentValidator
             if (GeneralEvaluator.ToBoolean(isFilterValid))
             {
                 count++;
-                
+
                 //*** this is a dirty trick i use to make the Sum of text values to return 1 if any fact is has a value
                 if (fact.DataTypeUse == "E" || fact.DataTypeUse == "S")
                 {

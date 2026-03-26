@@ -1,4 +1,5 @@
 ﻿using NewValidator.ValidationClasses;
+using Syncfusion.Office;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,9 @@ internal class IntervalFunctionsNew
 {
 
 
-    public static bool IsIntervalExpressionValid(string operatorI, OptionalObject leftMin, OptionalObject leftMax , OptionalObject rightMin, OptionalObject rightMax)
+    public static bool IsIntervalExpressionValid(string operatorI, OptionalObject leftMin, OptionalObject leftMax, OptionalObject rightMin, OptionalObject rightMax)
     {
+        //fuck99 Just allow some margin to avoid precision issues with kleene margins 
         //todo if any operand is null the result is NULL
         var lmin = Math.Min((double)(leftMin?.Value ?? 0.0), (double)(leftMax?.Value ?? 0.0));
         var lmax = Math.Max((double)(leftMin?.Value ?? 0.0), (double)(leftMax?.Value ?? 0.0));
@@ -36,15 +38,23 @@ internal class IntervalFunctionsNew
         return resInterval;
     }
 
-    
-    
-    public static bool IsIntervalEQ( double leftMin, double leftMax, double rightMin, double rightMax)    
+
+
+    public static bool IsIntervalEQ(double leftMin, double leftMax, double rightMin, double rightMax)
     {
         var ll = (leftMin <= rightMax);
-        var l2= (rightMin <= leftMax);
+        var l2 = (rightMin <= leftMax);
 
+        //i used the 0.5% tolerance to avoid precision issues with kleene margins, but this can be adjusted if needed
         var isValid = (leftMin <= rightMax) && (rightMin <= leftMax);
-        return isValid;
+        
+        double tolerance = 0.005; // 0.5%                                 
+        double epsilon = Math.Max(Math.Abs(leftMax), Math.Abs(rightMin)) * tolerance;        
+        epsilon = Math.Max(epsilon, 1e-9);
+        var isValidRelaxed = (leftMin <= rightMax + epsilon) && (leftMax >= rightMin - epsilon);
+
+        //return isValid;
+        return isValidRelaxed;
     }
     public static bool IsIntervalGT(double leftMin, double leftMax, double rightMin, double rightMax)
     {
@@ -56,7 +66,7 @@ internal class IntervalFunctionsNew
     {
         //this will NOT work!!! x1Min > x2Max;
         var isValid = IsIntervalGT(leftMin, leftMax, rightMin, rightMax) || IsIntervalEQ(leftMin, leftMax, rightMin, rightMax);
-        
+
         return isValid;
     }
     public static bool IsIntervalLT(double leftMin, double leftMax, double rightMin, double rightMax)
@@ -74,10 +84,10 @@ internal class IntervalFunctionsNew
     public static bool IsIntervalNE(double leftMin, double leftMax, double rightMin, double rightMax)
     {
         //   return x1Max < x2Min || x1Min > x2Max;
-        var isValid = (leftMax < rightMin) || (leftMin>rightMax);
+        var isValid = (leftMax < rightMin) || (leftMin > rightMax);
         return isValid;
     }
-    
+
 
 }
 
