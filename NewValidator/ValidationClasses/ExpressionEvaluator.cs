@@ -116,8 +116,6 @@ public partial class GeneralEvaluator
         }
 
 
-
-
         if (string.IsNullOrEmpty(formula))
         {
             throw new ArgumentNullException("Hey1: Formula is Null or Empty");
@@ -144,14 +142,20 @@ public partial class GeneralEvaluator
             //( ab and matches(cd)) => evaluate ab and matches(cd)
             var fn = match.Groups[1].Value;
             var fnArgument = match.Groups[2].Value;
+            /////////////////////
+
 
             switch (fn)
             {
                 case "not":
                     var resNot = EvaluateBooleanExpression(ruleId, fnArgument, terms);
-                    return resNot == KleeneValue.Unknown ? KleeneValue.Unknown
-                        : resNot == KleeneValue.False ? KleeneValue.True
-                        : KleeneValue.False;
+                    return resNot switch
+                    {
+                        KleeneValue.Unknown => KleeneValue.Unknown,
+                        KleeneValue.False => KleeneValue.True,
+                        _ => KleeneValue.False
+                    };
+                    
                 case "isNull":
                 case "isnull":
                     //if value is a function, then call evaluatefunction to find the value of the function and then call IsNull
