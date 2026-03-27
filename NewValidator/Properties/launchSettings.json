@@ -2,7 +2,7 @@
   "profiles": {
     "NewValidator": {
       "commandName": "Project",
-      "commandLineArgs": "z",
+      "commandLineArgs": "externalId=111\r\n",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Develop"
       }
