@@ -955,8 +955,7 @@ public partial class FactsDecorator : IFactsDecorator
                     //find the fact in the master table                     
                     var masterFact = masterFacts.FirstOrDefault(fct => fct.TextValue.Trim().Equals(childRowKeyFact.TextValue.Trim()));
                     if (masterFact is null)
-                    {
-                        //todo fuck it cannot find masterFact
+                    {                        
                         _logger.Error($"Could NOT find Master fact for :{childRowKeyFact.TextValue}");
                         continue;
                     }

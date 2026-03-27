@@ -108,11 +108,13 @@ public partial class GeneralEvaluator
         //1. outer parenthesis
         //2. single function (boolean)
         //---- if there is "and","or", nothing in this order => evaluate the two terms around "and" or "or" or "nothing"
-        //3. arithmetic
-        //fuck99 check for empty terms
-        if (terms.Any(tr => tr.Value.fact is null))
+        //3. arithmetic        
+        //4. fuck99 , I changed this on 27/3/20206 so that if any single term has a null fact the result is unkown.
+        
+        if (terms.Any(tr => tr.Value.fact is null && tr.Value.IsNullFact ))
         {
             var ret = KleeneValue.Unknown;
+            return ret;
         }
 
 
@@ -532,7 +534,7 @@ public partial class GeneralEvaluator
     {
         var rgxTerm = new Regex(@"([XA]\d\d)", RegexOptions.Compiled);
         var matchTersm = rgxTerm.Match(symbolFormula);
-        //fuck99 check for null terms
+        
         var isAnyTermNull = terms.Any(ft => ft.Value.Obj is null);
 
         if (isAnyTermNull)

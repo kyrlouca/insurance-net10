@@ -119,8 +119,8 @@ public class DocumentValidator : IDocumentValidator
         }
 
 
-        var testingRuleId = 675;
-        //var testingRuleId = 0;
+        //var testingRuleId = 2082;
+        var testingRuleId = 0;
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
@@ -221,8 +221,7 @@ public class DocumentValidator : IDocumentValidator
                         //MAKE usingZet to true to  find facts using zet. 
                         ruleClosed.ZetValue = sheet.ZDimVal;
                         ruleClosed = FillRuleStructureWithFactValues(ruleClosed);
-                        var test = ruleClosed.IfComponent.RuleTerms.ToList();
-                        //var objs = ruleClosed.IfComponent.ObjectTerms.Select(ot => ot.Value.Obj).ToList();
+                        var test = ruleClosed.IfComponent.RuleTerms.ToList();                        
                         var sumTerm = ruleClosed.IfComponent.RuleTerms.Where(rt => rt.IsSequence).FirstOrDefault();
 
                         if (sumTerm != null)
@@ -687,9 +686,6 @@ public class DocumentValidator : IDocumentValidator
             "D" => (DateTime)fact.DateTimeValue,
             _ => throw new NotImplementedException()
         };
-
-        var numericTypes = new[] { "I", "M", "N", "P" };
-
         var objTerm = new ObjectTerm280(fact.DataTypeUse, fact.Decimals, IsTolerance, obj, sumValue, countValue, fact, false, filter);
         return objTerm;
     }
@@ -699,18 +695,16 @@ public class DocumentValidator : IDocumentValidator
 
         //check whether the term does not have a zet value (Z0001)
         //I changed the program, and in some cases I pass deliberately zetValue="" to avoid using the Zet 
-        //this was necessary for rule 348. because open tables S.06.02.01.01 and S.07.01.01.01 have  zets with different values
-        //var ruleTermsWithZet = ruleTerms.Select(rt => rt with { Z =   rt.Z.Contains("Z00") ? zetValue : "" });
+        //this was necessary for rule 348. because OPEN tables S.06.02.01.01 and S.07.01.01.01 have  zets with different values        
         var openTables = ruleTables.Where(tbl => tbl.IsOpenTable).Select(tbl => tbl.TableCode);
         var ruleTermsWithUpdatedZetValue = ruleTerms.Select(rt => rt with { Z = (openTables.Contains(rt.T.Trim()) || !rt.Z.Contains("Z00")) ? "" : zetValue });
-        
-        //fuck99 how to treat null facts
+                
         Dictionary<string, ObjectTerm280> plainTerms = ruleTermsWithUpdatedZetValue
             .Select(rtm =>
             {
                 var fact = _SqlFunctions.SelectFactByRowColTableCode(DocumentId, rtm.T, rtm.Z, rtm.R, rtm.C);
                 fact ??= CreateFactWithDefaultValue(ruleTables, rtm);
-                var objectTerm = CreateObjectTerm280(fact, rtm.Dv, 0, 0, rtm.IsTolerance, UpdateRuleTermFilter(rtm.Letter, rtm.Filter));
+                var objectTerm = CreateObjectTerm280(fact, rtm.Dv, 0, 0, rtm.IsTolerance, UpdatedRuleTermFilter(rtm.Letter, rtm.Filter));
 
                 var objUpd = new
                 {
@@ -759,7 +753,7 @@ public class DocumentValidator : IDocumentValidator
         return newObjTerm;
     }
 
-    private string UpdateRuleTermFilter(string letter, string filter)
+    private string UpdatedRuleTermFilter(string letter, string filter)
     {
         //not(isNull({t: SR.26.01.01.03, r: R0012; R0014; R0020; R0030; R0040, c: C0010, z: Z0001, dv: emptySequence(), filter: dim(this(), [s2c_dim:PO]) = [s2c_PU:x60] and not(isNull(dim(this(), [s2c_dim:FN]))), seq: True, id: v1, f: solvency, fv: solvency2}))
         //filter: dim(this(), [s2c_dim:PO]) = [s2c_PU:x60] and not(isNull(dim(this(), [s2c_dim:FN])))
@@ -779,10 +773,10 @@ public class DocumentValidator : IDocumentValidator
 
         var zetValue = ruleStructure.ZetValue;
 
-        CreateComponentObjectTerms(ruleStructure.IfComponent, ruleStructure.RuleTables, zetValue);
-        CreateComponentObjectTerms(ruleStructure.ThenComponent, ruleStructure.RuleTables, zetValue);
-        CreateComponentObjectTerms(ruleStructure.ElseComponent, ruleStructure.RuleTables, zetValue);
-        CreateComponentObjectTerms(ruleStructure.FilterComponent, ruleStructure.RuleTables, zetValue);
+        CreateObjectTermsInRule(ruleStructure.IfComponent, ruleStructure.RuleTables, zetValue);
+        CreateObjectTermsInRule(ruleStructure.ThenComponent, ruleStructure.RuleTables, zetValue);
+        CreateObjectTermsInRule(ruleStructure.ElseComponent, ruleStructure.RuleTables, zetValue);
+        CreateObjectTermsInRule(ruleStructure.FilterComponent, ruleStructure.RuleTables, zetValue);
 
 
 
@@ -790,7 +784,7 @@ public class DocumentValidator : IDocumentValidator
 
     }
 
-    private void CreateComponentObjectTerms(RuleComponent280 ruleComponent, List<MTable> ruleTables, string zetValue)
+    private void CreateObjectTermsInRule(RuleComponent280 ruleComponent, List<MTable> ruleTables, string zetValue)
     {
         Dictionary<string, ObjectTerm280> objectTerms = ToOjectTerm280UsingFactValues(ruleTables, ruleComponent.RuleTerms, zetValue);
         ruleComponent.ObjectTerms = objectTerms;
@@ -913,7 +907,7 @@ public class DocumentValidator : IDocumentValidator
                 UpdateRuleTermsWithRowCol(filterComponent.RuleTerms, mainTableCode, relatedTableCode, row, relatedRow, ScopeType.Rows);
             }
 
-            CreateComponentObjectTerms(filterComponent, ruleTables, "");
+            CreateObjectTermsInRule(filterComponent, ruleTables, "");
             var isFilterValid = filterComponent.IsEmpty
                                 ? KleeneValue.True
                                 : GeneralEvaluator.EvaluateBooleanExpression(ruleId, filterComponent.SymbolExpression, filterComponent.ObjectTerms);

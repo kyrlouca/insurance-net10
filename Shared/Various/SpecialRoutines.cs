@@ -150,7 +150,7 @@ public class DimUtils
 
     public static CellRowColRecord ParseCellRowColOld(string businessCode)
     {
-        //For 282 they can have many columns. The first art the fucking keys. The last c is the Column
+        //For 282 they can have many columns. The last c is the Column
         //businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
         //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
         //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
@@ -178,7 +178,7 @@ public class DimUtils
 
     public static CellRowColRecord ParseCellRowColNew(string businessCode)
     {
-        //For 282 they can have many columns. The first art the fucking keys. The last c is the Column
+        //For 282 they can have many columns. The last c is the Column
         //businessCode = "{S.05.01.02.01,R1210,C0200,Z0001}";
         //businessCode = "{S.01.01.02.01,R0010,C0010}"; //=> tableCode=S.01.01.02.01 zet ="" row=R0010 col=C0010                
         //businessCode = "{S.06.02.01.01,C0100,Z0001}"; //tableCode=S.01.01.02.01 zet =Z001 row="" col=C0010                
