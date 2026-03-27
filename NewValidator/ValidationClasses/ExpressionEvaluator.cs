@@ -114,7 +114,7 @@ public partial class GeneralEvaluator
         if (terms.Any(tr => tr.Value.fact is null && tr.Value.IsNullFact ))
         {
             var ret = KleeneValue.Unknown;
-            return ret;
+            //return ret;
         }
 
 
