@@ -59,8 +59,9 @@ public partial class FactsDecorator : IFactsDecorator
 
     record SheetInfoType(int TableId, int TemplateSheetId, string SheetCode, string SheetCodeZet, string SheetName, string YDims);
 
-    public int DecorateFactsAndAssignToSheets(int documentId, List<string> filings)
+    public int  DecorateFactsAndAssignToSheets(int documentId, List<string> filings)
     {
+        //fack99 decorate
         _documentId = documentId;
         _filings = filings;
         _parameterData = _parameterHandler.GetParameterData();
@@ -895,14 +896,8 @@ public partial class FactsDecorator : IFactsDecorator
         //***** Assign each fact to ist sheet depending on the zet 
         foreach (var tableFact in tableFacts)
         {
-            Console.Write(";");
-            //******* Assign the facts to the sheet
-            //if the fact is already assigned to antoher shhet, create a clone fact
-
-
-
+            Console.Write(";");            
             var cnt = AssignFactToSheet(tableFact.FactId, sh.TemplateSheetId, tableFact.CellID, tableFact.Zet, tableFact.Row, tableFact.Col, tableFact.RowSignature, tableFact.ZetValues, tableFact.CurrencyDim);
-
         }
     }
 
