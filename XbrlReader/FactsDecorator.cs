@@ -888,7 +888,31 @@ public partial class FactsDecorator : IFactsDecorator
         return newVal;
     }
 
-    private void AssignFactsToSheet280(int tableId, SheetInfoType sh)
+    private int AssignFactsToSheet280(int tableId, SheetInfoType sh)
+    {
+        using var connection = new SqlConnection(_parameterData.SystemConnectionString);
+
+        var sql = @"
+        UPDATE TemplateSheetFact
+        SET
+            TemplateSheetId = @TemplateSheetId
+        WHERE
+            InstanceId = @DocumentId
+            AND TableID = @TableId
+            AND ZetValues = @ZetValues
+            AND TemplateSheetId IS NULL";
+
+        return connection.Execute(sql, new
+        {
+            TemplateSheetId = sh.TemplateSheetId,
+            DocumentId = _documentId,
+            TableId = tableId,
+            ZetValues = sh.SheetCodeZet
+        });
+    }
+
+
+    private void AssignFactsToSheet280Old(int tableId, SheetInfoType sh)
     {
         var tableFacts = SelectFactsForTableAndZet(tableId, sh.SheetCodeZet);
         //***** Assign each fact to ist sheet depending on the zet 
