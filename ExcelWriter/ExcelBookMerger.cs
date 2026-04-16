@@ -179,11 +179,11 @@ public class ExcelBookMerger : IExcelBookMerger
                     var xbrlCleaned = dim?.DomAndValXbrlCode.Replace(":", "");                    
 
                     //specialSheetName= $"{specialSheetName}_{line:D2}_{xbrlStripped}";
-                    specialSheetName = string.IsNullOrEmpty(xbrlCleaned)
-                            ? $"{specialSheetName}_{line:D2}"
-                            : (string.IsNullOrEmpty(tabLabel)
-                                ? $"{specialSheetName}__{xbrlCleaned}"
-                                : $"{specialSheetName}__{tabLabel}");
+                    //specialSheetName = string.IsNullOrEmpty(xbrlCleaned)
+                    //        ? $"{specialSheetName}_{line:D2}"
+                    //        : (string.IsNullOrEmpty(tabLabel)
+                    //            ? $"{specialSheetName}__{xbrlCleaned}"
+                    //            : $"{specialSheetName}__{tabLabel}");
 
 
                     specialSheetName = xbrlCleaned switch
