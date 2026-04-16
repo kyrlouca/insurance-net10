@@ -890,8 +890,6 @@ public partial class FactsDecorator : IFactsDecorator
 
     private void AssignFactsToSheet280(int tableId, SheetInfoType sh)
     {
-
-
         var tableFacts = SelectFactsForTableAndZet(tableId, sh.SheetCodeZet);
         //***** Assign each fact to ist sheet depending on the zet 
         foreach (var tableFact in tableFacts)
