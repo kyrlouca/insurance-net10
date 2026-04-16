@@ -188,7 +188,7 @@ public class ExcelBookMerger : IExcelBookMerger
 
                     specialSheetName = xbrlCleaned switch
                     {
-                        null or { Length: 0 } => $"{specialSheetName}_{line:D2}",
+                        null or { Length: 0 } => $"{specialSheetName}__{line:D2}",
                         _ when string.IsNullOrEmpty(tabLabel) => $"{specialSheetName}__{xbrlCleaned}",
                         _ => $"{specialSheetName}__{tabLabel}"
                     };
