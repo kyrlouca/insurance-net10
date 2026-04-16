@@ -182,8 +182,19 @@ public class ExcelBookMerger : IExcelBookMerger
                     specialSheetName = string.IsNullOrEmpty(xbrlCleaned)
                             ? $"{specialSheetName}_{line:D2}"
                             : (string.IsNullOrEmpty(tabLabel)
-                                ? $"{specialSheetName}_{line:D2}_{xbrlCleaned}"
-                                : $"{specialSheetName}_{line:D2}_{tabLabel}");
+                                ? $"{specialSheetName}__{xbrlCleaned}"
+                                : $"{specialSheetName}__{tabLabel}");
+
+
+                    specialSheetName = xbrlCleaned switch
+                    {
+                        null or { Length: 0 } => $"{specialSheetName}_{line:D2}",
+                        _ when string.IsNullOrEmpty(tabLabel) => $"{specialSheetName}__{xbrlCleaned}",
+                        _ => $"{specialSheetName}__{tabLabel}"
+                    };
+
+                    
+
 
                     specialSheetName = CleanTabName(specialSheetName);
 
@@ -261,7 +272,7 @@ public class ExcelBookMerger : IExcelBookMerger
     {
         string pattern = @"[\/\\*?\[\]:\/\']";
         string tabLabelCleaned = Regex.Replace(tabName, pattern, "");
-        var shortLabel = RegexUtils.TruncateString(tabLabelCleaned, 30);
+        var shortLabel = RegexUtils.TruncateString(tabLabelCleaned, 31);
         return shortLabel;
     }
 
