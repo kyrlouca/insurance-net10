@@ -119,7 +119,7 @@ public class DocumentValidator : IDocumentValidator
         }
 
 
-        //var testingRuleId = 2082;
+        //var testingRuleId = 4412;
         var testingRuleId = 0;
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
@@ -127,6 +127,7 @@ public class DocumentValidator : IDocumentValidator
             Console.WriteLine($"\n***DEGUGGING ONLY Rule:{testingRuleId}");
             validationRules = validationRules.Where(vr => vr.ValidationID == testingRuleId).ToList();
         }
+        
         //************************************************************* 
 
         foreach (var validationRule in validationRules)
