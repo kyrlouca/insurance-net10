@@ -1388,7 +1388,7 @@ WHERE
     }
 
 
-    public async Task<int> CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow)
+    public int CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow)
     {
         var sqlInsert = @"
 WITH S61c40 AS
@@ -1456,7 +1456,7 @@ LEFT JOIN S62
         try
         {
          
-            var facts = await connectionLocal.ExecuteAsync(sqlInsert,new { documentId, sheetId,startRow,endRow },commandTimeout:120);
+            var facts = connectionLocal.Execute(sqlInsert,new { documentId, sheetId,startRow,endRow },commandTimeout:120);
             return facts;
         }
         catch (Exception e)
@@ -1469,7 +1469,7 @@ LEFT JOIN S62
     }
 
 
-    public async Task<int> CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow)
+    public int CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow)
     {
         var sqlInsert = @"
 INSERT INTO Dbo.Templatesheetfact (Instanceid, Templatesheetid, Row, rowForeign, Col, Textvalue, Numericvalue, Datetimevalue, CurrencyDim)
@@ -1496,7 +1496,7 @@ WHERE
         connectionLocal.Open();
         try
         {
-            var facts = await connectionLocal.ExecuteAsync(sqlInsert, new { documentId, sheetId,startRow,endRow });
+            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId,startRow,endRow });
             return facts;
         }
         catch (Exception e)
@@ -1520,14 +1520,13 @@ WHERE
 
     }
 
-    public async Task<int> DeleteFactsTemplateSheetAsync(int templateSheetId)
+    public int DeleteFactsTemplateSheetAsync(int templateSheetId)
     {
         using var connectionInsurance = new SqlConnection(_parameterData.SystemConnectionString);
 
         var sqlDelete = @"delete from TemplateSheetFact where TemplateSheetId=@TemplateSheetId;";
-        var count = await connectionInsurance.ExecuteAsync(sqlDelete, new { templateSheetId });
+        var count =  connectionInsurance.Execute(sqlDelete, new { templateSheetId });
         return count;
-
     }
 
     public SheetTabLabelDto? SelectSheetTabLabel(string memberXbrlCode)

@@ -32,7 +32,7 @@ public class ReaderMainApp : IReaderMainApp
 
 
 
-    public async Task<int> Run()
+    public int Run()
     {
         _parameterData = _parameterHandler.GetParameterData();
 
@@ -145,7 +145,7 @@ public class ReaderMainApp : IReaderMainApp
             }
 
 
-            var facts = await _combinedS62Services.CreateCombinedFacts(_documentId, combinedSheetId);
+            var facts = _combinedS62Services.CreateCombinedFacts(_documentId, combinedSheetId);
             Console.WriteLine($"\nFacts created:{facts} for S.06.02.01.99");
 
         }

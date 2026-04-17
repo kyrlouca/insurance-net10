@@ -35,7 +35,7 @@ try
         var assembly = Assembly.GetExecutingAssembly();
         Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
         Console.WriteLine($"Version: {assembly.GetName().Version}");
-        var exitCode = await mainApp.Run();
+        var exitCode =  mainApp.Run();
         return exitCode; 
     }
 

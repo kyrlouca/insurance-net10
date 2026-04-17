@@ -33,7 +33,7 @@ try
     var app = services.GetService<IReaderMainApp>();
     if (app is not null)
     {
-        var exitCode = await app.Run();   // 👈 await async Run
+        var exitCode =  app.Run();   
         var assembly = Assembly.GetExecutingAssembly();
         Console.WriteLine($"Assembly Name: {assembly.GetName().Name}");
         Console.WriteLine($"Version: {assembly.GetName().Version}");

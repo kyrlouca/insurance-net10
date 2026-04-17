@@ -2,6 +2,6 @@
 
 public interface IReaderMainApp
 {
-    Task<int> Run();
+    int Run();
     
 }

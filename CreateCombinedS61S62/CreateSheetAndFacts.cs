@@ -52,7 +52,7 @@ public class CreateSheetAndFacts
     }
 
 
-    public async Task<int> CreateCombinedSheet(int documentId)
+    public int CreateCombinedSheet(int documentId)
     {
         //a new sheet will be created -- tableId=100001,tableCode="S.06.02.01.99"
 
@@ -87,10 +87,10 @@ public class CreateSheetAndFacts
             var startRow = $"R{count+1:D4}"; 
             var endRow = $"R{count+increment:D4}";
             
-            var facts61 = await _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
+            var facts61 =  _SqlFunctions.CreateCombinedFactsForS61(documentId, sheetId, startRow, endRow);
             Console.Write("1");
             //var facts62 = Performance.MeasureExecutionTime(() => _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow));
-            var facts62 = await _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
+            var facts62 =  _SqlFunctions.CreateCombinedFactsForS62(documentId, sheetId, startRow, endRow);
             Console.Write("2");
             count +=increment;
             testingCount += 1;

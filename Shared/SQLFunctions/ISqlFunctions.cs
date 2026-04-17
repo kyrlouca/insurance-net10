@@ -113,9 +113,9 @@ public interface ISqlFunctions
     public CurrencyBatch? SelectCurrencyBatch(int year, int quarter, int wave);
 
     public int NotUsedCreateCombinedFacts(int documentId,int sheetId);
-    public Task<int> CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow);
-    public Task<int> CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow);
+    public int CreateCombinedFactsForS62(int documentId, int sheetId, string startRow, string endRow);
+    public int CreateCombinedFactsForS61(int documentId, int sheetId, string startRow, string endRow);
     public int DeleteFactsTemplateSheet(int templateSheetId);
-    public Task<int> DeleteFactsTemplateSheetAsync(int templateSheetId);
+    public int DeleteFactsTemplateSheetAsync(int templateSheetId);
     public SheetTabLabelDto? SelectSheetTabLabel(string memberXbrlCode);
 }

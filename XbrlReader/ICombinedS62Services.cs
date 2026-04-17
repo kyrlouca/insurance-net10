@@ -4,7 +4,7 @@ namespace XbrlReader
     public interface ICombinedS62Services
     {
         int CreateCombinedSheetOnly(int documentId);
-        Task<int> CreateCombinedFacts(int documentId,int sheetId);        
+        int CreateCombinedFacts(int documentId,int sheetId);        
         int K_UpdateDocumentForeignKeys(int documentId);
     }
 }

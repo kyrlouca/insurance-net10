@@ -62,7 +62,7 @@ public class CombinedS62Services : ICombinedS62Services
         return sheetId;
     }
 
-    public async Task<int> CreateCombinedFacts(int documentId, int sheetId)
+    public int CreateCombinedFacts(int documentId, int sheetId)
     {
 
         //create facts in batches of 200 rows
@@ -80,10 +80,10 @@ public class CombinedS62Services : ICombinedS62Services
             var startRow = $"R{count + 1:D4}";
             var endRow = $"R{count + increment:D4}";
 
-            var facts61 = await OpenConnection_CreateCombinedFactsForS61(connectionLocal, documentId, sheetId, startRow, endRow);
+            var facts61 =  OpenConnection_CreateCombinedFactsForS61(connectionLocal, documentId, sheetId, startRow, endRow);
             Console.Write("1");
 
-            var facts62 = await OpenConnection_CreateCombinedFactsForS62(connectionLocal, documentId, sheetId, startRow, endRow);
+            var facts62 =  OpenConnection_CreateCombinedFactsForS62(connectionLocal, documentId, sheetId, startRow, endRow);
             Console.Write("2");
             count += increment;
             testingCount += 1;
@@ -148,7 +148,7 @@ public class CombinedS62Services : ICombinedS62Services
     }
 
 
-    private async Task<int> OpenConnection_CreateCombinedFactsForS61(SqlConnection connectionLocal, int documentId, int sheetId, string startRow, string endRow)
+    private int OpenConnection_CreateCombinedFactsForS61(SqlConnection connectionLocal, int documentId, int sheetId, string startRow, string endRow)
     {
 
         var sqlInsert = @"
@@ -176,7 +176,7 @@ WHERE
         try
         {
 
-            var facts = await connectionLocal.ExecuteAsync(sqlInsert, new { documentId, sheetId, startRow, endRow });
+            var facts =  connectionLocal.Execute(sqlInsert, new { documentId, sheetId, startRow, endRow });
             return facts;
 
         }
@@ -193,7 +193,7 @@ WHERE
     }
 
 
-    private async Task<int> OpenConnection_CreateCombinedFactsForS62(SqlConnection connectionLocal, int documentId, int sheetId, string startRow, string endRow)
+    private  int OpenConnection_CreateCombinedFactsForS62(SqlConnection connectionLocal, int documentId, int sheetId, string startRow, string endRow)
     {
         var sqlInsert = @"
 WITH S61c40 AS
@@ -258,7 +258,7 @@ LEFT JOIN S62
 ";
         try
         {
-            var facts = await connectionLocal.ExecuteAsync(sqlInsert, new { documentId, sheetId, startRow, endRow }, commandTimeout: 120);
+            var facts = connectionLocal.Execute(sqlInsert, new { documentId, sheetId, startRow, endRow }, commandTimeout: 120);
             return facts;
         }
         catch (Exception e)
@@ -273,12 +273,12 @@ LEFT JOIN S62
     }
 
 
-    private async Task<int> OpenConnection_DeleteFactsTemplateSheet(SqlConnection connectionLocal, int templateSheetId)
+    private int OpenConnection_DeleteFactsTemplateSheet(SqlConnection connectionLocal, int templateSheetId)
     {
 
 
         var sqlDelete = @"delete from TemplateSheetFact where TemplateSheetId=@TemplateSheetId;";
-        var count = await connectionLocal.ExecuteAsync(sqlDelete, new { templateSheetId });
+        var count = connectionLocal.Execute(sqlDelete, new { templateSheetId });
         return count;
 
     }

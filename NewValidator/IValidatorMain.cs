@@ -2,6 +2,6 @@
 {
     public interface IValidatorMain
     {
-        Task<int> Run();
+        int Run();
     }
 }
