@@ -1,5 +1,4 @@
 ﻿
-using Microsoft.Identity.Client;
 using Syncfusion.XlsIO;
 using System;
 using System.Collections.Generic;

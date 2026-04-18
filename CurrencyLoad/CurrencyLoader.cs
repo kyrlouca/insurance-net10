@@ -1,5 +1,4 @@
-﻿using Azure;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Shared.DataModels;
 using Shared.ExcelHelperRoutines;

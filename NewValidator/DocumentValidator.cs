@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using Microsoft.Identity.Client;
 using NewValidator.ValidationClasses;
 using Serilog;
 using Serilog.Sinks.File;

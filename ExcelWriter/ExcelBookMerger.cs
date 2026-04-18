@@ -118,7 +118,7 @@ public class ExcelBookMerger : IExcelBookMerger
         {
             var debugFilterList = Array.Empty<string>();
             //var filterList = new[] { "S.04.04.01.01" };
-            if (!debugFilterList.IsNullOrEmpty())
+            if (debugFilterList.Any())
             {
                 tableGroupList = tableGroupList.Where(tg => debugFilterList.Contains(tg.TemplateCode)).ToList();
                 Console.WriteLine("Develop and filtering Merge");

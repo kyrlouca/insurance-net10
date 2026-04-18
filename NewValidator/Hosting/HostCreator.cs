@@ -49,6 +49,7 @@ public class HostCreator
 			loggerConfiguration
 			.ReadFrom.Configuration(hostingContext.Configuration);
 		})
+
 		.Build();
 
 
