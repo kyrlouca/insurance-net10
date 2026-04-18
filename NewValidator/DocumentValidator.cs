@@ -119,13 +119,14 @@ public class DocumentValidator : IDocumentValidator
         }
 
 
-        //var testingRuleId = 4412;
+        //var testingRuleId = 5768;
         var testingRuleId = 0;
 
         if (_parameterData.IsDevelop && testingRuleId > 0)
         {
             Console.WriteLine($"\n***DEGUGGING ONLY Rule:{testingRuleId}");
-            validationRules = validationRules.Where(vr => vr.ValidationID == testingRuleId).ToList();
+            //validationRules = validationRules.Where(vr => vr.ValidationID == testingRuleId).ToList();
+            validationRules = validationRules.Where(vr => vr.ValidationID >= testingRuleId).ToList();
         }
         
         //************************************************************* 
