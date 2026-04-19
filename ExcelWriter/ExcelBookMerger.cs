@@ -159,49 +159,34 @@ public class ExcelBookMerger : IExcelBookMerger
             {
                 line++;
                 //use the specialTemplateLayout if is  found in the static list, otherwise create one using the tables in the table group
-                if (specialTemplateLayout is not null)
-                {
-                    var xx = 3;
-                }
+
                 var zetTemplateLayout = specialTemplateLayout is null
                     ? ToZetTemplateLayout(tableGroup, blZet)
                     : ToZetTemplateUsingSpecialLayout(specialTemplateLayout, blZet);
 
 
-                var specialSheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;
-                specialSheetName = CleanTabName(specialSheetName);
+                var baseName = specialTemplateLayout?.TemplateSheetName ?? zetTemplateLayout.GroupTableCode;
+
                 if (distinctBlZets.Count > 1)
-                {                    
+                {
                     var dim = DimDom.GetParts(blZet);
-                    var tabLabel = _SqlFunctions.SelectSheetTabLabel(dim.DomAndValXbrlCode)?.ShortLabel??"";
-                                        
-                    var xbrlCleaned = dim?.DomAndValXbrlCode.Replace(":", "");
-                    
-                    xbrlCleaned = RegexUtils.TruncateString(xbrlCleaned, 28);
+                    var xbrlCode = dim?.DomAndValXbrlCode ?? "";
+                    var tabLabel = _SqlFunctions.SelectSheetTabLabel(xbrlCode)?.ShortLabel ?? "";
 
-                    //specialSheetName= $"{specialSheetName}_{line:D2}_{xbrlStripped}";
-                    //specialSheetName = string.IsNullOrEmpty(xbrlCleaned)
-                    //        ? $"{specialSheetName}_{line:D2}"
-                    //        : (string.IsNullOrEmpty(tabLabel)
-                    //            ? $"{specialSheetName}__{xbrlCleaned}"
-                    //            : $"{specialSheetName}__{tabLabel}");
+                    var suffix = !string.IsNullOrEmpty(tabLabel) ? tabLabel : xbrlCode;
 
+                    var combinedName = string.IsNullOrEmpty(suffix)
+                        ? baseName
+                        : $"{baseName}_{suffix}";
 
-                    specialSheetName = xbrlCleaned switch
-                    {
-                        null or { Length: 0 } => $"{specialSheetName}__{line:D2}",
-                        _ when string.IsNullOrEmpty(tabLabel) => $"{specialSheetName}_{xbrlCleaned}_{line:D2}",
-                        _ => $"{specialSheetName}_{tabLabel}_{line:D2}"
-                    };
-
-                    
-
-
-                    specialSheetName = CleanTabName(specialSheetName);
-
+                    // 3. Chain the transformations: Truncate -> Append Line -> Final Clean
+                    var truncated = RegexUtils.TruncateString(combinedName, 29);
+                    zetTemplateLayout.SheetName = CleanTabName($"{truncated}{line}");
                 }
-
-                zetTemplateLayout.SheetName = specialSheetName;
+                else
+                {
+                    zetTemplateLayout.SheetName = CleanTabName(baseName);
+                }
 
 
                 zetTemplateLayout.TemplateDescription = BuildMergedTableDescription(zetTemplateLayout.TemplateDescription, blZet);
@@ -701,7 +686,7 @@ public class ExcelBookMerger : IExcelBookMerger
                 var s62Row = range62[keyRange.Row, range62.Column, keyRange.Row, range62.LastColumn];
                 return s62Row;
             }
-             
+
             return null;
         }
 
@@ -725,7 +710,7 @@ public class ExcelBookMerger : IExcelBookMerger
     private void SortWorksheets(IWorkbook workbook, IndexSheetList indexList)
     {
         //var xx=workbook.Worksheets.Select(ws=>ws.Name).ToList();
-        
+
         var list = indexList.ListItems;
         foreach (var li in indexList.ListItems)
         {
