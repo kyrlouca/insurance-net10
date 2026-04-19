@@ -171,12 +171,13 @@ public class ExcelBookMerger : IExcelBookMerger
                 var specialSheetName = specialTemplateLayout is not null ? specialTemplateLayout.TemplateSheetName : zetTemplateLayout.GroupTableCode;
                 specialSheetName = CleanTabName(specialSheetName);
                 if (distinctBlZets.Count > 1)
-                {
-                    //specialSheetName = $"{specialSheetName}_{line:D2}";
+                {                    
                     var dim = DimDom.GetParts(blZet);
                     var tabLabel = _SqlFunctions.SelectSheetTabLabel(dim.DomAndValXbrlCode)?.ShortLabel??"";
                                         
-                    var xbrlCleaned = dim?.DomAndValXbrlCode.Replace(":", "");                    
+                    var xbrlCleaned = dim?.DomAndValXbrlCode.Replace(":", "");
+                    
+                    xbrlCleaned = RegexUtils.TruncateString(xbrlCleaned, 28);
 
                     //specialSheetName= $"{specialSheetName}_{line:D2}_{xbrlStripped}";
                     //specialSheetName = string.IsNullOrEmpty(xbrlCleaned)
@@ -189,8 +190,8 @@ public class ExcelBookMerger : IExcelBookMerger
                     specialSheetName = xbrlCleaned switch
                     {
                         null or { Length: 0 } => $"{specialSheetName}__{line:D2}",
-                        _ when string.IsNullOrEmpty(tabLabel) => $"{specialSheetName}_{line:D2}_{xbrlCleaned}",
-                        _ => $"{specialSheetName}_{line:D2}_{tabLabel}"
+                        _ when string.IsNullOrEmpty(tabLabel) => $"{specialSheetName}_{xbrlCleaned}_{line:D2}",
+                        _ => $"{specialSheetName}_{tabLabel}_{line:D2}"
                     };
 
                     
@@ -272,8 +273,8 @@ public class ExcelBookMerger : IExcelBookMerger
     {
         string pattern = @"[\/\\*?\[\]:\/\']";
         string tabLabelCleaned = Regex.Replace(tabName, pattern, "");
-        var shortLabel = RegexUtils.TruncateString(tabLabelCleaned, 31);
-        return shortLabel;
+        //var shortLabel = RegexUtils.TruncateString(tabLabelCleaned, 31);
+        return tabLabelCleaned;
     }
 
     private ZetTemplateLayout ToZetTemplateLayout(TableGroup tableGroup, string sheetCodeZet)
