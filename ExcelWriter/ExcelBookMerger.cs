@@ -177,11 +177,10 @@ public class ExcelBookMerger : IExcelBookMerger
 
                     var combinedName = string.IsNullOrEmpty(suffix)
                         ? baseName
-                        : $"{baseName}_{suffix}";
-
-                    // 3. Chain the transformations: Truncate -> Append Line -> Final Clean
-                    var truncated = RegexUtils.TruncateString(combinedName, 29);
-                    zetTemplateLayout.SheetName = CleanTabName($"{truncated}{line}");
+                        : $"{baseName}_{line}_{suffix}";
+                    
+                    var truncated = RegexUtils.TruncateString(combinedName, 31);
+                    zetTemplateLayout.SheetName = CleanTabName($"{truncated}");
                 }
                 else
                 {
