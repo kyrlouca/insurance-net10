@@ -1,4 +1,5 @@
 ﻿namespace ExcelWriter;
+
 using Shared.HostParameters;
 using Shared.ExcelHelperRoutines;
 using Dapper;
@@ -75,7 +76,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         ///
         var dbClosedSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => !sheet.IsOpenTable)
-            .Where(sheet => sheet.TableCode.Trim()!=combinedTableCode);
+            .Where(sheet => sheet.TableCode.Trim() != combinedTableCode);
 
 
         if (_parameterData.IsDevelop && 1 == 2)
@@ -85,7 +86,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             dbClosedSheets = dbClosedSheets.Where(tb => tb.TableCode?.Trim() == debugClosedTableCode);
         }
 
-        
+
         foreach (var dbClosedSheet in dbClosedSheets)
         {
             Console.WriteLine($"Populate Closed:{dbClosedSheet.SheetCode}");
@@ -95,7 +96,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         var dbOpenSheets = _SqlFunctions.SelectTemplateSheets(_documentId)
             .Where(sheet => sheet.IsOpenTable)
-            .Where(sheet => sheet.TableCode.Trim() != combinedTableCode); 
+            .Where(sheet => sheet.TableCode.Trim() != combinedTableCode);
 
         if (_parameterData.IsDevelop && 1 == 2)
         {
@@ -205,7 +206,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
                 //fill column numbers and zetLabels 
                 //-1 because there is alread one
-                for (var j = 0; j < zetMembersCount ; j++)
+                for (var j = 0; j < zetMembersCount; j++)
                 {
 
                     var colZetLabel = wholeRange[ZET_ROW, columnLabelCell.Column + j];
@@ -223,14 +224,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                     colLabel.Text = columnLabelStr;
                     colLabel.CellStyle = _pensionStyles.TopColumnNumbersStyle;
 
-                    if (j != zetMembersCount-1)
+                    if (j != zetMembersCount - 1)
                     {
                         workSheet.InsertColumn(columnLabelCell.Column + j + 1);
                     }
-                    
+
                 }
             }
-            
+
             var lastDataColumn = dataRange.LastColumn + columnLabelsOriginal.Count * (zetMembersCount - 1);
             workingDataRange = wholeRange[dataRange.Row, dataRange.Column, dataRange.LastRow, lastDataColumn];
 
@@ -239,7 +240,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             newDescRange.CellStyle.Borders[ExcelBordersIndex.EdgeTop].LineStyle = ExcelLineStyle.Thin;
             newDescRange.Value = tDesc;
 
-        };
+        }
+        ;
 
 
         var zetCount = zetMembers.Count == 0 ? 1 : zetMembers.Count;//to loop even for non-currencies        
@@ -320,7 +322,8 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
             dataNamedObjectE.RefersToRange = workingDataRange;
             dataRange = dataNamedObjectE.RefersToRange;
 
-        };
+        }
+        ;
 
 
         //data Range.                       
@@ -389,9 +392,9 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
-            .Where(ord => ord.AxisOrientation == "Y" &&  ord.IsOpenAxis)
+            .Where(ord => ord.AxisOrientation == "Y" && ord.IsOpenAxis)
             .OrderBy(ykey => ykey.Col);
-        
+
 
         //expand the data range to include the keys
         var dataRangeWithKeys = HelperRoutines.ExtendRangeRowColsDirectional(dataRange, 0, yOrdinatesForKeys.Count() - 1, HelperRoutines.HorizontalDirection.Left, HelperRoutines.VerticalDirection.None);
@@ -496,10 +499,10 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
 
         int AssignYKeysToColumns(TemplateSheetInstance dbSheet, IRange dataRange)
-        {            
+        {
 
             var yOrdinatesForKeys = _SqlFunctions.SelectTableAxisOrdinateInfo(dbSheet.TableID)
-                  .Where(ord => ord.AxisOrientation == "Y"  && ord.IsOpenAxis)
+                  .Where(ord => ord.AxisOrientation == "Y" && ord.IsOpenAxis)
                   .OrderBy(ykey => ykey.Col);
 
             var offsetCol = 0;
@@ -577,21 +580,32 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
     {
 
         //find the row above the labels which is empty
-        var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
-        IRange rowsToCheckx= rowsTocheck is null ? dataRange[0,0] : rowsTocheck;
 
-        //foreach (var row in rowsToCheckx.Rows.Reverse())
-            foreach (var row in rowsToCheckx.Rows)
+        var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
+
+        int numRows = rowsTocheck.Count;
+        for (int i = numRows - 1; i >= 0; i--)
         {
-                var cells = row.Cells.Select(cel => cel.Text).ToList();
-                var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
-                if (!hasValue)
-                {
-                    return row.Row;
-                }
+            IRange row = rowsTocheck.Rows[i];  // Direct access to reversed row
+            var cells = row.Cells.Select(cel => cel.Text).ToList();
+            var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
+            if (!hasValue)
+            {
+                return row.Row;
             }
-        
+        }        
         return 0;
+        
+        //foreach (var row in rowsTocheck.Rows.Reverse())
+        //{
+        //    var cells = row.Cells.Select(cel => cel.Text).ToList();
+        //    var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
+        //    if (!hasValue)
+        //    {
+        //        return row.Row;
+        //    }
+        //}
+        //return 0;
     }
 
     private static IRange? FindTopLabelsRange(IRange wholeRange, IRange dataRange, bool isOpenTable)
@@ -599,12 +613,14 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         //find the range for the labels starting from the data until you find an empty line
         //if no empty line, then return the row above the datarange
-        IRange aboveRange = null; ;
+        IRange? aboveRange=null;
         var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
-
-        foreach (var row in rowsTocheck.Rows.Reverse())
+        int numRows = rowsTocheck.Count;
+        for (int i = numRows - 1; i >= 0; i--)
+        //foreach (var row in rowsTocheck.Rows.Reverse())
         {
             //skip 2 to avoid zet values if open table           
+            IRange row = rowsTocheck.Rows[i];  // Direct access to reversed row
             var cellsTocheck = isOpenTable
                 ? row.Cells.Skip(2)
                 : row.Cells;
@@ -615,10 +631,12 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
                 break;
             }
         }
+        
+        
         if (aboveRange == null)
-        {                       
+        {
             var fftitleRange = wholeRange[dataRange.Row, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
-            return fftitleRange;         
+            return fftitleRange;
         }
         var titleRange = wholeRange[aboveRange.Row + 1, rowsTocheck.Column, rowsTocheck.LastRow, rowsTocheck.LastColumn];
         return titleRange;
