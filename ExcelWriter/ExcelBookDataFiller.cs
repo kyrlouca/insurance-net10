@@ -583,10 +583,11 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
 
-        int numRows = rowsTocheck.Count;
+        int numRows = rowsTocheck.Rows.Count();
+        var xxx = rowsTocheck.Rows[2];
         for (int i = numRows - 1; i >= 0; i--)
         {
-            IRange row = rowsTocheck.Rows[i];  // Direct access to reversed row
+            IRange? row = rowsTocheck.Rows[i];  // Direct access to reversed row
             var cells = row.Cells.Select(cel => cel.Text).ToList();
             var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
             if (!hasValue)
@@ -615,7 +616,7 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
         //if no empty line, then return the row above the datarange
         IRange? aboveRange=null;
         var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
-        int numRows = rowsTocheck.Count;
+        int numRows = rowsTocheck.Rows.Count();
         for (int i = numRows - 1; i >= 0; i--)
         //foreach (var row in rowsTocheck.Rows.Reverse())
         {
