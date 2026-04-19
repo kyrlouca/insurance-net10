@@ -578,16 +578,19 @@ public class ExcelBookDataFiller : IExcelBookDataFiller
 
         //find the row above the labels which is empty
         var rowsTocheck = wholeRange[1, dataRange.Column, dataRange.Row - 1, dataRange.LastColumn];
+        IRange rowsToCheckx= rowsTocheck is null ? dataRange[0,0] : rowsTocheck;
 
-        foreach (var row in rowsTocheck.Rows.Reverse())
+        //foreach (var row in rowsToCheckx.Rows.Reverse())
+            foreach (var row in rowsToCheckx.Rows)
         {
-            var cells = row.Cells.Select(cel => cel.Text).ToList();
-            var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
-            if (!hasValue)
-            {
-                return row.Row;
+                var cells = row.Cells.Select(cel => cel.Text).ToList();
+                var hasValue = row.Cells.Any(cell => !string.IsNullOrEmpty(cell.Value));
+                if (!hasValue)
+                {
+                    return row.Row;
+                }
             }
-        }
+        
         return 0;
     }
 
