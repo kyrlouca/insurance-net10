@@ -13,7 +13,7 @@ var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var missingParam = CheckParams(args);
 if (!string.IsNullOrEmpty(missingParam))
 {
-	//todo may need to change this
+	//todo may need to chddange this
 	var sample = @".\ExcelWriter.exe external-id=12  eiopa-version=IU282  document-id=295 file-name=""C:\Users\kyrlo\Soft\eforos-Insurance-docs\Testing\TestingS14\cnp-7.xlsx";    
     Console.WriteLine($"Invalid Params. Missing Parameter:{missingParam} See SAMPLE usage below");
     Console.WriteLine(sample);
