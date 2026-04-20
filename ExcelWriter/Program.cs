@@ -7,7 +7,7 @@ using ExcelWriter.Hosting;
 using System.Reflection;
 
 
-//test 28/08
+//test 28/08s
 //var dir = Directory.GetCurrentDirectory();
 var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
 var missingParam = CheckParams(args);
